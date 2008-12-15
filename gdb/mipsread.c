@@ -295,6 +295,7 @@ read_alphacoff_dynamic_symtab (struct section_offsets *section_offsets,
       sym_shndx = bfd_h_get_16 (abfd, (bfd_byte *) x_symp->st_shndx);
       isglobal = (ELF_ST_BIND (sym_info) == STB_GLOBAL);
 
+#ifdef QUALCOMM_DONTCARE
       if (sym_shndx == SHN_UNDEF)
 	{
 	  /* Handle undefined functions which are defined in a shared
@@ -378,6 +379,7 @@ read_alphacoff_dynamic_symtab (struct section_offsets *section_offsets,
 	}
 
       prim_record_minimal_symbol (name, sym_value, ms_type, objfile);
+#endif // QUALCOMM_DONTCARE
     }
 
   do_cleanups (cleanups);
