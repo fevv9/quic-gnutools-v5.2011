@@ -812,6 +812,10 @@ case "${target}" in
   powerpc-*-eabi* | powerpcle-*-eabi* | powerpc-*-rtems* )
     libgloss_dir=rs6000
     ;;
+  qdsp6-*-*)
+    noconfigdirs="$noconfigdirs  gdb ${libgcj}"
+    noconfigdirs="$noconfigdirs  bfd binutils opcodes gas ld gprof"
+    ;;
   rs6000-*-lynxos*)
     noconfigdirs="$noconfigdirs target-newlib gprof ${libgcj}"
     ;;
