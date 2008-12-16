@@ -104,6 +104,7 @@ ALL_MACHINES = \
 	cpu-pdp11.lo \
 	cpu-pj.lo \
 	cpu-powerpc.lo \
+	cpu-qdsp6.lo \
 	cpu-rs6000.lo \
 	cpu-s390.lo \
 	cpu-score.lo \
@@ -170,6 +171,7 @@ ALL_MACHINES_CFILES = \
 	cpu-pdp11.c \
 	cpu-pj.c \
 	cpu-powerpc.c \
+	cpu-qdsp6.c \
 	cpu-rs6000.c \
 	cpu-s390.c \
 	cpu-score.c \
@@ -281,6 +283,7 @@ BFD32_BACKENDS = \
 	elf32-msp430.lo \
 	elf32-openrisc.lo \
 	elf32-or32.lo \
+	elf32-qdsp6.lo \
 	elf32-pj.lo \
 	elf32-ppc.lo \
 	elf32-s390.lo \
@@ -464,6 +467,7 @@ BFD32_BACKENDS_CFILES = \
 	elf32-or32.c \
 	elf32-pj.c \
 	elf32-ppc.c \
+	elf32-qdsp6.c \
 	elf32-sh64.c \
 	elf32-sh64-com.c \
 	elf32-s390.c \
@@ -1120,6 +1124,7 @@ cpu-pdp11.lo: cpu-pdp11.c $(INCDIR)/filenames.h $(INCDIR)/hashtab.h
 cpu-pj.lo: cpu-pj.c $(INCDIR)/filenames.h $(INCDIR)/hashtab.h
 cpu-powerpc.lo: cpu-powerpc.c $(INCDIR)/filenames.h \
   $(INCDIR)/hashtab.h
+cpu-qdsp6.lo: cpu-qdsp6.c $(INCDIR)/filenames.h $(INCDIR)/hashtab.h
 cpu-rs6000.lo: cpu-rs6000.c $(INCDIR)/filenames.h $(INCDIR)/hashtab.h
 cpu-s390.lo: cpu-s390.c $(INCDIR)/filenames.h $(INCDIR)/hashtab.h
 cpu-score.lo: cpu-score.c $(INCDIR)/filenames.h $(INCDIR)/hashtab.h
@@ -1511,6 +1516,11 @@ elf32-ppc.lo: elf32-ppc.c $(INCDIR)/filenames.h $(INCDIR)/bfdlink.h \
   $(INCDIR)/elf/external.h $(INCDIR)/elf/internal.h $(INCDIR)/elf/ppc.h \
   $(INCDIR)/elf/reloc-macros.h elf32-ppc.h elf-vxworks.h \
   elf32-target.h
+elf32-qdsp6.lo: elf32-qdsp6.c $(INCDIR)/filenames.h elf-bfd.h \
+  $(INCDIR)/elf/common.h $(INCDIR)/elf/external.h \
+  $(INCDIR)/hashtab.h $(INCDIR)/elf/internal.h \
+  $(INCDIR)/bfdlink.h $(INCDIR)/opcode/qdsp6.h $(INCDIR)/elf/qdsp6.h \
+  $(INCDIR)/elf/reloc-macros.h elf32-target.h
 elf32-sh64.lo: elf32-sh64.c $(INCDIR)/filenames.h elf-bfd.h \
   $(INCDIR)/elf/common.h $(INCDIR)/elf/external.h $(INCDIR)/elf/internal.h \
   $(INCDIR)/bfdlink.h $(srcdir)/../opcodes/sh64-opc.h \

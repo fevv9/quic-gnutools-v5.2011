@@ -814,7 +814,7 @@ case "${target}" in
     ;;
   qdsp6-*-*)
     noconfigdirs="$noconfigdirs  gdb ${libgcj}"
-    noconfigdirs="$noconfigdirs  bfd binutils opcodes gas ld gprof"
+    noconfigdirs="$noconfigdirs  binutils opcodes gas ld gprof"
     ;;
   rs6000-*-lynxos*)
     noconfigdirs="$noconfigdirs target-newlib gprof ${libgcj}"

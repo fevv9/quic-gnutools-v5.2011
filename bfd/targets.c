@@ -639,6 +639,8 @@ extern const bfd_target bfd_elf32_pjl_vec;
 extern const bfd_target bfd_elf32_powerpc_vec;
 extern const bfd_target bfd_elf32_powerpcle_vec;
 extern const bfd_target bfd_elf32_powerpc_vxworks_vec;
+extern const bfd_target bfd_elf32_littleqdsp6_vec;
+extern const bfd_target bfd_elf32_bigqdsp6_vec;
 extern const bfd_target bfd_elf32_s390_vec;
 extern const bfd_target bfd_elf32_bigscore_vec;
 extern const bfd_target bfd_elf32_littlescore_vec;
@@ -975,6 +977,8 @@ static const bfd_target * const _bfd_target_vector[] =
 	&bfd_elf32_powerpc_vec,
 	&bfd_elf32_powerpc_vxworks_vec,
 	&bfd_elf32_powerpcle_vec,
+        &bfd_elf32_bigqdsp6_vec,
+        &bfd_elf32_littleqdsp6_vec,
 	&bfd_elf32_s390_vec,
 	&bfd_elf32_bigscore_vec,
 	&bfd_elf32_littlescore_vec, 

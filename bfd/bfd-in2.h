@@ -1844,6 +1844,11 @@ enum bfd_architecture
 #define bfd_mach_ppc_7400      7400
 #define bfd_mach_ppc_e500      500
 #define bfd_mach_ppc_e500mc    5001
+  bfd_arch_qdsp6,    /* Qualcomm QDSP6  */
+#define bfd_mach_qdsp6         1
+#define bfd_mach_qdsp6_v2      2
+#define bfd_mach_qdsp6_v3      3
+#define bfd_mach_qdsp6_v4      4
   bfd_arch_rs6000,    /* IBM RS/6000 */
 #define bfd_mach_rs6k          6000
 #define bfd_mach_rs6k_rs1      6001
