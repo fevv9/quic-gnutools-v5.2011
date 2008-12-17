@@ -2104,7 +2104,7 @@ elf32-qdsp6.lo: elf32-qdsp6.c $(INCDIR)/filenames.h elf-bfd.h \
   $(INCDIR)/elf/common.h $(INCDIR)/elf/external.h \
   $(INCDIR)/hashtab.h $(INCDIR)/elf/internal.h \
   $(INCDIR)/bfdlink.h $(INCDIR)/opcode/qdsp6.h $(INCDIR)/elf/qdsp6.h \
-  $(INCDIR)/elf/reloc-macros.h elf32-target.h
+  $(INCDIR)/elf/reloc-macros.h elf32-qdsp6.h elf32-target.h
 elf32-sh64.lo: elf32-sh64.c $(INCDIR)/filenames.h elf-bfd.h \
   $(INCDIR)/elf/common.h $(INCDIR)/elf/external.h $(INCDIR)/elf/internal.h \
   $(INCDIR)/bfdlink.h $(srcdir)/../opcodes/sh64-opc.h \

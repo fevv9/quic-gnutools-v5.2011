@@ -4394,6 +4394,39 @@ BFD_RELOC_XTENSA_ASM_EXPAND.  */
 
 /* 4 bit value.  */
   BFD_RELOC_Z8K_IMM4L,
+
+/* QDSP6 relocation with signed 23 bit offset  */
+  BFD_RELOC_QDSP6_B22_PCREL,
+
+/* QDSP6 relocation with signed 16 bit offset  */
+  BFD_RELOC_QDSP6_B15_PCREL,
+
+/* QDSP6 relocation with signed 14 bit offset  */
+  BFD_RELOC_QDSP6_B13_PCREL,
+
+/* QDSP6 relocation with signed 8 bit offset  */
+  BFD_RELOC_QDSP6_B7_PCREL,
+
+/* QDSP6 relocation for the lower 16 bits of a 32-bit address  */
+  BFD_RELOC_QDSP6_LO16,
+
+/* QDSP6 relocation for the higher 16 bits of a 32-bit address  */
+  BFD_RELOC_QDSP6_HI16,
+
+/* QDSP6 GP relative relocation  */
+  BFD_RELOC_QDSP6_GPREL16_0,
+
+/* QDSP6 GP relative relocation  */
+  BFD_RELOC_QDSP6_GPREL16_1,
+
+/* QDSP6 GP relative relocation  */
+  BFD_RELOC_QDSP6_GPREL16_2,
+
+/* QDSP6 GP relative relocation  */
+  BFD_RELOC_QDSP6_GPREL16_3,
+
+/* QDSP6 relocation for the lower and higher 16 bits of a 32-bit address  */
+  BFD_RELOC_QDSP6_HL16,
   BFD_RELOC_UNUSED };
 typedef enum bfd_reloc_code_real bfd_reloc_code_real_type;
 reloc_howto_type *bfd_reloc_type_lookup

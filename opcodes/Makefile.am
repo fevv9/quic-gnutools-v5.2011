@@ -174,6 +174,8 @@ CFILES = \
 	pj-opc.c \
 	ppc-dis.c \
 	ppc-opc.c \
+	qdsp6-dis.c \
+	qdsp6-opc.c \
 	s390-mkopc.c \
 	s390-opc.c \
 	s390-dis.c \
@@ -317,6 +319,8 @@ ALL_MACHINES = \
 	pj-opc.lo \
 	ppc-dis.lo \
 	ppc-opc.lo \
+	qdsp6-dis.lo \
+	qdsp6-opc.lo \
 	s390-dis.lo \
 	s390-opc.lo \
 	score-dis.lo \
@@ -1067,6 +1071,12 @@ ppc-dis.lo: ppc-dis.c sysdep.h config.h $(INCDIR)/ansidecl.h \
   $(INCDIR)/dis-asm.h $(BFD_H) $(INCDIR)/symcat.h $(INCDIR)/opcode/ppc.h
 ppc-opc.lo: ppc-opc.c sysdep.h config.h $(INCDIR)/ansidecl.h \
   $(INCDIR)/opcode/ppc.h opintl.h
+qdsp6-dis.lo: qdsp6-dis.c sysdep.h config.h $(INCDIR)/ansidecl.h \
+  $(INCDIR)/dis-asm.h $(BFD_H) $(INCDIR)/symcat.h $(INCDIR)/opcode/qdsp6.h \
+  $(INCDIR)/opcode/qdsp6_asm_maps.h $(INCDIR)/opcode/qdsp6_iset.h \
+  $(INCDIR)/opcode/qdsp6_iset_v3.h
+qdsp6-opc.lo: qdsp6-opc.c sysdep.h config.h $(INCDIR)/ansidecl.h \
+  $(INCDIR)/opcode/qdsp6.h opintl.h
 s390-mkopc.lo: s390-mkopc.c
 s390-opc.lo: s390-opc.c $(INCDIR)/ansidecl.h $(INCDIR)/opcode/s390.h \
   s390-opc.tab

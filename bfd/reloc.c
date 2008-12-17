@@ -5050,6 +5050,52 @@ ENUM
 ENUMDOC
   4 bit value.
 
+ENUM 
+  BFD_RELOC_QDSP6_B22_PCREL
+ENUMDOC
+  QDSP6 relocation with signed 23 bit offset 
+ENUM 
+  BFD_RELOC_QDSP6_B15_PCREL
+ENUMDOC
+  QDSP6 relocation with signed 16 bit offset 
+ENUM 
+  BFD_RELOC_QDSP6_B13_PCREL
+ENUMDOC
+  QDSP6 relocation with signed 14 bit offset 
+ENUM 
+  BFD_RELOC_QDSP6_B7_PCREL
+ENUMDOC
+  QDSP6 relocation with signed 8 bit offset 
+ENUM 
+  BFD_RELOC_QDSP6_LO16
+ENUMDOC
+  QDSP6 relocation for the lower 16 bits of a 32-bit address
+ENUM 
+  BFD_RELOC_QDSP6_HI16
+ENUMDOC
+  QDSP6 relocation for the higher 16 bits of a 32-bit address
+ENUM 
+  BFD_RELOC_QDSP6_GPREL16_0
+ENUMDOC
+  QDSP6 GP relative relocation 
+ENUM 
+  BFD_RELOC_QDSP6_GPREL16_1
+ENUMDOC
+  QDSP6 GP relative relocation 
+ENUM 
+  BFD_RELOC_QDSP6_GPREL16_2
+ENUMDOC
+  QDSP6 GP relative relocation 
+ENUM 
+  BFD_RELOC_QDSP6_GPREL16_3
+ENUMDOC
+  QDSP6 GP relative relocation 
+ENUM 
+  BFD_RELOC_QDSP6_HL16
+ENUMDOC
+  QDSP6 relocation for the lower and higher 16 bits of a 32-bit address
+
+
 ENDSENUM
   BFD_RELOC_UNUSED
 CODE_FRAGMENT
