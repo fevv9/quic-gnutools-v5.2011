@@ -345,6 +345,9 @@ struct bfd_link_info
   /* TRUE if some symbols have to be dynamic, controlled by
      --dynamic-list command line options.  */
   unsigned int dynamic: 1;
+#ifdef QUALCOMM
+  unsigned int qdsp6_trampolines: 1;
+#endif
 
   /* Non-NULL if .note.gnu.build-id section should be created.  */
   char *emit_note_gnu_build_id;
