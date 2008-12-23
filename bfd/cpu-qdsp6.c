@@ -38,7 +38,7 @@ static const bfd_arch_info_type *qdsp6_bfd_compatible
     32,	/* 32 bits in an address  */	 \
     8,	/* 8 bits in a byte  */		 \
     bfd_arch_qdsp6,			 \
-    bfd_mach_qdsp6,			 \
+    mach,			 	 \
     "qdsp6",				 \
     print_name,				 \
     4, /* section alignment power  */	 \
@@ -52,6 +52,7 @@ static const bfd_arch_info_type *qdsp6_bfd_compatible
 static const bfd_arch_info_type qdsp6_arch_info [] =
 {
   QDSP6 (bfd_mach_qdsp6_v3, "qdsp6v3", FALSE, &qdsp6_arch_info[1]),
+  QDSP6 (bfd_mach_qdsp6_v4, "qdsp6v4", FALSE, &qdsp6_arch_info[2]),
   QDSP6 (bfd_mach_qdsp6,    "qdsp6",   FALSE, NULL)
 };
 

@@ -157,6 +157,23 @@ char original_case_string[128];
 
 static char *buffer;	/* 1st char of each buffer of lines is here.  */
 static char *buffer_limit;	/*->1 + last char in buffer.  */
+#ifdef QUALCOMM
+#ifdef TC_QDSP6
+/* 
+ * XXX_SM: qdsp6_packet_end_lookahead needs bufferlimit
+ * XXX_SM: I'm kinda on the fence about this one seems eaisier just to
+ * make buffer_limit global but I will resist doing that for now.
+ */
+char *get_buffer_limit(void)
+{
+    return buffer_limit;
+}
+void put_buffer_limit(char *limit)
+{
+    buffer_limit = limit;
+}
+#endif
+#endif
 
 /* TARGET_BYTES_BIG_ENDIAN is required to be defined to either 0 or 1
    in the tc-<CPU>.h file.  See the "Porting GAS" section of the

@@ -42,10 +42,11 @@ static bfd_boolean qdsp6_elf_link_output_symbol_hook
 #define DEFAULT_SDA_BASE "__default_sda_base__"
 
 
+/*
+ * XXX_SM: cooked is done, section->size should just work. 
+ */
 #define get_section_size_now(abfd,sec) 					\
-  (sec->reloc_done 							\
-    ? bfd_get_section_size_after_reloc (sec) 				\
-    : bfd_get_section_size_before_reloc (sec))
+    bfd_section_size (abfd, sec)
 
 #define QDSP6_TRAMPOLINE_PREFIX     ".PAD"
 #define QDSP6_TRAMPOLINE_PREFIX_LEN (sizeof (QDSP6_TRAMPOLINE_PREFIX))

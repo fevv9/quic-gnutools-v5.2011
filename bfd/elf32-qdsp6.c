@@ -1641,7 +1641,7 @@ qdsp6_elf_relax_section (bfd *input_bfd,
      Since the original relocation is voided, it and only it may be reused by
      the trampoline. */
   // elf_section_data (isec)->relocs = bfd_get_section_userdata (input_bfd, isec);
-  internal_relocs = _bfd_elf32_link_read_relocs (input_bfd, isec, NULL, NULL,
+  internal_relocs = _bfd_elf_link_read_relocs (input_bfd, isec, NULL, NULL,
                                                  link_info->keep_memory);
   // elf_section_data (isec)->relocs = internal_relocs;
   // bfd_set_section_userdata (input_bfd, isec, internal_relocs);
@@ -1664,7 +1664,11 @@ qdsp6_elf_relax_section (bfd *input_bfd,
               || r_type == R_QDSP6_B15_PCREL
               || r_type == R_QDSP6_B13_PCREL))
         {
-          isec_size = get_section_size_now (input_bfd, isec);
+	/* 
+ 	 * XXX_SM: using standard macro.
+ 	 * cooked_size is gone size should just work.
+ 	 */
+          isec_size = bfd_section_size (input_bfd, isec);
 
           at      = irel->r_offset;
           from    = irel->r_offset - irel->r_addend;
@@ -1788,7 +1792,11 @@ qdsp6_elf_relax_section (bfd *input_bfd,
                   if (rc != TRUE)
                     goto error_return;
 
-                  isec_size = get_section_size_now (input_bfd, isec);
+		/* 
+ 		 * XXX_SM: using standard macro.
+ 		 * cooked_size is gone size should just work.
+ 		 */
+                  isec_size = bfd_section_size (input_bfd, isec);
 
                   /* Create the trampoline symbol. */
                   BFD_ASSERT
@@ -1893,9 +1901,40 @@ qdsp6_elf_relax_section (bfd *input_bfd,
 #define ELF_ARCH           bfd_arch_qdsp6
 #define ELF_MACHINE_CODE   EM_QDSP6
 #define ELF_MAXPAGESIZE    0x1000
-#define bfd_elf32_bfd_reloc_type_lookup bfd_default_reloc_type_lookup
 #define bfd_elf32_bfd_reloc_name_lookup _bfd_norelocs_bfd_reloc_name_lookup
+#define elf_backend_can_gc_sections	1
 #define elf_info_to_howto               0
 #define elf_info_to_howto_rel           qdsp6_info_to_howto_rel
 
+#define elf_backend_object_p		qdsp6_elf_object_p
+#define elf_backend_gc_mark_hook        qdsp6_elf_gc_mark_hook
+#define elf_backend_gc_sweep_hook       qdsp6_elf_gc_sweep_hook
+#define elf_backend_check_relocs        qdsp6_elf_check_relocs
+#define elf_backend_relocate_section    qdsp6_elf_relocate_section
+#define bfd_elf32_bfd_relax_section     qdsp6_elf_relax_section
+#define elf_backend_final_write_processing \
+                                        qdsp6_elf_final_write_processing
+#define elf_backend_section_from_shdr   qdsp6_elf_section_from_shdr
+#define elf_backend_add_symbol_hook     qdsp6_elf_add_symbol_hook
+#define elf_backend_fake_sections       qdsp6_elf_fake_sections
+#define elf_backend_symbol_processing   qdsp6_elf_symbol_processing
+#define elf_backend_section_processing  qdsp6_elf_section_processing
+#define elf_backend_section_from_bfd_section  qdsp6_elf_section_from_bfd_section
+#define elf_backend_link_output_symbol_hook \
+                                        qdsp6_elf_link_output_symbol_hook
 
+#define bfd_elf32_bfd_get_relocated_section_contents \
+                                        qdsp6_elf_get_relocated_section_contents
+
+/* We need to use RELAs to get the computations for the HI16/LO16
+   relocations to be correct in the presence of addends; for now
+   we default to using them everywhere. Eventually we should fix
+   this so we only use RELA for the .text sections. Ideally, we
+   would have both REL and RELA relocation sections for a .text
+   section, but that is a lot of mucking about...
+*/
+#define elf_backend_may_use_rel_p	0
+#define	elf_backend_may_use_rela_p	1
+#define	elf_backend_default_use_rela_p	1
+
+#include "elf32-target.h"
