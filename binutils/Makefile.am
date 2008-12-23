@@ -186,15 +186,15 @@ installcheck:
 # There's no global DEPENDENCIES.  So, we must explicitly list everything
 # which depends on libintl, since we don't know whether LIBINTL_DEP will be
 # non-empty until configure time.  Ugh!
-size_DEPENDENCIES =      $(LIBINTL_DEP) $(LIBIBERTY) $(BFDLIB)
+size_DEPENDENCIES =      $(LIBINTL_DEP) $(LIBIBERTY) $(BFDLIB) $(OPCODES)
 objdump_DEPENDENCIES =   $(LIBINTL_DEP) $(LIBIBERTY) $(BFDLIB) $(OPCODES)
-nm_new_DEPENDENCIES =    $(LIBINTL_DEP) $(LIBIBERTY) $(BFDLIB)
-ar_DEPENDENCIES =        $(LIBINTL_DEP) $(LIBIBERTY) $(BFDLIB)
-strings_DEPENDENCIES =   $(LIBINTL_DEP) $(LIBIBERTY) $(BFDLIB)
-strip_new_DEPENDENCIES = $(LIBINTL_DEP) $(LIBIBERTY) $(BFDLIB)
-ranlib_DEPENDENCIES =    $(LIBINTL_DEP) $(LIBIBERTY) $(BFDLIB)
-cxxfilt_DEPENDENCIES =   $(LIBINTL_DEP) $(LIBIBERTY) $(BFDLIB)
-objcopy_DEPENDENCIES =   $(LIBINTL_DEP) $(LIBIBERTY) $(BFDLIB)
+nm_new_DEPENDENCIES =    $(LIBINTL_DEP) $(LIBIBERTY) $(BFDLIB) $(OPCODES)
+ar_DEPENDENCIES =        $(LIBINTL_DEP) $(LIBIBERTY) $(BFDLIB) $(OPCODES)
+strings_DEPENDENCIES =   $(LIBINTL_DEP) $(LIBIBERTY) $(BFDLIB) $(OPCODES)
+strip_new_DEPENDENCIES = $(LIBINTL_DEP) $(LIBIBERTY) $(BFDLIB) $(OPCODES)
+ranlib_DEPENDENCIES =    $(LIBINTL_DEP) $(LIBIBERTY) $(BFDLIB) $(OPCODES)
+cxxfilt_DEPENDENCIES =   $(LIBINTL_DEP) $(LIBIBERTY) $(BFDLIB) $(OPCODES)
+objcopy_DEPENDENCIES =   $(LIBINTL_DEP) $(LIBIBERTY) $(BFDLIB) $(OPCODES)
 nlmconv_DEPENDENCIES =   $(LIBINTL_DEP) $(LIBIBERTY) $(BFDLIB)
 srconv_DEPENDENCIES =    $(LIBINTL_DEP) $(LIBIBERTY) $(BFDLIB)
 sysdump_DEPENDENCIES =   $(LIBINTL_DEP) $(LIBIBERTY) $(BFDLIB)
@@ -202,24 +202,29 @@ coffdump_DEPENDENCIES =  $(LIBINTL_DEP) $(LIBIBERTY) $(BFDLIB)
 dlltool_DEPENDENCIES =   $(LIBINTL_DEP) $(LIBIBERTY) $(BFDLIB)
 windres_DEPENDENCIES =   $(LIBINTL_DEP) $(LIBIBERTY) $(BFDLIB)
 windmc_DEPENDENCIES =    $(LIBINTL_DEP) $(LIBIBERTY) $(BFDLIB)
-addr2line_DEPENDENCIES = $(LIBINTL_DEP) $(LIBIBERTY) $(BFDLIB)
-readelf_DEPENDENCIES =   $(LIBINTL_DEP) $(LIBIBERTY)
+addr2line_DEPENDENCIES = $(LIBINTL_DEP) $(LIBIBERTY) $(BFDLIB) $(OPCODES)
+readelf_DEPENDENCIES =   $(LIBINTL_DEP) $(LIBIBERTY) $(OPCODES)
 dllwrap_DEPENDENCIES =   $(LIBINTL_DEP) $(LIBIBERTY)
 
 LDADD = $(BFDLIB) $(LIBIBERTY) $(LIBINTL)
 
 size_SOURCES = size.c $(BULIBS)
+size_LDADD   = $(BFDLIB) $(OPCODES) $(LIBINTL) $(LIBIBERTY)
 
 objcopy_SOURCES = objcopy.c not-strip.c rename.c $(WRITE_DEBUG_SRCS) $(BULIBS)
+objcopy_LDADD   = $(BFDLIB) $(OPCODES) $(LIBINTL) $(LIBIBERTY)
 
 strings_SOURCES = strings.c $(BULIBS)
+strings_LDADD   = $(BFDLIB) $(OPCODES) $(LIBINTL) $(LIBIBERTY)
 
 readelf_SOURCES = readelf.c version.c unwind-ia64.c dwarf.c
-readelf_LDADD   = $(LIBINTL) $(LIBIBERTY)
+readelf_LDADD   = $(OPCODES) $(LIBINTL) $(LIBIBERTY)
 
 strip_new_SOURCES = objcopy.c is-strip.c rename.c $(WRITE_DEBUG_SRCS) $(BULIBS)
+strip_new_LDADD   = $(BFDLIB) $(OPCODES) $(LIBINTL) $(LIBIBERTY)
 
 nm_new_SOURCES = nm.c $(BULIBS)
+nm_new_LDADD   = $(BFDLIB) $(OPCODES) $(LIBINTL) $(LIBIBERTY)
 
 objdump_SOURCES = objdump.c dwarf.c prdbg.c $(DEBUG_SRCS) $(BULIBS)
 objdump_LDADD = $(OPCODES) $(BFDLIB) $(LIBIBERTY) $(LIBINTL)
@@ -228,16 +233,18 @@ objdump.o:objdump.c
 	$(COMPILE) -c $(OBJDUMP_DEFS) $(srcdir)/objdump.c
 
 cxxfilt_SOURCES = cxxfilt.c $(BULIBS)
+cxxfilt_LDADD   = $(BFDLIB) $(OPCODES) $(LIBINTL) $(LIBIBERTY)
 
 ar_SOURCES = arparse.y arlex.l ar.c not-ranlib.c arsup.c rename.c binemul.c \
 	emul_$(EMULATION).c $(BULIBS)
-ar_LDADD = $(BFDLIB) $(LIBIBERTY) @LEXLIB@ $(LIBINTL)
+ar_LDADD = $(BFDLIB) $(OPCODES) $(LIBIBERTY) @LEXLIB@ $(LIBINTL)
 
 ranlib_SOURCES = ar.c is-ranlib.c arparse.y arlex.l arsup.c rename.c \
 	binemul.c emul_$(EMULATION).c $(BULIBS)
-ranlib_LDADD = $(BFDLIB) $(LIBIBERTY) @LEXLIB@ $(LIBINTL)
+ranlib_LDADD = $(BFDLIB) $(OPCODES) $(LIBIBERTY) @LEXLIB@ $(LIBINTL)
 
 addr2line_SOURCES = addr2line.c $(BULIBS)
+addr2line_LDADD   = $(BFDLIB) $(OPCODES) $(LIBINTL) $(LIBIBERTY)
 
 # The following is commented out for the conversion to automake.
 # This rule creates a single binary that switches between ar and ranlib
@@ -590,6 +597,7 @@ readelf.o: readelf.c config.h sysdep.h $(INCDIR)/ansidecl.h \
   $(INCDIR)/elf/mmix.h $(INCDIR)/elf/mn10200.h $(INCDIR)/elf/mn10300.h \
   $(INCDIR)/elf/mt.h $(INCDIR)/elf/msp430.h $(INCDIR)/elf/or32.h \
   $(INCDIR)/elf/pj.h $(INCDIR)/elf/ppc.h $(INCDIR)/elf/ppc64.h \
+  $(INCDIR)/elf/qdsp6.h \
   $(INCDIR)/elf/s390.h $(INCDIR)/elf/score.h $(INCDIR)/elf/sh.h \
   $(INCDIR)/elf/sparc.h $(INCDIR)/elf/spu.h $(INCDIR)/elf/v850.h \
   $(INCDIR)/elf/vax.h $(INCDIR)/elf/x86-64.h $(INCDIR)/elf/xstormy16.h \

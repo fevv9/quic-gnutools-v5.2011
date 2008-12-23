@@ -436,7 +436,7 @@ qdsp6_elf_get_relocated_section_contents
      is resolved, then GP-relocaiton overflow errors are likely. */
 
   /* Try to validate the effective value of _SDA_BASE_. */
-  if (_sda_base && !qdsp6_if_arch_v1 ())
+  if (_sda_base)
     {
       if (bfd_reloc_ok != qdsp6_elf_final_sda_base (output_bfd, NULL, &vma))
         {
@@ -956,7 +956,7 @@ qdsp6_elf_add_symbol_hook
       case SHN_COMMON:
         /* Common symbols less than the GP size are automatically
           treated as SHN_QDSP6S_SCOMMON symbols.  */
-        if (qdsp6_if_arch_v1 () || sym->st_size > elf_gp_size (abfd))
+        if (sym->st_size > elf_gp_size (abfd))
           break;
 
         /* Choose which section to place them in. */
@@ -1004,7 +1004,7 @@ qdsp6_elf_symbol_processing
     case SHN_COMMON:
       /* Common symbols less than the GP size are automatically
 	 treated as SHN_QDSP6S_SCOMMON symbols.  */
-      if (qdsp6_if_arch_v1 () || asym->value > elf_gp_size (abfd))
+      if (asym->value > elf_gp_size (abfd))
 	break;
 
         /* Choose which section to place them in. */

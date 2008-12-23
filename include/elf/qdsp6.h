@@ -65,6 +65,7 @@ END_RELOC_NUMBERS (R_QDSP6_max)
 #define E_QDSP6_MACH    0
 #define E_QDSP6_MACH_V2 1
 #define E_QDSP6_MACH_V3 2
+#define E_QDSP6_MACH_V4 3
 
 /* File contains position independent code.  */
 #define EF_QDSP6_PIC 0x00000100
