@@ -84,6 +84,7 @@ ld_new_OBJECTS = $(am_ld_new_OBJECTS)
 am__DEPENDENCIES_1 =
 am__DEPENDENCIES_2 = ../bfd/libbfd.la
 am__DEPENDENCIES_3 = ../libiberty/libiberty.a
+am__DEPENDENCIES_4 = ../opcodes/libopcodes.a
 DEFAULT_INCLUDES = -I. -I$(srcdir) -I.
 depcomp =
 am__depfiles_maybe =
@@ -359,6 +360,7 @@ INCLUDES = -I. -I$(srcdir) -I../bfd -I$(BFDDIR) -I$(INCDIR) \
 
 BFDLIB = ../bfd/libbfd.la
 LIBIBERTY = ../libiberty/libiberty.a
+LIBOPCODES = ../opcodes/libopcodes.a
 ALL_EMULATIONS = \
 	eaixppc.o \
 	eaixrs6.o \
@@ -449,6 +451,7 @@ ALL_EMULATIONS = \
 	eelf32ppcsim.o \
 	eelf32ppcwindiss.o \
 	eelf32ppcvxworks.o \
+	eelf32qdsp6.o \
 	eelf32vax.o \
         eelf32xc16x.o \
         eelf32xc16xl.o \
@@ -713,8 +716,8 @@ EXTRA_ld_new_SOURCES = deffilep.y
 ld_new_SOURCES = ldgram.y ldlex.l lexsup.c ldlang.c mri.c ldctor.c ldmain.c \
 	ldwrite.c ldexp.c ldemul.c ldver.c ldmisc.c ldfile.c ldcref.c
 
-ld_new_DEPENDENCIES = $(EMULATION_OFILES) $(EMUL_EXTRA_OFILES) $(BFDLIB) $(LIBIBERTY) $(LIBINTL_DEP)
-ld_new_LDADD = $(EMULATION_OFILES) $(EMUL_EXTRA_OFILES) $(BFDLIB) $(LIBIBERTY) $(LIBINTL)
+ld_new_DEPENDENCIES = $(EMULATION_OFILES) $(EMUL_EXTRA_OFILES) $(BFDLIB) $(LIBIBERTY) $(LIBINTL_DEP) $(LIBOPCODES)
+ld_new_LDADD = $(EMULATION_OFILES) $(EMUL_EXTRA_OFILES) $(BFDLIB) $(LIBIBERTY) $(LIBINTL) $(LIBOPCODES)
 MAINTAINERCLEANFILES = configdoc.texi ld.info
 
 # We want to reconfigure if configure.host or configure.tgt changes.  We
@@ -1550,6 +1553,10 @@ eelf32fr30.c: $(srcdir)/emulparams/elf32fr30.sh \
 eelf32frv.c: $(srcdir)/emulparams/elf32frv.sh \
   $(ELF_GEN_DEPS) $(srcdir)/scripttempl/elf.sc ${GEN_DEPENDS}
 	${GENSCRIPTS} elf32frv "$(tdir_frv)"
+eqdsp6elf.c: $(srcdir)/emulparams/qdsp6elf.sh \
+  $(srcdir)/emultempl/elf32.em $(srcdir)/emultempl/qdsp6elf.em \
+  $(srcdir)/scripttempl/qdsp6.sc ${GEN_DEPENDS}
+	${GENSCRIPTS} qdsp6elf "$(tdir_qdsp6elf)"
 eelf32frvfd.c: $(srcdir)/emulparams/elf32frvfd.sh \
   $(srcdir)/emulparams/elf32frv.sh \
   $(ELF_DEPS) $(srcdir)/scripttempl/elf.sc ${GEN_DEPENDS}
@@ -2576,16 +2583,16 @@ check-DEJAGNU: site.exp
 ld-partial.o: ld-new$(EXEEXT)
 	./ld-new$(EXEEXT) $(HOSTING_EMU) -o ld-partial.o -r $(OFILES)
 ld1$(EXEEXT): ld-partial.o
-	./ld-new$(EXEEXT) $(HOSTING_EMU) -o ld1$(EXEEXT) $(HOSTING_CRT0) ld-partial.o $(TESTBFDLIB) $(LIBIBERTY) $(HOSTING_LIBS) $(LIBS)
+	./ld-new$(EXEEXT) $(HOSTING_EMU) -o ld1$(EXEEXT) $(HOSTING_CRT0) ld-partial.o $(TESTBFDLIB) $(LIBOPCODES) $(LIBIBERTY) $(HOSTING_LIBS) $(LIBS)
 
 ld1-full$(EXEEXT): ld-new
-	./ld-new$(EXEEXT) $(HOSTING_EMU) -o ld1-full$(EXEEXT) $(HOSTING_CRT0) $(OFILES) $(TESTBFDLIB) $(LIBIBERTY) $(HOSTING_LIBS) $(LIBS)
+	./ld-new$(EXEEXT) $(HOSTING_EMU) -o ld1-full$(EXEEXT) $(HOSTING_CRT0) $(OFILES) $(TESTBFDLIB) $(LIBOPCODES) $(LIBIBERTY) $(HOSTING_LIBS) $(LIBS)
 
 ld2$(EXEEXT): ld1$(EXEEXT)
-	./ld1$(EXEEXT) $(HOSTING_EMU) -o ld2$(EXEEXT) $(HOSTING_CRT0) $(OFILES) $(TESTBFDLIB) $(LIBIBERTY) $(HOSTING_LIBS) $(LIBS)
+	./ld1$(EXEEXT) $(HOSTING_EMU) -o ld2$(EXEEXT) $(HOSTING_CRT0) $(OFILES) $(TESTBFDLIB) $(LIBOPCODES) $(LIBIBERTY) $(HOSTING_LIBS) $(LIBS)
 
 ld3$(EXEEXT): ld2$(EXEEXT)
-	./ld2$(EXEEXT) $(HOSTING_EMU) -o ld3$(EXEEXT) $(HOSTING_CRT0) $(OFILES) $(TESTBFDLIB) $(LIBIBERTY) $(HOSTING_LIBS) $(LIBS)
+	./ld2$(EXEEXT) $(HOSTING_EMU) -o ld3$(EXEEXT) $(HOSTING_CRT0) $(OFILES) $(TESTBFDLIB) $(LIBOPCODES) $(LIBIBERTY) $(HOSTING_LIBS) $(LIBS)
 
 bootstrap: ld3$(EXEEXT)
 	cmp ld2$(EXEEXT) ld3$(EXEEXT)

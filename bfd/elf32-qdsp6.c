@@ -1325,7 +1325,7 @@ qdsp6_elf_relocate_section ( bfd *output_bfd,
 	{
 	  sym = local_syms + r_symndx;
 	  sec = local_sections[r_symndx];
-	  relocation = _bfd_elf_rela_local_sym (output_bfd, sym, sec, rel);
+	  relocation = _bfd_elf_rela_local_sym (output_bfd, sym, &sec, rel);
 
 	  name = bfd_elf_string_from_elf_section
 	    (input_bfd, symtab_hdr->sh_link, sym->st_name);
@@ -1936,5 +1936,13 @@ qdsp6_elf_relax_section (bfd *input_bfd,
 #define elf_backend_may_use_rel_p	0
 #define	elf_backend_may_use_rela_p	1
 #define	elf_backend_default_use_rela_p	1
+
+/* This is a bit of a hack
+   It installs our wrapper for _bfd_elf_set_arch_mach
+*/
+#undef BFD_JUMP_TABLE_WRITE
+#define BFD_JUMP_TABLE_WRITE(NAME) \
+   qdsp6_elf_set_arch_mach, \
+   bfd_elf32_set_section_contents
 
 #include "elf32-target.h"

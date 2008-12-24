@@ -247,6 +247,9 @@ typedef struct {
   /* If TRUE, build constructors.  */
   bfd_boolean build_constructors;
 
+  /* If TRUE, tcm will be used.  */
+  bfd_boolean use_tcm;
+
   /* If TRUE, warn about any constructors.  */
   bfd_boolean warn_constructors;
 
