@@ -430,6 +430,13 @@ esac
 # These are the libraries checked by Readline.
 AC_SEARCH_LIBS(tgetent, [termcap tinfo curses ncurses])
 
+# XXX_SM: this is to get around a screwup in binutils that happens
+# in some configurations, our being one of them, see:
+#    http://sourceware.org/ml/binutils/2008-07/msg00140.html
+# for details.
+#
+AC_SEARCH_LIBS(zlibVersion, z, [AC_CHECK_HEADERS(zlib.h)])
+
 if test "$ac_cv_search_tgetent" = no; then
   AC_MSG_ERROR([no termcap library found])
 fi

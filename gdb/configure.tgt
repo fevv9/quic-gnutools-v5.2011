@@ -356,6 +356,11 @@ powerpc*-*-*)
 	fi
 	;;
 
+qdsp6-*-*)
+	# Target: QDSP6
+	gdb_target_obs="qdsp6-tdep.o"
+	;;
+
 s390*-*-*)
 	# Target: S390 running Linux
 	gdb_target_obs="s390-tdep.o solib.o solib-svr4.o"

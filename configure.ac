@@ -813,7 +813,7 @@ case "${target}" in
     libgloss_dir=rs6000
     ;;
   qdsp6-*-*)
-    noconfigdirs="$noconfigdirs  gdb ${libgcj}"
+    noconfigdirs="$noconfigdirs  ${libgcj}"
     noconfigdirs="$noconfigdirs  gprof"
     ;;
   rs6000-*-lynxos*)
