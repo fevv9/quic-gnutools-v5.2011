@@ -3183,7 +3183,6 @@ symbol_relc_make_expr (expressionS * exp)
 #endif
 
 
-#ifdef QUALCOMM
 #ifdef TC_QDSP6
 
 void
@@ -3193,15 +3192,14 @@ symbol_adjust_value (sym, delta)
 {
   if (LOCAL_SYMBOL_CHECK(sym))
   {
-        struct local_symbol *locsym = (struct local_symbol *) sym; 
+        struct local_symbol *locsym = (struct local_symbol *) sym;
         //fprintf(stderr, "*** adjust_symbol_value(%s, %d) ***\n", locsym->lsy_name, delta);
     locsym->lsy_value += delta;
   }
   else
   {
     //fprintf(stderr, "*** adjust_symbol_value(%s, %d) ***\n", S_GET_NAME(sym), delta);
-    S_SET_VALUE(sym, S_GET_VALUE(sym) + delta); 
+    S_SET_VALUE(sym, S_GET_VALUE(sym) + delta);
   }
 }
-#endif
 #endif

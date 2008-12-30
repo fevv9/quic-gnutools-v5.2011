@@ -941,14 +941,14 @@ qdsp6_insn_write
         as_warn (_("current location is not %d-byte aligned."), 2);
 
       md_number_to_chars (f, insn, 2);
-/* 
+/*
  * XXX_SM: this was modified in 2.14 so that loc.line is set to
- * lineno as seen here.  My sense is that because packets are 
+ * lineno as seen here.  My sense is that because packets are
  * broken up across lines this is needed and that as_where()
  * isn't smart enough to figure out the correct line number.
  * These calculations have change so I'm leaving reverting to
  * the baseline for now.
- * Old Q6 wants: 
+ * Old Q6 wants:
  *	dwarf2_emit_insn (2, lineno);
  */
       dwarf2_emit_insn (2); /* XXX_SM */
@@ -2915,7 +2915,7 @@ qdsp6_parse_cons_expression(
 	code_symbol_fix = 1;
 	strcpy (p, ";   ");
       }
-/* 
+/*
  * XXX:SM change to use the #define version in expr.h
  * Was expr(0,exp) if we don't want to use the macro then then
  * 2.19 version would be: "expr (0, exp, expr_normal)"

@@ -1664,7 +1664,7 @@ qdsp6_elf_relax_section (bfd *input_bfd,
               || r_type == R_QDSP6_B15_PCREL
               || r_type == R_QDSP6_B13_PCREL))
         {
-	/* 
+	/*
  	 * XXX_SM: using standard macro.
  	 * cooked_size is gone size should just work.
  	 */
@@ -1792,7 +1792,7 @@ qdsp6_elf_relax_section (bfd *input_bfd,
                   if (rc != TRUE)
                     goto error_return;
 
-		/* 
+		/*
  		 * XXX_SM: using standard macro.
  		 * cooked_size is gone size should just work.
  		 */

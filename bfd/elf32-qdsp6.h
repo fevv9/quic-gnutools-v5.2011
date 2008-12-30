@@ -43,7 +43,7 @@ static bfd_boolean qdsp6_elf_link_output_symbol_hook
 
 
 /*
- * XXX_SM: cooked is done, section->size should just work. 
+ * XXX_SM: cooked is done, section->size should just work.
  */
 #define get_section_size_now(abfd,sec) 					\
     bfd_section_size (abfd, sec)

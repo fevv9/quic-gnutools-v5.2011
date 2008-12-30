@@ -58,11 +58,6 @@ bfd_uncompress_section_contents (bfd_byte **buffer, bfd_size_type *size)
   buffer = 0;
   size = 0;
   return FALSE;
-#elif QUALCOMM
-  /* These are just to quiet gcc.  */
-  buffer = 0;
-  size = 0;
-  return FALSE;
 #else
   bfd_size_type compressed_size = *size;
   bfd_byte *compressed_buffer = *buffer;

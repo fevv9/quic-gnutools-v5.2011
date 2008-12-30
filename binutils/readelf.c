@@ -147,9 +147,7 @@
 #include "elf/pj.h"
 #include "elf/ppc.h"
 #include "elf/ppc64.h"
-#ifdef QUALCOMM
 #include "elf/qdsp6.h"
-#endif
 #include "elf/s390.h"
 #include "elf/score.h"
 #include "elf/sh.h"
@@ -608,9 +606,7 @@ guess_is_rela (unsigned int e_machine)
     case EM_NIOS32:
     case EM_PPC64:
     case EM_PPC:
-#ifdef QUALCOMM
     case EM_QDSP6:
-#endif
     case EM_S390:
     case EM_S390_OLD:
     case EM_SH:
@@ -1205,11 +1201,9 @@ dump_relocations (FILE *file,
 	  rtype = elf_cr16_reloc_type (type);
 	  break;
 
-#ifdef QUALCOMM
 	case EM_QDSP6:
 	  rtype = elf_qdsp6_reloc_type (type);
 	  break;
-#endif
 	}
 
       if (rtype == NULL)
@@ -1837,9 +1831,7 @@ get_machine_name (unsigned e_machine)
     case EM_CYGNUS_MEP:         return "Toshiba MeP Media Engine";
     case EM_CR16:		
     case EM_CR16_OLD:		return "National Semiconductor's CR16";
-#ifdef QUALCOMM
     case EM_QDSP6:		return "Qualcomm QDSP6";
-#endif
     default:
       snprintf (buff, sizeof (buff), _("<unknown>: 0x%x"), e_machine);
       return buff;
@@ -2384,7 +2376,6 @@ get_machine_flags (unsigned e_flags, unsigned e_machine)
 	    strcat (buf, ", G-Float");
 	  break;
 
-#ifdef QUALCOMM
         case EM_QDSP6:
           switch (e_flags & EF_QDSP6_MACH)
             {
@@ -2394,7 +2385,6 @@ get_machine_flags (unsigned e_flags, unsigned e_machine)
               case E_QDSP6_MACH_V4: strcat (buf, ", V4"); break;
             }
           break;
-#endif
 
 	}
     }
@@ -2513,7 +2503,6 @@ get_ia64_segment_type (unsigned long type)
   return NULL;
 }
 
-#ifdef QUALCOMM
 static const char *
 get_qdsp6_segment_type
 (unsigned long type)
@@ -2527,7 +2516,6 @@ get_qdsp6_segment_type
 
   return NULL;
 }
-#endif
 
 static const char *
 get_segment_type (unsigned long p_type)
@@ -2567,11 +2555,9 @@ get_segment_type (unsigned long p_type)
 	    case EM_PARISC:
 	      result = get_parisc_segment_type (p_type);
 	      break;
-#ifdef QUALCOMM
 	    case EM_QDSP6:
 	      result = get_qdsp6_segment_type (p_type);
 	      break;
-#endif
 	    case EM_IA_64:
 	      result = get_ia64_segment_type (p_type);
 	      break;
