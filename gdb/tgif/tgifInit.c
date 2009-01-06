@@ -31,6 +31,21 @@
 #include "hooks.h"
 #include "register.h"
 
+
+struct ui_file
+  {
+    int *magic;
+    ui_file_flush_ftype *to_flush;
+    ui_file_write_ftype *to_write;
+    ui_file_fputs_ftype *to_fputs;
+    ui_file_read_ftype *to_read;
+    ui_file_delete_ftype *to_delete;
+    ui_file_isatty_ftype *to_isatty;
+    ui_file_rewind_ftype *to_rewind;
+    ui_file_put_ftype *to_put;
+    void *to_data;
+  };
+
 #define MAXPATHSTRING 2048
 
 /* Global Variable Section */
@@ -39,6 +54,9 @@ int top_level_from_tty = 1;
 int tclsh_executable = 0;
 int need_concatenation = 0;
 int was_proceed_command = 0;
+int is_breakpoint_callbk = 0;
+int cmd_result_flag = TCL_OK;
+
 
 /* Extern Section */
 extern int  is_breakpoint_callbk;
@@ -167,7 +185,7 @@ int Tgif_Init ( void ) {
 	
 
 	/*Setup the hooks. TEST */
-	query_hook = tgif_query_hook;
+	deprecated_query_hook = tgif_query_hook;
 
 	
 	/* Do Command Ini  */

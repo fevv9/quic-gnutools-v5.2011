@@ -482,6 +482,14 @@ execute_command (char *p, int from_tty)
     }
 }
 
+#ifdef HAVE_TCL
+void
+non_tcl_execute_command (char *p, int from_tty)
+{
+    execute_command (p, from_tty);
+}
+#endif
+
 /* Read commands from `instream' and execute them
    until end of file or error reading instream.  */
 

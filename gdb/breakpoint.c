@@ -700,6 +700,59 @@ commands_from_control_command (char *arg, struct command_line *cmd)
     }
   error (_("No breakpoint number %d."), bnum);
 }
+
+#ifdef HAVE_TCL
+
+static struct command_line *
+command_line_format (proc)
+     char *proc;
+{
+  char *p;
+  struct command_line *save;
+
+  save = (struct command_line *) xmalloc (sizeof (struct command_line));
+  p = (char *) xmalloc (strlen(proc) + 1);
+
+  p = strcpy (p, proc);
+  save->line = p;
+  save->next = 0;
+
+  return save;
+}
+
+/*
+ * set tcl procedure at the breakpoint
+ */
+int
+setproc_command_from_tcl (bnum, proc, procpoint)
+     int bnum;
+     long procpoint;
+     char *proc;
+{
+  register struct breakpoint *b;
+  struct command_line *l;
+
+  proc = (char *) procpoint;
+  ALL_BREAKPOINTS (b)
+  if (b->number == bnum)
+   {
+	 free_command_lines (&b->commands);
+	 l = command_line_format (proc);
+	 l->control_type = simple_control;
+	 l->body_count = 0;
+	 l->body_list = NULL;
+	 b->commands = l;
+	 breakpoints_changed ();
+     breakpoint_modify_event (b->number);
+	 return 0;
+   }
+
+  return 1; /*  error */
+}
+
+#endif /* HAVE_TCL */
+
+
 
 /* Like target_read_memory() but if breakpoints are inserted, return
    the shadow contents instead of the breakpoints themselves.

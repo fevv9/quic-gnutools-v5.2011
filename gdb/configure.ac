@@ -120,6 +120,7 @@ else
   gdb_native=no
 fi
 
+
 . $srcdir/configure.host
 
 # Accumulate some settings from configure.tgt over all enabled targets
@@ -185,6 +186,13 @@ fi
 
 AC_SUBST(TARGET_OBS)
 
+
+if test $ac_cv_target_alias = qdsp6; then
+  AC_DEFINE(TCL_PROMPT, "% ", [Define if qdsp6 is the target. ])
+  AC_DEFINE(DEFAULT_PROMPT, "(qdsp6-gdb) ", [Define if qdsp6 is the target. ])
+  AC_CHECK_LIB(dl, dlopen)
+fi
+
 # For other settings, only the main target counts.
 gdb_sim=
 gdb_osabi=
@@ -229,6 +237,29 @@ if test x"$enable_gdbcli" = xyes; then
     CONFIG_DEPS="$CONFIG_DEPS \$(SUBDIR_CLI_DEPS)"
     CONFIG_SRCS="$CONFIG_SRCS \$(SUBDIR_CLI_SRCS)"
     ENABLE_CFLAGS="$ENABLE_CFLAGS \$(SUBDIR_CLI_CFLAGS)"
+  fi
+fi
+
+# The TCL cannot be disabled yet, but may be in the future.
+
+# Enable TCL.
+AC_ARG_ENABLE(gdbtgif,
+[  --disable-gdbtgif        disable command-line interface (TCL)],
+  [case $enableval in
+    yes)
+      ;;
+    no)
+      AC_MSG_ERROR([the command-line interface cannot be disabled yet]) ;;
+    *)
+      AC_MSG_ERROR([bad value $enableval for --enable-gdbtgif]) ;;
+  esac],
+  [enable_gdbtgif=yes])
+if test x"$enable_gdbtgif" = xyes; then
+  if test -d $srcdir/tgif; then
+    CONFIG_OBS="$CONFIG_OBS \$(SUBDIR_TGIF_OBS)"
+    CONFIG_DEPS="$CONFIG_DEPS \$(SUBDIR_TGIF_DEPS)"
+    CONFIG_SRCS="$CONFIG_SRCS \$(SUBDIR_TGIF_SRCS)"
+    ENABLE_CFLAGS="$ENABLE_CFLAGS \$(SUBDIR_TGIF_CFLAGS)"
   fi
 fi
 

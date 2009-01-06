@@ -5536,7 +5536,7 @@ remote_insert_breakpoint (struct bp_target_info *bp_tgt)
       char *p = rs->buf;
 
       *(p++) = 'Z';
-      *(p++) = '0';
+      *(p++) = '1'; /* XXX_SM was '0' */
       *(p++) = ',';
       gdbarch_breakpoint_from_pc
 	(current_gdbarch, &bp_tgt->placed_address, &bp_tgt->placed_size);

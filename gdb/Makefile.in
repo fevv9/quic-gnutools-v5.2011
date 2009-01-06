@@ -156,6 +156,14 @@ INTL_CFLAGS = @INCINTL@
 # Where is the ICONV library?  This can be empty if libc has iconv.
 LIBICONV = @LIBICONV@
 
+
+# Where is the TCL library?  Typically in ../tcl.
+TCL_DIR = ../tcl
+TCL_LIB = $(TCL_DIR)/libtcl8.4.a
+TCL_SRC_DIR = $(srcdir)/../tcl
+TCL_INCLUDE =  -I$(TCL_SRC_DIR)/unix -I$(TCL_SRC_DIR)/generic
+
+
 # Did the user give us a --with-sysroot option?
 TARGET_SYSTEM_ROOT = @TARGET_SYSTEM_ROOT@
 TARGET_SYSTEM_ROOT_DEFINE = @TARGET_SYSTEM_ROOT_DEFINE@
@@ -245,6 +253,23 @@ SUBDIR_TUI_DEPS =
 SUBDIR_TUI_LDFLAGS=
 SUBDIR_TUI_CFLAGS= \
 	-DTUI=1
+
+# TGIF files
+SUBDIR_TGIF_OBS = \
+        hooks.o \
+        setproc.o       \
+        register.o      \
+        GuiSupport.o    \
+        tgifInit.o  
+SUBDIR_TGIF_SRCS = \
+        tgif/GuiSupport.c \
+        tgif/hooks.c \
+        tgif/register.c \
+        tgif/setproc.c \
+        tgif/tgifInit.c 
+SUBDIR_TGIF_DEPS =
+SUBDIR_TGIF_LDFLAGS=
+SUBDIR_TGIF_CFLAGS=
 
 
 # Opcodes currently live in one of two places.  Either they are in the
@@ -354,7 +379,7 @@ CFLAGS = @CFLAGS@
 # Set by configure, for e.g. expat.
 INTERNAL_CPPFLAGS = @CPPFLAGS@
 
-QDSP6_CFLAGS = -I$(srcdir)/../../../include/arch
+QDSP6_CFLAGS = -DHAVE_TCL -I$(srcdir)/../../../include/arch
 
 # Need to pass this to testsuite for "make check".  Probably should be
 # consistent with top-level Makefile.in and gdb/testsuite/Makefile.in
@@ -395,7 +420,7 @@ INSTALLED_LIBS=-lbfd -lreadline -lopcodes -liberty -ldecnumber \
 CLIBS = $(SIM) $(READLINE) $(OPCODES) $(BFD) $(INTL) $(LIBIBERTY) $(LIBDECNUMBER) \
 	$(XM_CLIBS) $(TM_CLIBS) $(NAT_CLIBS) $(GDBTKLIBS) @LIBS@ \
 	$(LIBICONV) $(LIBEXPAT) \
-	$(LIBIBERTY) $(WIN32LIBS)
+	$(LIBIBERTY) $(WIN32LIBS) $(TCL_LIB)
 CDEPS = $(XM_CDEPS) $(TM_CDEPS) $(NAT_CDEPS) $(SIM) $(BFD) $(READLINE_DEPS) \
 	$(OPCODES) $(INTL_DEPS) $(LIBIBERTY) $(CONFIG_DEPS)
 
@@ -924,6 +949,17 @@ cli_dump_h = $(srcdir)/cli/cli-dump.h
 cli_script_h = $(srcdir)/cli/cli-script.h
 cli_setshow_h = $(srcdir)/cli/cli-setshow.h
 cli_utils_h = $(srcdir)/cli/cli-utils.h
+
+#
+# gdb/tgif/ headers
+#
+tgif_guisupport_h = $(srcdir)/tgif/GuiSupport.h
+tgif_cmdlist_h = $(srcdir)/tgif/cmdlist.h $(command_h)
+tgif_gdb_h = $(srcdir)/tgif/gdb.h
+tgif_hooks_h = $(srcdir)/tgif/hooks.h
+tgif_register_h = $(srcdir)/tgif/register.h
+tgif_tgif_h = $(srcdir)/tgif/tgif.h
+
 
 #
 # gdb/mi/ headers
@@ -3034,6 +3070,37 @@ cli-setshow.o: $(srcdir)/cli/cli-setshow.c $(defs_h) $(readline_tilde_h) \
 	$(CC) -c $(INTERNAL_CFLAGS) $(srcdir)/cli/cli-setshow.c
 cli-utils.o: $(srcdir)/cli/cli-utils.c $(defs_h) $(cli_utils_h)
 	$(CC) -c $(INTERNAL_CFLAGS) $(srcdir)/cli/cli-utils.c
+
+
+#
+# gdb/tgif/ dependencies
+#
+# Need to explicitly specify the compile rule as make will do nothing
+# or try to compile the object file into the sub-directory.
+
+hooks.o: $(srcdir)/tgif/hooks.c $(TCL_SRC_DIR)/generic/tcl.h \
+	$(TCL_SRC_DIR)/generic/tclInt.h  \
+	$(tgif_tgif_h) $(defs_h)
+	$(CC) -c $(INTERNAL_CFLAGS) $(TCL_INCLUDE) $(srcdir)/tgif/hooks.c
+setproc.o: $(srcdir)/tgif/setproc.c $(defs_h)  $(symtab_h) $(value_h) \
+	$(gdbcore_h) $(frame_h) $(command_h) $(target_h) $(expression_h) \
+	$(TCL_SRC_DIR)/generic/tcl.h  $(tgif_tgif_h)
+	$(CC) -c $(INTERNAL_CFLAGS) $(TCL_INCLUDE) $(srcdir)/tgif/setproc.c
+register.o: $(srcdir)/tgif/register.c $(TCL_SRC_DIR)/generic/tcl.h \
+	$(TCL_SRC_DIR)/generic/tclInt.h  \
+	$(tgif_tgif_h) $(defs_h) $(tgif_register_h) $(tgif_hooks_h)
+	$(CC) -c $(INTERNAL_CFLAGS) $(TCL_INCLUDE) $(srcdir)/tgif/register.c
+GuiSupport.o: $(srcdir)/tgif/GuiSupport.c $(TCL_SRC_DIR)/generic/tcl.h \
+	$(TCL_SRC_DIR)/generic/tclInt.h $(tgif_tgif_h) \
+	$(tgif_guisupport_h) 
+	$(CC) -c $(INTERNAL_CFLAGS) $(TCL_INCLUDE) $(srcdir)/tgif/GuiSupport.c
+tgifInit.o: $(srcdir)/tgif/tgifInit.c $(TCL_SRC_DIR)/generic/tcl.h \
+	$(TCL_SRC_DIR)/generic/tclInt.h  \
+	$(tgif_tgif_h) $(defs_h) \
+	$(tgif_guisupport_h) $(tgif_gdb_h) $(tgif_hooks_h) $(tgif_register_h)
+	$(CC) -c $(INTERNAL_CFLAGS) $(TCL_INCLUDE) $(srcdir)/tgif/tgifInit.c
+
+
 
 #
 # GDBTK sub-directory
