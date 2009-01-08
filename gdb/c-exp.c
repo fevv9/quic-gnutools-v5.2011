@@ -34,6 +34,9 @@
    USER NAME SPACE" below.  */
 
 /* Identify Bison output.  */
+
+#include "defs.h"
+
 #define YYBISON 1
 
 /* Skeleton name.  */
@@ -153,7 +156,6 @@
 #line 40 "c-exp.y"
 
 
-#include "defs.h"
 #include "gdb_string.h"
 #include <ctype.h>
 #include "expression.h"
