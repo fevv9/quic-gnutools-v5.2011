@@ -3851,6 +3851,11 @@ cat >>confdefs.h <<\_ACEOF
 _ACEOF
 
 
+cat >>confdefs.h <<\_ACEOF
+#define HAVE_TCL 1
+_ACEOF
+
+
 echo "$as_me:$LINENO: checking for dlopen in -ldl" >&5
 echo $ECHO_N "checking for dlopen in -ldl... $ECHO_C" >&6
 if test "${ac_cv_lib_dl_dlopen+set}" = set; then
@@ -4000,6 +4005,7 @@ fi
 
 # The TCL cannot be disabled yet, but may be in the future.
 
+if test $ac_cv_target_alias = qdsp6; then
 # Enable TCL.
 # Check whether --enable-gdbtgif or --disable-gdbtgif was given.
 if test "${enable_gdbtgif+set}" = set; then
@@ -4026,6 +4032,7 @@ if test x"$enable_gdbtgif" = xyes; then
     CONFIG_SRCS="$CONFIG_SRCS \$(SUBDIR_TGIF_SRCS)"
     ENABLE_CFLAGS="$ENABLE_CFLAGS \$(SUBDIR_TGIF_CFLAGS)"
   fi
+fi
 fi
 
 # Enable MI.

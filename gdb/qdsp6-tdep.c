@@ -1,7 +1,6 @@
 /*****************************************************************
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
+# Copyright (c) $Date$ QUALCOMM INCORPORATED.  All Rights
+# Reserved.  Modified by QUALCOMM INCORPORATED on $Date$
 *****************************************************************/
 /* Target-dependent code for QUALCOMM QDSP6 GDB, the GNU Debugger.
    Copyright 2002, 2003, 2004 Free Software Foundation, Inc.
@@ -91,6 +90,9 @@ static gdbarch_breakpoint_from_pc_ftype qdsp6_breakpoint_from_pc;
 static gdbarch_adjust_breakpoint_address_ftype qdsp6_gdbarch_adjust_breakpoint_address;
 static gdbarch_skip_prologue_ftype qdsp6_skip_prologue;
 static LONGEST qdsp6_call_dummy_words[] ={0};
+
+/* The list of available "info q6 " commands.  */
+static struct cmd_list_element *q6cmdlist = NULL;
 
 // To enable printing of register names 
 typedef struct 
@@ -1450,9 +1452,11 @@ qdsp6_print_reg_info(char  *regname,  LONGEST regvalue)
 /* 1.0 MB = 512 * 2048 */
 #define GDB_RSP_RIL_INFO_MAX_SIZE 256 * 2048
 #define SET_CMD_BUFFER_SIZE 1024
+static long gdb_rsp_ril_info_max_size=GDB_RSP_RIL_INFO_MAX_SIZE;
 
 /* store for holding the response; this is raw-ascii coded */
-static char response[GDB_RSP_RIL_INFO_MAX_SIZE];
+static char response_buf[GDB_RSP_RIL_INFO_MAX_SIZE];
+static char *response = response_buf;
 
 /* storage to hold the display buffer */
 static char display_buf[GDB_RSP_RIL_INFO_MAX_SIZE/2 +1];
@@ -1525,7 +1529,7 @@ qdsp6_rtos_info_command (char *args, int from_tty)
     error ("Program has no rtos info. Load program first");
     
   putpkt ("qq6RtosInfo");
-  getpkt (response, GDB_RSP_RIL_INFO_MAX_SIZE , 0);
+  getpkt (&response, &gdb_rsp_ril_info_max_size , 0);
   PRINT_MSG;
 }
 
@@ -1535,7 +1539,7 @@ static ULONGEST qdsp6_get_pagetable_size ()
   ULONGEST pSize = 0;
 
   putpkt ("qPageTableSize");
-  getpkt ( response, GDB_RSP_RIL_INFO_MAX_SIZE , 0);
+  getpkt ( &response, &gdb_rsp_ril_info_max_size , 0);
  
   if(response == NULL)
     error ("Invalid Page Table size string returned from DRIL.");
@@ -1582,7 +1586,7 @@ qdsp6_pagetable_info_command (char *args, int from_tty)
     error ("Page Table memory allocation failed");
   
   putpkt ("qPageTableInfo");
-  getpkt (pageBuf, GDB_RSP_RIL_INFO_MAX_SIZE , 0);
+  getpkt (pageBuf, &gdb_rsp_ril_info_max_size , 0);
 
   /* Display page table info */
   if ((pageBuf[0] != 0) && ((strstr(pageBuf, "timeout") == NULL)))
@@ -1619,7 +1623,7 @@ qdsp6_tlb_info_command (char *args, int from_tty)
     error ("Program has no tlb info. Load program first");
     
   putpkt ("qTLBInfo");
-  getpkt (response, GDB_RSP_RIL_INFO_MAX_SIZE, 0);
+  getpkt (&response, &gdb_rsp_ril_info_max_size, 0);
   PRINT_MSG;
 }
 
@@ -1639,7 +1643,7 @@ get_globalregs_buffer (char* args, int printInfo)
   LONGEST  regValues[NUM_GLOBAL_REGS];
 
   putpkt ("qGlobalRegsInfo");
-  getpkt (response, GDB_RSP_RIL_INFO_MAX_SIZE , 0);
+  getpkt (&response, &gdb_rsp_ril_info_max_size , 0);
   
   lenResponse  = strlen(response); 
 
@@ -1747,7 +1751,7 @@ qdsp6_globalregs_info_command (char *args, int from_tty)
     error ("Program has no global registers. Load program first");
 
   putpkt ("qGlobalRegsInfo");
-  getpkt (response, GDB_RSP_RIL_INFO_MAX_SIZE , 0);
+  getpkt (&response, &gdb_rsp_ril_info_max_size , 0);
 
   if(strncmp(response,"E00", strlen("E00"))==0)
      error ("Error reading register values from simulator!"); 
@@ -1873,7 +1877,7 @@ qdsp6_thread_details_info_command (char *args, int from_tty)
 
   sprintf(message, "qThreadDetailInfo,%d", PIDGET(ptid));
   putpkt (message);
-  getpkt (response, GDB_RSP_RIL_INFO_MAX_SIZE , 0);
+  getpkt (&response, &gdb_rsp_ril_info_max_size , 0);
   PRINT_MSG;
 }
 
@@ -1949,7 +1953,7 @@ setglobalregistervalue(char *args, int from_tty,
   strcat(message,tmpbuf);
 
   putpkt (message);
-  getpkt (response, GDB_RSP_RIL_INFO_MAX_SIZE , 0);
+  getpkt (&response, &gdb_rsp_ril_info_max_size , 0);
 
   if(strcmp(response,"E02") == 0)
     error ("'%s' is a read-only register.",regName);
@@ -2068,7 +2072,7 @@ set_Q6_hwthread_debug(char *args, int from_tty, struct cmd_list_element *cmdlist
     }
     
   putpkt (message);
-  getpkt (response, GDB_RSP_RIL_INFO_MAX_SIZE , 0);
+  getpkt (&response, &gdb_rsp_ril_info_max_size , 0);
   
   gdb_flush (gdb_stdout);
 }
@@ -2134,7 +2138,7 @@ set_Q6_interrupt(char *args, int from_tty, struct cmd_list_element *cmdlist)
 
   
   putpkt (message);
-  getpkt (response, GDB_RSP_RIL_INFO_MAX_SIZE , 0);
+  getpkt (&response, &gdb_rsp_ril_info_max_size , 0);
 
   gdb_flush (gdb_stdout);
 
@@ -2210,7 +2214,7 @@ qdsp6_proc_cycles_info_command(char *args, int from_tty)
     error ("Program has no proc cycle info. Load program first");
     
   putpkt ("qProcCyclesInfo");
-  getpkt (response, GDB_RSP_RIL_INFO_MAX_SIZE , 0);
+  getpkt (&response, &gdb_rsp_ril_info_max_size , 0);
 
   if (strlen(response) == 16) {
     // got 16 nibbles get the cycle count and print
@@ -2257,7 +2261,7 @@ qdsp6_thread_cycles_info_command(char *args, int from_tty)
   putpkt (message);
 
   /* get the response */
-  getpkt (response, GDB_RSP_RIL_INFO_MAX_SIZE , 0);
+  getpkt (&response, &gdb_rsp_ril_info_max_size , 0);
 
   if (strlen(response) == 16) {
     // got 16 nibbles get the cycle count and print
@@ -2283,7 +2287,7 @@ qdsp6_msg_channels_info_command (char *args, int from_tty)
    error ("Program has no message channels info. Load program first");
     
  putpkt ("q6MsgChannelInfo");
- getpkt (response, GDB_RSP_RIL_INFO_MAX_SIZE , 0);
+ getpkt (&response, &gdb_rsp_ril_info_max_size , 0);
  if(strncmp(response,"E00", strlen("E00"))==0)
     warning ("No message channel information.");
  else   
@@ -2317,7 +2321,7 @@ qdsp6_msg_queues_info_command (char *args, int from_tty)
   putpkt (pktStr);
 
   /* get the response */
-  getpkt (response, GDB_RSP_RIL_INFO_MAX_SIZE , 0);
+  getpkt (&response, &gdb_rsp_ril_info_max_size , 0);
   
   if(strncmp(response,"E00", strlen("E00"))==0)
     warning ("Error reading message queue information. Check message queue name!");
@@ -2336,7 +2340,7 @@ qdsp6_timers_info_command (char *args, int from_tty)
    error ("Program has no timer info. Load program first");
     
  putpkt ("q6TimerInfo");
- getpkt (response, GDB_RSP_RIL_INFO_MAX_SIZE , 0);
+ getpkt (&response, &gdb_rsp_ril_info_max_size , 0);
  if(strncmp(response,"E00", strlen("E00"))==0)
     warning ("No timer information.");
  else   
@@ -2377,7 +2381,7 @@ qdsp6_mutex_info_command (char *args, int from_tty)
   putpkt (pktStr);
 
   /* get the response */
-  getpkt (response, GDB_RSP_RIL_INFO_MAX_SIZE , 0);
+  getpkt (&response, &gdb_rsp_ril_info_max_size , 0);
   
   if(strncmp(response,"E00", strlen("E00"))==0)
     warning ("Error reading mutex information. Check mutex ID!");
@@ -2399,7 +2403,7 @@ qdsp6_interrupt_map_info_command(char *args, int from_tty)
    error ("Program has no interrupt map info. Load program first");
     
  putpkt ("qInterruptMap");
- getpkt (response, GDB_RSP_RIL_INFO_MAX_SIZE , 0);
+ getpkt (&response, &gdb_rsp_ril_info_max_size , 0);
  PRINT_MSG;
 
 }
@@ -2460,7 +2464,7 @@ q6interrupt_remap(char *args, int from_tty)
   }
  
   putpkt (message);
-  getpkt (response, GDB_RSP_RIL_INFO_MAX_SIZE , 0);
+  getpkt (&response, &gdb_rsp_ril_info_max_size , 0);
 
 }
 void 
@@ -2537,7 +2541,7 @@ q6interrupt_reset (char *args, int from_tty)
      error ("Usage: reset-interrupt <number> [both] <periodic> <pin>.\n");
   
   putpkt (message);
-  getpkt (response, GDB_RSP_RIL_INFO_MAX_SIZE , 0);
+  getpkt (&response, &gdb_rsp_ril_info_max_size , 0);
 
 }
 
@@ -2569,6 +2573,19 @@ init_reset_interrupt(void)
            "Usage: reset-interrupt <number> [both] <periodic> <pin>."); 
   set_cmd_completer (c, location_completer);
 }
+
+static void
+qdsp6_command (char *args, int from_tty)
+{
+  printf_unfiltered (_("\"q6\" prefix must be followed by the name of an QDSP6 command.\n"));
+  help_list (q6cmdlist, "q6 ", -1, gdb_stdout);
+}
+static void
+qdsp6_watch_command (char *args, int from_tty)
+{
+  printf_unfiltered (_("QDSP6 watch command.\n"));
+
+}
  
 void 
 init_q6_commands (void)
@@ -2596,6 +2613,16 @@ _initialize_qdsp6_tdep (void)
   struct cmd_list_element *q6setlist = NULL;
 
   register_gdbarch_init (bfd_arch_qdsp6, qdsp6_gdbarch_init);
+
+  add_prefix_cmd ("q6", class_support, qdsp6_command,
+		  _("Various QDSP6 specific commands."),
+		  &q6cmdlist, "q6 ", 0, &cmdlist);
+
+  add_cmd ("watch", class_breakpoint, qdsp6_watch_command,
+_("set either a cycle count or tlbmiss breakpoint.\n\
+	q6 watch cycle <cycle count>\n\
+	q6 watch tlbmiss <32 bit addr> <page size in bits>\n"),
+	   &q6cmdlist);
 
   /* info qdsp6-rtos */
   add_info ("qdsp6-rtos", qdsp6_rtos_info_command,

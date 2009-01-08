@@ -190,6 +190,7 @@ AC_SUBST(TARGET_OBS)
 if test $ac_cv_target_alias = qdsp6; then
   AC_DEFINE(TCL_PROMPT, "% ", [Define if qdsp6 is the target. ])
   AC_DEFINE(DEFAULT_PROMPT, "(qdsp6-gdb) ", [Define if qdsp6 is the target. ])
+  AC_DEFINE(HAVE_TCL, 1, [Define if qdsp6 is the target. ])
   AC_CHECK_LIB(dl, dlopen)
 fi
 
@@ -242,6 +243,7 @@ fi
 
 # The TCL cannot be disabled yet, but may be in the future.
 
+if test $ac_cv_target_alias = qdsp6; then
 # Enable TCL.
 AC_ARG_ENABLE(gdbtgif,
 [  --disable-gdbtgif        disable command-line interface (TCL)],
@@ -261,6 +263,7 @@ if test x"$enable_gdbtgif" = xyes; then
     CONFIG_SRCS="$CONFIG_SRCS \$(SUBDIR_TGIF_SRCS)"
     ENABLE_CFLAGS="$ENABLE_CFLAGS \$(SUBDIR_TGIF_CFLAGS)"
   fi
+fi
 fi
 
 # Enable MI.

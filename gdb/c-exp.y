@@ -208,7 +208,6 @@ static int parse_number (char *, int, int, YYSTYPE *);
 %token TRUEKEYWORD
 %token FALSEKEYWORD
 
-
 %left ','
 %left ABOVE_COMMA
 %right '=' ASSIGN_MODIFY
@@ -225,7 +224,9 @@ static int parse_number (char *, int, int, YYSTYPE *);
 %left '+' '-'
 %left '*' '/' '%'
 %right UNARY INCREMENT DECREMENT
-%right ARROW '.' '[' '('
+/* HAVE_TCL adds the "SEG ARRAY_OPEN"  and the %token ARRAY_CLOSE */
+%right ARROW '.' '[' '(' SEG ARRAY_OPEN
+%token ARRAY_CLOSE 
 %token <ssym> BLOCKNAME 
 %token <bval> FILENAME
 %type <bval> block
@@ -331,9 +332,18 @@ exp	:	exp '.' '*' exp
 			{ write_exp_elt_opcode (STRUCTOP_MEMBER); }
 	;
 
-exp	:	exp '[' exp1 ']'
+/*exp	:	exp '[' exp1 ']'
+			{ write_exp_elt_opcode (BINOP_SUBSCRIPT); }
+	;*/
+/* HAVE_TCL */
+exp	:	exp ARRAY_OPEN exp1 ARRAY_CLOSE
 			{ write_exp_elt_opcode (BINOP_SUBSCRIPT); }
 	;
+
+exp	:	exp SEG exp1	
+			{ write_exp_elt_opcode (BINOP_SUBSCRIPT); }
+	;
+/* HAVE_TCL */
 
 exp	:	exp '(' 
 			/* This is to save the value of arglist_len
@@ -1338,7 +1348,14 @@ static const struct token tokentab2[] =
     {"==", EQUAL, BINOP_END},
     {"!=", NOTEQUAL, BINOP_END},
     {"<=", LEQ, BINOP_END},
+#ifdef HAVE_TCL
+    {">=", GEQ, BINOP_END},
+    {"@@", SEG, BINOP_SUBSCRIPT},	/* SANTOSH Modification here. */
+    {"<:", ARRAY_OPEN, BINOP_SUBSCRIPT},
+    {":>", ARRAY_CLOSE, BINOP_SUBSCRIPT}
+#else
     {">=", GEQ, BINOP_END}
+#endif
   };
 
 /* Read one token, getting characters through lexptr.  */

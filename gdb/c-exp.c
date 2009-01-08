@@ -94,7 +94,13 @@
      UNARY = 296,
      ARROW = 297,
      BLOCKNAME = 298,
-     FILENAME = 299
+     FILENAME = 299,
+#ifdef HAVE_TCL
+     SEG = 300,
+     ARRAY_OPEN = 301,
+     ARRAY_CLOSE = 302
+#endif
+	
    };
 #endif
 #define INT 258
@@ -560,7 +566,11 @@ static const char *const yytname[] =
   "OROR", "ANDAND", "'|'", "'^'", "'&'", "NOTEQUAL", "EQUAL", "'<'", "'>'",
   "GEQ", "LEQ", "RSH", "LSH", "'@'", "'+'", "'-'", "'*'", "'/'", "'%'",
   "DECREMENT", "INCREMENT", "UNARY", "'.'", "'['", "'('", "ARROW",
-  "BLOCKNAME", "FILENAME", "'!'", "'~'", "']'", "')'", "'{'", "'}'", "':'",
+  "BLOCKNAME", "FILENAME", 
+#ifdef HAVE_TCL
+  "SEG", "ARRAY_OPEN", "ARRAY_CLOSE",
+#endif
+  "'!'", "'~'", "']'", "')'", "'{'", "'}'", "':'",
   "$accept", "start", "type_exp", "exp1", "exp", "@1", "lcurly", "arglist",
   "rcurly", "block", "variable", "qualified_name", "space_identifier",
   "const_or_volatile", "cv_with_space_id",
@@ -2990,7 +3000,14 @@ static const struct token tokentab2[] =
     {"==", EQUAL, BINOP_END},
     {"!=", NOTEQUAL, BINOP_END},
     {"<=", LEQ, BINOP_END},
+#ifdef HAVE_TCL
+    {">=", GEQ, BINOP_END},
+    {"@@", SEG, BINOP_SUBSCRIPT},       /* SANTOSH Modification here. */
+    {"<:", ARRAY_OPEN, BINOP_SUBSCRIPT},
+    {":>", ARRAY_CLOSE, BINOP_SUBSCRIPT},
+#else
     {">=", GEQ, BINOP_END}
+#endif
   };
 
 /* Read one token, getting characters through lexptr.  */
