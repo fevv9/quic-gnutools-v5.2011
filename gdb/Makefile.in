@@ -379,7 +379,7 @@ CFLAGS = @CFLAGS@
 # Set by configure, for e.g. expat.
 INTERNAL_CPPFLAGS = @CPPFLAGS@
 
-QDSP6_CFLAGS = -I$(srcdir)/../../../include/arch
+QDSP6_CFLAGS = -I$(srcdir)/../../include/arch
 
 # Need to pass this to testsuite for "make check".  Probably should be
 # consistent with top-level Makefile.in and gdb/testsuite/Makefile.in
