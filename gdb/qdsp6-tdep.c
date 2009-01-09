@@ -2676,7 +2676,7 @@ _("set either a cycle count or tlbmiss breakpoint.\n\
   init_q6_commands(); 
 
 /* Specific to our implementation, rumi and zebu can be slow. */
-  remote_timeout = 10;
+  // XXX_SM: remote_timeout = 10; This should be part of the rumi target when done
 
  }
 
