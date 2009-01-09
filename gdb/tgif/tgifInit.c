@@ -91,7 +91,7 @@ static Tcl_DString tcl_command;
 static int  longCommand = 0;
 
 //int [ams]
-void Print_If_Needed(char *cmd, int from_tty) {
+void Print_If_Needed(void) {
     if (isInteractive()) {
 		printf("%s\n", interp->result);
 	}

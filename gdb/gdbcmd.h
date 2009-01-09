@@ -120,7 +120,11 @@ extern struct cmd_list_element *setchecklist;
 
 extern struct cmd_list_element *showchecklist;
 
+#ifdef HAVE_TCL
+extern int execute_command (char *, int);
+#else
 extern void execute_command (char *, int);
+#endif
 
 enum command_control_type execute_control_command (struct command_line *);
 

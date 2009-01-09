@@ -2609,6 +2609,8 @@ void
 _initialize_qdsp6_tdep (void)
 {
 
+  extern int remote_timeout;
+
   /*Chain containing all defined set subcommands */
   struct cmd_list_element *q6setlist = NULL;
 
@@ -2672,6 +2674,9 @@ _("set either a cycle count or tlbmiss breakpoint.\n\
             "RTOS Mutex Info");
             
   init_q6_commands(); 
+
+/* Specific to our implementation, rumi and zebu can be slow. */
+  remote_timeout = 10;
 
  }
 

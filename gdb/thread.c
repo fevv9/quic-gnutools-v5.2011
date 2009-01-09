@@ -40,6 +40,12 @@
 #include <signal.h>
 #include "ui-out.h"
 
+#ifdef HAVE_TCL
+#include "tgif/tgif.h"
+extern int need_concatenation;
+extern int Q6_tcl_fe_state;
+#endif
+
 /* Definition of struct thread_info exported to gdbthread.h */
 
 /* Prototypes for exported functions. */
@@ -549,6 +555,11 @@ thread_apply_all_command (char *cmd, int from_tty)
   saved_frame_id = get_frame_id (get_selected_frame (NULL));
   old_chain = make_cleanup_restore_current_thread (inferior_ptid, saved_frame_id);
 
+#ifdef HAVE_TCL
+  if (Q6_tcl_fe_state == 1)
+    need_concatenation = 1;
+#endif
+
   /* It is safe to update the thread list now, before
      traversing it for "thread apply all".  MVS */
   target_find_new_threads ();
@@ -563,13 +574,25 @@ thread_apply_all_command (char *cmd, int from_tty)
 	switch_to_thread (tp->ptid);
 	printf_filtered (_("\nThread %d (%s):\n"),
 			 tp->num, target_tid_to_str (inferior_ptid));
+#ifdef HAVE_TCL
+	if (Q6_tcl_fe_state == 1)
+	  Execute(cmd);
+        else
+	  execute_command (cmd, from_tty);
+#else
 	execute_command (cmd, from_tty);
+#endif
 	strcpy (cmd, saved_cmd);	/* Restore exact command used previously */
       }
 
   if (!ptid_equal (current_ptid, inferior_ptid))
     thread_has_changed = 1;
 
+#ifdef HAVE_TCL
+  if (Q6_tcl_fe_state == 1)
+    need_concatenation = 0;
+    Print_If_Needed();
+#endif
   do_cleanups (saved_cmd_cleanup_chain);
   do_cleanups (old_chain);
   /* Print stack frame only if we changed thread.  */

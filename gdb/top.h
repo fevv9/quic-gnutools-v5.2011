@@ -47,7 +47,11 @@ extern int quit_confirm (void);
 extern void quit_force (char *, int);
 extern void quit_command (char *, int);
 extern int quit_cover (void *);
+#ifdef HAVE_TCL
+extern int execute_command (char *, int);
+#else
 extern void execute_command (char *, int);
+#endif
 
 /* This function returns a pointer to the string that is used
    by gdb for its command prompt. */
