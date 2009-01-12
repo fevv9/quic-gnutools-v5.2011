@@ -66,7 +66,7 @@ extern void tcl_setInteractive(int status);
 /*
  * Interpreter for the application
  */
-static Tcl_Interp *interp;
+Tcl_Interp *interp;
 
 
 /*
