@@ -358,7 +358,7 @@ powerpc*-*-*)
 
 qdsp6-*-*)
 	# Target: QDSP6
-	gdb_target_obs="qdsp6-tdep.o"
+	gdb_target_obs="qdsp6-tdep.o qdsp6-sim.o qdsp6-rumi.o qdsp6-zebu.o"
 	;;
 
 s390*-*-*)

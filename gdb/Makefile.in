@@ -879,6 +879,7 @@ ppcobsd_tdep_h = ppcobsd-tdep.h
 ppc_tdep_h = ppc-tdep.h
 proc_utils_h = proc-utils.h
 prologue_value_h = prologue-value.h
+qdsp6_sim_h = qdsp6-sim.h
 regcache_h = regcache.h
 reggroups_h = reggroups.h
 regset_h = regset.h
@@ -2648,6 +2649,27 @@ p-valprint.o: p-valprint.c $(defs_h) $(gdb_obstack_h) $(symtab_h) \
 	$(gdbcore_h) $(demangle_h) $(valprint_h) $(typeprint_h) \
 	$(language_h) $(target_h) $(annotate_h) $(p_lang_h) $(cp_abi_h) \
 	$(cp_support_h)
+qdsp6-rumi.o: qdsp6-rumi.c $(defs_h) $(gdbcore_h) $(serial_h) \
+	$(gdbthread_h) $(target_h) $(remote_h) $(inferior_h) $(exceptions_h) \
+	$(qdsp6_sim_h) $(unistd_h) $(time_h) $(string_h) $(netdb_h) \
+	$(signal_h) $(sys/types_h) $(sys/wait_h) $(sys/socket_h) \
+	$(netinet/tcp_h)
+qdsp6-sim.o: qdsp6-sim.c $(defs_h) $(gdbcore_h) $(serial_h) \
+	$(gdbthread_h) $(target_h) $(remote_h) $(inferior_h) $(exceptions_h) \
+	$(qdsp6_sim_h) $(unistd_h) $(time_h) $(string_h) $(netdb_h) \
+	$(signal_h) $(sys/types_h) $(sys/wait_h) $(sys/socket_h) \
+	$(netinet/tcp_h)
+qdsp6-tdep.o: qdsp6-tdep.c $(defs_h) $(language_h) $(gdb_string.h) \
+	$(inferior_h) $(gdbcore_h) $(ar_h-utils.h) $(regca_he.h) $(frame_h) \
+	$(frame-unwind_h) $(frame-base_h) $(trad-frame_h) $(dis-asm_h) \
+	$(gdb_assert_h) $(sim-regno_h) $(symtab_h) $(command_h) $(remote_h) \
+	$(gdb_hread.h) $(gdbcmd_h) $(completer_h) $(reg_offsets_h) \
+	$(objfiles_h) $(cli/cli-decode_h) $(qdsp6_sim_h)
+qdsp6-zebu.o: qdsp6-zebu.c $(defs_h) $(gdbcore_h) $(serial_h) \
+	$(gdbthread_h) $(target_h) $(remote_h) $(inferior_h) $(exceptions_h) \
+	$(qdsp6_sim_h) $(unistd_h) $(time_h) $(string_h) $(netdb_h) \
+	$(signal_h) $(sys/types_h) $(sys/wait_h) $(sys/socket_h) \
+	$(netinet/tcp_h)
 regcache.o: regcache.c $(defs_h) $(inferior_h) $(target_h) $(gdbarch_h) \
 	$(gdbcmd_h) $(regcache_h) $(reggroups_h) $(gdb_assert_h) \
 	$(gdb_string_h) $(gdbcmd_h) $(observer_h)

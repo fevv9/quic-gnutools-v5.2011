@@ -45,6 +45,7 @@
 #include "reg_offsets.h"
 #include "objfiles.h"
 #include "cli/cli-decode.h"
+#include "qdsp6-sim.h"
 
 
 /* following register values taken from architecture register definitions */
@@ -1471,39 +1472,6 @@ static char display_buf[GDB_RSP_RIL_INFO_MAX_SIZE/2 +1];
       printf_filtered("%s\n", display_buf);\
     }
 
-
-static int
-fromhex (int a)
-{
-  if (a >= '0' && a <= '9')
-    return a - '0';
-  else if (a >= 'a' && a <= 'f')
-    return a - 'a' + 10;
-  else if (a >= 'A' && a <= 'F')
-    return a - 'A' + 10;
-  else
-    error ("Reply contains invalid hex digit %d", a);
-}
-
-static int
-hex2bin (const char *hex, char *bin, int count)
-{
-  int i;
-
-  for (i = 0; i < count; i++)
-    {
-      if (hex[0] == 0 || hex[1] == 0)
-	{
-	  /* Hex string is short, or of uneven length.
-	     Return the count that has been converted so far. */
-	  return i;
-	}
-      *bin = fromhex (hex[0]) * 16 + fromhex (hex[1]);
-      bin++;
-      hex += 2;
-    }
-  return i;
-}
 
 char* gettargetresponse ()
 {

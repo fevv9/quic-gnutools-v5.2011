@@ -49,10 +49,10 @@
 
 #define NUM_CHARS (71)
 
-char ascii_string[NUM_CHARS];
-char iso_8859_1_string[NUM_CHARS];
-char ebcdic_us_string[NUM_CHARS];
-char ibm1047_string[NUM_CHARS];
+signed char ascii_string[NUM_CHARS];
+signed char iso_8859_1_string[NUM_CHARS];
+signed char ebcdic_us_string[NUM_CHARS];
+signed char ibm1047_string[NUM_CHARS];
 
 
 void
