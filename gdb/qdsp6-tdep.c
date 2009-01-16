@@ -64,7 +64,7 @@
 
 /* captures the arguments to the target passed thru the 
  * set targetargs command */
-char* q6targetargsInfo = NULL;
+char *q6targetargsInfo[256];
 char *current_q6_target = NULL;
 int Q6_tcl_fe_state = 0;
 
@@ -1960,10 +1960,41 @@ void init_globalregs()
 
 }
 
+/*
+ * function: setQ6targetargs
+ * description:
+ * 	- takes a single input string and breaks it up into component
+ * 	  parts suitable execvp
+ */
 void  
-setQ6targetargs (char * args, int tty, struct cmd_list_element *cmdlist)
+setQ6targetargs (char * args, int tty, struct cmd_list_element *c)
 {
-/* empty function */
+    ULONGEST addr = *(unsigned long *)c->var;
+    char *simargs = (char *) addr;
+    char **targs = q6targetargsInfo;
+    int index; 
+    int argc = 0;
+
+    while (*simargs != '\0')
+    {
+	targs[argc] = simargs;
+	index = 0;
+	while (*simargs != '\0' && 
+               *simargs != ' '  && 
+               *simargs != '\t' &&
+               *simargs != '\n')
+	{
+	    simargs++;
+	    index++;
+	}
+	targs[argc][index] = '\0'; //terminate each the argument
+
+	argc++;
+	simargs++;
+    }
+
+    targs[argc-1] = '\0'; // terminates the whole list.
+
 }
 
 static void
@@ -1986,14 +2017,6 @@ void init_targetargs()
    /* Chain containing all defined show subcommands.  */
    struct cmd_list_element *targetargsshowlist = NULL;
 
-   /* allocate memory for control variable for setshow command */
-   q6targetargsInfo  = (char*)malloc(sizeof(char) *  SET_CMD_BUFFER_SIZE);
-
-   if(q6targetargsInfo ==  NULL)
-     error ("Memory allocation for target args failed!");
-   else 
-    memset ( q6targetargsInfo, 0, sizeof(char) *  SET_CMD_BUFFER_SIZE);
-  
    /* set global regs */
    add_setshow_string_noescape_cmd ("targetargs",         /* name */
 		            no_class,      /* class category for help list */
@@ -2658,9 +2681,6 @@ _("set either a cycle count or tlbmiss breakpoint.\n\
    if(q6Interrupt != NULL)
     free (q6Interrupt);
 
-   if(q6targetargsInfo != NULL)
-    free (q6targetargsInfo);
-   
    if(current_q6_target != NULL)
     xfree(current_q6_target);
 

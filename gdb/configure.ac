@@ -191,6 +191,7 @@ if test $ac_cv_target_alias = qdsp6; then
   AC_DEFINE(TCL_PROMPT, "% ", [Define if qdsp6 is the target. ])
   AC_DEFINE(DEFAULT_PROMPT, "(qdsp6-gdb) ", [Define if qdsp6 is the target. ])
   AC_DEFINE(HAVE_TCL, 1, [Define if qdsp6 is the target. ])
+  AC_DEFINE(QDSP6, 1, [Define if qdsp6 is the target. ])
   AC_CHECK_LIB(dl, dlopen)
 fi
 

@@ -64,7 +64,6 @@ qdsp6sim_can_run(void)
     struct sockaddr_in sockaddr;
     int ntries = 10;
     int portvalid = -1;
-    char target_port[8];
 
     if (qsim_debug)
     {
@@ -132,23 +131,21 @@ qdsp6sim_can_run(void)
 	return 0;
     }
 
-    qdsp6_exec_simulation("qdsp6-sim", exec_bfd->filename, portid, NULL, NULL);
-    sprintf (target_port, ":%d", portid);
-    push_remote_target(target_port, 1);
 
     return 1;
 }
 
 /*
- * function: qdsp6_exec_simulation
+ * function: qdsp6sim_exec_simulation
  * description:
  * 	Call fork/execvp to start the simulator
  */
 static int
-qdsp6_exec_simulation(char *sim_name, char *exec_name,
+qdsp6sim_exec_simulation(char *sim_name, char *exec_name,
 		      int portid, char *args, char **env)
 {
     char port[11];
+    int index = 0;
 
     if ((qdsp6_sim_pid = fork()) == -1)
     {
@@ -157,12 +154,16 @@ qdsp6_exec_simulation(char *sim_name, char *exec_name,
     }
     if (qdsp6_sim_pid == 0) /* we are the child so exec the sim */
     {
-        char *sim_args[7];
+        char *sim_args[256];
+        int argc = 0;
 	sprintf (port, "%d", portid);
-        sim_args[0] = strdupa (sim_name);
-        sim_args[1] = strdupa (exec_name);
-        sim_args[2] = strdupa ("--gdbserv");
-        sim_args[3] = strdupa (port);
+        sim_args[index++] = strdupa (sim_name);
+        sim_args[index++] = strdupa (exec_name);
+        sim_args[index++] = strdupa ("--gdbserv");
+        sim_args[index++] = strdupa (port);
+
+	while (q6targetargsInfo[argc])
+            sim_args[index++] = strdupa (q6targetargsInfo[argc++]);
 
 	/*
 	 * This case the user has passed arguments to the program that
@@ -171,13 +172,13 @@ qdsp6_exec_simulation(char *sim_name, char *exec_name,
 	 */
 	if (args)
 	{
-            sim_args[4] = strdupa ("--");
-	    sim_args[5] = strdupa (args);
-	    sim_args[6] = 0;
+            sim_args[index++] = strdupa ("--");
+	    sim_args[index++] = strdupa (args);
+	    sim_args[index++] = 0;
 	}
 	else
 	{
-	    sim_args[4] = 0;
+	    sim_args[index++] = 0;
 	}
 
         if (qsim_debug)
@@ -230,12 +231,21 @@ static void qdsp6_create_inferior (char *exec_file, char *args, char **env)
 {
     extern struct serial *remote_desc;
     extern struct serial_ops *serial_interface_lookup (char *);
+    extern char *current_q6_target;
 
     struct sockaddr_in sockaddr;
 
+    char target_port[8];
     int rc = 0;
     int nagle_off = 1;
     int reuse = 1;
+
+    if (!THIS_TARGET())
+	return 0;
+
+    qdsp6sim_exec_simulation("qdsp6-sim", exec_file, portid, args, env);
+    sprintf (target_port, ":%d", portid);
+    push_remote_target(target_port, 1);
 
     return;
 }
@@ -328,15 +338,8 @@ qdsp6sim_open (char *args, int from_tty)
     {
         printf_filtered ("%s\n", __func__);
     }
-#if 0
-    if (unpush_target(qdsp6rumi_target) == 0)
-    {
-        printf_filtered ("%s error not able to unpush rumi\n", __func__);
-    }
-#else
     target_preopen (1);
     current_q6_target = TARGET_NAME;
-#endif
 	
 }
 
@@ -361,6 +364,7 @@ running on the Hexagon (qdsp6-sim) simulator";
   /* Register target.  */
   add_target (t);
   qdsp6sim_target = t;
+  current_q6_target = TARGET_NAME;
 
 }
 

@@ -36,3 +36,6 @@ hex2bin (const char *hex, char *bin, int count)
 		(strcmp(current_q6_target, TARGET_NAME) == 0)	\
 		:						\
 		0)
+
+
+extern char *q6targetargsInfo[256];
