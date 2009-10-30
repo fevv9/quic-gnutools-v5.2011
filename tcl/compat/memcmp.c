@@ -3,7 +3,7 @@
 # All Rights Reserved.
 # Modified by QUALCOMM INCORPORATED on $Date$
 *****************************************************************/
-/* 
+/*
  * memcmp.c --
  *
  *	Source code for the "memcmp" library routine.

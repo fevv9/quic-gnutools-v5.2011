@@ -1,6 +1,6 @@
 /* Target-dependent code for the GNU C Library (glibc).
 
-   Copyright (C) 2002, 2003, 2007, 2008 Free Software Foundation, Inc.
+   Copyright (C) 2002, 2003, 2007, 2008, 2009 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -97,7 +97,7 @@ glibc_skip_solib_resolver (struct gdbarch *gdbarch, CORE_ADDR pc)
         fixup = lookup_minimal_symbol ("fixup", NULL, objfile);
 
       if (fixup && SYMBOL_VALUE_ADDRESS (fixup) == pc)
-	return frame_pc_unwind (get_current_frame ());
+	return frame_unwind_caller_pc (get_current_frame ());
     }
 
   return 0;

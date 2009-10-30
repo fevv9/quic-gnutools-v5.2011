@@ -3,7 +3,7 @@
 # All Rights Reserved.
 # Modified by QUALCOMM INCORPORATED on $Date$
 *****************************************************************/
-/* 
+/*
  * tclUnixTime.c --
  *
  *	Contains Unix specific versions of Tcl functions that
@@ -147,7 +147,7 @@ TclpGetTimeZone (currentTime)
      * time zone.  In all cases, we need to undo any Daylight Saving Time
      * adjustment.
      */
-    
+
 #if defined(HAVE_TM_TZADJ)
 #   define TCL_GOT_TIMEZONE
 
@@ -161,7 +161,7 @@ TclpGetTimeZone (currentTime)
     if (timeDataPtr->tm_isdst) {
         timeZone += 60;
     }
-    
+
     return timeZone;
 
 #endif
@@ -179,7 +179,7 @@ TclpGetTimeZone (currentTime)
     if (timeDataPtr->tm_isdst) {
         timeZone += 60;
     }
-    
+
     return timeZone;
 
 #endif
@@ -203,7 +203,7 @@ TclpGetTimeZone (currentTime)
 
 #endif
 
-#if !defined(TCL_GOT_TIMEZONE) 
+#if !defined(TCL_GOT_TIMEZONE)
 #define TCL_GOT_TIMEZONE 1
     /*
      * Fallback - determine time zone with a known reference time.
@@ -227,7 +227,7 @@ TclpGetTimeZone (currentTime)
      * Cause compile error, we don't know how to get timezone.
      */
 
-#error autoconf did not figure out how to determine the timezone. 
+#error autoconf did not figure out how to determine the timezone.
 
 #endif
 
@@ -256,7 +256,7 @@ Tcl_GetTime(timePtr)
 {
     struct timeval tv;
     struct timezone tz;
-    
+
     (void) gettimeofday(&tv, &tz);
     timePtr->sec = tv.tv_sec;
     timePtr->usec = tv.tv_usec;
@@ -368,7 +368,7 @@ TclpGmtime( tt )
 	    (VOID *) gmtime( timePtr ),
 	    sizeof( struct tm ) );
     Tcl_MutexUnlock( &tmMutex );
-#endif    
+#endif
     return &( tsdPtr->gmtime_buf );
 }
 /*
@@ -419,7 +419,7 @@ TclpLocaltime( tt )
 	    (VOID *) localtime( timePtr ),
 	    sizeof( struct tm ) );
     Tcl_MutexUnlock( &tmMutex );
-#endif    
+#endif
     return &( tsdPtr->localtime_buf );
 }
 /*

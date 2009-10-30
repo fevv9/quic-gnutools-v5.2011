@@ -1,7 +1,7 @@
 /* Core dump and executable file functions below target vector, for GDB.
 
    Copyright (C) 1986, 1987, 1989, 1991, 1992, 1993, 1994, 1995, 1996, 1997,
-   1998, 1999, 2000, 2001, 2003, 2004, 2005, 2006, 2007, 2008
+   1998, 1999, 2000, 2001, 2003, 2004, 2005, 2006, 2007, 2008, 2009
    Free Software Foundation, Inc.
 
    This file is part of GDB.
@@ -67,6 +67,14 @@ static struct core_fns *core_vec = NULL;
 
 struct gdbarch *core_gdbarch = NULL;
 
+/* Per-core data.  Currently, only the section table.  Note that these
+   target sections are *not* mapped in the current address spaces' set
+   of target sections --- those should come only from pure executable
+   or shared library bfds.  The core bfd sections are an
+   implementation detail of the core target, just like ptrace is for
+   unix child targets.  */
+static struct target_section_table *core_data;
+
 static void core_files_info (struct target_ops *);
 
 static struct core_fns *sniff_core_bfd (bfd *);
@@ -75,23 +83,22 @@ static int gdb_check_format (bfd *);
 
 static void core_open (char *, int);
 
-static void core_detach (char *, int);
+static void core_detach (struct target_ops *ops, char *, int);
 
 static void core_close (int);
 
 static void core_close_cleanup (void *ignore);
 
-static void get_core_registers (struct regcache *, int);
-
 static void add_to_thread_list (bfd *, asection *, void *);
-
-static int core_file_thread_alive (ptid_t tid);
 
 static void init_core_ops (void);
 
 void _initialize_corelow (void);
 
 struct target_ops core_ops;
+
+/* An arbitrary identifier for the core inferior.  */
+#define CORELOW_PID 1
 
 /* Link a new core_fns into the global core_file_fns list.  Called on gdb
    startup by the _initialize routine in each core file register reader, to
@@ -196,11 +203,17 @@ core_close (int quitting)
 
   if (core_bfd)
     {
+      int pid = ptid_get_pid (inferior_ptid);
       inferior_ptid = null_ptid;	/* Avoid confusion from thread stuff */
+      delete_inferior_silent (pid);
 
       /* Clear out solib state while the bfd is still open. See
          comments in clear_solib in solib.c. */
       clear_solib ();
+
+      xfree (core_data->sections);
+      xfree (core_data);
+      core_data = NULL;
 
       name = bfd_get_filename (core_bfd);
       if (!bfd_close (core_bfd))
@@ -208,12 +221,6 @@ core_close (int quitting)
 		 name, bfd_errmsg (bfd_get_error ()));
       xfree (name);
       core_bfd = NULL;
-      if (core_ops.to_sections)
-	{
-	  xfree (core_ops.to_sections);
-	  core_ops.to_sections = NULL;
-	  core_ops.to_sections_end = NULL;
-	}
     }
   core_vec = NULL;
   core_gdbarch = NULL;
@@ -231,6 +238,7 @@ core_close_cleanup (void *ignore)
 static void
 add_to_thread_list (bfd *abfd, asection *asect, void *reg_sect_arg)
 {
+  ptid_t ptid;
   int thread_id;
   asection *reg_sect = (asection *) reg_sect_arg;
 
@@ -239,13 +247,30 @@ add_to_thread_list (bfd *abfd, asection *asect, void *reg_sect_arg)
 
   thread_id = atoi (bfd_section_name (abfd, asect) + 5);
 
-  add_thread (pid_to_ptid (thread_id));
+  if (core_gdbarch
+      && gdbarch_core_reg_section_encodes_pid (core_gdbarch))
+    {
+      uint32_t merged_pid = thread_id;
+      ptid = ptid_build (merged_pid & 0xffff,
+			 merged_pid >> 16, 0);
+    }
+  else
+    ptid = ptid_build (ptid_get_pid (inferior_ptid), thread_id, 0);
+
+  if (ptid_get_lwp (inferior_ptid) == 0)
+    /* The main thread has already been added before getting here, and
+       this is the first time we hear about a thread id.  Assume this
+       is the main thread.  */
+    thread_change_ptid (inferior_ptid, ptid);
+  else
+    /* Nope, really a new thread.  */
+    add_thread (ptid);
 
 /* Warning, Will Robinson, looking at BFD private data! */
 
   if (reg_sect != NULL
       && asect->filepos == reg_sect->filepos)	/* Did we find .reg? */
-    inferior_ptid = pid_to_ptid (thread_id);	/* Yes, make it current */
+    inferior_ptid = ptid;			 /* Yes, make it current */
 }
 
 /* This routine opens and sets up the core file bfd.  */
@@ -258,9 +283,9 @@ core_open (char *filename, int from_tty)
   struct cleanup *old_chain;
   char *temp;
   bfd *temp_bfd;
-  int ontop;
   int scratch_chan;
   int flags;
+  int corelow_pid = CORELOW_PID;
 
   target_preopen (from_tty);
   if (!filename)
@@ -328,9 +353,11 @@ core_open (char *filename, int from_tty)
 
   validate_files ();
 
+  core_data = XZALLOC (struct target_section_table);
+
   /* Find the data section */
-  if (build_section_table (core_bfd, &core_ops.to_sections,
-			   &core_ops.to_sections_end))
+  if (build_section_table (core_bfd,
+			   &core_data->sections, &core_data->sections_end))
     error (_("\"%s\": Can't find sections: %s"),
 	   bfd_get_filename (core_bfd), bfd_errmsg (bfd_get_error ()));
 
@@ -341,12 +368,46 @@ core_open (char *filename, int from_tty)
   if (!exec_bfd)
     set_gdbarch_from_file (core_bfd);
 
-  ontop = !push_target (&core_ops);
+  push_target (&core_ops);
   discard_cleanups (old_chain);
 
-  /* This is done first, before anything has a chance to query the
-     inferior for information such as symbols.  */
+  add_inferior_silent (corelow_pid);
+
+  /* Do this before acknowledging the inferior, so if
+     post_create_inferior throws (can happen easilly if you're loading
+     a core file with the wrong exec), we aren't left with threads
+     from the previous inferior.  */
+  init_thread_list ();
+
+  /* Set INFERIOR_PTID early, so an upper layer can rely on it being
+     set while in the target_find_new_threads call below.  */
+  inferior_ptid = pid_to_ptid (corelow_pid);
+
+  /* Assume ST --- Add a main task.  We'll later detect when we go
+     from ST to MT.  */
+  add_thread_silent (inferior_ptid);
+
+  /* Need to flush the register cache (and the frame cache) from a
+     previous debug session.  If inferior_ptid ends up the same as the
+     last debug session --- e.g., b foo; run; gcore core1; step; gcore
+     core2; core core1; core core2 --- then there's potential for
+     get_current_regcache to return the cached regcache of the
+     previous session, and the frame cache being stale.  */
+  registers_changed ();
+
+  /* Build up thread list from BFD sections, and possibly set the
+     current thread to the .reg/NN section matching the .reg
+     section. */
+  bfd_map_over_sections (core_bfd, add_to_thread_list,
+			 bfd_get_section_by_name (core_bfd, ".reg"));
+
   post_create_inferior (&core_ops, from_tty);
+
+  /* Now go through the target stack looking for threads since there
+     may be a thread_stratum target loaded on top of target core by
+     now.  The layer above should claim threads found in the BFD
+     sections.  */
+  target_find_new_threads ();
 
   p = bfd_core_file_failing_command (core_bfd);
   if (p)
@@ -359,51 +420,57 @@ core_open (char *filename, int from_tty)
        value is called ``target_signal'' and this function got the
        name ..._from_host(). */
     printf_filtered (_("Program terminated with signal %d, %s.\n"), siggy,
-		     target_signal_to_string (target_signal_from_host (siggy)));
+		     target_signal_to_string (
+		       (core_gdbarch != NULL) ?
+			gdbarch_target_signal_from_host (core_gdbarch, siggy)
+			: siggy));
 
-  /* Build up thread list from BFD sections. */
+  /* Fetch all registers from core file.  */
+  target_fetch_registers (get_current_regcache (), -1);
 
-  init_thread_list ();
-  bfd_map_over_sections (core_bfd, add_to_thread_list,
-			 bfd_get_section_by_name (core_bfd, ".reg"));
-
-  if (ontop)
-    {
-      /* Fetch all registers from core file.  */
-      target_fetch_registers (get_current_regcache (), -1);
-
-      /* Now, set up the frame cache, and print the top of stack.  */
-      reinit_frame_cache ();
-      print_stack_frame (get_selected_frame (NULL), 1, SRC_AND_LOC);
-    }
-  else
-    {
-      warning (
-		"you won't be able to access this core file until you terminate\n\
-your %s; do ``info files''", target_longname);
-    }
+  /* Now, set up the frame cache, and print the top of stack.  */
+  reinit_frame_cache ();
+  print_stack_frame (get_selected_frame (NULL), 1, SRC_AND_LOC);
 }
 
 static void
-core_detach (char *args, int from_tty)
+core_detach (struct target_ops *ops, char *args, int from_tty)
 {
   if (args)
     error (_("Too many arguments"));
-  unpush_target (&core_ops);
+  unpush_target (ops);
   reinit_frame_cache ();
   if (from_tty)
     printf_filtered (_("No core file now.\n"));
 }
 
+#ifdef DEPRECATED_IBM6000_TARGET
+
+/* Resize the core memory's section table, by NUM_ADDED.  Returns a
+   pointer into the first new slot.  This will not be necessary when
+   the rs6000 target is converted to use the standard solib
+   framework.  */
+
+struct target_section *
+deprecated_core_resize_section_table (int num_added)
+{
+  int old_count;
+
+  old_count = resize_section_table (core_data, num_added);
+  return core_data->sections + old_count;
+}
+
+#endif
 
 /* Try to retrieve registers from a section in core_bfd, and supply
    them to core_vec->core_read_registers, as the register set numbered
    WHICH.
 
-   If inferior_ptid is zero, do the single-threaded thing: look for a
-   section named NAME.  If inferior_ptid is non-zero, do the
-   multi-threaded thing: look for a section named "NAME/PID", where
-   PID is the shortest ASCII decimal representation of inferior_ptid.
+   If inferior_ptid's lwp member is zero, do the single-threaded
+   thing: look for a section named NAME.  If inferior_ptid's lwp
+   member is non-zero, do the multi-threaded thing: look for a section
+   named "NAME/LWP", where LWP is the shortest ASCII decimal
+   representation of inferior_ptid's lwp member.
 
    HUMAN_NAME is a human-readable name for the kind of registers the
    NAME section contains, for use in error messages.
@@ -424,8 +491,19 @@ get_core_register_section (struct regcache *regcache,
   char *contents;
 
   xfree (section_name);
-  if (PIDGET (inferior_ptid))
-    section_name = xstrprintf ("%s/%d", name, PIDGET (inferior_ptid));
+
+  if (core_gdbarch
+      && gdbarch_core_reg_section_encodes_pid (core_gdbarch))
+    {
+      uint32_t merged_pid;
+
+      merged_pid = ptid_get_lwp (inferior_ptid);
+      merged_pid = merged_pid << 16 | ptid_get_pid (inferior_ptid);
+
+      section_name = xstrprintf ("%s/%s", name, plongest (merged_pid));
+    }
+  else if (ptid_get_lwp (inferior_ptid))
+    section_name = xstrprintf ("%s/%ld", name, ptid_get_lwp (inferior_ptid));
   else
     section_name = xstrdup (name);
 
@@ -478,7 +556,8 @@ get_core_register_section (struct regcache *regcache,
 /* We just get all the registers, so we don't use regno.  */
 
 static void
-get_core_registers (struct regcache *regcache, int regno)
+get_core_registers (struct target_ops *ops,
+		    struct regcache *regcache, int regno)
 {
   int i;
 
@@ -498,6 +577,8 @@ get_core_registers (struct regcache *regcache, int regno)
 			     ".reg-xfp", 3, "extended floating-point", 0);
   get_core_register_section (regcache,
   			     ".reg-ppc-vmx", 3, "ppc Altivec", 0);
+  get_core_register_section (regcache,
+			     ".reg-ppc-vsx", 4, "POWER7 VSX", 0);
 
   /* Supply dummy value for all registers not found in the core.  */
   for (i = 0; i < gdbarch_num_regs (get_regcache_arch (regcache)); i++)
@@ -508,9 +589,39 @@ get_core_registers (struct regcache *regcache, int regno)
 static void
 core_files_info (struct target_ops *t)
 {
-  print_section_info (t, core_bfd);
+  print_section_info (core_data, core_bfd);
 }
 
+struct spuid_list
+{
+  gdb_byte *buf;
+  ULONGEST offset;
+  LONGEST len;
+  ULONGEST pos;
+  ULONGEST written;
+};
+
+static void
+add_to_spuid_list (bfd *abfd, asection *asect, void *list_p)
+{
+  struct spuid_list *list = list_p;
+  enum bfd_endian byte_order
+    = bfd_big_endian (abfd)? BFD_ENDIAN_BIG : BFD_ENDIAN_LITTLE;
+  int fd, pos = 0;
+
+  sscanf (bfd_section_name (abfd, asect), "SPU/%d/regs%n", &fd, &pos);
+  if (pos == 0)
+    return;
+
+  if (list->pos >= list->offset && list->pos + 4 <= list->offset + list->len)
+    {
+      store_unsigned_integer (list->buf + list->pos - list->offset,
+			      4, byte_order, fd);
+      list->written += 4;
+    }
+  list->pos += 4;
+}
+
 static LONGEST
 core_xfer_partial (struct target_ops *ops, enum target_object object,
 		   const char *annex, gdb_byte *readbuf,
@@ -519,13 +630,11 @@ core_xfer_partial (struct target_ops *ops, enum target_object object,
   switch (object)
     {
     case TARGET_OBJECT_MEMORY:
-      if (readbuf)
-	return (*ops->deprecated_xfer_memory) (offset, readbuf,
-					       len, 0/*read*/, NULL, ops);
-      if (writebuf)
-	return (*ops->deprecated_xfer_memory) (offset, (gdb_byte *) writebuf,
-					       len, 1/*write*/, NULL, ops);
-      return -1;
+      return section_table_xfer_memory_partial (readbuf, writebuf,
+						offset, len,
+						core_data->sections,
+						core_data->sections_end,
+						NULL);
 
     case TARGET_OBJECT_AUXV:
       if (readbuf)
@@ -603,6 +712,53 @@ core_xfer_partial (struct target_ops *ops, enum target_object object,
 	}
       /* FALL THROUGH */
 
+    case TARGET_OBJECT_SPU:
+      if (readbuf && annex)
+	{
+	  /* When the SPU contexts are stored in a core file, BFD
+	     represents this with a fake section called "SPU/<annex>".  */
+
+	  struct bfd_section *section;
+	  bfd_size_type size;
+	  char *contents;
+
+	  char sectionstr[100];
+	  xsnprintf (sectionstr, sizeof sectionstr, "SPU/%s", annex);
+
+	  section = bfd_get_section_by_name (core_bfd, sectionstr);
+	  if (section == NULL)
+	    return -1;
+
+	  size = bfd_section_size (core_bfd, section);
+	  if (offset >= size)
+	    return 0;
+	  size -= offset;
+	  if (size > len)
+	    size = len;
+	  if (size > 0
+	      && !bfd_get_section_contents (core_bfd, section, readbuf,
+					    (file_ptr) offset, size))
+	    {
+	      warning (_("Couldn't read SPU section in core file."));
+	      return -1;
+	    }
+
+	  return size;
+	}
+      else if (readbuf)
+	{
+	  /* NULL annex requests list of all present spuids.  */
+	  struct spuid_list list;
+	  list.buf = readbuf;
+	  list.offset = offset;
+	  list.len = len;
+	  list.pos = 0;
+	  list.written = 0;
+	  bfd_map_over_sections (core_bfd, add_to_spuid_list, &list);
+	  return list.written;
+	}
+      return -1;
+
     default:
       if (ops->beneath != NULL)
 	return ops->beneath->to_xfer_partial (ops->beneath, object, annex,
@@ -616,7 +772,7 @@ core_xfer_partial (struct target_ops *ops, enum target_object object,
    `gdb internal error' (since generic_mourn calls breakpoint_init_inferior).  */
 
 static int
-ignore (struct bp_target_info *bp_tgt)
+ignore (struct gdbarch *gdbarch, struct bp_target_info *bp_tgt)
 {
   return 0;
 }
@@ -629,7 +785,7 @@ ignore (struct bp_target_info *bp_tgt)
    behaviour.
  */
 static int
-core_file_thread_alive (ptid_t tid)
+core_thread_alive (struct target_ops *ops, ptid_t ptid)
 {
   return 1;
 }
@@ -642,10 +798,49 @@ core_file_thread_alive (ptid_t tid)
 static const struct target_desc *
 core_read_description (struct target_ops *target)
 {
-  if (gdbarch_core_read_description_p (current_gdbarch))
-    return gdbarch_core_read_description (current_gdbarch, target, core_bfd);
+  if (core_gdbarch && gdbarch_core_read_description_p (core_gdbarch))
+    return gdbarch_core_read_description (core_gdbarch, target, core_bfd);
 
   return NULL;
+}
+
+static char *
+core_pid_to_str (struct target_ops *ops, ptid_t ptid)
+{
+  static char buf[64];
+
+  if (core_gdbarch
+      && gdbarch_core_pid_to_str_p (core_gdbarch))
+    {
+      char *ret = gdbarch_core_pid_to_str (core_gdbarch, ptid);
+      if (ret != NULL)
+	return ret;
+    }
+
+  if (ptid_get_lwp (ptid) == 0)
+    xsnprintf (buf, sizeof buf, "<main task>");
+  else
+    xsnprintf (buf, sizeof buf, "Thread %ld", ptid_get_lwp (ptid));
+
+  return buf;
+}
+
+static int
+core_has_memory (struct target_ops *ops)
+{
+  return (core_bfd != NULL);
+}
+
+static int
+core_has_stack (struct target_ops *ops)
+{
+  return (core_bfd != NULL);
+}
+
+static int
+core_has_registers (struct target_ops *ops)
+{
+  return (core_bfd != NULL);
 }
 
 /* Fill in core_ops with its defined operations and properties.  */
@@ -663,33 +858,24 @@ init_core_ops (void)
   core_ops.to_detach = core_detach;
   core_ops.to_fetch_registers = get_core_registers;
   core_ops.to_xfer_partial = core_xfer_partial;
-  core_ops.deprecated_xfer_memory = xfer_memory;
   core_ops.to_files_info = core_files_info;
   core_ops.to_insert_breakpoint = ignore;
   core_ops.to_remove_breakpoint = ignore;
   core_ops.to_create_inferior = find_default_create_inferior;
-  core_ops.to_thread_alive = core_file_thread_alive;
+  core_ops.to_thread_alive = core_thread_alive;
   core_ops.to_read_description = core_read_description;
+  core_ops.to_pid_to_str = core_pid_to_str;
   core_ops.to_stratum = core_stratum;
-  core_ops.to_has_memory = 1;
-  core_ops.to_has_stack = 1;
-  core_ops.to_has_registers = 1;
+  core_ops.to_has_memory = core_has_memory;
+  core_ops.to_has_stack = core_has_stack;
+  core_ops.to_has_registers = core_has_registers;
   core_ops.to_magic = OPS_MAGIC;
 }
-
-/* non-zero if we should not do the add_target call in
-   _initialize_corelow; not initialized (i.e., bss) so that
-   the target can initialize it (i.e., data) if appropriate.
-   This needs to be set at compile time because we don't know
-   for sure whether the target's initialize routine is called
-   before us or after us. */
-int coreops_suppress_target;
 
 void
 _initialize_corelow (void)
 {
   init_core_ops ();
 
-  if (!coreops_suppress_target)
-    add_target (&core_ops);
+  add_target (&core_ops);
 }

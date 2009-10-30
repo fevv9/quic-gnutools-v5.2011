@@ -1,6 +1,6 @@
 /* Manage register sets.
 
-   Copyright (C) 2003, 2004, 2007, 2008 Free Software Foundation, Inc.
+   Copyright (C) 2003, 2004, 2007, 2008, 2009 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -22,6 +22,13 @@
 
 struct gdbarch;
 struct regcache;
+
+/* Data structure for the supported register notes in a core file.  */
+struct core_regset_section
+{
+  const char *sect_name;
+  int size;
+};
 
 /* Data structure describing a register set.  */
 

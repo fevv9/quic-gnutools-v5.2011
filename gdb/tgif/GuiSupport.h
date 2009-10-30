@@ -13,14 +13,14 @@
  *          routines.
  *
  */
-int wrap_execute(ClientData clientData, Tcl_Interp * interp, 
+int wrap_execute(ClientData clientData, Tcl_Interp * interp,
 	      int argc, char* argv[]);
 
 int get_number_levels(ClientData clientData, Tcl_Interp * interp,
 		   int argc, char* argv[]);
 
-int 
-is_complete(ClientData clientData, Tcl_Interp *interp, 
+int
+is_complete(ClientData clientData, Tcl_Interp *interp,
 	     int argc, char* argv []);
 
 #endif

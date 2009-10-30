@@ -1,6 +1,6 @@
 /* Native-dependent code for NetBSD/sh.
 
-   Copyright (C) 2002, 2003, 2004, 2006, 2007, 2008
+   Copyright (C) 2002, 2003, 2004, 2006, 2007, 2008, 2009
    Free Software Foundation, Inc.
 
    Contributed by Wasabi Systems, Inc.
@@ -41,7 +41,8 @@
 || (regno) == SR_REGNUM)
 
 static void
-shnbsd_fetch_inferior_registers (struct regcache *regcache, int regno)
+shnbsd_fetch_inferior_registers (struct target_ops *ops,
+				 struct regcache *regcache, int regno)
 {
   if (regno == -1 || GETREGS_SUPPLIES (get_regcache_arch (regcache), regno))
     {
@@ -59,7 +60,8 @@ shnbsd_fetch_inferior_registers (struct regcache *regcache, int regno)
 }
 
 static void
-shnbsd_store_inferior_registers (struct regcache *regcache, int regno)
+shnbsd_store_inferior_registers (struct target_ops *ops,
+				 struct regcache *regcache, int regno)
 {
   if (regno == -1 || GETREGS_SUPPLIES (get_regcache_arch (regcache), regno))
     {

@@ -1,5 +1,5 @@
 /* GNU/Linux/m32r specific low level interface, for the remote server for GDB.
-   Copyright (C) 2005, 2007, 2008 Free Software Foundation, Inc.
+   Copyright (C) 2005, 2007, 2008, 2009 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -22,6 +22,9 @@
 #ifdef HAVE_SYS_REG_H
 #include <sys/reg.h>
 #endif
+
+/* Defined in auto-generated file reg-m32r.c.  */
+void init_registers_m32r (void);
 
 #define m32r_num_regs 25
 
@@ -83,6 +86,7 @@ m32r_breakpoint_at (CORE_ADDR where)
 }
 
 struct linux_target_ops the_low_target = {
+  init_registers_m32r,
   m32r_num_regs,
   m32r_regmap,
   m32r_cannot_fetch_register,

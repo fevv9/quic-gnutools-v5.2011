@@ -9,7 +9,7 @@
  *
  * File: gdb.h
  *
- * Purpose: This file contains headers to allow us to 
+ * Purpose: This file contains headers to allow us to
  *          use gdb functions.
  *
  */

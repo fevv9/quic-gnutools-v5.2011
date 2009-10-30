@@ -3,7 +3,7 @@
 # All Rights Reserved.
 # Modified by QUALCOMM INCORPORATED on $Date$
 *****************************************************************/
-/* 
+/*
  * pkga.c --
  *
  *	This file contains a simple Tcl package "pkga" that is intended

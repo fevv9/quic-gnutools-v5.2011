@@ -1,7 +1,7 @@
 /* Read a symbol table in MIPS' format (Third-Eye).
 
    Copyright (C) 1986, 1987, 1989, 1990, 1991, 1992, 1993, 1994, 1995, 1996,
-   1998, 1999, 2000, 2001, 2003, 2004, 2007, 2008
+   1998, 1999, 2000, 2001, 2003, 2004, 2007, 2008, 2009
    Free Software Foundation, Inc.
 
    Contributed by Alessandro Forin (af@cs.cmu.edu) at CMU.  Major work
@@ -39,6 +39,7 @@
 #include "libcoff.h"		/* Private BFD COFF information.  */
 #include "libecoff.h"		/* Private BFD ECOFF information.  */
 #include "elf/common.h"
+#include "elf/internal.h"
 #include "elf/mips.h"
 
 static void
@@ -216,13 +217,13 @@ read_alphacoff_dynamic_symtab (struct section_offsets *section_offsets,
   dyninfo_secsize = bfd_get_section_size (si.dyninfo_sect);
   got_secsize = bfd_get_section_size (si.got_sect);
   sym_secptr = xmalloc (sym_secsize);
-  cleanups = make_cleanup (free, sym_secptr);
+  cleanups = make_cleanup (xfree, sym_secptr);
   str_secptr = xmalloc (str_secsize);
-  make_cleanup (free, str_secptr);
+  make_cleanup (xfree, str_secptr);
   dyninfo_secptr = xmalloc (dyninfo_secsize);
-  make_cleanup (free, dyninfo_secptr);
+  make_cleanup (xfree, dyninfo_secptr);
   got_secptr = xmalloc (got_secsize);
-  make_cleanup (free, got_secptr);
+  make_cleanup (xfree, got_secptr);
 
   if (!bfd_get_section_contents (abfd, si.sym_sect, sym_secptr,
 				 (file_ptr) 0, sym_secsize))
@@ -293,9 +294,10 @@ read_alphacoff_dynamic_symtab (struct section_offsets *section_offsets,
       sym_value = bfd_h_get_64 (abfd, (bfd_byte *) x_symp->st_value);
       sym_info = bfd_h_get_8 (abfd, (bfd_byte *) x_symp->st_info);
       sym_shndx = bfd_h_get_16 (abfd, (bfd_byte *) x_symp->st_shndx);
+      if (sym_shndx >= (SHN_LORESERVE & 0xffff))
+	sym_shndx += SHN_LORESERVE - (SHN_LORESERVE & 0xffff);
       isglobal = (ELF_ST_BIND (sym_info) == STB_GLOBAL);
 
-#ifdef QUALCOMM_DONTCARE
       if (sym_shndx == SHN_UNDEF)
 	{
 	  /* Handle undefined functions which are defined in a shared
@@ -379,7 +381,6 @@ read_alphacoff_dynamic_symtab (struct section_offsets *section_offsets,
 	}
 
       prim_record_minimal_symbol (name, sym_value, ms_type, objfile);
-#endif // QUALCOMM_DONTCARE
     }
 
   do_cleanups (cleanups);

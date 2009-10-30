@@ -1,6 +1,6 @@
 /* Data structures associated with breakpoints in GDB.
    Copyright (C) 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001,
-   2002, 2003, 2004, 2007, 2008 Free Software Foundation, Inc.
+   2002, 2003, 2004, 2007, 2008, 2009 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -24,8 +24,6 @@
 #include "value.h"
 #include "vec.h"
 
-#include "gdb-events.h"
-
 struct value;
 struct block;
 
@@ -35,7 +33,8 @@ struct block;
 
 #define	BREAKPOINT_MAX	16
 
-/* Type of breakpoint. */
+
+/* Type of breakpoint.  */
 /* FIXME In the future, we should fold all other breakpoint-like things into
    here.  This includes:
 
@@ -112,23 +111,19 @@ enum bptype
 
     bp_overlay_event, 
 
-    /* These breakpoints are used to implement the "catch load" command
-       on platforms whose dynamic linkers support such functionality.  */
-    bp_catch_load,
+    /* Master copies of longjmp breakpoints.  These are always installed
+       as soon as an objfile containing longjmp is loaded, but they are
+       always disabled.  While necessary, temporary clones of bp_longjmp
+       type will be created and enabled.  */
 
-    /* These breakpoints are used to implement the "catch unload" command
-       on platforms whose dynamic linkers support such functionality.  */
-    bp_catch_unload,
+    bp_longjmp_master,
 
-    /* These are not really breakpoints, but are catchpoints that
-       implement the "catch fork", "catch vfork" and "catch exec" commands
-       on platforms whose kernel support such functionality.  (I.e.,
-       kernels which can raise an event when a fork or exec occurs, as
-       opposed to the debugger setting breakpoints on functions named
-       "fork" or "exec".) */
-    bp_catch_fork,
-    bp_catch_vfork,
-    bp_catch_exec,
+    bp_catchpoint,
+
+    bp_tracepoint,
+
+    /* Event for JIT compiled code generation or deletion.  */
+    bp_jit_event,
   };
 
 /* States of enablement of breakpoint. */
@@ -144,6 +139,12 @@ enum enable_state
 			   automatically enabled and reset when the call 
 			   "lands" (either completes, or stops at another 
 			   eventpoint). */
+    bp_startup_disabled,/* The eventpoint has been disabled during inferior
+			   startup.  This is necessary on some targets where
+			   the main executable will get relocated during
+			   startup, making breakpoint addresses invalid.
+			   The eventpoint will be automatically enabled and
+			   reset once inferior startup is complete.  */
     bp_permanent	/* There is a breakpoint instruction hard-wired into
 			   the target's code.  Don't try to write another
 			   breakpoint instruction on top of it, or restore
@@ -267,6 +268,10 @@ struct bp_location
   /* Data for specific breakpoint types.  These could be a union, but
      simplicity is more important than memory usage for breakpoints.  */
 
+  /* Architecture associated with this location's address.  May be
+     different from the breakpoint architecture.  */
+  struct gdbarch *gdbarch;
+
   /* Note that zero is a perfectly valid code address on some platforms
      (for example, the mn10200 (OBSOLETE) and mn10300 simulators).  NULL
      is not a special value for this field.  Valid for all types except
@@ -279,9 +284,9 @@ struct bp_location
   /* Type of hardware watchpoint. */
   enum target_hw_bp_type watchpoint_type;
 
-  /* For any breakpoint type with an address, this is the BFD section
+  /* For any breakpoint type with an address, this is the section
      associated with the address.  Used primarily for overlay debugging.  */
-  asection *section;
+  struct obj_section *section;
 
   /* Address at which breakpoint was requested, either by the user or
      by GDB for internal breakpoints.  This will usually be the same
@@ -298,6 +303,17 @@ struct bp_location
 
   /* Similarly, for the breakpoint at an overlay's LMA, if necessary.  */
   struct bp_target_info overlay_target_info;
+
+  /* In a non-stop mode, it's possible that we delete a breakpoint,
+     but as we do that, some still running thread hits that breakpoint.
+     For that reason, we need to keep locations belonging to deleted
+     breakpoints for a bit, so that don't report unexpected SIGTRAP.
+     We can't keep such locations forever, so we use a heuristic --
+     after we process certain number of inferior events since
+     breakpoint was deleted, we retire all locations of that breakpoint.
+     This variable keeps a number of events still to go, when
+     it becomes 0 this location is retired.  */
+  int events_till_retirement;
 };
 
 /* This structure is a collection of function pointers that, if available,
@@ -306,12 +322,25 @@ struct bp_location
 
 struct breakpoint_ops 
 {
+  /* Insert the breakpoint or activate the catchpoint.  Should raise
+     an exception if the operation failed.  */
+  void (*insert) (struct breakpoint *);
+
+  /* Remove the breakpoint/catchpoint that was previously inserted
+     with the "insert" method above.  Return non-zero if the operation
+     succeeded.  */
+  int (*remove) (struct breakpoint *);
+
+  /* Return non-zero if the debugger should tell the user that this
+     breakpoint was hit.  */
+  int (*breakpoint_hit) (struct breakpoint *);
+
   /* The normal print routine for this breakpoint, called when we
      hit it.  */
   enum print_stop_action (*print_it) (struct breakpoint *);
 
   /* Display information about this breakpoint, for "info breakpoints".  */
-  void (*print_one) (struct breakpoint *, CORE_ADDR *);
+  void (*print_one) (struct breakpoint *, struct bp_location **);
 
   /* Display information about this breakpoint after setting it (roughly
      speaking; this is called from "mention").  */
@@ -330,6 +359,12 @@ enum watchpoint_triggered
   /* This hardware watchpoint definitely did trigger.  */
   watch_triggered_yes  
 };
+
+/* This is used to declare the VEC syscalls_to_be_caught.  */
+DEF_VEC_I(int);
+
+typedef struct bp_location *bp_location_p;
+DEF_VEC_P(bp_location_p);
 
 /* Note that the ->silent field is not currently used by any commands
    (though the code is in there if it was to be, and set_raw_breakpoint
@@ -376,6 +411,8 @@ struct breakpoint
 
     /* String we used to set the breakpoint (malloc'd).  */
     char *addr_string;
+    /* Architecture we used to set the breakpoint.  */
+    struct gdbarch *gdbarch;
     /* Language we used to set the breakpoint.  */
     enum language language;
     /* Input radix we used to set the breakpoint.  */
@@ -391,8 +428,13 @@ struct breakpoint
     /* The largest block within which it is valid, or NULL if it is
        valid anywhere (e.g. consists just of global symbols).  */
     struct block *exp_valid_block;
-    /* Value of the watchpoint the last time we checked it.  */
+    /* Value of the watchpoint the last time we checked it, or NULL
+       when we do not know the value yet or the value was not
+       readable.  VAL is never lazy.  */
     struct value *val;
+    /* Nonzero if VAL is valid.  If VAL_VALID is set but VAL is NULL,
+       then an error occurred reading the value.  */
+    int val_valid;
 
     /* Holds the address of the related watchpoint_scope breakpoint
        when using watchpoints on local variables (might the concept
@@ -409,8 +451,11 @@ struct breakpoint
        hardware.  */
     enum watchpoint_triggered watchpoint_triggered;
 
-    /* Thread number for thread-specific breakpoint, or -1 if don't care */
+    /* Thread number for thread-specific breakpoint, or -1 if don't care.  */
     int thread;
+
+    /* Ada task number for task-specific breakpoint, or 0 if don't care.  */
+    int task;
 
     /* Count of the number of times this breakpoint was taken, dumped
        with the info, but not used for anything else.  Useful for
@@ -418,25 +463,21 @@ struct breakpoint
        aborting, so you can back up to just before the abort.  */
     int hit_count;
 
-    /* Filename of a dynamically-linked library (dll), used for
-       bp_catch_load and bp_catch_unload (malloc'd), or NULL if any
-       library is significant.  */
-    char *dll_pathname;
-
-    /* Filename of a dll whose state change (e.g., load or unload)
-       triggered this catchpoint.  This field is only valid immediately
-       after this catchpoint has triggered.  */
-    char *triggered_dll_pathname;
-
     /* Process id of a child process whose forking triggered this
        catchpoint.  This field is only valid immediately after this
        catchpoint has triggered.  */
-    int forked_inferior_pid;
+    ptid_t forked_inferior_pid;
 
     /* Filename of a program whose exec triggered this catchpoint.
        This field is only valid immediately after this catchpoint has
        triggered.  */
     char *exec_pathname;
+
+    /* Syscall numbers used for the 'catch syscall' feature.
+       If no syscall has been specified for filtering, its value is NULL.
+       Otherwise, it holds a list of all syscalls to be caught.
+       The list elements are allocated with xmalloc.  */
+    VEC(int) *syscalls_to_be_caught;
 
     /* Methods associated with this breakpoint.  */
     struct breakpoint_ops *ops;
@@ -445,6 +486,17 @@ struct breakpoint
        no location initially so had no context to parse
        the condition in.  */
     int condition_not_parsed;
+
+    /* Number of times this tracepoint should single-step 
+       and collect additional data.  */
+    long step_count;
+
+    /* Number of times this tracepoint should be hit before 
+       disabling/ending.  */
+    int pass_count;
+
+    /* Chain of action lines to execute when this tracepoint is hit.  */
+    struct action_line *actions;
   };
 
 typedef struct breakpoint *breakpoint_p;
@@ -508,9 +560,6 @@ enum bpstat_what_main_action
        BPSTAT_WHAT_KEEP_CHECKING.  */
     BPSTAT_WHAT_CLEAR_LONGJMP_RESUME,
 
-    /* Clear longjmp_resume breakpoint, then handle as BPSTAT_WHAT_SINGLE.  */
-    BPSTAT_WHAT_CLEAR_LONGJMP_RESUME_SINGLE,
-
     /* Clear step resume breakpoint, and keep checking.  */
     BPSTAT_WHAT_STEP_RESUME,
 
@@ -518,9 +567,8 @@ enum bpstat_what_main_action
        keep checking.  */
     BPSTAT_WHAT_CHECK_SHLIBS,
 
-    /* Check the dynamic linker's data structures for new libraries, then
-       resume out of the dynamic linker's callback, stop and print.  */
-    BPSTAT_WHAT_CHECK_SHLIBS_RESUME_FROM_HOOK,
+    /* Check for new JITed code.  */
+    BPSTAT_WHAT_CHECK_JIT,
 
     /* This is just used to keep track of how many enums there are.  */
     BPSTAT_WHAT_LAST
@@ -590,19 +638,14 @@ extern enum print_stop_action bpstat_print (bpstat);
    Return 1 otherwise.  */
 extern int bpstat_num (bpstat *, int *);
 
-/* Perform actions associated with having stopped at *BSP.  Actually, we just
-   use this for breakpoint commands.  Perhaps other actions will go here
-   later, but this is executed at a late time (from the command loop).  */
-extern void bpstat_do_actions (bpstat *);
+/* Perform actions associated with the stopped inferior.  Actually, we
+   just use this for breakpoint commands.  Perhaps other actions will
+   go here later, but this is executed at a late time (from the
+   command loop).  */
+extern void bpstat_do_actions (void);
 
 /* Modify BS so that the actions will not be performed.  */
 extern void bpstat_clear_actions (bpstat);
-
-/* Given a bpstat that records zero or more triggered eventpoints, this
-   function returns another bpstat which contains only the catchpoints
-   on that first list, if any.
- */
-extern void bpstat_get_triggered_catchpoints (bpstat, bpstat *);
 
 /* Implementation:  */
 
@@ -648,7 +691,8 @@ enum inf_context
   {
     inf_starting,
     inf_running,
-    inf_exited
+    inf_exited,
+    inf_execd
   };
 
 /* The possible return values for breakpoint_here_p.
@@ -665,6 +709,8 @@ enum breakpoint_here
 
 extern enum breakpoint_here breakpoint_here_p (CORE_ADDR);
 
+extern int moribund_breakpoint_here_p (CORE_ADDR);
+
 extern int breakpoint_inserted_here_p (CORE_ADDR);
 
 extern int regular_breakpoint_inserted_here_p (CORE_ADDR);
@@ -679,10 +725,13 @@ extern void breakpoint_re_set (void);
 
 extern void breakpoint_re_set_thread (struct breakpoint *);
 
-extern int ep_is_exception_catchpoint (struct breakpoint *);
-
 extern struct breakpoint *set_momentary_breakpoint
-  (struct symtab_and_line, struct frame_id, enum bptype);
+  (struct gdbarch *, struct symtab_and_line, struct frame_id, enum bptype);
+
+extern struct breakpoint *set_momentary_breakpoint_at_pc
+  (struct gdbarch *, CORE_ADDR pc, enum bptype type);
+
+extern struct breakpoint *clone_momentary_breakpoint (struct breakpoint *bpkt);
 
 extern void set_ignore_count (int, int, int);
 
@@ -692,13 +741,9 @@ extern void breakpoint_init_inferior (enum inf_context);
 
 extern struct cleanup *make_cleanup_delete_breakpoint (struct breakpoint *);
 
-extern struct cleanup *make_exec_cleanup_delete_breakpoint (struct breakpoint *);
-
 extern void delete_breakpoint (struct breakpoint *);
 
 extern void breakpoint_auto_delete (bpstat);
-
-extern void breakpoint_clear_ignore_counts (void);
 
 extern void break_command (char *, int);
 
@@ -710,10 +755,12 @@ extern void awatch_command_wrapper (char *, int);
 extern void rwatch_command_wrapper (char *, int);
 extern void tbreak_command (char *, int);
 
-extern void set_breakpoint (char *address, char *condition,
+extern void set_breakpoint (struct gdbarch *gdbarch,
+			    char *address, char *condition,
 			    int hardwareflag, int tempflag,
 			    int thread, int ignore_count,
-			    int pending);
+			    int pending,
+			    int enabled);
 
 extern void insert_breakpoints (void);
 
@@ -754,12 +801,12 @@ extern void update_breakpoints_after_exec (void);
    inferior_ptid.  */
 extern int detach_breakpoints (int);
 
-extern void enable_longjmp_breakpoint (void);
-extern void disable_longjmp_breakpoint (void);
+extern void set_longjmp_breakpoint (int thread);
+extern void delete_longjmp_breakpoint (int thread);
+
 extern void enable_overlay_breakpoints (void);
 extern void disable_overlay_breakpoints (void);
 
-extern void set_longjmp_resume_breakpoint (CORE_ADDR, struct frame_id);
 /* These functions respectively disable or reenable all currently
    enabled watchpoints.  When disabled, the watchpoints are marked
    call_disabled.  When reenabled, they are marked enabled.
@@ -785,6 +832,19 @@ extern void disable_watchpoints_before_interactive_call_start (void);
 
 extern void enable_watchpoints_after_interactive_call_stop (void);
 
+/* These functions disable and re-enable all breakpoints during
+   inferior startup.  They are intended to be called from solib
+   code where necessary.  This is needed on platforms where the
+   main executable is relocated at some point during startup
+   processing, making breakpoint addresses invalid.
+
+   If additional breakpoints are created after the routine
+   disable_breakpoints_before_startup but before the routine
+   enable_breakpoints_after_startup was called, they will also
+   be marked as disabled.  */
+extern void disable_breakpoints_before_startup (void);
+extern void enable_breakpoints_after_startup (void);
+
 /* For script interpreters that need to define breakpoint commands
    after they've already read the commands into a struct command_line.  */
 extern enum command_control_type commands_from_control_command
@@ -795,6 +855,8 @@ extern void clear_breakpoint_hit_counts (void);
 extern int get_number (char **);
 
 extern int get_number_or_range (char **);
+
+extern struct breakpoint *get_breakpoint (int num);
 
 /* The following are for displays, which aren't really breakpoints, but
    here is as good a place as any for them.  */
@@ -811,11 +873,22 @@ extern void disable_breakpoint (struct breakpoint *);
 
 extern void enable_breakpoint (struct breakpoint *);
 
+extern void breakpoint_set_commands (struct breakpoint *b, 
+				     struct command_line *commands);
+
+/* Clear the "inserted" flag in all breakpoints.  */
+extern void mark_breakpoints_out (void);
+
 extern void make_breakpoint_permanent (struct breakpoint *);
 
-extern struct breakpoint *create_solib_event_breakpoint (CORE_ADDR);
+extern struct breakpoint *create_jit_event_breakpoint (struct gdbarch *,
+                                                       CORE_ADDR);
 
-extern struct breakpoint *create_thread_event_breakpoint (CORE_ADDR);
+extern struct breakpoint *create_solib_event_breakpoint (struct gdbarch *,
+							 CORE_ADDR);
+
+extern struct breakpoint *create_thread_event_breakpoint (struct gdbarch *,
+							  CORE_ADDR);
 
 extern void remove_solib_event_breakpoints (void);
 
@@ -825,11 +898,6 @@ extern void disable_breakpoints_in_shlibs (void);
 
 /* This function returns TRUE if ep is a catchpoint. */
 extern int ep_is_catchpoint (struct breakpoint *);
-
-/* This function returns TRUE if ep is a catchpoint of a
-   shared library (aka dynamically-linked library) event,
-   such as a library load or unload. */
-extern int ep_is_shlib_catchpoint (struct breakpoint *);
 
 /* Enable breakpoints and delete when hit.  Called with ARG == NULL
    deletes all breakpoints. */
@@ -841,17 +909,52 @@ extern int remove_hw_watchpoints (void);
 
 /* Manage a software single step breakpoint (or two).  Insert may be called
    twice before remove is called.  */
-extern void insert_single_step_breakpoint (CORE_ADDR);
+extern void insert_single_step_breakpoint (struct gdbarch *, CORE_ADDR);
 extern void remove_single_step_breakpoints (void);
 
 /* Manage manual breakpoints, separate from the normal chain of
    breakpoints.  These functions are used in murky target-specific
    ways.  Please do not add more uses!  */
-extern void *deprecated_insert_raw_breakpoint (CORE_ADDR);
-extern int deprecated_remove_raw_breakpoint (void *);
+extern void *deprecated_insert_raw_breakpoint (struct gdbarch *, CORE_ADDR);
+extern int deprecated_remove_raw_breakpoint (struct gdbarch *, void *);
 
 /* Check if any hardware watchpoints have triggered, according to the
    target.  */
 int watchpoints_triggered (struct target_waitstatus *);
+
+/* Update BUF, which is LEN bytes read from the target address MEMADDR,
+   by replacing any memory breakpoints with their shadowed contents.  */
+void breakpoint_restore_shadows (gdb_byte *buf, ULONGEST memaddr, 
+				 LONGEST len);
+
+extern int breakpoints_always_inserted_mode (void);
+
+/* Called each time new event from target is processed.
+   Retires previously deleted breakpoint locations that
+   in our opinion won't ever trigger.  */
+extern void breakpoint_retire_moribund (void);
+
+/* Checks if we are catching syscalls or not.
+   Returns 0 if not, greater than 0 if we are.  */
+extern int catch_syscall_enabled (void);
+
+/* Checks if we are catching syscalls with the specific
+   syscall_number.  Used for "filtering" the catchpoints.
+   Returns 0 if not, greater than 0 if we are.  */
+extern int catching_syscall_number (int syscall_number);
+
+/* Tell a breakpoint to be quiet.  */
+extern void make_breakpoint_silent (struct breakpoint *);
+
+/* Return a tracepoint with the given number if found.  */
+extern struct breakpoint *get_tracepoint (int num);
+
+/* Find a tracepoint by parsing a number in the supplied string.  */
+extern struct breakpoint *get_tracepoint_by_number (char **arg, int multi_p,
+						    int optional_p);
+
+/* Return a vector of all tracepoints currently defined.  The vector
+   is newly allocated; the caller should free when done with it.  */
+extern VEC(breakpoint_p) *all_tracepoints (void);
 
 #endif /* !defined (BREAKPOINT_H) */

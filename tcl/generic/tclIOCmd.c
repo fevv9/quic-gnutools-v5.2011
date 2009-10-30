@@ -3,7 +3,7 @@
 # All Rights Reserved.
 # Modified by QUALCOMM INCORPORATED on $Date$
 *****************************************************************/
-/* 
+/*
  * tclIOCmd.c --
  *
  *	Contains the definitions of most of the Tcl commands relating to IO.
@@ -54,7 +54,7 @@ static void	UnregisterTcpServerInterpCleanupProc _ANSI_ARGS_((
 
 static void
 TCL_MI_c_emit_char (char** tclOutput, int c, int quoter)
-{ 
+{
 
   char *backslashed[] = {"a", "b", "f", "n", "r", "t", "v", "0"};
   char represented[]  = "\a\b\f\n\r\t\v";
@@ -65,18 +65,18 @@ TCL_MI_c_emit_char (char** tclOutput, int c, int quoter)
   int host_char;
 
   stream = *tclOutput;
-  
+
   c &= 0xFF;			/* Avoid sign bit follies */
-  
+
   host_char = c;
-  
-  /* Check if the current char has a escape sequence */ 
+
+  /* Check if the current char has a escape sequence */
   ix = strchr (represented, c);
   if (ix)
     escape = backslashed[ix - represented];
   else
     escape = NULL;
-  
+
   if (escape)
     {
       if (quoter == '"' && strcmp (escape, "0") == 0)
@@ -89,12 +89,12 @@ TCL_MI_c_emit_char (char** tclOutput, int c, int quoter)
 	    strcat (stream, tmpbuf);
       }
     }
-  else   
+  else
     {
       if (host_char == '\\' || host_char == quoter)
         strcat (stream, "\\\\\\");
-        
-      memset (tmpbuf,0,256);  
+
+      memset (tmpbuf,0,256);
       sprintf(tmpbuf, "%c", host_char);
       strcat (stream,tmpbuf);
     }
@@ -128,19 +128,19 @@ TCL_MI_extract_unsigned_integer (const void *addr, int len)
   return retval;
 }
 
-/* 
+/*
  *  TCL_MI_c_getstr (from c_printstr)
  *  Print the character string STRING, printing at most LENGTH characters.
  *  LENGTH is -1 if the string is nul terminated.  Each character is WIDTH bytes
  *  long.  Printing stops early if the number hits print_max; repeat counts are
  *  printed as appropriate.  Print ellipses at the end if we had to stop before
- *  printing LENGTH characters, or if FORCE_ELLIPSES.  
+ *  printing LENGTH characters, or if FORCE_ELLIPSES.
  */
 static  int
 TCL_MI_c_getstr ( char ** tclOutput, char *string,
                     unsigned int length, int width)
 {
-  char * stream;   
+  char * stream;
   unsigned int i;
   unsigned int things_printed = 0;
   int in_quotes = 0;
@@ -150,12 +150,12 @@ TCL_MI_c_getstr ( char ** tclOutput, char *string,
   if ((tclOutput == NULL) || (*tclOutput == NULL))
     return TCL_ERROR;
 
-  stream = *tclOutput;  
+  stream = *tclOutput;
 
   /* If the string was not truncated due to `set print elements', and
      the last byte of it is a null, we don't print that, in traditional C
      style.  */
-  if ( length > 0 && 
+  if ( length > 0 &&
        (TCL_MI_extract_unsigned_integer  (string + (length - 1) * width,
                                            width) == '\0'))
     length--;
@@ -176,7 +176,7 @@ TCL_MI_c_getstr ( char ** tclOutput, char *string,
 	   need_comma = 0;
 	  }
 
-      current_char = TCL_MI_extract_unsigned_integer (string + i * width, 
+      current_char = TCL_MI_extract_unsigned_integer (string + i * width,
                                                       width);
 
       if (!in_quotes)
@@ -184,7 +184,7 @@ TCL_MI_c_getstr ( char ** tclOutput, char *string,
 		 strcat (stream,"\\\"");
 	      in_quotes = 1;
 	  }
-	 
+
       TCL_MI_c_emit_char (tclOutput, current_char, '"');
 	  ++things_printed;
 	}
@@ -195,13 +195,13 @@ TCL_MI_c_getstr ( char ** tclOutput, char *string,
 
   if (i < length)
     strcat (stream, "...");
-    
-  return TCL_OK;  
+
+  return TCL_OK;
 }
 /*
  *---------------------------------------------------------------------------
  *
- * Tcl_GetMIOutput 
+ * Tcl_GetMIOutput
  *----------------------------------------------------------------------
  */
 
@@ -213,62 +213,62 @@ Tcl_GetMIOutput( Tcl_Channel chan, Tcl_Obj *objPtr)
     int result = TCL_OK;
     int srclen = 0;
     int lp;
-    
+
     if(tclOutput == NULL)
       return TCL_ERROR;
-    
+
     /* Get the string representation of the TCL object */
-    src = Tcl_GetStringFromObj(objPtr, &srclen); 
-   
+    src = Tcl_GetStringFromObj(objPtr, &srclen);
+
     if(src != NULL)
     {
-       /* Set output contents to 0 */ 
+       /* Set output contents to 0 */
        memset (tclOutput, 0,(MAXSTR * sizeof(char)));
       /*Format the message in mi mode as  ~"<msg>" */
       strcat (tclOutput, "~\"");
-      
+
       /* Check if the src contains embedded quotes */
       if(strchr (src, '"') != NULL )
       {
          result =  TCL_MI_c_getstr (&tclOutput, src, strlen(src),1);
          if(result == TCL_ERROR)
              goto error;
-      
-         result =  WriteChars (((Channel*)chan)->state->topChanPtr, 
+
+         result =  WriteChars (((Channel*)chan)->state->topChanPtr,
                                tclOutput, strlen(tclOutput));
          if(result == TCL_ERROR)
           goto error;
 
          /*for (lp =0; lp<=strlen(tclOutput);lp++)
          {
-             
+
             result = Tcl_WriteChars (chan, &tclOutput[lp], 1);
             if(result < 0)
              goto error;
-         } */                  
+         } */
       }
-      else 
+      else
       {
- 
+
         result = Tcl_WriteChars (chan, "~", 1);
         if(result < 0)
           goto error;
-    
+
         result = Tcl_WriteChars (chan, "\"", 1);
         if(result < 0)
           goto error;
 
         result = Tcl_WriteObj(chan, objPtr);
-        if (result < 0) 
+        if (result < 0)
           goto error;
       }
     }
 
-    
+
     result = Tcl_WriteChars (chan, "\"", 1);
     if(result < 0)
         goto error;
-    
+
     /* Write the characters to putput */
 
    error:
@@ -277,8 +277,8 @@ Tcl_GetMIOutput( Tcl_Channel chan, Tcl_Obj *objPtr)
         free (tclOutput);
         tclOutput = NULL;
      }
-     
-   return result;     
+
+   return result;
 
 }
 /*
@@ -320,7 +320,7 @@ Tcl_PutsObjCmd(dummy, interp, objc, objv)
 	channelId = "stdout";
 	break;
 
-    case 3: /* puts -nonewline $x  or  puts $chan $x */ 
+    case 3: /* puts -nonewline $x  or  puts $chan $x */
 	if (strcmp(Tcl_GetString(objv[1]), "-nonewline") == 0) {
 	    newline = 0;
 	    channelId = "stdout";
@@ -372,15 +372,15 @@ Tcl_PutsObjCmd(dummy, interp, objc, objv)
                 "\" wasn't opened for writing", (char *) NULL);
         return TCL_ERROR;
     }
-            
+
    /* Format the message in mi mode as ~"<msg>" */
     if(mi_gui_mode == 1)
     {
         result = Tcl_GetMIOutput (chan, string);
-        if (result < 0) 
+        if (result < 0)
          goto error;
     }
-    else 
+    else
     {
         result = Tcl_WriteObj(chan, string);
         if (result < 0) {
@@ -445,7 +445,7 @@ Tcl_FlushObjCmd(dummy, interp, objc, objv)
 		"\" wasn't opened for writing", (char *) NULL);
         return TCL_ERROR;
     }
-    
+
     if (Tcl_Flush(chan) != TCL_OK) {
 	Tcl_AppendResult(interp, "error flushing \"", channelId, "\": ",
 		Tcl_PosixError(interp), (char *) NULL);
@@ -586,7 +586,7 @@ Tcl_ReadObjCmd(dummy, interp, objc, objv)
 	return TCL_ERROR;
     }
     if ((mode & TCL_READABLE) == 0) {
-	Tcl_AppendResult(interp, "channel \"", name, 
+	Tcl_AppendResult(interp, "channel \"", name,
                 "\" wasn't opened for reading", (char *) NULL);
         return TCL_ERROR;
     }
@@ -600,7 +600,7 @@ Tcl_ReadObjCmd(dummy, interp, objc, objv)
     toRead = -1;
     if (i < objc) {
 	char *arg;
-	
+
 	arg = Tcl_GetString(objv[i]);
 	if (isdigit(UCHAR(arg[0]))) { /* INTL: digit */
 	    if (Tcl_GetIntFromObj(interp, objv[i], &toRead) != TCL_OK) {
@@ -625,11 +625,11 @@ Tcl_ReadObjCmd(dummy, interp, objc, objv)
 	Tcl_DecrRefCount(resultPtr);
 	return TCL_ERROR;
     }
-    
+
     /*
      * If requested, remove the last newline in the channel if at EOF.
      */
-    
+
     if ((charactersRead > 0) && (newline != 0)) {
 	char *result;
 	int length;
@@ -704,7 +704,7 @@ Tcl_SeekObjCmd(clientData, interp, objc, objv)
 
     result = Tcl_Seek(chan, offset, mode);
     if (result == Tcl_LongAsWide(-1)) {
-        Tcl_AppendResult(interp, "error during seek on \"", 
+        Tcl_AppendResult(interp, "error during seek on \"",
 		chanName, "\": ", Tcl_PosixError(interp), (char *) NULL);
         return TCL_ERROR;
     }
@@ -747,7 +747,7 @@ Tcl_TellObjCmd(clientData, interp, objc, objv)
      * Try to find a channel with the right name and permissions in
      * the IO channel table of this interpreter.
      */
-    
+
     chanName = Tcl_GetString(objv[1]);
     chan = Tcl_GetChannel(interp, chanName, NULL);
     if (chan == (Tcl_Channel) NULL) {
@@ -811,7 +811,7 @@ Tcl_CloseObjCmd(clientData, interp, objc, objv)
 	Tcl_Obj *resultPtr;
 	char *string;
 	int len;
-	
+
 	resultPtr = Tcl_GetObjResult(interp);
 	string = Tcl_GetStringFromObj(resultPtr, &len);
         if ((len > 0) && (string[len - 1] == '\n')) {
@@ -1102,7 +1102,7 @@ Tcl_ExecObjCmd(dummy, interp, objc, objv)
      * If the last character of the result is a newline, then remove
      * the newline character.
      */
-    
+
     if (keepNewline == 0) {
 	string = Tcl_GetStringFromObj(resultPtr, &length);
 	if ((length > 0) && (string[length - 1] == '\n')) {
@@ -1160,7 +1160,7 @@ Tcl_FblockedObjCmd(unused, interp, objc, objv)
 		arg, "\" wasn't opened for reading", (char *) NULL);
         return TCL_ERROR;
     }
-        
+
     Tcl_SetBooleanObj(Tcl_GetObjResult(interp), Tcl_InputBlocked(chan));
     return TCL_OK;
 }
@@ -1446,12 +1446,12 @@ AcceptCallbackProc(callbackData, chan, address, port)
      * away, this is signalled by setting the interp field of the callback
      * data to NULL.
      */
-    
+
     if (acceptCallbackPtr->interp != (Tcl_Interp *) NULL) {
 
         script = acceptCallbackPtr->script;
         interp = acceptCallbackPtr->interp;
-        
+
         Tcl_Preserve((ClientData) script);
         Tcl_Preserve((ClientData) interp);
 
@@ -1464,7 +1464,7 @@ AcceptCallbackProc(callbackData, chan, address, port)
          */
 
         Tcl_RegisterChannel((Tcl_Interp *) NULL,  chan);
-        
+
         result = Tcl_VarEval(interp, script, " ", Tcl_GetChannelName(chan),
                 " ", address, " ", portBuf, (char *) NULL);
         if (result != TCL_OK) {
@@ -1478,7 +1478,7 @@ AcceptCallbackProc(callbackData, chan, address, port)
          */
 
         Tcl_UnregisterChannel((Tcl_Interp *) NULL, chan);
-        
+
         Tcl_Release((ClientData) interp);
         Tcl_Release((ClientData) script);
     } else {
@@ -1558,7 +1558,7 @@ Tcl_SocketObjCmd(notUsed, interp, objc, objv)
 	"-async", "-myaddr", "-myport","-server", (char *) NULL
     };
     enum socketOptions {
-	SKT_ASYNC,      SKT_MYADDR,      SKT_MYPORT,      SKT_SERVER  
+	SKT_ASYNC,      SKT_MYADDR,      SKT_MYPORT,      SKT_SERVER
     };
     int optionIndex, a, server, port;
     char *arg, *copyScript, *host, *script;
@@ -1567,7 +1567,7 @@ Tcl_SocketObjCmd(notUsed, interp, objc, objv)
     int async = 0;
     Tcl_Channel chan;
     AcceptCallback *acceptCallbackPtr;
-    
+
     server = 0;
     script = NULL;
 
@@ -1592,7 +1592,7 @@ Tcl_SocketObjCmd(notUsed, interp, objc, objv)
                             (char *) NULL);
                     return TCL_ERROR;
                 }
-                async = 1;		
+                async = 1;
 		break;
 	    }
 	    case SKT_MYADDR: {
@@ -1698,13 +1698,13 @@ wrongNumArgs:
          */
 
         RegisterTcpServerInterpCleanup(interp, acceptCallbackPtr);
-        
+
         /*
          * Register a close callback. This callback will inform the
          * interpreter (if it still exists) that this channel does not
          * need to be informed when the interpreter is deleted.
          */
-        
+
         Tcl_CreateCloseHandler(chan, TcpServerCloseProc,
                 (ClientData) acceptCallbackPtr);
     } else {
@@ -1713,9 +1713,9 @@ wrongNumArgs:
             return TCL_ERROR;
         }
     }
-    Tcl_RegisterChannel(interp, chan);            
+    Tcl_RegisterChannel(interp, chan);
     Tcl_AppendResult(interp, Tcl_GetChannelName(chan), (char *) NULL);
-    
+
     return TCL_OK;
 }
 
@@ -1770,7 +1770,7 @@ Tcl_FcopyObjCmd(dummy, interp, objc, objv)
     }
     if ((mode & TCL_READABLE) == 0) {
 	Tcl_AppendStringsToObj(Tcl_GetObjResult(interp), "channel \"",
-		arg, 
+		arg,
                 "\" wasn't opened for reading", (char *) NULL);
         return TCL_ERROR;
     }
@@ -1781,7 +1781,7 @@ Tcl_FcopyObjCmd(dummy, interp, objc, objv)
     }
     if ((mode & TCL_WRITABLE) == 0) {
 	Tcl_AppendStringsToObj(Tcl_GetObjResult(interp), "channel \"",
-		arg, 
+		arg,
                 "\" wasn't opened for writing", (char *) NULL);
         return TCL_ERROR;
     }

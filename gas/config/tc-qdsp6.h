@@ -69,7 +69,7 @@ extern const char *qdsp6_target_format;
  */
 extern int qdsp6_start_label PARAMS ((char c, char *before, char *after));
 
-#define TC_START_LABEL(C, STR) qdsp6_start_label(C, s, STR)
+#define TC_START_LABEL(C, s, STR) qdsp6_start_label(C, s, STR)
 
 /* This hook is used to capture labels defined between .falign
    and the falign-ed packet */

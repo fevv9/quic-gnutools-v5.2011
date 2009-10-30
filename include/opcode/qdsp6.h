@@ -47,19 +47,13 @@
 #define QDSP6_IS_V2 (1 << 31)
 #define QDSP6_IS_V3 (1 << 30)
 
-/* Determine if a number can be represented in 16 bits (unsigned) */
-#define QDSP6_IS16BITS(num)    0	/* not yet implemented */
-
-/* Determine if a number is a 16-bit instruction */
-#define QDSP6_IS16INSN(num) 0	/* not yet implemented */
-
 /* Extract the low 16 bits */
-#define QDSP6_LO16(num) \
-  ((num) & 0xffff)
-
+#define QDSP6_LO16(num) ((num) & 0xffff)
 /* Extract the high 16 bits */
-#define QDSP6_HI16(num) \
-  (QDSP6_LO16 ((num) >> 16))
+#define QDSP6_HI16(num) (QDSP6_LO16 ((num) >> 16))
+
+/* This is the instruction size. */
+#define QDSP6_INSN_LEN (4)
 
 /* Type to denote an QDSP6 instruction (at least a 32 bit unsigned int).  */
 typedef unsigned int qdsp6_insn;
@@ -118,25 +112,27 @@ typedef struct qdsp6_opcode {
   unsigned int attributes;
 
   /* Values for 'attributes' */
-#define A_RESTRICT_NOSRMOVE           (1 <<  0)
-#define A_RESTRICT_LOOP_LA            (1 <<  1)
-#define A_RESTRICT_COF_MAX1           (1 <<  2)
-#define A_RESTRICT_NOPACKET           (1 <<  3)
-#define A_RESTRICT_NOSLOT1            (1 <<  4)
-#define A_RESTRICT_NOCOF              (1 <<  5)
-#define A_COF                         (1 <<  6)
-#define A_RESTRICT_BRANCHADDER_MAX1   (1 <<  7)
-#define A_BRANCHADDER                 (1 <<  8)
-#define A_RESTRICT_SINGLE_MEM_FIRST   (1 <<  9)
-#define CONDITIONAL_EXEC              (1 << 10)
-#define CONDITION_SENSE_INVERTED      (1 << 11)
-#define CONDITION_DOTNEW              (1 << 12)
-#define A_RESTRICT_PREFERSLOT0        (1 << 13)
+#define A_IT_NOP                      (1 <<  0)
+#define A_RESTRICT_NOSRMOVE           (1 <<  1)
+#define A_RESTRICT_LOOP_LA            (1 <<  2)
+#define A_RESTRICT_COF_MAX1           (1 <<  3)
+#define A_RESTRICT_NOPACKET           (1 <<  4)
+#define A_RESTRICT_NOSLOT1            (1 <<  5)
+#define A_RESTRICT_NOCOF              (1 <<  6)
+#define A_COF                         (1 <<  7)
+#define A_RESTRICT_BRANCHADDER_MAX1   (1 <<  8)
+#define A_BRANCHADDER                 (1 <<  9)
+#define A_RESTRICT_SINGLE_MEM_FIRST   (1 << 10)
+#define CONDITIONAL_EXEC              (1 << 11)
+#define CONDITION_SENSE_INVERTED      (1 << 12)
+#define CONDITION_DOTNEW              (1 << 13)
+#define A_RESTRICT_PREFERSLOT0        (1 << 14)
+#define A_RESTRICT_LATEPRED           (1 << 15)
   /* V3 */
-#define A_RESTRICT_PACKET_AXOK        (1 << 14)
-#define A_RESTRICT_PACKET_SOMEREGS_OK (1 << 15)
-#define A_RELAX_COF_1ST               (1 << 16)
-#define A_RELAX_COF_2ND               (1 << 17)
+#define A_RESTRICT_PACKET_AXOK        (1 << 16)
+#define A_RESTRICT_PACKET_SOMEREGS_OK (1 << 17)
+#define A_RELAX_COF_1ST               (1 << 18)
+#define A_RELAX_COF_2ND               (1 << 19)
 
   /* If this opcode is remapped, then the function that
      performs the remapping */

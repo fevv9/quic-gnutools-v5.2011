@@ -1,6 +1,6 @@
 /* GNU/Linux/CRIS specific low level interface, for the remote server for GDB.
    Copyright (C) 1995, 1996, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005,
-   2007, 2008 Free Software Foundation, Inc.
+   2007, 2008, 2009 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -20,6 +20,9 @@
 #include "server.h"
 #include "linux-low.h"
 #include <sys/ptrace.h>
+
+/* Defined in auto-generated file reg-crisv32.c.  */
+void init_registers_crisv32 (void);
 
 /* CRISv32 */
 #define cris_num_regs 49
@@ -41,11 +44,11 @@ static int cris_regmap[] = {
 
   25*4,
 
-  26*4, -1,   -1,   29*4, 
+  26*4, -1,   -1,   29*4,
   30*4, 31*4, 32*4, 33*4,
   34*4, 35*4, 36*4, 37*4,
   38*4, 39*4, 40*4, -1
-  
+
 };
 
 extern int debug_threads;
@@ -134,13 +137,13 @@ cris_write_data_breakpoint (int bp, unsigned long start, unsigned long end)
 }
 
 static int
-cris_insert_watchpoint (char type, CORE_ADDR addr, int len)
+cris_insert_point (char type, CORE_ADDR addr, int len)
 {
   int bp;
   unsigned long bp_ctrl;
   unsigned long start, end;
   unsigned long ccs;
-  
+
   /* Breakpoint/watchpoint types (GDB terminology):
      0 = memory breakpoint for instructions
      (not supported; done via memory write instead)
@@ -148,8 +151,8 @@ cris_insert_watchpoint (char type, CORE_ADDR addr, int len)
      2 = write watchpoint (supported)
      3 = read watchpoint (supported)
      4 = access watchpoint (supported).  */
-  
-  if (type < '2' || type > '4') 
+
+  if (type < '2' || type > '4')
     {
       /* Unsupported.  */
       return 1;
@@ -169,17 +172,17 @@ cris_insert_watchpoint (char type, CORE_ADDR addr, int len)
      be used.  Also, if a watch for a region that is already
      covered by one or more existing watchpoints, a new
      watchpoint will be used.  */
-    
+
   /* First, find a free data watchpoint.  */
   for (bp = 0; bp < 6; bp++)
     {
       /* Each data watchpoint's control registers occupy 2 bits
 	 (hence the 3), starting at bit 2 for D0 (hence the 2)
 	 with 4 bits between for each watchpoint (yes, the 4).  */
-      if (!(bp_ctrl & (0x3 << (2 + (bp * 4))))) 
+      if (!(bp_ctrl & (0x3 << (2 + (bp * 4)))))
 	break;
     }
-    
+
   if (bp > 5)
     {
       /* We're out of watchpoints.  */
@@ -192,15 +195,15 @@ cris_insert_watchpoint (char type, CORE_ADDR addr, int len)
       /* Trigger on read.  */
       bp_ctrl |= (1 << (2 + bp * 4));
     }
-  if (type == '2' || type == '4') 
+  if (type == '2' || type == '4')
     {
       /* Trigger on write.  */
       bp_ctrl |= (2 << (2 + bp * 4));
     }
-  
+
   /* Setup the configuration register.  */
   supply_register_by_name ("s0", &bp_ctrl);
-  
+
   /* Setup the range.  */
   start = addr;
   end = addr + len - 1;
@@ -217,12 +220,12 @@ cris_insert_watchpoint (char type, CORE_ADDR addr, int len)
 }
 
 static int
-cris_remove_watchpoint (char type, CORE_ADDR addr, int len)
+cris_remove_point (char type, CORE_ADDR addr, int len)
 {
   int bp;
   unsigned long bp_ctrl;
   unsigned long start, end;
-  
+
   /* Breakpoint/watchpoint types:
      0 = memory breakpoint for instructions
      (not supported; done via memory write instead)
@@ -232,18 +235,18 @@ cris_remove_watchpoint (char type, CORE_ADDR addr, int len)
      4 = access watchpoint (supported).  */
   if (type < '2' || type > '4')
     return -1;
-  
+
   /* Read watchpoints are set as access watchpoints, because of GDB's
      inability to deal with pure read watchpoints.  */
   if (type == '3')
     type = '4';
-  
+
   /* Get the configuration register.  */
   collect_register_by_name ("s0", &bp_ctrl);
 
   /* Try to find a watchpoint that is configured for the
      specified range, then check that read/write also matches.  */
-  
+
   /* Ugly pointer arithmetic, since I cannot rely on a
      single switch (addr) as there may be several watchpoints with
      the same start address for example.  */
@@ -264,19 +267,19 @@ cris_remove_watchpoint (char type, CORE_ADDR addr, int len)
   collect_register_by_name ("s13", &bp_d_regs[10]);
   collect_register_by_name ("s14", &bp_d_regs[11]);
 
-  for (bp = 0; bp < 6; bp++) 
+  for (bp = 0; bp < 6; bp++)
     {
-      if (bp_d_regs[bp * 2] == addr 
+      if (bp_d_regs[bp * 2] == addr
 	  && bp_d_regs[bp * 2 + 1] == (addr + len - 1)) {
 	/* Matching range.  */
 	int bitpos = 2 + bp * 4;
 	int rw_bits;
-      
+
 	/* Read/write bits for this BP.  */
 	rw_bits = (bp_ctrl & (0x3 << bitpos)) >> bitpos;
-      
+
 	if ((type == '3' && rw_bits == 0x1)
-	    || (type == '2' && rw_bits == 0x2) 
+	    || (type == '2' && rw_bits == 0x2)
 	    || (type == '4' && rw_bits == 0x3))
 	  {
 	    /* Read/write matched.  */
@@ -284,13 +287,13 @@ cris_remove_watchpoint (char type, CORE_ADDR addr, int len)
 	  }
       }
     }
-    
+
   if (bp > 5)
     {
       /* No watchpoint matched.  */
       return -1;
     }
-    
+
   /* Found a matching watchpoint.  Now, deconfigure it by
      both disabling read/write in bp_ctrl and zeroing its
      start/end addresses.  */
@@ -360,6 +363,7 @@ struct regset_info target_regsets[] = {
 };
 
 struct linux_target_ops the_low_target = {
+  init_register_crisv32,
   -1,
   NULL,
   NULL,
@@ -371,8 +375,8 @@ struct linux_target_ops the_low_target = {
   cris_reinsert_addr,
   0,
   cris_breakpoint_at,
-  cris_insert_watchpoint,
-  cris_remove_watchpoint,
+  cris_insert_point,
+  cris_remove_point,
   cris_stopped_by_watchpoint,
   cris_stopped_data_address,
 };

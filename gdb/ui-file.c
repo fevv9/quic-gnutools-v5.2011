@@ -1,6 +1,6 @@
 /* UI_FILE - a generic STDIO like output stream.
 
-   Copyright (C) 1999, 2000, 2001, 2002, 2007, 2008
+   Copyright (C) 1999, 2000, 2001, 2002, 2007, 2008, 2009
    Free Software Foundation, Inc.
 
    This file is part of GDB.
@@ -25,9 +25,6 @@
 #include "gdb_string.h"
 
 #include <errno.h>
-#ifdef HAVE_TCL
-#include "tgif/tgif.h"
-#endif
 
 static ui_file_isatty_ftype null_file_isatty;
 static ui_file_write_ftype null_file_write;
@@ -211,17 +208,7 @@ ui_file_read (struct ui_file *file, char *buf, long length_buf)
 void
 fputs_unfiltered (const char *buf, struct ui_file *file)
 {
-#ifdef HAVE_TCL
-  extern int Q6_tcl_fe_state;
-  extern void Tgif_puts_hook (const char *linebuffer, struct ui_file *stream);
-
-  if (Q6_tcl_fe_state == 1)
-    Tgif_puts_hook(buf, file);
-  else
-    file->to_fputs (buf, file);
-#else
   file->to_fputs (buf, file);
-#endif
 }
 
 void
@@ -298,8 +285,7 @@ do_ui_file_xstrdup (void *context, const char *buffer, long length)
 }
 
 char *
-ui_file_xstrdup (struct ui_file *file,
-		  long *length)
+ui_file_xstrdup (struct ui_file *file, long *length)
 {
   struct accumulated_ui_file acc;
   acc.buffer = NULL;
@@ -307,7 +293,8 @@ ui_file_xstrdup (struct ui_file *file,
   ui_file_put (file, do_ui_file_xstrdup, &acc);
   if (acc.buffer == NULL)
     acc.buffer = xstrdup ("");
-  *length = acc.length;
+  if (length != NULL)
+    *length = acc.length;
   return acc.buffer;
 }
 
@@ -494,7 +481,9 @@ stdio_file_write (struct ui_file *file, const char *buf, long length_buf)
   if (stdio->magic != &stdio_file_magic)
     internal_error (__FILE__, __LINE__,
 		    _("stdio_file_write: bad magic number"));
-  fwrite (buf, length_buf, 1, stdio->file);
+  /* Calling error crashes when we are called from the exception framework.  */
+  if (fwrite (buf, length_buf, 1, stdio->file))
+    ;
 }
 
 static void
@@ -504,7 +493,9 @@ stdio_file_fputs (const char *linebuffer, struct ui_file *file)
   if (stdio->magic != &stdio_file_magic)
     internal_error (__FILE__, __LINE__,
 		    _("stdio_file_fputs: bad magic number"));
-  fputs (linebuffer, stdio->file);
+  /* Calling error crashes when we are called from the exception framework.  */
+  if (fputs (linebuffer, stdio->file))
+    ;
 }
 
 static int

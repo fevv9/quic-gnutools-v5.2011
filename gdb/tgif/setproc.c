@@ -67,10 +67,10 @@ Tgif_SetprocCmd(ClientData clientdata, Tcl_Interp *interp, int argc,
   proc = Tcl_Concat ((argc - 2), &argv[2]);
 
   errmsg = (char *)malloc(10000 * sizeof(char));
-  
+
   if(*argv[1] == '$')
       bpnum = get_number (&argv[1]); /* parses convenience var to get bpnum */
-  else      
+  else
       bpnum = atoi (argv[1]);
   /*
    * call setproc command in breakpoint.c - will set proc to be

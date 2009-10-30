@@ -7,7 +7,7 @@
  *
  * File: GuiSupport.c
  *
- * Purpose: This file contains methods to support a 
+ * Purpose: This file contains methods to support a
  *          tk gui.
  *
  */
@@ -19,7 +19,7 @@
 
 
 /* -----------------------------------------------------------------------
- * 
+ *
  * Function: wrap_execute:
  *
  * Purpose: This function is a test command that was written to support a
@@ -27,8 +27,8 @@
  *
  * -----------------------------------------------------------------------
  */
-int 
-wrap_execute( ClientData clientData, Tcl_Interp * interp, 
+int
+wrap_execute( ClientData clientData, Tcl_Interp * interp,
 	      int argc, char* argv[])
 {
   int i, res;
@@ -38,13 +38,13 @@ wrap_execute( ClientData clientData, Tcl_Interp * interp,
      return TCL_ERROR;
   }
   strcpy( buffer, "");
-  for ( i = 1; i < argc; i++ ) { 
+  for ( i = 1; i < argc; i++ ) {
     strcat( buffer, argv[i] );
     strcat( buffer, " ");
   }
   printf("|%s|\n",buffer);
-  
-   res = execute_command( buffer, 1); 
+
+   res = execute_command( buffer, 1);
    free(buffer);
   return TCL_OK;
 }
@@ -73,8 +73,8 @@ get_number_levels( ClientData clientData, Tcl_Interp * interp,
   if (  ( interp != NULL ) && ( ((Interp*)interp)->framePtr != NULL ) ) {
     sprintf( buffer,"%d", ( ( Interp* ) interp )->framePtr->level );
     Tcl_SetResult( interp, buffer, TCL_VOLATILE );
-  } else {   
-    Tcl_SetResult( interp, "NULL", TCL_STATIC ); 
+  } else {
+    Tcl_SetResult( interp, "NULL", TCL_STATIC );
   }
   free ( buffer );
   return TCL_OK;
@@ -86,15 +86,15 @@ get_number_levels( ClientData clientData, Tcl_Interp * interp,
  *
  * Function: is_complete
  *
- * Purpose:  This procedure will just call Tcl_CommandComplete.  
- *           It will be registered in GDB so that we can determine 
- *           the readiness of a command to be processed from the 
+ * Purpose:  This procedure will just call Tcl_CommandComplete.
+ *           It will be registered in GDB so that we can determine
+ *           the readiness of a command to be processed from the
  *           GUI we are writing.
  *
  * -------------------------------------------------------
  */
-int 
-is_complete( ClientData clientData, Tcl_Interp *interp, 
+int
+is_complete( ClientData clientData, Tcl_Interp *interp,
 	     int argc, char* argv [] )
 {
   int i;
@@ -107,7 +107,7 @@ is_complete( ClientData clientData, Tcl_Interp *interp,
   for ( i = 1; i < argc; i++ ) {
     strcat( buffer, argv[i] );
       strcat( buffer, " ");
-  }  
+  }
   sprintf( buffer, "%d", Tcl_CommandComplete(buffer) );
   Tcl_SetResult( interp, buffer, TCL_VOLATILE );
   free( buffer );

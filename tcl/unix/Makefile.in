@@ -145,7 +145,7 @@ GENERIC_FLAGS =
 #GENERIC_FLAGS = -DTCL_GENERIC_ONLY
 UNIX_OBJS = tclUnixChan.o tclUnixEvent.o tclUnixFCmd.o \
 	tclUnixFile.o tclUnixPipe.o tclUnixSock.o \
-	tclUnixTime.o tclUnixInit.o tclUnixThrd.o 
+	tclUnixTime.o tclUnixInit.o tclUnixThrd.o
 #UNIX_OBJS =
 NOTIFY_OBJS = tclUnixNotfy.o
 #NOTIFY_OBJS =
@@ -318,7 +318,7 @@ TCLTEST_OBJS = tclTestInit.o tclTest.o tclTestObj.o tclTestProcBodyObj.o \
 	tclThreadTest.o	tclUnixTest.o
 
 XTTEST_OBJS = xtTestInit.o tclTest.o tclTestObj.o tclTestProcBodyObj.o \
-	tclThreadTest.o	tclUnixTest.o tclXtNotify.o tclXtTest.o 
+	tclThreadTest.o	tclUnixTest.o tclXtNotify.o tclXtTest.o
 
 GENERIC_OBJS = regcomp.o regexec.o regfree.o regerror.o tclAlloc.o \
 	tclAsync.o tclBasic.o tclBinary.o \
@@ -574,7 +574,7 @@ valgrind: tclsh tcltest
 topDirName:
 	@cd $(TOP_DIR); pwd
 
-# The following target generates the file generic/tclDate.c 
+# The following target generates the file generic/tclDate.c
 # from the yacc grammar found in generic/tclGetDate.y.  This is
 # only run by hand as yacc is not available in all environments.
 # The name of the .c file is different than the name of the .y file
@@ -646,7 +646,7 @@ install-binaries: binaries
 	@EXTRA_INSTALL_BINARIES@
 
 install-libraries: libraries
-#	@for i in $(INCLUDE_INSTALL_DIR) $(SCRIPT_INSTALL_DIR); 
+#	@for i in $(INCLUDE_INSTALL_DIR) $(SCRIPT_INSTALL_DIR);
 	@for i in $(SCRIPT_INSTALL_DIR); \
 	    do \
 	    if [ ! -d $$i ] ; then \
@@ -1422,7 +1422,7 @@ machtml:
 #
 # Targets to build Solaris package of the distribution for the current
 # architecture.  To build stream packages for both sun4 and i86pc
-# architectures: 
+# architectures:
 #
 #   On the sun4 machine, execute the following:
 #     make distclean; ./configure
@@ -1476,7 +1476,7 @@ package-common:
 # Build and install the architecture specific files in the dist directory.
 #
 
-package-binaries: 
+package-binaries:
 	cd $(DISTDIR)/unix/`arch`; \
 	$(MAKE); \
 	$(MAKE) install-binaries prefix=$(DISTDIR)/$(PACKAGE)/$(VERSION) \

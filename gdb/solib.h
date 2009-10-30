@@ -1,7 +1,7 @@
 /* Shared library declarations for GDB, the GNU Debugger.
    
    Copyright (C) 1992, 1993, 1995, 1998, 1999, 2000, 2001, 2003, 2005, 2007,
-   2008 Free Software Foundation, Inc.
+   2008, 2009 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -45,7 +45,11 @@ extern void solib_create_inferior_hook (void);
 
 /* If ADDR lies in a shared library, return its name.  */
 
-extern char *solib_address (CORE_ADDR);
+extern char *solib_name_from_address (CORE_ADDR);
+
+/* Return 1 if ADDR lies within SOLIB.  */
+
+extern int solib_contains_address_p (const struct so_list *, CORE_ADDR);
 
 /* Return 1 if PC lies in the dynamic symbol resolution code of the
    run time loader.  */
@@ -60,5 +64,9 @@ extern void no_shared_libraries (char *ignored, int from_tty);
 
 extern void set_solib_ops (struct gdbarch *gdbarch,
 			   struct target_so_ops *new_ops);
+
+/* Return non-zero if NAME is the libpthread shared library.  */
+
+extern int libpthread_name_p (const char *name);
 
 #endif /* SOLIB_H */

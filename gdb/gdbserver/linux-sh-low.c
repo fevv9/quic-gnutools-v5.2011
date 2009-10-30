@@ -1,6 +1,6 @@
 /* GNU/Linux/SH specific low level interface, for the remote server for GDB.
    Copyright (C) 1995, 1996, 1998, 1999, 2000, 2001, 2002, 2003, 2005, 2007,
-   2008 Free Software Foundation, Inc.
+   2008, 2009 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -19,6 +19,9 @@
 
 #include "server.h"
 #include "linux-low.h"
+
+/* Defined in auto-generated file reg-sh.c.  */
+void init_registers_sh (void);
 
 #ifdef HAVE_SYS_REG_H
 #include <sys/reg.h>
@@ -106,6 +109,7 @@ struct regset_info target_regsets[] = {
 };
 
 struct linux_target_ops the_low_target = {
+  init_registers_sh,
   sh_num_regs,
   sh_regmap,
   sh_cannot_fetch_register,

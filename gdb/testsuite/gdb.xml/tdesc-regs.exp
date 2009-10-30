@@ -1,4 +1,4 @@
-# Copyright 2007, 2008 Free Software Foundation, Inc.
+# Copyright 2007, 2008, 2009 Free Software Foundation, Inc.
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -38,6 +38,16 @@ switch -glob -- [istarget] {
     "powerpc*-*-*" {
 	set regdir "rs6000/"
 	set core-regs {power-core.xml}
+    }
+    "spu*-*-*" {
+	# This may be either the spu-linux-nat target, or the Cell/B.E.
+	# multi-architecture debugger in SPU standalone executable mode.
+	# We do not support XML register sets on SPU in either case.
+	# However, the multi-arch debugger will accept XML registers sets
+	# (on the PowerPC side), hence the test below would fail.
+	# Simply return unconditionally here.
+	unsupported "register tests"
+	return 0
     }
 }
 

@@ -7,7 +7,7 @@
 
 /* Header file for GDB-specific command-line stuff.
    Copyright (C) 1986, 1989, 1990, 1991, 1992, 1993, 1994, 1998, 1999, 2000,
-   2002, 2007, 2008 Free Software Foundation, Inc.
+   2002, 2007, 2008, 2009 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -51,6 +51,10 @@ extern struct cmd_list_element *deletelist;
 /* Chain containing all defined detach subcommands.  */
 
 extern struct cmd_list_element *detachlist;
+
+/* Chain containing all defined kill subcommands.  */
+
+extern struct cmd_list_element *killlist;
 
 /* Chain containing all defined toggle subcommands.  */
 
@@ -120,11 +124,7 @@ extern struct cmd_list_element *setchecklist;
 
 extern struct cmd_list_element *showchecklist;
 
-#ifdef HAVE_TCL
-extern int execute_command (char *, int);
-#else
 extern void execute_command (char *, int);
-#endif
 
 enum command_control_type execute_control_command (struct command_line *);
 

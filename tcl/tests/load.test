@@ -206,7 +206,7 @@ test load-9.1 {Tcl_StaticPackage, load already-loaded package into another inter
     -result {{{{} Loadninepointone} {{} Tcltest}} {{{} Loadninepointone} {{} Tcltest}}} \
     -cleanup { interp delete child1 ; interp delete child2 }
 
-    
+
 # cleanup
 ::tcltest::cleanupTests
 return

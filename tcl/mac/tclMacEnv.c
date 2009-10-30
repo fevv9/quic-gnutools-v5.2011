@@ -3,7 +3,7 @@
 # All Rights Reserved.
 # Modified by QUALCOMM INCORPORATED on $Date$
 *****************************************************************/
-/* 
+/*
  * tclMacEnv.c --
  *
  *	Implements the "environment" on a Macintosh.
@@ -33,16 +33,16 @@
 #define kUsernameTag 		"USER="
 #define kDefaultDirTag 		"HOME="
 
-/* 
- * The following specifies a text file where additional environment variables 
- * can be set.  The file must reside in the preferences folder.  If the file 
- * doesn't exist NO error will occur.  Commet out the difinition if you do 
- * NOT want to use an environment variables file. 
+/*
+ * The following specifies a text file where additional environment variables
+ * can be set.  The file must reside in the preferences folder.  If the file
+ * doesn't exist NO error will occur.  Commet out the difinition if you do
+ * NOT want to use an environment variables file.
  */
 #define kPrefsFile	 		"Tcl Environment Variables"
 
-/* 
- * The following specifies the Name of a 'STR#' resource in the application 
+/*
+ * The following specifies the Name of a 'STR#' resource in the application
  * where additional environment variables may be set.  If the resource doesn't
  * exist no errors will occur.  Commet it out if you don't want it.
  */
@@ -83,7 +83,7 @@ static char * GetUserName _ANSI_ARGS_((void));
  */
 
 #ifdef REZ_ENV
-static char ** 
+static char **
 RezRCVariables()
 {
     Handle envStrs = NULL;
@@ -93,7 +93,7 @@ RezRCVariables()
     envStrs = GetNamedResource('STR#', REZ_ENV);
     if (envStrs == NULL) return NULL;
     numStrs = *((short *) (*envStrs));
-	
+
     rezEnv = (char **) ckalloc((numStrs + 1) * sizeof(char *));
 
     if (envStrs != NULL) {
@@ -102,7 +102,7 @@ RezRCVariables()
 	short theID, index = 1;
 	int i = 0;
 	char* string;
-	
+
 	GetResInfo(envStrs, &theID, &theType, theName);
 	for(;;) {
 	    GetIndString(theName, theID, index++);
@@ -113,11 +113,11 @@ RezRCVariables()
 	    rezEnv[i++] = string;
 	}
 	ReleaseResource(envStrs);
-		
+
 	rezEnv[i] = NULL;
 	return rezEnv;
     }
-	
+
     return NULL;
 }
 #endif
@@ -128,8 +128,8 @@ RezRCVariables()
  * FileRCVariables --
  *
  *  Creates environment variables from a file in the system preferences
- *  folder.  The function looks for a file in the preferences folder 
- *  a name defined in the #define kPrefsFile.  If the define is not 
+ *  folder.  The function looks for a file in the preferences folder
+ *  a name defined in the #define kPrefsFile.  If the define is not
  *  defined this code will not be included.  If the resource doesn't exist or
  *  no strings reside in the resource nothing will happen.
  *
@@ -143,7 +143,7 @@ RezRCVariables()
  */
 
 #ifdef kPrefsFile
-static char ** 
+static char **
 FileRCVariables()
 {
     char *prefsFolder = NULL;
@@ -157,8 +157,8 @@ FileRCVariables()
     Tcl_Channel chan;
     int size;
     Tcl_DString lineRead;
-	
-    err = FSpFindFolder(kOnSystemDisk, kPreferencesFolderType, 
+
+    err = FSpFindFolder(kOnSystemDisk, kPreferencesFolderType,
 	    kDontCreateFolder, &prefDir);
     if (err != noErr) {
 	return NULL;
@@ -198,17 +198,17 @@ FileRCVariables()
 	    Tcl_DStringSetLength(&lineRead, 0);
 	    continue;
 	}
-		
+
 	tempPtr = (char *) ckalloc(lineRead.length + 1);
 	strcpy(tempPtr, lineRead.string);
 	fileEnv[i++] = tempPtr;
 	Tcl_DStringSetLength(&lineRead, 0);
     }
-	
+
     fileEnv[i] = NULL;
     Tcl_Close(NULL, chan);
     Tcl_DStringFree(&lineRead);
-	
+
     return fileEnv;
 }
 #endif
@@ -233,7 +233,7 @@ FileRCVariables()
  *----------------------------------------------------------------------
  */
 
-static char * 
+static char *
 MakeFolderEnvVar(
     char * prefixTag,		/* Prefix added before result. */
     long whichFolder)		/* Constant for FSpFindFolder. */
@@ -246,24 +246,24 @@ MakeFolderEnvVar(
     int size;
     Tcl_DString pathStr;
     Tcl_DString tagPathStr;
-    
+
     Tcl_DStringInit(&pathStr);
-    theErr = FSpFindFolder(kOnSystemDisk, whichFolder, 
+    theErr = FSpFindFolder(kOnSystemDisk, whichFolder,
 	    kDontCreateFolder, &theFolder);
     if (theErr == noErr) {
 	theErr = FSpPathFromLocation(&theFolder, &size, &theString);
-		
+
 	HLock(theString);
 	tclPlatform = TCL_PLATFORM_MAC;
 	Tcl_DStringAppend(&pathStr, *theString, -1);
 	HUnlock(theString);
 	DisposeHandle(theString);
-		
+
 	Tcl_DStringInit(&tagPathStr);
 	Tcl_DStringAppend(&tagPathStr, prefixTag, strlen(prefixTag));
 	Tcl_DStringAppend(&tagPathStr, pathStr.string, pathStr.length);
 	Tcl_DStringFree(&pathStr);
-	
+
 	/*
 	 * Make sure the path ends with a ':'
 	 */
@@ -285,7 +285,7 @@ MakeFolderEnvVar(
 	result = (char *) ckalloc(strlen(prefixTag) + 1);
 	strcpy(result, prefixTag);
     }
-	
+
     return result;
 }
 
@@ -295,7 +295,7 @@ MakeFolderEnvVar(
  * PathVariables --
  *
  *  Creates environment variables from the system call FSpFindFolder.
- *  The function generates environment variables for many of the 
+ *  The function generates environment variables for many of the
  *  commonly used paths on the Macintosh.
  *
  * Results:
@@ -307,13 +307,13 @@ MakeFolderEnvVar(
  *----------------------------------------------------------------------
  */
 
-static char ** 
+static char **
 PathVariables()
 {
     int i = 0;
     char **sysEnv;
     char *thePath = NULL;
-    
+
     sysEnv = (char **) ckalloc((12) * sizeof(char *));
 
     sysEnv[i++] = MakeFolderEnvVar("PREF_FOLDER=", kPreferencesFolderType);
@@ -330,7 +330,7 @@ PathVariables()
     sysEnv[i++] = MakeFolderEnvVar("TRASH_FOLDER=", kTrashFolderType);
     sysEnv[i++] = MakeFolderEnvVar("START_UP_FOLDER=", kStartupFolderType);
     sysEnv[i++] = NULL;
-	
+
     return sysEnv;
 }
 
@@ -350,7 +350,7 @@ PathVariables()
  *----------------------------------------------------------------------
  */
 
-static char ** 
+static char **
 SystemVariables()
 {
     int i = 0;
@@ -359,7 +359,7 @@ SystemVariables()
     Handle theString = NULL;
     FSSpec currentDir;
     int size;
-    
+
     sysEnv = (char **) ckalloc((4) * sizeof(char *));
 
     /*
@@ -468,7 +468,7 @@ TclMacCreateEnv()
      */
     environ = (char **) ckalloc((count + 1) * sizeof(char *));
     j = 0;
-	
+
     if (sysEnv != NULL) {
 	for (i = 0; sysEnv[i] != NULL;)
 	    environ[j++] = sysEnv[i++];
@@ -523,7 +523,7 @@ GetUserName()
     static char buf[33];
     short refnum;
     Handle h;
-	
+
     refnum = CurResFile();
     UseResFile(0);
     h = GetResource('STR ', -16096);
@@ -531,7 +531,7 @@ GetUserName()
     if (h == NULL) {
 	return NULL;
     }
-    
+
     HLock(h);
     strncpy(buf, (*h)+1, **h);
     buf[**h] = '\0';

@@ -3,7 +3,7 @@
 # All Rights Reserved.
 # Modified by QUALCOMM INCORPORATED on $Date$
 *****************************************************************/
-/* 
+/*
  * tclMacAppInit.c --
  *
  *	Provides a version of the Tcl_AppInit procedure for the example shell.
@@ -56,7 +56,7 @@ static int		MacintoshInit _ANSI_ARGS_((void));
  *	it's done.
  *
  * Side effects:
- *	This procedure initializes the Macintosh world and then 
+ *	This procedure initializes the Macintosh world and then
  *	calls Tcl_Main.  Tcl_Main will never return except to exit.
  *
  *----------------------------------------------------------------------
@@ -68,7 +68,7 @@ main(
     char **argv)			/* Array of argument strings. */
 {
     char *newArgv[2];
-    
+
     if (MacintoshInit()  != TCL_OK) {
 	Tcl_Exit(1);
     }
@@ -164,7 +164,7 @@ Tcl_AppInit(
  *	have a stdout & stderr by default.
  *
  * Results:
- *	Returns TCL_OK if everything went fine.  If it didn't the 
+ *	Returns TCL_OK if everything went fine.  If it didn't the
  *	application should probably fail.
  *
  * Side effects:
@@ -187,17 +187,17 @@ MacintoshInit()
     /* The console package calls the Mac init calls */
     console_options.pause_atexit = 0;
     console_options.title = "\pTcl Interpreter";
-		
+
 #elif defined(__MWERKS__)
 
     /* Set options for CodeWarrior SIOUX package */
     SIOUXSettings.autocloseonquit = true;
     SIOUXSettings.showstatusline = true;
     SIOUXSettings.asktosaveonclose = false;
-    SIOUXSettings.wasteusetempmemory = true;    
+    SIOUXSettings.wasteusetempmemory = true;
     InstallConsole(0);
     SIOUXSetTitle("\pTcl Interpreter");
-		
+
 #elif defined(applec)
 
     /* Init packages used by MPW SIOW package */
@@ -208,11 +208,11 @@ MacintoshInit()
     TEInit();
     InitDialogs(nil);
     InitCursor();
-		
+
 #endif
 
     Tcl_MacSetEventProc((Tcl_MacConvertEventPtr) SIOUXHandleOneEvent);
-    
+
     /* No problems with initialization */
     return TCL_OK;
 }

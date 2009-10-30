@@ -6,6 +6,7 @@
  * Condition: Rs32 & 1
  *
  */
+static
 MAP_FUNCTION(A2_addsp)
 {
 	if (GET_OP_VAL(1) & 1) {
@@ -21,6 +22,7 @@ MAP_FUNCTION(A2_addsp)
  * Dest Syntax: Rd32=sub(#0,Rs32)
  *
  */
+static
 MAP_FUNCTION(A2_neg)
 {
     sprintf(DEST,"R%d=sub(#0,R%d)",GET_OP_VAL(0),GET_OP_VAL(1));
@@ -32,6 +34,7 @@ MAP_FUNCTION(A2_neg)
  * Dest Syntax: Rd32=sub(#-1,Rs32)
  *
  */
+static
 MAP_FUNCTION(A2_not)
 {
     sprintf(DEST,"R%d=sub(#-1,R%d)",GET_OP_VAL(0),GET_OP_VAL(1));
@@ -43,6 +46,7 @@ MAP_FUNCTION(A2_not)
  * Dest Syntax: if (!Pu4) Rd32=add(Rs32,#0)
  *
  */
+static
 MAP_FUNCTION(A2_tfrf)
 {
     sprintf(DEST,"if (!P%d) R%d=add(R%d,#0)",GET_OP_VAL(0),GET_OP_VAL(1),GET_OP_VAL(2));
@@ -54,6 +58,7 @@ MAP_FUNCTION(A2_tfrf)
  * Dest Syntax: if (!Pu4) Rd32=add(Rs32,#0)
  *
  */
+static
 MAP_FUNCTION(A2_tfrf_alt)
 {
     sprintf(DEST,"if (!P%d) R%d=add(R%d,#0)",GET_OP_VAL(0),GET_OP_VAL(1),GET_OP_VAL(2));
@@ -65,6 +70,7 @@ MAP_FUNCTION(A2_tfrf_alt)
  * Dest Syntax: if (!Pu4.new) Rd32=add(Rs32,#0)
  *
  */
+static
 MAP_FUNCTION(A2_tfrfnew)
 {
     sprintf(DEST,"if (!P%d.new) R%d=add(R%d,#0)",GET_OP_VAL(0),GET_OP_VAL(1),GET_OP_VAL(2));
@@ -76,6 +82,7 @@ MAP_FUNCTION(A2_tfrfnew)
  * Dest Syntax: if (!Pu4.new) Rd32=add(Rs32,#0)
  *
  */
+static
 MAP_FUNCTION(A2_tfrfnew_alt)
 {
     sprintf(DEST,"if (!P%d.new) R%d=add(R%d,#0)",GET_OP_VAL(0),GET_OP_VAL(1),GET_OP_VAL(2));
@@ -87,6 +94,7 @@ MAP_FUNCTION(A2_tfrfnew_alt)
  * Dest Syntax: Rdd32=combine(Rss.H32,Rss.L32)
  *
  */
+static
 MAP_FUNCTION(A2_tfrp)
 {
     sprintf(DEST,"R%d:%d=combine(R%d,R%d)",GET_OP_VAL(0)+1,GET_OP_VAL(0),GET_OP_VAL(1)+1,GET_OP_VAL(1));
@@ -98,6 +106,7 @@ MAP_FUNCTION(A2_tfrp)
  * Dest Syntax: if (!Pu4) Rdd32=combine(Rss.H32,Rss.L32)
  *
  */
+static
 MAP_FUNCTION(A2_tfrpf)
 {
     sprintf(DEST,"if (!P%d) R%d:%d=combine(R%d,R%d)",GET_OP_VAL(0),GET_OP_VAL(1)+1,GET_OP_VAL(1),GET_OP_VAL(2)+1,GET_OP_VAL(2));
@@ -109,6 +118,7 @@ MAP_FUNCTION(A2_tfrpf)
  * Dest Syntax: if (!Pu4) Rdd32=combine(Rss.H32,Rss.L32)
  *
  */
+static
 MAP_FUNCTION(A2_tfrpf_alt)
 {
     sprintf(DEST,"if (!P%d) R%d:%d=combine(R%d,R%d)",GET_OP_VAL(0),GET_OP_VAL(1)+1,GET_OP_VAL(1),GET_OP_VAL(2)+1,GET_OP_VAL(2));
@@ -120,6 +130,7 @@ MAP_FUNCTION(A2_tfrpf_alt)
  * Dest Syntax: if (!Pu4.new) Rdd32=combine(Rss.H32,Rss.L32)
  *
  */
+static
 MAP_FUNCTION(A2_tfrpfnew)
 {
     sprintf(DEST,"if (!P%d.new) R%d:%d=combine(R%d,R%d)",GET_OP_VAL(0),GET_OP_VAL(1)+1,GET_OP_VAL(1),GET_OP_VAL(2)+1,GET_OP_VAL(2));
@@ -131,6 +142,7 @@ MAP_FUNCTION(A2_tfrpfnew)
  * Dest Syntax: if (!Pu4.new) Rdd32=combine(Rss.H32,Rss.L32)
  *
  */
+static
 MAP_FUNCTION(A2_tfrpfnew_alt)
 {
     sprintf(DEST,"if (!P%d.new) R%d:%d=combine(R%d,R%d)",GET_OP_VAL(0),GET_OP_VAL(1)+1,GET_OP_VAL(1),GET_OP_VAL(2)+1,GET_OP_VAL(2));
@@ -144,6 +156,7 @@ MAP_FUNCTION(A2_tfrpfnew_alt)
  * Condition: #s8<0
  *
  */
+static
 MAP_FUNCTION(A2_tfrpi)
 {
 	if (GET_OP_VAL(1)<0) {
@@ -159,6 +172,7 @@ MAP_FUNCTION(A2_tfrpi)
  * Dest Syntax: if (Pu4) Rdd32=combine(Rss.H32,Rss.L32)
  *
  */
+static
 MAP_FUNCTION(A2_tfrpt)
 {
     sprintf(DEST,"if (P%d) R%d:%d=combine(R%d,R%d)",GET_OP_VAL(0),GET_OP_VAL(1)+1,GET_OP_VAL(1),GET_OP_VAL(2)+1,GET_OP_VAL(2));
@@ -170,6 +184,7 @@ MAP_FUNCTION(A2_tfrpt)
  * Dest Syntax: if (Pu4) Rdd32=combine(Rss.H32,Rss.L32)
  *
  */
+static
 MAP_FUNCTION(A2_tfrpt_alt)
 {
     sprintf(DEST,"if (P%d) R%d:%d=combine(R%d,R%d)",GET_OP_VAL(0),GET_OP_VAL(1)+1,GET_OP_VAL(1),GET_OP_VAL(2)+1,GET_OP_VAL(2));
@@ -181,6 +196,7 @@ MAP_FUNCTION(A2_tfrpt_alt)
  * Dest Syntax: if (Pu4.new) Rdd32=combine(Rss.H32,Rss.L32)
  *
  */
+static
 MAP_FUNCTION(A2_tfrptnew)
 {
     sprintf(DEST,"if (P%d.new) R%d:%d=combine(R%d,R%d)",GET_OP_VAL(0),GET_OP_VAL(1)+1,GET_OP_VAL(1),GET_OP_VAL(2)+1,GET_OP_VAL(2));
@@ -192,6 +208,7 @@ MAP_FUNCTION(A2_tfrptnew)
  * Dest Syntax: if (Pu4.new) Rdd32=combine(Rss.H32,Rss.L32)
  *
  */
+static
 MAP_FUNCTION(A2_tfrptnew_alt)
 {
     sprintf(DEST,"if (P%d.new) R%d:%d=combine(R%d,R%d)",GET_OP_VAL(0),GET_OP_VAL(1)+1,GET_OP_VAL(1),GET_OP_VAL(2)+1,GET_OP_VAL(2));
@@ -203,6 +220,7 @@ MAP_FUNCTION(A2_tfrptnew_alt)
  * Dest Syntax: if (Pu4) Rd32=add(Rs32,#0)
  *
  */
+static
 MAP_FUNCTION(A2_tfrt)
 {
     sprintf(DEST,"if (P%d) R%d=add(R%d,#0)",GET_OP_VAL(0),GET_OP_VAL(1),GET_OP_VAL(2));
@@ -214,6 +232,7 @@ MAP_FUNCTION(A2_tfrt)
  * Dest Syntax: if (Pu4) Rd32=add(Rs32,#0)
  *
  */
+static
 MAP_FUNCTION(A2_tfrt_alt)
 {
     sprintf(DEST,"if (P%d) R%d=add(R%d,#0)",GET_OP_VAL(0),GET_OP_VAL(1),GET_OP_VAL(2));
@@ -225,6 +244,7 @@ MAP_FUNCTION(A2_tfrt_alt)
  * Dest Syntax: if (Pu4.new) Rd32=add(Rs32,#0)
  *
  */
+static
 MAP_FUNCTION(A2_tfrtnew)
 {
     sprintf(DEST,"if (P%d.new) R%d=add(R%d,#0)",GET_OP_VAL(0),GET_OP_VAL(1),GET_OP_VAL(2));
@@ -236,6 +256,7 @@ MAP_FUNCTION(A2_tfrtnew)
  * Dest Syntax: if (Pu4.new) Rd32=add(Rs32,#0)
  *
  */
+static
 MAP_FUNCTION(A2_tfrtnew_alt)
 {
     sprintf(DEST,"if (P%d.new) R%d=add(R%d,#0)",GET_OP_VAL(0),GET_OP_VAL(1),GET_OP_VAL(2));
@@ -247,6 +268,7 @@ MAP_FUNCTION(A2_tfrtnew_alt)
  * Dest Syntax: Rd32=and(Rs32,#255)
  *
  */
+static
 MAP_FUNCTION(A2_zxtb)
 {
     sprintf(DEST,"R%d=and(R%d,#255)",GET_OP_VAL(0),GET_OP_VAL(1));
@@ -258,6 +280,7 @@ MAP_FUNCTION(A2_zxtb)
  * Dest Syntax: Pd4=cmp.gt(Rs32,#s8-1)
  *
  */
+static
 MAP_FUNCTION(C2_cmpgei)
 {
     sprintf(DEST,"P%d=cmp.gt(R%d,#%d-1)",GET_OP_VAL(0),GET_OP_VAL(1),GET_OP_VAL(2));
@@ -271,6 +294,7 @@ MAP_FUNCTION(C2_cmpgei)
  * Condition: #u8==0
  *
  */
+static
 MAP_FUNCTION(C2_cmpgeui)
 {
 	if (GET_OP_VAL(2)==0) {
@@ -286,6 +310,7 @@ MAP_FUNCTION(C2_cmpgeui)
  * Dest Syntax: Pd4=cmp.gt(Rt32,Rs32)
  *
  */
+static
 MAP_FUNCTION(C2_cmplt)
 {
     sprintf(DEST,"P%d=cmp.gt(R%d,R%d)",GET_OP_VAL(0),GET_OP_VAL(2),GET_OP_VAL(1));
@@ -297,6 +322,7 @@ MAP_FUNCTION(C2_cmplt)
  * Dest Syntax: Pd4=cmp.gtu(Rt32,Rs32)
  *
  */
+static
 MAP_FUNCTION(C2_cmpltu)
 {
     sprintf(DEST,"P%d=cmp.gtu(R%d,R%d)",GET_OP_VAL(0),GET_OP_VAL(2),GET_OP_VAL(1));
@@ -308,6 +334,7 @@ MAP_FUNCTION(C2_cmpltu)
  * Dest Syntax: Pd4=or(Ps4,Ps4)
  *
  */
+static
 MAP_FUNCTION(C2_pxfer_map)
 {
     sprintf(DEST,"P%d=or(P%d,P%d)",GET_OP_VAL(0),GET_OP_VAL(1),GET_OP_VAL(1));
@@ -321,6 +348,7 @@ MAP_FUNCTION(C2_pxfer_map)
  * Condition: #m9<0
  *
  */
+static
 MAP_FUNCTION(M2_mpysmi)
 {
 	if (GET_OP_VAL(2)<0) {
@@ -336,6 +364,7 @@ MAP_FUNCTION(M2_mpysmi)
  * Dest Syntax: Rd32=mpyi(Rs32,Rt32)
  *
  */
+static
 MAP_FUNCTION(M2_mpyui)
 {
     sprintf(DEST,"R%d=mpyi(R%d,R%d)",GET_OP_VAL(0),GET_OP_VAL(1),GET_OP_VAL(2));
@@ -349,6 +378,7 @@ MAP_FUNCTION(M2_mpyui)
  * Condition: Rt32 & 1
  *
  */
+static
 MAP_FUNCTION(M2_vrcmpys_acc_s1)
 {
 	if (GET_OP_VAL(2) & 1) {
@@ -366,6 +396,7 @@ MAP_FUNCTION(M2_vrcmpys_acc_s1)
  * Condition: Rt32 & 1
  *
  */
+static
 MAP_FUNCTION(M2_vrcmpys_s1)
 {
 	if (GET_OP_VAL(2) & 1) {
@@ -383,6 +414,7 @@ MAP_FUNCTION(M2_vrcmpys_s1)
  * Condition: Rt32 & 1
  *
  */
+static
 MAP_FUNCTION(M2_vrcmpys_s1rp)
 {
 	if (GET_OP_VAL(2) & 1) {
@@ -400,6 +432,7 @@ MAP_FUNCTION(M2_vrcmpys_s1rp)
  * Condition: #u5==0
  *
  */
+static
 MAP_FUNCTION(S2_asr_i_r_rnd_goodsyntax)
 {
 	if (GET_OP_VAL(2)==0) {
@@ -415,6 +448,7 @@ MAP_FUNCTION(S2_asr_i_r_rnd_goodsyntax)
  * Dest Syntax: Rx32=tableidxb(Rs32,#u4,#U5):raw
  *
  */
+static
 MAP_FUNCTION(S2_tableidxb_goodsyntax)
 {
     sprintf(DEST,"R%d=tableidxb(R%d,#%d,#%d):raw",GET_OP_VAL(0),GET_OP_VAL(1),GET_OP_VAL(2),GET_OP_VAL(3));
@@ -426,6 +460,7 @@ MAP_FUNCTION(S2_tableidxb_goodsyntax)
  * Dest Syntax: Rx32=tableidxd(Rs32,#u4,#U5-3):raw
  *
  */
+static
 MAP_FUNCTION(S2_tableidxd_goodsyntax)
 {
     sprintf(DEST,"R%d=tableidxd(R%d,#%d,#%d-3):raw",GET_OP_VAL(0),GET_OP_VAL(1),GET_OP_VAL(2),GET_OP_VAL(3));
@@ -437,6 +472,7 @@ MAP_FUNCTION(S2_tableidxd_goodsyntax)
  * Dest Syntax: Rx32=tableidxh(Rs32,#u4,#U5-1):raw
  *
  */
+static
 MAP_FUNCTION(S2_tableidxh_goodsyntax)
 {
     sprintf(DEST,"R%d=tableidxh(R%d,#%d,#%d-1):raw",GET_OP_VAL(0),GET_OP_VAL(1),GET_OP_VAL(2),GET_OP_VAL(3));
@@ -448,6 +484,7 @@ MAP_FUNCTION(S2_tableidxh_goodsyntax)
  * Dest Syntax: Rx32=tableidxw(Rs32,#u4,#U5-2):raw
  *
  */
+static
 MAP_FUNCTION(S2_tableidxw_goodsyntax)
 {
     sprintf(DEST,"R%d=tableidxw(R%d,#%d,#%d-2):raw",GET_OP_VAL(0),GET_OP_VAL(1),GET_OP_VAL(2),GET_OP_VAL(3));
@@ -459,6 +496,7 @@ MAP_FUNCTION(S2_tableidxw_goodsyntax)
  * Dest Syntax: dcfetch(Rs32+#0)
  *
  */
+static
 MAP_FUNCTION(Y2_dcfetch)
 {
     sprintf(DEST,"dcfetch(R%d+#0)",GET_OP_VAL(0));

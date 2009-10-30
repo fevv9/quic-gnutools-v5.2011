@@ -9,13 +9,13 @@
 #	functions that are exported by the Tcl library via the stubs table.
 #	This file is used to generate the tclDecls.h, tclPlatDecls.h,
 #	tclStub.c, and tclPlatStub.c files.
-#	
+#
 #
 # Copyright (c) 1998-1999 by Scriptics Corporation.
 # Copyright (c) 2001, 2002 by Kevin B. Kenny.  All rights reserved.
 # See the file "license.terms" for information on usage and redistribution
 # of this file, and for a DISCLAIMER OF ALL WARRANTIES.
-# 
+#
 # RCS: @(#) $Id$
 
 library tcl
@@ -121,7 +121,7 @@ declare 24 generic {
 	    CONST char *file, int line)
 }
 declare 25 generic {
-    Tcl_Obj * Tcl_DbNewListObj(int objc, Tcl_Obj *CONST *objv, 
+    Tcl_Obj * Tcl_DbNewListObj(int objc, Tcl_Obj *CONST *objv,
 	    CONST char *file, int line)
 }
 declare 26 generic {
@@ -359,7 +359,7 @@ declare 94 generic {
 }
 declare 95 generic {
     void Tcl_CreateMathFunc(Tcl_Interp *interp, CONST char *name,
-	    int numArgs, Tcl_ValueType *argTypes, 
+	    int numArgs, Tcl_ValueType *argTypes,
 	    Tcl_MathProc *proc, ClientData clientData)
 }
 declare 96 generic {
@@ -973,11 +973,11 @@ declare 272 generic {
 	    CONST char *version, int exact, ClientData *clientDataPtr)
 }
 declare 273 generic {
-    int Tcl_PkgProvide(Tcl_Interp *interp, CONST char *name, 
+    int Tcl_PkgProvide(Tcl_Interp *interp, CONST char *name,
 	    CONST char *version)
 }
 declare 274 generic {
-    CONST84_RETURN char * Tcl_PkgRequire(Tcl_Interp *interp, CONST char *name, 
+    CONST84_RETURN char * Tcl_PkgRequire(Tcl_Interp *interp, CONST char *name,
 	    CONST char *version, int exact)
 }
 declare 275 generic {
@@ -1141,7 +1141,7 @@ declare 316 generic {
     int Tcl_SetSystemEncoding(Tcl_Interp *interp, CONST char *name)
 }
 declare 317 generic {
-    Tcl_Obj * Tcl_SetVar2Ex(Tcl_Interp *interp, CONST char *part1, 
+    Tcl_Obj * Tcl_SetVar2Ex(Tcl_Interp *interp, CONST char *part1,
             CONST char *part2, Tcl_Obj *newValuePtr, int flags)
 }
 declare 318 generic {
@@ -1292,7 +1292,7 @@ declare 361 generic {
 }
 declare 362 generic {
     int Tcl_ParseExpr(Tcl_Interp *interp, CONST char *string, int numBytes,
-	    Tcl_Parse *parsePtr)	 
+	    Tcl_Parse *parsePtr)
 }
 declare 363 generic {
     int Tcl_ParseQuotedString(Tcl_Interp *interp, CONST char *string,
@@ -1701,14 +1701,14 @@ declare 479 generic {
 }
 declare 480 generic {
     void Tcl_FSMountsChanged(Tcl_Filesystem *fsPtr)
-}	  
+}
 # New function due to TIP#56
 declare 481 generic {
     int Tcl_EvalTokensStandard(Tcl_Interp *interp, Tcl_Token *tokenPtr,
 	    int count)
 }
 
-# New export due to TIP#73 
+# New export due to TIP#73
 declare 482 generic {
     void Tcl_GetTime(Tcl_Time* timeBuf)
 }
@@ -1800,12 +1800,12 @@ declare 1 win {
 # Mac declarations
 
 # This is needed by the shells to handle Macintosh events.
- 
+
 declare 0 mac {
     void Tcl_MacSetEventProc(Tcl_MacConvertEventPtr procPtr)
 }
 
-# These routines are useful for handling using scripts from resources 
+# These routines are useful for handling using scripts from resources
 # in the application shell
 
 declare 1 mac {
@@ -1837,7 +1837,7 @@ declare 6 mac {
 
 # These are not in MSL 2.1.2, so we need to export them from the
 # Tcl shared library.  They are found in the compat directory.
- 
+
 declare 7 mac {
     int strncasecmp(CONST char *s1, CONST char *s2, size_t n)
 }

@@ -3,7 +3,7 @@
 # All Rights Reserved.
 # Modified by QUALCOMM INCORPORATED on $Date$
 *****************************************************************/
-/* 
+/*
  * tclMacChan.c
  *
  *	Channel drivers for Macintosh channels for the
@@ -39,7 +39,7 @@
 #endif
 
 /*
- * This structure describes per-instance state of a 
+ * This structure describes per-instance state of a
  * macintosh file based channel.
  */
 
@@ -109,7 +109,7 @@ static void		FileSetupProc _ANSI_ARGS_((ClientData clientData,
 			    int flags));
 static void             FileThreadActionProc _ANSI_ARGS_ ((
 			   ClientData instanceData, int action));
-static Tcl_Channel	OpenFileChannel _ANSI_ARGS_((CONST char *fileName, 
+static Tcl_Channel	OpenFileChannel _ANSI_ARGS_((CONST char *fileName,
 			    int mode, int permissions, int *errorCodePtr));
 static int		StdIOBlockMode _ANSI_ARGS_((ClientData instanceData,
 			    int mode));
@@ -174,10 +174,10 @@ static Tcl_ChannelType fileChannelType = {
 /*
  * Hack to allow Mac Tk to override the TclGetStdChannels function.
  */
- 
+
 typedef void (*TclGetStdChannelsProc) _ANSI_ARGS_((Tcl_Channel *stdinPtr,
 	Tcl_Channel *stdoutPtr, Tcl_Channel *stderrPtr));
-	
+
 TclGetStdChannelsProc getStdChannelsProc = NULL;
 
 
@@ -264,12 +264,12 @@ FileSetupProc(
     if (!(flags & TCL_FILE_EVENTS)) {
 	return;
     }
-    
+
     /*
      * Check to see if there is a ready file.  If so, poll.
      */
 
-    for (infoPtr = tsdPtr->firstFilePtr; infoPtr != NULL; 
+    for (infoPtr = tsdPtr->firstFilePtr; infoPtr != NULL;
 	    infoPtr = infoPtr->nextPtr) {
 	if (infoPtr->watchMask) {
 	    Tcl_SetMaxBlockTime(&blockTime);
@@ -284,7 +284,7 @@ FileSetupProc(
  * FileCheckProc --
  *
  *	This procedure is called by Tcl_DoOneEvent to check the file
- *	event source for events. 
+ *	event source for events.
  *
  * Results:
  *	None.
@@ -309,14 +309,14 @@ FileCheckProc(
     if (!(flags & TCL_FILE_EVENTS)) {
 	return;
     }
-    
+
     /*
      * Queue events for any ready files that don't already have events
      * queued (caused by persistent states that won't generate WinSock
      * events).
      */
 
-    for (infoPtr = tsdPtr->firstFilePtr; infoPtr != NULL; 
+    for (infoPtr = tsdPtr->firstFilePtr; infoPtr != NULL;
 	    infoPtr = infoPtr->nextPtr) {
 	if (infoPtr->watchMask && !infoPtr->pending) {
 	    infoPtr->pending = 1;
@@ -369,7 +369,7 @@ FileEventProc(
      * event is in the queue.
      */
 
-    for (infoPtr = tsdPtr->firstFilePtr; infoPtr != NULL; 
+    for (infoPtr = tsdPtr->firstFilePtr; infoPtr != NULL;
 	    infoPtr = infoPtr->nextPtr) {
 	if (fileEvPtr->infoPtr == infoPtr) {
 	    infoPtr->pending = 0;
@@ -404,11 +404,11 @@ StdIOBlockMode(
     /*
      * Do not allow putting stdin, stdout or stderr into nonblocking mode.
      */
-    
+
     if (mode == TCL_MODE_NONBLOCKING) {
 	return EFAULT;
     }
-    
+
     return 0;
 }
 
@@ -454,7 +454,7 @@ StdIOClose(
 	} else {
 	    panic("recieved invalid std file");
 	}
-    
+
 	if (close(fd) < 0) {
 	    errorCode = errno;
 	}
@@ -471,7 +471,7 @@ StdIOClose(
  *	a file based channel.
  *
  * Results:
- *	The appropriate handle or NULL if not present. 
+ *	The appropriate handle or NULL if not present.
  *
  * Side effects:
  *	None.
@@ -635,7 +635,7 @@ Tcl_PidObjCmd(dummy, interp, objc, objv)
     Tcl_Obj *CONST *objv;       /* Argument strings. */
 {
     ProcessSerialNumber psn;
-    char buf[20]; 
+    char buf[20];
     Tcl_Channel chan;
     Tcl_Obj *resultPtr;
 
@@ -653,13 +653,13 @@ Tcl_PidObjCmd(dummy, interp, objc, objv)
                 NULL);
         if (chan == (Tcl_Channel) NULL) {
             return TCL_ERROR;
-        } 
+        }
 	/*
 	 * We can't create pipelines on the Mac so
 	 * this will always return an empty list.
 	 */
     }
-    
+
     return TCL_OK;
 }
 
@@ -731,7 +731,7 @@ TclpGetDefaultStdChannel(
 
     Tcl_SetChannelOption(NULL, channel, "-translation", "cr");
     Tcl_SetChannelOption(NULL, channel, "-buffering", bufMode);
-    
+
     return channel;
 }
 
@@ -766,7 +766,7 @@ TclpOpenFileChannel(
     Tcl_Channel chan;
     CONST char *native;
     int errorCode;
-    
+
     native = Tcl_FSGetNativePath(pathPtr);
     if (native == NULL) {
 	return NULL;
@@ -776,13 +776,13 @@ TclpOpenFileChannel(
     if (chan == NULL) {
 	Tcl_SetErrno(errorCode);
 	if (interp != (Tcl_Interp *) NULL) {
-            Tcl_AppendResult(interp, "couldn't open \"", 
+            Tcl_AppendResult(interp, "couldn't open \"",
 			     Tcl_GetString(pathPtr), "\": ",
 			     Tcl_PosixError(interp), (char *) NULL);
         }
 	return NULL;
     }
-    
+
     return chan;
 }
 
@@ -820,12 +820,12 @@ OpenFileChannel(
     FileState *fileState;
     char channelName[16 + TCL_INTEGER_SPACE];
     ThreadSpecificData *tsdPtr;
-    
+
     tsdPtr = FileInit();
 
     /*
      * Note we use fsRdWrShPerm instead of fsRdWrPerm which allows shared
-     * writes on a file.  This isn't common on a mac but is common with 
+     * writes on a file.  This isn't common on a mac but is common with
      * Windows and UNIX and the feature is used by Tcl.
      */
 
@@ -850,7 +850,7 @@ OpenFileChannel(
 	    macPermision = fsRdPerm;
 	    break;
     }
-     
+
     err = FSpLocationFromPath(strlen(fileName), fileName, &fileSpec);
     if ((err != noErr) && (err != fnfErr)) {
 	*errorCodePtr = errno = TclMacOSErrorToPosixError(err);
@@ -881,10 +881,10 @@ OpenFileChannel(
     if (mode & O_TRUNC) {
 	SetEOF(fileRef, 0);
     }
-    
+
     sprintf(channelName, "file%d", (int) fileRef);
     fileState = (FileState *) ckalloc((unsigned) sizeof(FileState));
-    chan = Tcl_CreateChannel(&fileChannelType, channelName, 
+    chan = Tcl_CreateChannel(&fileChannelType, channelName,
 	(ClientData) fileState, channelPermissions);
     if (chan == (Tcl_Channel) NULL) {
 	*errorCodePtr = errno = EFAULT;
@@ -906,7 +906,7 @@ OpenFileChannel(
     } else {
 	fileState->appendMode = false;
     }
-        
+
     if ((mode & O_APPEND) || (mode & O_APPEND)) {
         if (Tcl_Seek(chan, 0, SEEK_END) < 0) {
 	    *errorCodePtr = errno = EFAULT;
@@ -917,7 +917,7 @@ OpenFileChannel(
             return NULL;
         }
     }
-    
+
     return chan;
 }
 
@@ -1057,7 +1057,7 @@ FileInput(
 	    default:
 		*errorCodePtr = errno = EINVAL;
 	}
-        return -1;	
+        return -1;
     }
     *errorCodePtr = errno;
     return -1;
@@ -1094,12 +1094,12 @@ FileOutput(
 
     *errorCodePtr = 0;
     errno = 0;
-    
+
     if (fileState->appendMode == true) {
 	FileSeek(instanceData, 0, SEEK_END, errorCodePtr);
 	*errorCodePtr = 0;
     }
-    
+
     err = FSWrite(fileState->fileRef, &length, buffer);
     if (err == noErr) {
 	err = FlushFile(fileState->fileRef);
@@ -1163,7 +1163,7 @@ FileSeek(
     } else if (pb.ioResult == eofErr) {
 	long currentEOF, newEOF;
 	long buffer, i, length;
-	
+
 	err = PBGetEOFSync((ParmBlkPtr) &pb);
 	currentEOF = (long) pb.ioMisc;
 	if (mode == SEEK_SET) {
@@ -1174,7 +1174,7 @@ FileSeek(
 	    err = PBGetFPosSync((ParmBlkPtr) &pb);
 	    newEOF = offset + pb.ioPosOffset;
 	}
-	
+
 	/*
 	 * Write 0's to the new EOF.
 	 */

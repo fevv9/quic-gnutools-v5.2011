@@ -1,5 +1,5 @@
 /* Helper routines for C++ support in GDB.
-   Copyright (C) 2002, 2003, 2004, 2005, 2007, 2008
+   Copyright (C) 2002, 2003, 2004, 2005, 2007, 2008, 2009
    Free Software Foundation, Inc.
 
    Contributed by MontaVista Software.
@@ -167,7 +167,7 @@ mangled_name_to_comp (const char *mangled_name, int options,
 
   if (ret == NULL)
     {
-      free (demangled_name);
+      xfree (demangled_name);
       return NULL;
     }
 
@@ -180,7 +180,7 @@ mangled_name_to_comp (const char *mangled_name, int options,
 char *
 cp_class_name_from_physname (const char *physname)
 {
-  void *storage;
+  void *storage = NULL;
   char *demangled_name = NULL, *ret;
   struct demangle_component *ret_comp, *prev_comp, *cur_comp;
   int done;
@@ -324,7 +324,7 @@ unqualified_name_from_comp (struct demangle_component *comp)
 char *
 method_name_from_physname (const char *physname)
 {
-  void *storage;
+  void *storage = NULL;
   char *demangled_name = NULL, *ret;
   struct demangle_component *ret_comp;
   int done;
@@ -377,8 +377,8 @@ cp_func_name (const char *full_name)
    (optionally) a return type.  Return the name of the function without
    parameters or return type, or NULL if we can not parse the name.  */
 
-static char *
-remove_params (const char *demangled_name)
+char *
+cp_remove_params (const char *demangled_name)
 {
   int done = 0;
   struct demangle_component *ret_comp;
@@ -649,7 +649,7 @@ overload_list_add_symbol (struct symbol *sym, const char *oload_name)
       return;
 
   /* Get the demangled name without parameters */
-  sym_name = remove_params (SYMBOL_NATURAL_NAME (sym));
+  sym_name = cp_remove_params (SYMBOL_NATURAL_NAME (sym));
   if (!sym_name)
     return;
 
@@ -716,10 +716,10 @@ make_symbol_overload_list_using (const char *func_name,
        current != NULL;
        current = current->next)
     {
-      if (strcmp (namespace, current->outer) == 0)
+      if (strcmp (namespace, current->import_dest) == 0)
 	{
 	  make_symbol_overload_list_using (func_name,
-					   current->inner);
+					   current->import_src);
 	}
     }
 
@@ -841,7 +841,7 @@ cp_lookup_rtti_type (const char *name, struct block *block)
   struct symbol * rtti_sym;
   struct type * rtti_type;
 
-  rtti_sym = lookup_symbol (name, block, STRUCT_DOMAIN, NULL, NULL);
+  rtti_sym = lookup_symbol (name, block, STRUCT_DOMAIN, NULL);
 
   if (rtti_sym == NULL)
     {
@@ -892,8 +892,14 @@ maint_cplus_command (char *arg, int from_tty)
 static void
 first_component_command (char *arg, int from_tty)
 {
-  int len = cp_find_first_component (arg);
-  char *prefix = alloca (len + 1);
+  int len;  
+  char *prefix; 
+
+  if (!arg)
+    return;
+
+  len = cp_find_first_component (arg);
+  prefix = alloca (len + 1);
 
   memcpy (prefix, arg, len);
   prefix[len] = '\0';

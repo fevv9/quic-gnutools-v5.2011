@@ -1,23 +1,21 @@
 /* FLEX lexer for Ada expressions, for GDB.
-   Copyright (C) 1994, 1997, 1998, 2000, 2001, 2002, 2003, 2007, 2008
+   Copyright (C) 1994, 1997, 1998, 2000, 2001, 2002, 2003, 2007, 2008, 2009
    Free Software Foundation, Inc.
 
-This file is part of GDB.
+   This file is part of GDB.
 
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 3 of the License, or
+   (at your option) any later version.
 
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
 
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 51 Franklin Street, Fifth Floor,
-Boston, MA 02110-1301, USA.  */
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
 
 /*----------------------------------------------------------------------*/
 
@@ -177,6 +175,16 @@ others          { return OTHERS; }
 rem		{ return REM; }
 then		{ return THEN; }
 xor		{ return XOR; }
+
+	/* BOOLEAN "KEYWORDS" */
+
+ /* True and False are not keywords in Ada, but rather enumeration constants.
+    However, the boolean type is no longer represented as an enum, so True
+    and False are no longer defined in symbol tables.  We compromise by
+    making them keywords (when bare). */
+
+true		{ return TRUEKEYWORD; }
+false		{ return FALSEKEYWORD; }
 
         /* ATTRIBUTES */
 
@@ -341,11 +349,11 @@ processInt (const char *base0, const char *num0, const char *exp0)
       exp -= 1;
     }
 
-  if ((result >> (gdbarch_int_bit (current_gdbarch)-1)) == 0)
+  if ((result >> (gdbarch_int_bit (parse_gdbarch)-1)) == 0)
     yylval.typed_val.type = type_int ();
-  else if ((result >> (gdbarch_long_bit (current_gdbarch)-1)) == 0)
+  else if ((result >> (gdbarch_long_bit (parse_gdbarch)-1)) == 0)
     yylval.typed_val.type = type_long ();
-  else if (((result >> (gdbarch_long_bit (current_gdbarch)-1)) >> 1) == 0)
+  else if (((result >> (gdbarch_long_bit (parse_gdbarch)-1)) >> 1) == 0)
     {
       /* We have a number representable as an unsigned integer quantity.
          For consistency with the C treatment, we will treat it as an
@@ -354,7 +362,8 @@ processInt (const char *base0, const char *num0, const char *exp0)
          for the mess, but C doesn't officially guarantee that a simple
          assignment does the trick (no, it doesn't; read the reference manual).
        */
-      yylval.typed_val.type = builtin_type_unsigned_long;
+      yylval.typed_val.type
+	= builtin_type (parse_gdbarch)->builtin_unsigned_long;
       if (result & LONGEST_SIGN)
 	yylval.typed_val.val =
 	  (LONGEST) (result & ~LONGEST_SIGN)
@@ -376,10 +385,10 @@ processReal (const char *num0)
   sscanf (num0, "%" DOUBLEST_SCAN_FORMAT, &yylval.typed_val_float.dval);
 
   yylval.typed_val_float.type = type_float ();
-  if (sizeof(DOUBLEST) >= gdbarch_double_bit (current_gdbarch)
+  if (sizeof(DOUBLEST) >= gdbarch_double_bit (parse_gdbarch)
 			    / TARGET_CHAR_BIT)
     yylval.typed_val_float.type = type_double ();
-  if (sizeof(DOUBLEST) >= gdbarch_long_double_bit (current_gdbarch)
+  if (sizeof(DOUBLEST) >= gdbarch_long_double_bit (parse_gdbarch)
 			    / TARGET_CHAR_BIT)
     yylval.typed_val_float.type = type_long_double ();
 

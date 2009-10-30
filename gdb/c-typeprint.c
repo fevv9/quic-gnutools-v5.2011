@@ -1,6 +1,6 @@
 /* Support for printing C and C++ types for GDB, the GNU debugger.
    Copyright (C) 1986, 1988, 1989, 1991, 1992, 1993, 1994, 1995, 1996, 1998,
-   1999, 2000, 2001, 2002, 2003, 2006, 2007, 2008
+   1999, 2000, 2001, 2002, 2003, 2006, 2007, 2008, 2009
    Free Software Foundation, Inc.
 
    This file is part of GDB.
@@ -95,6 +95,24 @@ c_print_type (struct type *type, char *varstring, struct ui_file *stream,
       demangled_args = strchr (varstring, '(') != NULL;
       c_type_print_varspec_suffix (type, stream, show, 0, demangled_args);
     }
+}
+
+/* Print a typedef using C syntax.  TYPE is the underlying type.
+   NEW_SYMBOL is the symbol naming the type.  STREAM is the stream on
+   which to print.  */
+
+void
+c_print_typedef (struct type *type, struct symbol *new_symbol,
+		 struct ui_file *stream)
+{
+  CHECK_TYPEDEF (type);
+  fprintf_filtered (stream, "typedef ");
+  type_print (type, "", stream, 0);
+  if (TYPE_NAME ((SYMBOL_TYPE (new_symbol))) == 0
+      || strcmp (TYPE_NAME ((SYMBOL_TYPE (new_symbol))),
+		 SYMBOL_LINKAGE_NAME (new_symbol)) != 0)
+    fprintf_filtered (stream, " %s", SYMBOL_PRINT_NAME (new_symbol));
+  fprintf_filtered (stream, ";\n");
 }
 
 /* If TYPE is a derived type, then print out derivation information.
@@ -320,7 +338,8 @@ c_type_print_modifier (struct type *type, struct ui_file *stream,
       did_print_modifier = 1;
     }
 
-  address_space_id = address_space_int_to_name (TYPE_INSTANCE_FLAGS (type));
+  address_space_id = address_space_int_to_name (get_type_arch (type),
+						TYPE_INSTANCE_FLAGS (type));
   if (address_space_id)
     {
       if (did_print_modifier || need_pre_space)
@@ -542,7 +561,7 @@ c_type_print_varspec_suffix (struct type *type, struct ui_file *stream,
 
       fprintf_filtered (stream, "[");
       if (TYPE_LENGTH (TYPE_TARGET_TYPE (type)) > 0
-	&& TYPE_ARRAY_UPPER_BOUND_TYPE (type) != BOUND_CANNOT_BE_DETERMINED)
+	&& !TYPE_ARRAY_UPPER_BOUND_IS_UNDEFINED (type))
 	fprintf_filtered (stream, "%d",
 			  (TYPE_LENGTH (type)
 			   / TYPE_LENGTH (TYPE_TARGET_TYPE (type))));
@@ -872,14 +891,12 @@ c_type_print_base (struct type *type, struct ui_file *stream, int show,
 		}
 
 	      print_spaces_filtered (level + 4, stream);
-	      if (TYPE_FIELD_STATIC (type, i))
-		{
-		  fprintf_filtered (stream, "static ");
-		}
+	      if (field_is_static (&TYPE_FIELD (type, i)))
+		fprintf_filtered (stream, "static ");
 	      c_print_type (TYPE_FIELD_TYPE (type, i),
 			    TYPE_FIELD_NAME (type, i),
 			    stream, show - 1, level + 4);
-	      if (!TYPE_FIELD_STATIC (type, i)
+	      if (!field_is_static (&TYPE_FIELD (type, i))
 		  && TYPE_FIELD_PACKED (type, i))
 		{
 		  /* It is a bitfield.  This code does not attempt
@@ -1043,8 +1060,6 @@ c_type_print_base (struct type *type, struct ui_file *stream, int show,
 			       TYPE_LOCALTYPE_FILE (type),
 			       TYPE_LOCALTYPE_LINE (type));
 	}
-      if (TYPE_CODE (type) == TYPE_CODE_TEMPLATE)
-	goto go_back;
       break;
 
     case TYPE_CODE_ENUM:
@@ -1127,22 +1142,7 @@ c_type_print_base (struct type *type, struct ui_file *stream, int show,
 	    fprintf_filtered (stream, ", ");
 	}
       fprintf_filtered (stream, "> class ");
-      /* Yuck, factor this out to a subroutine so we can call
-         it and return to the point marked with the "goback:" label... - RT */
       goto struct_union;
-    go_back:
-      if (TYPE_NINSTANTIATIONS (type) > 0)
-	{
-	  fprintf_filtered (stream, _("\ntemplate instantiations:\n"));
-	  for (i = 0; i < TYPE_NINSTANTIATIONS (type); i++)
-	    {
-	      fprintf_filtered (stream, "  ");
-	      c_type_print_base (TYPE_INSTANTIATION (type, i), stream, 0, level);
-	      if (i < TYPE_NINSTANTIATIONS (type) - 1)
-		fprintf_filtered (stream, "\n");
-	    }
-	}
-      break;
 
     case TYPE_CODE_NAMESPACE:
       fputs_filtered ("namespace ", stream);

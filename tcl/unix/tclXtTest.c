@@ -3,7 +3,7 @@
 # All Rights Reserved.
 # Modified by QUALCOMM INCORPORATED on $Date$
 *****************************************************************/
-/* 
+/*
  * tclXtTest.c --
  *
  *	Contains commands for Xt notifier specific tests on Unix.

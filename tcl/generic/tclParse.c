@@ -3,13 +3,13 @@
 # All Rights Reserved.
 # Modified by QUALCOMM INCORPORATED on $Date$
 *****************************************************************/
-/* 
+/*
  * tclParse.c --
  *
  *	This file contains procedures that parse Tcl scripts.  They
  *	do so in a general-purpose fashion that can be used for many
  *	different purposes, including compilation, direct execution,
- *	code analysis, etc.  
+ *	code analysis, etc.
  *
  * Copyright (c) 1997 Sun Microsystems, Inc.
  * Copyright (c) 1998-2000 Ajuba Solutions.
@@ -236,7 +236,7 @@ Tcl_ParseCommand(interp, string, numBytes, nested, parsePtr)
     CONST char *string;		/* First character of string containing
 				 * one or more Tcl commands. */
     register int numBytes;	/* Total number of bytes in string.  If < 0,
-				 * the script consists of all bytes up to 
+				 * the script consists of all bytes up to
 				 * the first null character. */
     int nested;			/* Non-zero means this is a nested command:
 				 * close bracket should be considered
@@ -258,7 +258,7 @@ Tcl_ParseCommand(interp, string, numBytes, nested, parsePtr)
     CONST char *termPtr;	/* Set by Tcl_ParseBraces/QuotedString to
 				 * point to char after terminating one. */
     int scanned;
-    
+
     if ((string == NULL) && (numBytes>0)) {
 	if (interp != NULL) {
 	    Tcl_SetResult(interp, "can't parse a NULL pointer", TCL_STATIC);
@@ -403,10 +403,10 @@ Tcl_ParseCommand(interp, string, numBytes, nested, parsePtr)
 	}
 	if ((type & terminators) != 0) {
 	    parsePtr->term = src;
-	    src++; 
+	    src++;
 	    break;
 	}
-	if (src[-1] == '"') { 
+	if (src[-1] == '"') {
 	    if (interp != NULL) {
 		Tcl_SetResult(interp, "extra characters after close-quote",
 			TCL_STATIC);
@@ -441,7 +441,7 @@ Tcl_ParseCommand(interp, string, numBytes, nested, parsePtr)
  * TclParseWhiteSpace --
  *
  *	Scans up to numBytes bytes starting at src, consuming white
- *	space as defined by Tcl's parsing rules.  
+ *	space as defined by Tcl's parsing rules.
  *
  * Results:
  *	Returns the number of bytes recognized as white space.  Records
@@ -512,7 +512,7 @@ TclParseWhiteSpace(src, numBytes, parsePtr, typePtr)
  *	Relies on the following properties of the ASCII
  *	character set, with which UTF-8 is compatible:
  *
- *	The digits '0' .. '9' and the letters 'A' .. 'Z' and 'a' .. 'z' 
+ *	The digits '0' .. '9' and the letters 'A' .. 'Z' and 'a' .. 'z'
  *	occupy consecutive code points, and '0' < 'A' < 'a'.
  *
  *----------------------------------------------------------------------
@@ -557,7 +557,7 @@ TclParseHex(src, numBytes, resultPtr)
  * TclParseBackslash --
  *
  *	Scans up to numBytes bytes starting at src, consuming a
- *	backslash sequence as defined by Tcl's parsing rules.  
+ *	backslash sequence as defined by Tcl's parsing rules.
  *
  * Results:
  * 	Records at readPtr the number of bytes making up the backslash
@@ -674,7 +674,7 @@ TclParseBackslash(src, numBytes, readPtr, dst)
                 result = (unsigned char)(*p - '0');
                 p++;
                 if ((numBytes == 2) || !isdigit(UCHAR(*p)) /* INTL: digit */
-			|| (UCHAR(*p) >= '8')) { 
+			|| (UCHAR(*p) >= '8')) {
                     break;
                 }
                 count = 3;
@@ -718,7 +718,7 @@ TclParseBackslash(src, numBytes, readPtr, dst)
  * ParseComment --
  *
  *	Scans up to numBytes bytes starting at src, consuming a
- *	Tcl comment as defined by Tcl's parsing rules.  
+ *	Tcl comment as defined by Tcl's parsing rules.
  *
  * Results:
  * 	Records in parsePtr information about the parse.  Returns the
@@ -777,7 +777,7 @@ ParseComment(src, numBytes, parsePtr)
     }
     return (p - src);
 }
- 
+
 /*
  *----------------------------------------------------------------------
  *
@@ -817,7 +817,7 @@ ParseTokens(src, numBytes, mask, parsePtr)
 				 * Updated with additional tokens and
 				 * termination information. */
 {
-    char type; 
+    char type;
     int originalTokens, varToken;
     Tcl_Token *tokenPtr;
     Tcl_Parse nested;
@@ -839,8 +839,8 @@ ParseTokens(src, numBytes, mask, parsePtr)
 	tokenPtr->numComponents = 0;
 
 	if ((type & TYPE_SUBS) == 0) {
-	
-    
+
+
         if((*src == '_')&&(strchr(src,'$'))) {
      	 /*
 	     * This is a  C++ mangled name of the form '_10PageButton$__both'.
@@ -852,14 +852,14 @@ ParseTokens(src, numBytes, mask, parsePtr)
 	     tokenPtr->type = TCL_TOKEN_TEXT;
 	     tokenPtr->size = src - tokenPtr->start;
 	     parsePtr->numTokens++;
-        
+
     	}
         else {
          /*
 	      * This is a simple range of characters.  Scan to find the end
 	      * of the range.
 	      */
-	      while ((++src, --numBytes) 
+	      while ((++src, --numBytes)
 		      && !(CHAR_TYPE(*src) & (mask | TYPE_SUBS))) {
 		 /* empty loop */
 	     }
@@ -879,7 +879,7 @@ ParseTokens(src, numBytes, mask, parsePtr)
         strSize++;
         /* set up the gdb search string */
         strncpy(gdbDollarStr, src, strSize);
-        
+
         if(LookUPGDBDollarVar(gdbDollarStr+1) != NULL)
         {
            tokenPtr->type = TCL_TOKEN_TEXT;
@@ -890,12 +890,12 @@ ParseTokens(src, numBytes, mask, parsePtr)
         }
         else
         {
-           varToken = parsePtr->numTokens; 
+           varToken = parsePtr->numTokens;
            if (Tcl_ParseVarName(parsePtr->interp, src, numBytes,
 		    parsePtr, 1) != TCL_OK) {
             return TCL_ERROR;
-           } 
-	     
+           }
+
            src += parsePtr->tokenPtr[varToken].size;
 	       numBytes -= parsePtr->tokenPtr[varToken].size;
         }
@@ -911,7 +911,7 @@ ParseTokens(src, numBytes, mask, parsePtr)
 
         /* Suppress gdb display for nested gdb command */
         tcl_suppress_display=1;
-        
+
 		if (Tcl_ParseCommand(parsePtr->interp, src,
 			numBytes, 1, &nested) != TCL_OK) {
 		    parsePtr->errorType = nested.errorType;
@@ -939,10 +939,10 @@ ParseTokens(src, numBytes, mask, parsePtr)
 
 		if ((nested.term < parsePtr->end) && (*nested.term == ']')
 			&& !nested.incomplete) {
-         
+
 		  break;
 		}
-      
+
 		if (numBytes == 0) {
 		    if (parsePtr->interp != NULL) {
 			Tcl_SetResult(parsePtr->interp,
@@ -958,7 +958,7 @@ ParseTokens(src, numBytes, mask, parsePtr)
 	    tokenPtr->size = src - tokenPtr->start;
 	    parsePtr->numTokens++;
 
-        
+
 	} else if (*src == '\\') {
 	    /*
 	     * Backslash substitution.
@@ -1106,7 +1106,7 @@ TclExpandTokenArray(parsePtr)
  * Results:
  *	The return value is TCL_OK if the command was parsed
  *	successfully and TCL_ERROR otherwise.  If an error occurs and
- *	interp isn't NULL then an error message is left in its result. 
+ *	interp isn't NULL then an error message is left in its result.
  *	On a successful return, tokenPtr and numTokens fields of
  *	parsePtr are filled in with information about the variable name
  *	that was parsed.  The "size" field of the first new token gives
@@ -1192,7 +1192,7 @@ Tcl_ParseVarName(interp, string, numBytes, parsePtr, append)
 
     /*
      * The name of the variable can have three forms:
-     * 1. The $ sign is followed by an open curly brace.  Then 
+     * 1. The $ sign is followed by an open curly brace.  Then
      *    the variable name is everything up to the next close
      *    curly brace, and the variable is a scalar variable.
      * 2. The $ sign is not followed by an open curly brace.  Then
@@ -1251,7 +1251,7 @@ Tcl_ParseVarName(interp, string, numBytes, parsePtr, append)
 	    if ((c == ':') && (numBytes != 1) && (src[1] == ':')) {
 		src += 2; numBytes -= 2;
 		while (numBytes && (*src == ':')) {
-		    src++; numBytes--; 
+		    src++; numBytes--;
 		}
 		continue;
 	    }
@@ -1278,8 +1278,8 @@ Tcl_ParseVarName(interp, string, numBytes, parsePtr, append)
 		    != TCL_OK) {
 		goto error;
 	    }
-	    if ((parsePtr->term == (src + numBytes)) 
-		    || (*parsePtr->term != ')')) { 
+	    if ((parsePtr->term == (src + numBytes))
+		    || (*parsePtr->term != ')')) {
 		if (parsePtr->interp != NULL) {
 		    Tcl_SetResult(parsePtr->interp, "missing )",
 			    TCL_STATIC);
@@ -1547,7 +1547,7 @@ Tcl_ParseBraces(interp, string, numBytes, parsePtr, append, termPtr)
 		     * The last case ensures that there is a token
 		     * (even if empty) that describes the braced string.
 		     */
-    
+
 		    if ((src != tokenPtr->start)
 			    || (parsePtr->numTokens == startIndex)) {
 			tokenPtr->size = (src - tokenPtr->start);
@@ -1568,7 +1568,7 @@ Tcl_ParseBraces(interp, string, numBytes, parsePtr, append, termPtr)
 		     * multiple tokens so that the backslash-newline can be
 		     * represented explicitly.
 		     */
-		
+
 		    if (numBytes == 2) {
 			parsePtr->incomplete = 1;
 		    }
@@ -1585,7 +1585,7 @@ Tcl_ParseBraces(interp, string, numBytes, parsePtr, append, termPtr)
 		    tokenPtr->size = length;
 		    tokenPtr->numComponents = 0;
 		    parsePtr->numTokens++;
-		
+
 		    src += length - 1;
 		    numBytes -= length - 1;
 		    tokenPtr++;
@@ -1635,7 +1635,7 @@ Tcl_ParseQuotedString(interp, string, numBytes, parsePtr, append, termPtr)
     Tcl_Interp *interp;		/* Interpreter to use for error reporting;
 				 * if NULL, then no error message is
 				 * provided. */
-    CONST char *string;		/* String containing the quoted string. 
+    CONST char *string;		/* String containing the quoted string.
 				 * The first character must be '"'. */
     register int numBytes;	/* Total number of bytes in string. If < 0,
 				 * the string consists of all bytes up to
@@ -1669,7 +1669,7 @@ Tcl_ParseQuotedString(interp, string, numBytes, parsePtr, append, termPtr)
 	parsePtr->interp = interp;
 	parsePtr->errorType = TCL_PARSE_SUCCESS;
     }
-    
+
     if (ParseTokens(string+1, numBytes-1, TYPE_QUOTE, parsePtr) != TCL_OK) {
 	goto error;
     }
@@ -1843,10 +1843,10 @@ TclIsLocalScalar(src, len)
 	    }
 	}
     }
-	
+
     return 1;
 }
 
 
 
- 
+

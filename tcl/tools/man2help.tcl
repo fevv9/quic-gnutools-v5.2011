@@ -12,7 +12,7 @@
 # Copyright (c) 1996 by Sun Microsystems, Inc.
 #
 # RCS: @(#) $Id$
-# 
+#
 
 #
 # PASS 1
@@ -43,7 +43,7 @@ proc generateContents {basename version files} {
 	    set lastTopic {}
 	    foreach topic [getTopics $package $section] {
 		if {[string compare $lastTopic $topic]} {
-		    set id $topics($package,$section,$topic) 
+		    set id $topics($package,$section,$topic)
 		    puts $fd "2 $topic=$id"
 		    set lastTopic $topic
 		}

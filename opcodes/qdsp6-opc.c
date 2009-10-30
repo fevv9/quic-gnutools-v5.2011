@@ -521,18 +521,10 @@ qdsp6_encode_opcode(
 }
 
 unsigned int
-qdsp6_hash_icode(
-    qdsp6_insn insn
-)
+qdsp6_hash_icode
+(qdsp6_insn insn)
 {
-  if (QDSP6_IS16BITS(insn)) {
-    // 16-bit instruction
-    return insn >> (16 - qdsp6_icode_hash_bits);
-  }
-  else {
-    // 32-bit instruction
-    return insn >> (32 - qdsp6_icode_hash_bits);
-  }
+  return (insn >> (32 - qdsp6_icode_hash_bits));
 }
 
 /* Configuration flags.  */
@@ -615,8 +607,8 @@ qdsp6_opcode_init_tables
   qdsp6_opcodes_count         =   qdsp6_if_arch_v2 ()
                                 ? qdsp6_opcodes_count_v2: qdsp6_opcodes_count_v3;
 
-  bzero (opcode_map, sizeof (opcode_map));
-  bzero (icode_map,  sizeof (icode_map));
+  memset (opcode_map, 0, sizeof (opcode_map));
+  memset (icode_map,  0, sizeof (icode_map));
 
   /* Scan the opcodes table to determine the number of bits
     that can reliably be used to hash opcodes */
@@ -706,16 +698,9 @@ qdsp6_lookup_insn(
     encode = qdsp6_encode_opcode(opcode->enc);
     mask = qdsp6_enc_mask(opcode->enc);
 
-    if (QDSP6_IS16BITS(encode)) {
-      if ((insn & mask & 0xffff) == encode) {
-        return opcode;
-      }
-    }
-    else {
       if ((insn & mask) == encode) {
         return opcode;
       }
-    }
   }
 
   return NULL;
@@ -815,6 +800,63 @@ qdsp6_encode_operand(
 
   return 1;
 }
+
+#if 0
+static char *
+qdsp6_parse_dup(
+    const qdsp6_operand *operand,
+    qdsp6_insn *insn,
+    char *enc,
+    char *input,
+    char **errmsg
+)
+{
+  char letter = TOLOWER(operand->fmt[3]);
+  int regid;
+
+  if (TOLOWER(*input) == letter && ISDIGIT(input[1])) {
+    unsigned int reg_num = 0;
+
+    /* Skip the letter */
+    input++;
+
+    /* Read the register number */
+    while (ISDIGIT(*input)) {
+      char ch = *input++;
+      reg_num = 10*reg_num + (ch - '0');
+    }
+    if (!qdsp6_extract_operand(operand, *insn, 0, enc, &regid, errmsg)) {
+      return NULL;
+    }
+    if (regid == reg_num) {
+      return input;
+    } else {
+      return NULL;
+    }
+  }
+
+  return NULL;
+}
+
+static char *
+qdsp6_throw_litimm(
+    const qdsp6_operand *operand,
+    qdsp6_insn *insn,
+    char *enc,
+    char *input,
+    char **errmsg
+)
+{
+  int i;
+  for (i = 0; operand->fmt[i]; i++) {
+    if (operand->fmt[i] != input[i]) {
+      return NULL;
+    }
+  }
+  input += i;
+  return input;
+}
+#endif
 
 static char *
 qdsp6_parse_dreg
@@ -1145,12 +1187,7 @@ qdsp6_extract_operand
   unsigned int bits_found;
   qdsp6_insn mask;
 
-  if (QDSP6_IS16BITS(insn)) {
-    mask = 1 << 15;
-  }
-  else {
-    mask = 1 << 31;
-  }
+  mask = 1 << 31;
 
   /* Grab the bits from the instruction */
   bits_found = 0;

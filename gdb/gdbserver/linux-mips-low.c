@@ -1,6 +1,6 @@
 /* GNU/Linux/MIPS specific low level interface, for the remote server for GDB.
    Copyright (C) 1995, 1996, 1998, 1999, 2000, 2001, 2002, 2005, 2006, 2007,
-   2008 Free Software Foundation, Inc.
+   2008, 2009 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -24,6 +24,11 @@
 #include <endian.h>
 
 #include "gdb_proc_service.h"
+
+/* Defined in auto-generated file mips-linux.c.  */
+void init_registers_mips_linux (void);
+/* Defined in auto-generated file mips64-linux.c.  */
+void init_registers_mips64_linux (void);
 
 #ifndef PTRACE_GET_THREAD_AREA
 #define PTRACE_GET_THREAD_AREA 25
@@ -162,7 +167,7 @@ mips_breakpoint_at (CORE_ADDR where)
 
 ps_err_e
 ps_get_thread_area (const struct ps_prochandle *ph,
-                    lwpid_t lwpid, int idx, void **base)
+		    lwpid_t lwpid, int idx, void **base)
 {
   if (ptrace (PTRACE_GET_THREAD_AREA, lwpid, NULL, base) != 0)
     return PS_ERR;
@@ -329,6 +334,11 @@ struct regset_info target_regsets[] = {
 };
 
 struct linux_target_ops the_low_target = {
+#ifdef __mips64
+  init_registers_mips64_linux,
+#else
+  init_registers_mips_linux,
+#endif
   mips_num_regs,
   mips_regmap,
   mips_cannot_fetch_register,

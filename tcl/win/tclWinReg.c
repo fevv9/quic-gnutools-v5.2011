@@ -87,7 +87,7 @@ typedef struct RegWinProcs {
 
     LONG (WINAPI *regConnectRegistryProc)(CONST TCHAR *, HKEY, PHKEY);
     LONG (WINAPI *regCreateKeyExProc)(HKEY, CONST TCHAR *, DWORD, TCHAR *,
-	    DWORD, REGSAM, SECURITY_ATTRIBUTES *, HKEY *, DWORD *); 
+	    DWORD, REGSAM, SECURITY_ATTRIBUTES *, HKEY *, DWORD *);
     LONG (WINAPI *regDeleteKeyProc)(HKEY, CONST TCHAR *);
     LONG (WINAPI *regDeleteValueProc)(HKEY, CONST TCHAR *);
     LONG (WINAPI *regEnumKeyProc)(HKEY, DWORD, TCHAR *, DWORD);
@@ -114,7 +114,7 @@ static RegWinProcs asciiProcs = {
     (LONG (WINAPI *)(CONST TCHAR *, HKEY, PHKEY)) RegConnectRegistryA,
     (LONG (WINAPI *)(HKEY, CONST TCHAR *, DWORD, TCHAR *,
 	    DWORD, REGSAM, SECURITY_ATTRIBUTES *, HKEY *,
-	    DWORD *)) RegCreateKeyExA, 
+	    DWORD *)) RegCreateKeyExA,
     (LONG (WINAPI *)(HKEY, CONST TCHAR *)) RegDeleteKeyA,
     (LONG (WINAPI *)(HKEY, CONST TCHAR *)) RegDeleteValueA,
     (LONG (WINAPI *)(HKEY, DWORD, TCHAR *, DWORD)) RegEnumKeyA,
@@ -139,7 +139,7 @@ static RegWinProcs unicodeProcs = {
     (LONG (WINAPI *)(CONST TCHAR *, HKEY, PHKEY)) RegConnectRegistryW,
     (LONG (WINAPI *)(HKEY, CONST TCHAR *, DWORD, TCHAR *,
 	    DWORD, REGSAM, SECURITY_ATTRIBUTES *, HKEY *,
-	    DWORD *)) RegCreateKeyExW, 
+	    DWORD *)) RegCreateKeyExW,
     (LONG (WINAPI *)(HKEY, CONST TCHAR *)) RegDeleteKeyW,
     (LONG (WINAPI *)(HKEY, CONST TCHAR *)) RegDeleteValueW,
     (LONG (WINAPI *)(HKEY, DWORD, TCHAR *, DWORD)) RegEnumKeyW,
@@ -744,8 +744,8 @@ GetValue(
 	 * terminated by two null characters.  Also do a bounds check in
 	 * case we get bogus data.
 	 */
- 
-	while (p < end 	&& ((regWinProcs->useWide) 
+
+	while (p < end 	&& ((regWinProcs->useWide)
 		? *((Tcl_UniChar *)p) : *p) != 0) {
 	    Tcl_WinTCharToUtf((TCHAR *) p, -1, &buf);
 	    Tcl_ListObjAppendElement(interp, resultPtr,

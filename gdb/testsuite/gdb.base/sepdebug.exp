@@ -1,5 +1,5 @@
 #   Copyright 1988, 1990, 1991, 1992, 1994, 1995, 1996, 1997, 1998, 1999,
-#   2000, 2002, 2003, 2004, 2007, 2008 Free Software Foundation, Inc.
+#   2000, 2002, 2003, 2004, 2007, 2008, 2009 Free Software Foundation, Inc.
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -13,9 +13,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-# Please email any bugs, comments, and/or additions to this file to:
-# bug-gdb@prep.ai.mit.edu
 
 # Based on break.exp, written by Rob Savoye. (rob@cygnus.com)
 # Modified to test gdb's handling of separate debug info files.
@@ -261,13 +258,13 @@ delete_breakpoints
 # test temporary breakpoint at function
 #
 
-gdb_test "tbreak main" "Breakpoint.*at.* file .*$srcfile, line.*" "Temporary breakpoint function"
+gdb_test "tbreak main" "Temporary breakpoint.*at.* file .*$srcfile, line.*" "Temporary breakpoint function"
 
 #
 # test break at function in file
 #
 
-gdb_test "tbreak $srcfile:factorial" "Breakpoint.*at.* file .*$srcfile, line.*" \
+gdb_test "tbreak $srcfile:factorial" "Temporary breakpoint.*at.* file .*$srcfile, line.*" \
 	"Temporary breakpoint function in file"
 
 #
@@ -275,25 +272,25 @@ gdb_test "tbreak $srcfile:factorial" "Breakpoint.*at.* file .*$srcfile, line.*" 
 #
 send_gdb "tbreak $bp_location1\n"
 gdb_expect {
-    -re "Breakpoint.*at.* file .*$srcfile, line $bp_location1.*$gdb_prompt $" { pass "Temporary breakpoint line number #1" }
+    -re "Temporary breakpoint.*at.* file .*$srcfile, line $bp_location1.*$gdb_prompt $" { pass "Temporary breakpoint line number #1" }
 	-re ".*$gdb_prompt $"   { pass "Temporary breakpoint line number #1" }
 	timeout	    { fail "breakpoint line number #1 (timeout)" }
 }
 
-gdb_test "tbreak $bp_location6" "Breakpoint.*at.* file .*$srcfile, line $bp_location6.*" "Temporary breakpoint line number #2"
+gdb_test "tbreak $bp_location6" "Temporary breakpoint.*at.* file .*$srcfile, line $bp_location6.*" "Temporary breakpoint line number #2"
 
 #
 # test break at line number in file
 #
 send_gdb "tbreak $srcfile:$bp_location2\n"
 gdb_expect {
-    -re "Breakpoint.*at.* file .*$srcfile, line $bp_location2.*$gdb_prompt $" { pass "Temporary breakpoint line number in file #1" }
+    -re "Temporary breakpoint.*at.* file .*$srcfile, line $bp_location2.*$gdb_prompt $" { pass "Temporary breakpoint line number in file #1" }
 	-re ".*$gdb_prompt $"   { pass "Temporary breakpoint line number in file #1" }
 	timeout	    { fail "Temporary breakpoint line number in file #1 (timeout)" }
 }
 
 set bp_location11 [gdb_get_line_number "set breakpoint 11 here"]
-gdb_test  "tbreak $srcfile:$bp_location11" "Breakpoint.*at.* file .*$srcfile, line $bp_location11.*" "Temporary breakpoint line number in file #2"
+gdb_test  "tbreak $srcfile:$bp_location11" "Temporary breakpoint.*at.* file .*$srcfile, line $bp_location11.*" "Temporary breakpoint line number in file #2"
 
 #
 # check to see what breakpoints are set (temporary this time)
@@ -602,7 +599,7 @@ gdb_expect {
 }
 send_gdb "print marker2(99)\n"
 gdb_expect {
-  -re "The program being debugged stopped while in a function called from GDB.\r\nWhen the function .marker2. is done executing, GDB will silently\r\nstop .instead of continuing to evaluate the expression containing\r\nthe function call...*$gdb_prompt $"\
+  -re "The program being debugged stopped while in a function called from GDB.\r\nEvaluation of the expression containing the function\r\n.marker2. will be abandoned.\r\nWhen the function is done executing, GDB will silently stop..*$gdb_prompt $"\
           {pass "hit breakpoint on called function"}
   -re "$gdb_prompt $"\
           {fail "hit breakpoint on called function"}

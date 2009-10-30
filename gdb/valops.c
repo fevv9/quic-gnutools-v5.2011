@@ -2,7 +2,7 @@
 
    Copyright (C) 1986, 1987, 1988, 1989, 1990, 1991, 1992, 1993, 1994, 1995,
    1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007,
-   2008 Free Software Foundation, Inc.
+   2008, 2009 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -37,12 +37,15 @@
 #include "dictionary.h"
 #include "cp-support.h"
 #include "dfp.h"
+#include "user-regs.h"
 
 #include <errno.h>
 #include "gdb_string.h"
 #include "gdb_assert.h"
 #include "cp-support.h"
 #include "observer.h"
+#include "objfiles.h"
+#include "symtab.h"
 
 extern int overload_debug;
 /* Local functions.  */
@@ -79,8 +82,6 @@ enum oload_classification { STANDARD, NON_STANDARD, INCOMPATIBLE };
 static enum
 oload_classification classify_oload_match (struct badness_vector *,
 					   int, int);
-
-static int check_field_in (struct type *, const char *);
 
 static struct value *value_struct_elt_for_reference (struct type *,
 						     int, struct type *,
@@ -123,13 +124,15 @@ Overload resolution in evaluating C++ functions is %s.\n"),
 		    value);
 }
 
-/* Find the address of function name NAME in the inferior.  */
+/* Find the address of function name NAME in the inferior.  If OBJF_P
+   is non-NULL, *OBJF_P will be set to the OBJFILE where the function
+   is defined.  */
 
 struct value *
-find_function_in_inferior (const char *name)
+find_function_in_inferior (const char *name, struct objfile **objf_p)
 {
   struct symbol *sym;
-  sym = lookup_symbol (name, 0, VAR_DOMAIN, 0, NULL);
+  sym = lookup_symbol (name, 0, VAR_DOMAIN, 0);
   if (sym != NULL)
     {
       if (SYMBOL_CLASS (sym) != LOC_BLOCK)
@@ -137,6 +140,10 @@ find_function_in_inferior (const char *name)
 	  error (_("\"%s\" exists in this program but is not a function."),
 		 name);
 	}
+
+      if (objf_p)
+	*objf_p = SYMBOL_SYMTAB (sym)->objfile;
+
       return value_of_variable (sym, NULL);
     }
   else
@@ -145,12 +152,19 @@ find_function_in_inferior (const char *name)
 	lookup_minimal_symbol (name, NULL, NULL);
       if (msymbol != NULL)
 	{
+	  struct objfile *objfile = msymbol_objfile (msymbol);
+	  struct gdbarch *gdbarch = get_objfile_arch (objfile);
+
 	  struct type *type;
 	  CORE_ADDR maddr;
-	  type = lookup_pointer_type (builtin_type_char);
+	  type = lookup_pointer_type (builtin_type (gdbarch)->builtin_char);
 	  type = lookup_function_type (type);
 	  type = lookup_pointer_type (type);
 	  maddr = SYMBOL_VALUE_ADDRESS (msymbol);
+
+	  if (objf_p)
+	    *objf_p = objfile;
+
 	  return value_from_pointer (type, maddr);
 	}
       else
@@ -170,11 +184,12 @@ find_function_in_inferior (const char *name)
 struct value *
 value_allocate_space_in_inferior (int len)
 {
+  struct objfile *objf;
+  struct value *val = find_function_in_inferior ("malloc", &objf);
+  struct gdbarch *gdbarch = get_objfile_arch (objf);
   struct value *blocklen;
-  struct value *val = 
-    find_function_in_inferior (gdbarch_name_of_malloc (current_gdbarch));
 
-  blocklen = value_from_longest (builtin_type_int, (LONGEST) len);
+  blocklen = value_from_longest (builtin_type (gdbarch)->builtin_int, len);
   val = call_function_by_hand (val, 1, &blocklen);
   if (value_logical_not (val))
     {
@@ -192,6 +207,62 @@ allocate_space_in_inferior (int len)
   return value_as_long (value_allocate_space_in_inferior (len));
 }
 
+/* Cast struct value VAL to type TYPE and return as a value.
+   Both type and val must be of TYPE_CODE_STRUCT or TYPE_CODE_UNION
+   for this to work.  Typedef to one of the codes is permitted.
+   Returns NULL if the cast is neither an upcast nor a downcast.  */
+
+static struct value *
+value_cast_structs (struct type *type, struct value *v2)
+{
+  struct type *t1;
+  struct type *t2;
+  struct value *v;
+
+  gdb_assert (type != NULL && v2 != NULL);
+
+  t1 = check_typedef (type);
+  t2 = check_typedef (value_type (v2));
+
+  /* Check preconditions.  */
+  gdb_assert ((TYPE_CODE (t1) == TYPE_CODE_STRUCT
+	       || TYPE_CODE (t1) == TYPE_CODE_UNION)
+	      && !!"Precondition is that type is of STRUCT or UNION kind.");
+  gdb_assert ((TYPE_CODE (t2) == TYPE_CODE_STRUCT
+	       || TYPE_CODE (t2) == TYPE_CODE_UNION)
+	      && !!"Precondition is that value is of STRUCT or UNION kind");
+
+  /* Upcasting: look in the type of the source to see if it contains the
+     type of the target as a superclass.  If so, we'll need to
+     offset the pointer rather than just change its type.  */
+  if (TYPE_NAME (t1) != NULL)
+    {
+      v = search_struct_field (type_name_no_tag (t1),
+			       v2, 0, t2, 1);
+      if (v)
+	return v;
+    }
+
+  /* Downcasting: look in the type of the target to see if it contains the
+     type of the source as a superclass.  If so, we'll need to
+     offset the pointer rather than just change its type.
+     FIXME: This fails silently with virtual inheritance.  */
+  if (TYPE_NAME (t2) != NULL)
+    {
+      v = search_struct_field (type_name_no_tag (t2),
+			       value_zero (t1, not_lval), 0, t1, 1);
+      if (v)
+	{
+	  /* Downcasting is possible (t1 is superclass of v2).  */
+	  CORE_ADDR addr2 = value_address (v2);
+	  addr2 -= value_address (v) + value_embedded_offset (v);
+	  return value_at (type, addr2);
+	}
+    }
+
+  return NULL;
+}
+
 /* Cast one pointer or reference type to another.  Both TYPE and
    the type of ARG2 should be pointer types, or else both should be
    reference types.  Returns the new pointer or reference.  */
@@ -199,6 +270,7 @@ allocate_space_in_inferior (int len)
 struct value *
 value_cast_pointers (struct type *type, struct value *arg2)
 {
+  struct type *type1 = check_typedef (type);
   struct type *type2 = check_typedef (value_type (arg2));
   struct type *t1 = check_typedef (TYPE_TARGET_TYPE (type));
   struct type *t2 = check_typedef (TYPE_TARGET_TYPE (type2));
@@ -207,47 +279,23 @@ value_cast_pointers (struct type *type, struct value *arg2)
       && TYPE_CODE (t2) == TYPE_CODE_STRUCT
       && !value_logical_not (arg2))
     {
-      struct value *v;
+      struct value *v2;
 
-      /* Look in the type of the source to see if it contains the
-	 type of the target as a superclass.  If so, we'll need to
-	 offset the pointer rather than just change its type.  */
-      if (TYPE_NAME (t1) != NULL)
+      if (TYPE_CODE (type2) == TYPE_CODE_REF)
+	v2 = coerce_ref (arg2);
+      else
+	v2 = value_ind (arg2);
+      gdb_assert (TYPE_CODE (check_typedef (value_type (v2))) == TYPE_CODE_STRUCT
+		  && !!"Why did coercion fail?");
+      v2 = value_cast_structs (t1, v2);
+      /* At this point we have what we can have, un-dereference if needed.  */
+      if (v2)
 	{
-	  struct value *v2;
-
-	  if (TYPE_CODE (type2) == TYPE_CODE_REF)
-	    v2 = coerce_ref (arg2);
-	  else
-	    v2 = value_ind (arg2);
-	  v = search_struct_field (type_name_no_tag (t1),
-				   v2, 0, t2, 1);
-	  if (v)
-	    {
-	      v = value_addr (v);
-	      deprecated_set_value_type (v, type);
-	      return v;
-	    }
+	  struct value *v = value_addr (v2);
+	  deprecated_set_value_type (v, type);
+	  return v;
 	}
-
-      /* Look in the type of the target to see if it contains the
-	 type of the source as a superclass.  If so, we'll need to
-	 offset the pointer rather than just change its type.
-	 FIXME: This fails silently with virtual inheritance.  */
-      if (TYPE_NAME (t2) != NULL)
-	{
-	  v = search_struct_field (type_name_no_tag (t2),
-				   value_zero (t1, not_lval), 0, t1, 1);
-	  if (v)
-	    {
-	      CORE_ADDR addr2 = value_as_address (arg2);
-	      addr2 -= (VALUE_ADDRESS (v)
-			+ value_offset (v)
-			+ value_embedded_offset (v));
-	      return value_from_pointer (type, addr2);
-	    }
-	}
-    }
+   }
 
   /* No superclass found, just change the pointer type.  */
   arg2 = value_copy (arg2);
@@ -275,6 +323,26 @@ value_cast (struct type *type, struct value *arg2)
   if (value_type (arg2) == type)
     return arg2;
 
+  code1 = TYPE_CODE (check_typedef (type));
+
+  /* Check if we are casting struct reference to struct reference.  */
+  if (code1 == TYPE_CODE_REF)
+    {
+      /* We dereference type; then we recurse and finally
+         we generate value of the given reference. Nothing wrong with 
+	 that.  */
+      struct type *t1 = check_typedef (type);
+      struct type *dereftype = check_typedef (TYPE_TARGET_TYPE (t1));
+      struct value *val =  value_cast (dereftype, arg2);
+      return value_ref (val); 
+    }
+
+  code2 = TYPE_CODE (check_typedef (value_type (arg2)));
+
+  if (code2 == TYPE_CODE_REF)
+    /* We deref the value and then do the cast.  */
+    return value_cast (type, coerce_ref (arg2)); 
+
   CHECK_TYPEDEF (type);
   code1 = TYPE_CODE (type);
   arg2 = coerce_ref (arg2);
@@ -291,8 +359,7 @@ value_cast (struct type *type, struct value *arg2)
     {
       struct type *element_type = TYPE_TARGET_TYPE (type);
       unsigned element_length = TYPE_LENGTH (check_typedef (element_type));
-      if (element_length > 0
-	&& TYPE_ARRAY_UPPER_BOUND_TYPE (type) == BOUND_CANNOT_BE_DETERMINED)
+      if (element_length > 0 && TYPE_ARRAY_UPPER_BOUND_IS_UNDEFINED (type))
 	{
 	  struct type *range_type = TYPE_INDEX_TYPE (type);
 	  int val_length = TYPE_LENGTH (type2);
@@ -342,36 +409,31 @@ value_cast (struct type *type, struct value *arg2)
 	    || code2 == TYPE_CODE_DECFLOAT || code2 == TYPE_CODE_ENUM
 	    || code2 == TYPE_CODE_RANGE);
 
-  if (code1 == TYPE_CODE_STRUCT
-      && code2 == TYPE_CODE_STRUCT
+  if ((code1 == TYPE_CODE_STRUCT || code1 == TYPE_CODE_UNION)
+      && (code2 == TYPE_CODE_STRUCT || code2 == TYPE_CODE_UNION)
       && TYPE_NAME (type) != 0)
     {
-      /* Look in the type of the source to see if it contains the
-         type of the target as a superclass.  If so, we'll need to
-         offset the object in addition to changing its type.  */
-      struct value *v = search_struct_field (type_name_no_tag (type),
-					     arg2, 0, type2, 1);
+      struct value *v = value_cast_structs (type, arg2);
       if (v)
-	{
-	  deprecated_set_value_type (v, type);
-	  return v;
-	}
+	return v;
     }
+
   if (code1 == TYPE_CODE_FLT && scalar)
     return value_from_double (type, value_as_double (arg2));
   else if (code1 == TYPE_CODE_DECFLOAT && scalar)
     {
+      enum bfd_endian byte_order = gdbarch_byte_order (get_type_arch (type));
       int dec_len = TYPE_LENGTH (type);
       gdb_byte dec[16];
 
       if (code2 == TYPE_CODE_FLT)
-	decimal_from_floating (arg2, dec, dec_len);
+	decimal_from_floating (arg2, dec, dec_len, byte_order);
       else if (code2 == TYPE_CODE_DECFLOAT)
 	decimal_convert (value_contents (arg2), TYPE_LENGTH (type2),
-			 dec, dec_len);
+			 byte_order, dec, dec_len, byte_order);
       else
 	/* The only option left is an integral type.  */
-	decimal_from_integral (arg2, dec, dec_len);
+	decimal_from_integral (arg2, dec, dec_len, byte_order);
 
       return value_from_decfloat (type, dec);
     }
@@ -389,8 +451,9 @@ value_cast (struct type *type, struct value *arg2)
          sees a cast as a simple reinterpretation of the pointer's
          bits.  */
       if (code2 == TYPE_CODE_PTR)
-        longest = extract_unsigned_integer (value_contents (arg2),
-                                            TYPE_LENGTH (type2));
+        longest = extract_unsigned_integer
+		    (value_contents (arg2), TYPE_LENGTH (type2),
+		     gdbarch_byte_order (get_type_arch (type2)));
       else
         longest = value_as_long (arg2);
       return value_from_longest (type, convert_to_boolean ?
@@ -410,7 +473,7 @@ value_cast (struct type *type, struct value *arg2)
 	 otherwise occur when dealing with a target having two byte
 	 pointers and four byte addresses.  */
 
-      int addr_bit = gdbarch_addr_bit (current_gdbarch);
+      int addr_bit = gdbarch_addr_bit (get_type_arch (type2));
 
       LONGEST longest = value_as_long (arg2);
       if (addr_bit < sizeof (LONGEST) * HOST_CHAR_BIT)
@@ -425,7 +488,7 @@ value_cast (struct type *type, struct value *arg2)
 	   && value_as_long (arg2) == 0)
     {
       struct value *result = allocate_value (type);
-      cplus_make_method_ptr (value_contents_writeable (result), 0, 0);
+      cplus_make_method_ptr (type, value_contents_writeable (result), 0, 0);
       return result;
     }
   else if (code1 == TYPE_CODE_MEMBERPTR && code2 == TYPE_CODE_INT
@@ -447,11 +510,10 @@ value_cast (struct type *type, struct value *arg2)
       return arg2;
     }
   else if (VALUE_LVAL (arg2) == lval_memory)
-    return value_at_lazy (type, 
-			  VALUE_ADDRESS (arg2) + value_offset (arg2));
+    return value_at_lazy (type, value_address (arg2));
   else if (code1 == TYPE_CODE_VOID)
     {
-      return value_zero (builtin_type_void, not_lval);
+      return value_zero (type, not_lval);
     }
   else
     {
@@ -477,15 +539,13 @@ struct value *
 value_one (struct type *type, enum lval_type lv)
 {
   struct type *type1 = check_typedef (type);
-  struct value *val = NULL; /* avoid -Wall warning */
+  struct value *val;
 
   if (TYPE_CODE (type1) == TYPE_CODE_DECFLOAT)
     {
-      struct value *int_one = value_from_longest (builtin_type_int, 1);
-      struct value *val;
+      enum bfd_endian byte_order = gdbarch_byte_order (get_type_arch (type));
       gdb_byte v[16];
-
-      decimal_from_integral (int_one, v, TYPE_LENGTH (builtin_type_int));
+      decimal_from_string (v, TYPE_LENGTH (type), byte_order, "1");
       val = value_from_decfloat (type, v);
     }
   else if (TYPE_CODE (type1) == TYPE_CODE_FLT)
@@ -505,6 +565,32 @@ value_one (struct type *type, enum lval_type lv)
   return val;
 }
 
+/* Helper function for value_at, value_at_lazy, and value_at_lazy_stack.  */
+
+static struct value *
+get_value_at (struct type *type, CORE_ADDR addr, int lazy)
+{
+  struct value *val;
+
+  if (TYPE_CODE (check_typedef (type)) == TYPE_CODE_VOID)
+    error (_("Attempt to dereference a generic pointer."));
+
+  if (lazy)
+    {
+      val = allocate_value_lazy (type);
+    }
+  else
+    {
+      val = allocate_value (type);
+      read_memory (addr, value_contents_all_raw (val), TYPE_LENGTH (type));
+    }
+
+  VALUE_LVAL (val) = lval_memory;
+  set_value_address (val, addr);
+
+  return val;
+}
+
 /* Return a value with type TYPE located at ADDR.
 
    Call value_at only if the data needs to be fetched immediately;
@@ -520,19 +606,7 @@ value_one (struct type *type, enum lval_type lv)
 struct value *
 value_at (struct type *type, CORE_ADDR addr)
 {
-  struct value *val;
-
-  if (TYPE_CODE (check_typedef (type)) == TYPE_CODE_VOID)
-    error (_("Attempt to dereference a generic pointer."));
-
-  val = allocate_value (type);
-
-  read_memory (addr, value_contents_all_raw (val), TYPE_LENGTH (type));
-
-  VALUE_LVAL (val) = lval_memory;
-  VALUE_ADDRESS (val) = addr;
-
-  return val;
+  return get_value_at (type, addr, 0);
 }
 
 /* Return a lazy value with type TYPE located at ADDR (cf. value_at).  */
@@ -540,18 +614,7 @@ value_at (struct type *type, CORE_ADDR addr)
 struct value *
 value_at_lazy (struct type *type, CORE_ADDR addr)
 {
-  struct value *val;
-
-  if (TYPE_CODE (check_typedef (type)) == TYPE_CODE_VOID)
-    error (_("Attempt to dereference a generic pointer."));
-
-  val = allocate_value (type);
-
-  VALUE_LVAL (val) = lval_memory;
-  VALUE_ADDRESS (val) = addr;
-  set_value_lazy (val, 1);
-
-  return val;
+  return get_value_at (type, addr, 1);
 }
 
 /* Called only from the value_contents and value_contents_all()
@@ -571,12 +634,128 @@ value_at_lazy (struct type *type, CORE_ADDR addr)
 int
 value_fetch_lazy (struct value *val)
 {
-  CORE_ADDR addr = VALUE_ADDRESS (val) + value_offset (val);
-  int length = TYPE_LENGTH (value_enclosing_type (val));
+  gdb_assert (value_lazy (val));
+  allocate_value_contents (val);
+  if (value_bitsize (val))
+    {
+      /* To read a lazy bitfield, read the entire enclosing value.  This
+	 prevents reading the same block of (possibly volatile) memory once
+         per bitfield.  It would be even better to read only the containing
+         word, but we have no way to record that just specific bits of a
+         value have been fetched.  */
+      struct type *type = check_typedef (value_type (val));
+      enum bfd_endian byte_order = gdbarch_byte_order (get_type_arch (type));
+      struct value *parent = value_parent (val);
+      LONGEST offset = value_offset (val);
+      LONGEST num = unpack_bits_as_long (value_type (val),
+					 value_contents (parent) + offset,
+					 value_bitpos (val),
+					 value_bitsize (val));
+      int length = TYPE_LENGTH (type);
+      store_signed_integer (value_contents_raw (val), length, byte_order, num);
+    }
+  else if (VALUE_LVAL (val) == lval_memory)
+    {
+      CORE_ADDR addr = value_address (val);
+      int length = TYPE_LENGTH (check_typedef (value_enclosing_type (val)));
 
-  struct type *type = value_type (val);
-  if (length)
-    read_memory (addr, value_contents_all_raw (val), length);
+      if (length)
+	{
+	  if (value_stack (val))
+	    read_stack (addr, value_contents_all_raw (val), length);
+	  else
+	    read_memory (addr, value_contents_all_raw (val), length);
+	}
+    }
+  else if (VALUE_LVAL (val) == lval_register)
+    {
+      struct frame_info *frame;
+      int regnum;
+      struct type *type = check_typedef (value_type (val));
+      struct value *new_val = val, *mark = value_mark ();
+
+      /* Offsets are not supported here; lazy register values must
+	 refer to the entire register.  */
+      gdb_assert (value_offset (val) == 0);
+
+      while (VALUE_LVAL (new_val) == lval_register && value_lazy (new_val))
+	{
+	  frame = frame_find_by_id (VALUE_FRAME_ID (new_val));
+	  regnum = VALUE_REGNUM (new_val);
+
+	  gdb_assert (frame != NULL);
+
+	  /* Convertible register routines are used for multi-register
+	     values and for interpretation in different types
+	     (e.g. float or int from a double register).  Lazy
+	     register values should have the register's natural type,
+	     so they do not apply.  */
+	  gdb_assert (!gdbarch_convert_register_p (get_frame_arch (frame),
+						   regnum, type));
+
+	  new_val = get_frame_register_value (frame, regnum);
+	}
+
+      /* If it's still lazy (for instance, a saved register on the
+	 stack), fetch it.  */
+      if (value_lazy (new_val))
+	value_fetch_lazy (new_val);
+
+      /* If the register was not saved, mark it unavailable.  */
+      if (value_optimized_out (new_val))
+	set_value_optimized_out (val, 1);
+      else
+	memcpy (value_contents_raw (val), value_contents (new_val),
+		TYPE_LENGTH (type));
+
+      if (frame_debug)
+	{
+	  struct gdbarch *gdbarch;
+	  frame = frame_find_by_id (VALUE_FRAME_ID (val));
+	  regnum = VALUE_REGNUM (val);
+	  gdbarch = get_frame_arch (frame);
+
+	  fprintf_unfiltered (gdb_stdlog, "\
+{ value_fetch_lazy (frame=%d,regnum=%d(%s),...) ",
+			      frame_relative_level (frame), regnum,
+			      user_reg_map_regnum_to_name (gdbarch, regnum));
+
+	  fprintf_unfiltered (gdb_stdlog, "->");
+	  if (value_optimized_out (new_val))
+	    fprintf_unfiltered (gdb_stdlog, " optimized out");
+	  else
+	    {
+	      int i;
+	      const gdb_byte *buf = value_contents (new_val);
+
+	      if (VALUE_LVAL (new_val) == lval_register)
+		fprintf_unfiltered (gdb_stdlog, " register=%d",
+				    VALUE_REGNUM (new_val));
+	      else if (VALUE_LVAL (new_val) == lval_memory)
+		fprintf_unfiltered (gdb_stdlog, " address=%s",
+				    paddress (gdbarch,
+					      value_address (new_val)));
+	      else
+		fprintf_unfiltered (gdb_stdlog, " computed");
+
+	      fprintf_unfiltered (gdb_stdlog, " bytes=");
+	      fprintf_unfiltered (gdb_stdlog, "[");
+	      for (i = 0; i < register_size (gdbarch, regnum); i++)
+		fprintf_unfiltered (gdb_stdlog, "%02x", buf[i]);
+	      fprintf_unfiltered (gdb_stdlog, "]");
+	    }
+
+	  fprintf_unfiltered (gdb_stdlog, " }\n");
+	}
+
+      /* Dispose of the intermediate values.  This prevents
+	 watchpoints from trying to watch the saved frame pointer.  */
+      value_free_to_mark (mark);
+    }
+  else if (VALUE_LVAL (val) == lval_computed)
+    value_computed_funcs (val)->read (val);
+  else
+    internal_error (__FILE__, __LINE__, "Unexpected lazy value type.");
 
   set_value_lazy (val, 0);
   return 0;
@@ -600,9 +779,18 @@ value_assign (struct value *toval, struct value *fromval)
 
   type = value_type (toval);
   if (VALUE_LVAL (toval) != lval_internalvar)
-    fromval = value_cast (type, fromval);
+    {
+      toval = value_coerce_to_target (toval);
+      fromval = value_cast (type, fromval);
+    }
   else
-    fromval = coerce_array (fromval);
+    {
+      /* Coerce arrays and functions to pointers, except for arrays
+	 which only live in GDB's storage.  */
+      if (!value_must_coerce_to_target (fromval))
+	fromval = coerce_array (fromval);
+    }
+
   CHECK_TYPEDEF (type);
 
   /* Since modifying a register can trash the frame chain, and
@@ -614,7 +802,7 @@ value_assign (struct value *toval, struct value *fromval)
     {
     case lval_internalvar:
       set_internalvar (VALUE_INTERNALVAR (toval), fromval);
-      val = value_copy (VALUE_INTERNALVAR (toval)->value);
+      val = value_copy (fromval);
       val = value_change_enclosing_type (val, 
 					 value_enclosing_type (fromval));
       set_value_embedded_offset (val, value_embedded_offset (fromval));
@@ -639,27 +827,35 @@ value_assign (struct value *toval, struct value *fromval)
 
 	if (value_bitsize (toval))
 	  {
-	    /* We assume that the argument to read_memory is in units
-	       of host chars.  FIXME: Is that correct?  */
+	    struct value *parent = value_parent (toval);
+	    changed_addr = value_address (parent) + value_offset (toval);
+
 	    changed_len = (value_bitpos (toval)
 			   + value_bitsize (toval)
 			   + HOST_CHAR_BIT - 1)
 	      / HOST_CHAR_BIT;
 
+	    /* If we can read-modify-write exactly the size of the
+	       containing type (e.g. short or int) then do so.  This
+	       is safer for volatile bitfields mapped to hardware
+	       registers.  */
+	    if (changed_len < TYPE_LENGTH (type)
+		&& TYPE_LENGTH (type) <= (int) sizeof (LONGEST)
+		&& ((LONGEST) changed_addr % TYPE_LENGTH (type)) == 0)
+	      changed_len = TYPE_LENGTH (type);
+
 	    if (changed_len > (int) sizeof (LONGEST))
 	      error (_("Can't handle bitfields which don't fit in a %d bit word."),
 		     (int) sizeof (LONGEST) * HOST_CHAR_BIT);
 
-	    read_memory (VALUE_ADDRESS (toval) + value_offset (toval),
-			 buffer, changed_len);
-	    modify_field (buffer, value_as_long (fromval),
+	    read_memory (changed_addr, buffer, changed_len);
+	    modify_field (type, buffer, value_as_long (fromval),
 			  value_bitpos (toval), value_bitsize (toval));
-	    changed_addr = VALUE_ADDRESS (toval) + value_offset (toval);
 	    dest_buffer = buffer;
 	  }
 	else
 	  {
-	    changed_addr = VALUE_ADDRESS (toval) + value_offset (toval);
+	    changed_addr = value_address (toval);
 	    changed_len = TYPE_LENGTH (type);
 	    dest_buffer = value_contents (fromval);
 	  }
@@ -673,6 +869,7 @@ value_assign (struct value *toval, struct value *fromval)
     case lval_register:
       {
 	struct frame_info *frame;
+	struct gdbarch *gdbarch;
 	int value_reg;
 
 	/* Figure out which frame this is in currently.  */
@@ -681,14 +878,14 @@ value_assign (struct value *toval, struct value *fromval)
 
 	if (!frame)
 	  error (_("Value being assigned to is no longer active."));
-	
-	if (gdbarch_convert_register_p
-	    (current_gdbarch, VALUE_REGNUM (toval), type))
+
+	gdbarch = get_frame_arch (frame);
+	if (gdbarch_convert_register_p (gdbarch, VALUE_REGNUM (toval), type))
 	  {
 	    /* If TOVAL is a special machine register requiring
 	       conversion of program values to a special raw
 	       format.  */
-	    gdbarch_value_to_register (current_gdbarch, frame, 
+	    gdbarch_value_to_register (gdbarch, frame,
 				       VALUE_REGNUM (toval), type,
 				       value_contents (fromval));
 	  }
@@ -696,6 +893,8 @@ value_assign (struct value *toval, struct value *fromval)
 	  {
 	    if (value_bitsize (toval))
 	      {
+		struct value *parent = value_parent (toval);
+		int offset = value_offset (parent) + value_offset (toval);
 		int changed_len;
 		gdb_byte buffer[sizeof (LONGEST)];
 
@@ -708,16 +907,13 @@ value_assign (struct value *toval, struct value *fromval)
 		  error (_("Can't handle bitfields which don't fit in a %d bit word."),
 			 (int) sizeof (LONGEST) * HOST_CHAR_BIT);
 
-		get_frame_register_bytes (frame, value_reg,
-					  value_offset (toval),
+		get_frame_register_bytes (frame, value_reg, offset,
 					  changed_len, buffer);
 
-		modify_field (buffer, value_as_long (fromval),
-			      value_bitpos (toval), 
-			      value_bitsize (toval));
+		modify_field (type, buffer, value_as_long (fromval),
+			      value_bitpos (toval), value_bitsize (toval));
 
-		put_frame_register_bytes (frame, value_reg,
-					  value_offset (toval),
+		put_frame_register_bytes (frame, value_reg, offset,
 					  changed_len, buffer);
 	      }
 	    else
@@ -734,7 +930,15 @@ value_assign (struct value *toval, struct value *fromval)
 	observer_notify_target_changed (&current_target);
 	break;
       }
-      
+
+    case lval_computed:
+      {
+	struct lval_funcs *funcs = value_computed_funcs (toval);
+
+	funcs->write (toval, fromval);
+      }
+      break;
+
     default:
       error (_("Left operand of assignment is not an lvalue."));
     }
@@ -814,11 +1018,11 @@ value_repeat (struct value *arg1, int count)
 
   val = allocate_repeat_value (value_enclosing_type (arg1), count);
 
-  read_memory (VALUE_ADDRESS (arg1) + value_offset (arg1),
+  read_memory (value_address (arg1),
 	       value_contents_all_raw (val),
 	       TYPE_LENGTH (value_enclosing_type (val)));
   VALUE_LVAL (val) = lval_memory;
-  VALUE_ADDRESS (val) = VALUE_ADDRESS (arg1) + value_offset (arg1);
+  set_value_address (val, value_address (arg1));
 
   return val;
 }
@@ -827,16 +1031,18 @@ struct value *
 value_of_variable (struct symbol *var, struct block *b)
 {
   struct value *val;
-  struct frame_info *frame = NULL;
+  struct frame_info *frame;
 
-  if (!b)
-    frame = NULL;		/* Use selected frame.  */
-  else if (symbol_read_needs_frame (var))
+  if (!symbol_read_needs_frame (var))
+    frame = NULL;
+  else if (!b)
+    frame = get_selected_frame (_("No frame selected."));
+  else
     {
       frame = block_innermost_frame (b);
       if (!frame)
 	{
-	  if (BLOCK_FUNCTION (b)
+	  if (BLOCK_FUNCTION (b) && !block_inlined_p (b)
 	      && SYMBOL_PRINT_NAME (BLOCK_FUNCTION (b)))
 	    error (_("No frame is currently executing in block %s."),
 		   SYMBOL_PRINT_NAME (BLOCK_FUNCTION (b)));
@@ -850,6 +1056,98 @@ value_of_variable (struct symbol *var, struct block *b)
     error (_("Address of symbol \"%s\" is unknown."), SYMBOL_PRINT_NAME (var));
 
   return val;
+}
+
+struct value *
+address_of_variable (struct symbol *var, struct block *b)
+{
+  struct type *type = SYMBOL_TYPE (var);
+  struct value *val;
+
+  /* Evaluate it first; if the result is a memory address, we're fine.
+     Lazy evaluation pays off here. */
+
+  val = value_of_variable (var, b);
+
+  if ((VALUE_LVAL (val) == lval_memory && value_lazy (val))
+      || TYPE_CODE (type) == TYPE_CODE_FUNC)
+    {
+      CORE_ADDR addr = value_address (val);
+      return value_from_pointer (lookup_pointer_type (type), addr);
+    }
+
+  /* Not a memory address; check what the problem was.  */
+  switch (VALUE_LVAL (val))
+    {
+    case lval_register:
+      {
+	struct frame_info *frame;
+	const char *regname;
+
+	frame = frame_find_by_id (VALUE_FRAME_ID (val));
+	gdb_assert (frame);
+
+	regname = gdbarch_register_name (get_frame_arch (frame),
+					 VALUE_REGNUM (val));
+	gdb_assert (regname && *regname);
+
+	error (_("Address requested for identifier "
+		 "\"%s\" which is in register $%s"),
+	       SYMBOL_PRINT_NAME (var), regname);
+	break;
+      }
+
+    default:
+      error (_("Can't take address of \"%s\" which isn't an lvalue."),
+	     SYMBOL_PRINT_NAME (var));
+      break;
+    }
+
+  return val;
+}
+
+/* Return one if VAL does not live in target memory, but should in order
+   to operate on it.  Otherwise return zero.  */
+
+int
+value_must_coerce_to_target (struct value *val)
+{
+  struct type *valtype;
+
+  /* The only lval kinds which do not live in target memory.  */
+  if (VALUE_LVAL (val) != not_lval
+      && VALUE_LVAL (val) != lval_internalvar)
+    return 0;
+
+  valtype = check_typedef (value_type (val));
+
+  switch (TYPE_CODE (valtype))
+    {
+    case TYPE_CODE_ARRAY:
+    case TYPE_CODE_STRING:
+      return 1;
+    default:
+      return 0;
+    }
+}
+
+/* Make sure that VAL lives in target memory if it's supposed to.  For instance,
+   strings are constructed as character arrays in GDB's storage, and this
+   function copies them to the target.  */
+
+struct value *
+value_coerce_to_target (struct value *val)
+{
+  LONGEST length;
+  CORE_ADDR addr;
+
+  if (!value_must_coerce_to_target (val))
+    return val;
+
+  length = TYPE_LENGTH (check_typedef (value_type (val)));
+  addr = allocate_space_in_inferior (length);
+  write_memory (addr, value_contents (val), length);
+  return value_at_lazy (value_type (val), addr);
 }
 
 /* Given a value which is an array, return a value which is a pointer
@@ -881,11 +1179,16 @@ value_coerce_array (struct value *arg1)
 {
   struct type *type = check_typedef (value_type (arg1));
 
+  /* If the user tries to do something requiring a pointer with an
+     array that has not yet been pushed to the target, then this would
+     be a good time to do so.  */
+  arg1 = value_coerce_to_target (arg1);
+
   if (VALUE_LVAL (arg1) != lval_memory)
     error (_("Attempt to take address of value not located in memory."));
 
   return value_from_pointer (lookup_pointer_type (TYPE_TARGET_TYPE (type)),
-			     (VALUE_ADDRESS (arg1) + value_offset (arg1)));
+			     value_address (arg1));
 }
 
 /* Given a value which is a function, return a value which is a pointer
@@ -900,7 +1203,7 @@ value_coerce_function (struct value *arg1)
     error (_("Attempt to take address of value not located in memory."));
 
   retval = value_from_pointer (lookup_pointer_type (value_type (arg1)),
-			       (VALUE_ADDRESS (arg1) + value_offset (arg1)));
+			       value_address (arg1));
   return retval;
 }
 
@@ -926,13 +1229,16 @@ value_addr (struct value *arg1)
   if (TYPE_CODE (type) == TYPE_CODE_FUNC)
     return value_coerce_function (arg1);
 
+  /* If this is an array that has not yet been pushed to the target,
+     then this would be a good time to force it to memory.  */
+  arg1 = value_coerce_to_target (arg1);
+
   if (VALUE_LVAL (arg1) != lval_memory)
     error (_("Attempt to take address of value not located in memory."));
 
   /* Get target memory address */
   arg2 = value_from_pointer (lookup_pointer_type (value_type (arg1)),
-			     (VALUE_ADDRESS (arg1)
-			      + value_offset (arg1)
+			     (value_address (arg1)
 			      + value_embedded_offset (arg1)));
 
   /* This may be a pointer to a base subobject; so remember the
@@ -974,14 +1280,7 @@ value_ind (struct value *arg1)
 
   base_type = check_typedef (value_type (arg1));
 
-  /* Allow * on an integer so we can cast it to whatever we want.
-     This returns an int, which seems like the most C-like thing to
-     do.  "long long" variables are rare enough that
-     BUILTIN_TYPE_LONGEST would seem to be a mistake.  */
-  if (TYPE_CODE (base_type) == TYPE_CODE_INT)
-    return value_at_lazy (builtin_type_int,
-			  (CORE_ADDR) value_as_address (arg1));
-  else if (TYPE_CODE (base_type) == TYPE_CODE_PTR)
+  if (TYPE_CODE (base_type) == TYPE_CODE_PTR)
     {
       struct type *enc_type;
       /* We may be pointing to something embedded in a larger object.
@@ -1016,7 +1315,7 @@ value_ind (struct value *arg1)
   return 0;			/* For lint -- never reached.  */
 }
 
-/* Create a value for an array by allocating space in the inferior,
+/* Create a value for an array by allocating space in GDB, copying
    copying the data into that space, and then setting up an array
    value.
 
@@ -1034,7 +1333,6 @@ value_array (int lowbound, int highbound, struct value **elemvec)
   int idx;
   unsigned int typelength;
   struct value *val;
-  struct type *rangetype;
   struct type *arraytype;
   CORE_ADDR addr;
 
@@ -1055,12 +1353,8 @@ value_array (int lowbound, int highbound, struct value **elemvec)
 	}
     }
 
-  rangetype = create_range_type ((struct type *) NULL, 
-				 builtin_type_int,
-				 lowbound, highbound);
-  arraytype = create_array_type ((struct type *) NULL,
-				 value_enclosing_type (elemvec[0]), 
-				 rangetype);
+  arraytype = lookup_array_range_type (value_enclosing_type (elemvec[0]),
+				       lowbound, highbound);
 
   if (!current_language->c_style_arrays)
     {
@@ -1074,24 +1368,29 @@ value_array (int lowbound, int highbound, struct value **elemvec)
       return val;
     }
 
-  /* Allocate space to store the array in the inferior, and then
-     initialize it by copying in each element.  FIXME: Is it worth it
-     to create a local buffer in which to collect each value and then
-     write all the bytes in one operation?  */
+  /* Allocate space to store the array, and then initialize it by
+     copying in each element.  */
 
-  addr = allocate_space_in_inferior (nelem * typelength);
+  val = allocate_value (arraytype);
   for (idx = 0; idx < nelem; idx++)
-    {
-      write_memory (addr + (idx * typelength),
-		    value_contents_all (elemvec[idx]),
-		    typelength);
-    }
+    memcpy (value_contents_writeable (val) + (idx * typelength),
+	    value_contents_all (elemvec[idx]),
+	    typelength);
+  return val;
+}
 
-  /* Create the array type and set up an array value to be evaluated
-     lazily.  */
+struct value *
+value_cstring (char *ptr, int len, struct type *char_type)
+{
+  struct value *val;
+  int lowbound = current_language->string_lower_bound;
+  int highbound = len / TYPE_LENGTH (char_type);
+  struct type *stringtype
+    = lookup_array_range_type (char_type, lowbound, highbound + lowbound - 1);
 
-  val = value_at_lazy (arraytype, addr);
-  return (val);
+  val = allocate_value (stringtype);
+  memcpy (value_contents_raw (val), ptr, len);
+  return val;
 }
 
 /* Create a value for a string constant by allocating space in the
@@ -1104,45 +1403,26 @@ value_array (int lowbound, int highbound, struct value **elemvec)
    string may contain embedded null bytes.  */
 
 struct value *
-value_string (char *ptr, int len)
+value_string (char *ptr, int len, struct type *char_type)
 {
   struct value *val;
   int lowbound = current_language->string_lower_bound;
-  struct type *rangetype = create_range_type ((struct type *) NULL,
-					      builtin_type_int,
-					      lowbound, 
-					      len + lowbound - 1);
+  int highbound = len / TYPE_LENGTH (char_type);
   struct type *stringtype
-    = create_string_type ((struct type *) NULL, rangetype);
-  CORE_ADDR addr;
+    = lookup_string_range_type (char_type, lowbound, highbound + lowbound - 1);
 
-  if (current_language->c_style_arrays == 0)
-    {
-      val = allocate_value (stringtype);
-      memcpy (value_contents_raw (val), ptr, len);
-      return val;
-    }
-
-
-  /* Allocate space to store the string in the inferior, and then copy
-     LEN bytes from PTR in gdb to that address in the inferior.  */
-
-  addr = allocate_space_in_inferior (len);
-  write_memory (addr, (gdb_byte *) ptr, len);
-
-  val = value_at_lazy (stringtype, addr);
-  return (val);
+  val = allocate_value (stringtype);
+  memcpy (value_contents_raw (val), ptr, len);
+  return val;
 }
 
 struct value *
-value_bitstring (char *ptr, int len)
+value_bitstring (char *ptr, int len, struct type *index_type)
 {
   struct value *val;
-  struct type *domain_type = create_range_type (NULL, 
-						builtin_type_int,
-						0, len - 1);
-  struct type *type = create_set_type ((struct type *) NULL, 
-				       domain_type);
+  struct type *domain_type
+    = create_range_type (NULL, index_type, 0, len - 1);
+  struct type *type = create_set_type (NULL, domain_type);
   TYPE_CODE (type) = TYPE_CODE_BITSTRING;
   val = allocate_value (type);
   memcpy (value_contents_raw (val), ptr, TYPE_LENGTH (type));
@@ -1262,7 +1542,7 @@ search_struct_field (char *name, struct value *arg1, int offset,
 	if (t_field_name && (strcmp_iw (t_field_name, name) == 0))
 	  {
 	    struct value *v;
-	    if (TYPE_FIELD_STATIC (type, i))
+	    if (field_is_static (&TYPE_FIELD (type, i)))
 	      {
 		v = value_static_field (type, i);
 		if (v == 0)
@@ -1338,12 +1618,11 @@ search_struct_field (char *name, struct value *arg1, int offset,
       if (BASETYPE_VIA_VIRTUAL (type, i))
 	{
 	  int boffset;
-	  struct value *v2 = allocate_value (basetype);
+	  struct value *v2;
 
 	  boffset = baseclass_offset (type, i,
 				      value_contents (arg1) + offset,
-				      VALUE_ADDRESS (arg1)
-				      + value_offset (arg1) + offset);
+				      value_address (arg1) + offset);
 	  if (boffset == -1)
 	    error (_("virtual baseclass botch"));
 
@@ -1356,27 +1635,29 @@ search_struct_field (char *name, struct value *arg1, int offset,
 	    {
 	      CORE_ADDR base_addr;
 
-	      base_addr = 
-		VALUE_ADDRESS (arg1) + value_offset (arg1) + boffset;
+	      v2  = allocate_value (basetype);
+	      base_addr = value_address (arg1) + boffset;
 	      if (target_read_memory (base_addr, 
 				      value_contents_raw (v2),
 				      TYPE_LENGTH (basetype)) != 0)
 		error (_("virtual baseclass botch"));
 	      VALUE_LVAL (v2) = lval_memory;
-	      VALUE_ADDRESS (v2) = base_addr;
+	      set_value_address (v2, base_addr);
 	    }
 	  else
 	    {
-	      VALUE_LVAL (v2) = VALUE_LVAL (arg1);
-	      VALUE_ADDRESS (v2) = VALUE_ADDRESS (arg1);
+	      if (VALUE_LVAL (arg1) == lval_memory && value_lazy (arg1))
+		v2  = allocate_value_lazy (basetype);
+	      else
+		{
+		  v2  = allocate_value (basetype);
+		  memcpy (value_contents_raw (v2),
+			  value_contents_raw (arg1) + boffset,
+			  TYPE_LENGTH (basetype));
+		}
+	      set_value_component_location (v2, arg1);
 	      VALUE_FRAME_ID (v2) = VALUE_FRAME_ID (arg1);
 	      set_value_offset (v2, value_offset (arg1) + boffset);
-	      if (value_lazy (arg1))
-		set_value_lazy (v2, 1);
-	      else
-		memcpy (value_contents_raw (v2),
-			value_contents_raw (arg1) + boffset,
-			TYPE_LENGTH (basetype));
 	    }
 
 	  if (found_baseclass)
@@ -1484,8 +1765,7 @@ search_struct_method (char *name, struct value **arg1p,
 	  if (offset < 0 || offset >= TYPE_LENGTH (type))
 	    {
 	      gdb_byte *tmp = alloca (TYPE_LENGTH (baseclass));
-	      if (target_read_memory (VALUE_ADDRESS (*arg1p)
-				      + value_offset (*arg1p) + offset,
+	      if (target_read_memory (value_address (*arg1p) + offset,
 				      tmp, TYPE_LENGTH (baseclass)) != 0)
 		error (_("virtual baseclass botch"));
 	      base_valaddr = tmp;
@@ -1494,8 +1774,7 @@ search_struct_method (char *name, struct value **arg1p,
 	    base_valaddr = value_contents (*arg1p) + offset;
 
 	  base_offset = baseclass_offset (type, i, base_valaddr,
-					  VALUE_ADDRESS (*arg1p)
-					  + value_offset (*arg1p) + offset);
+					  value_address (*arg1p) + offset);
 	  if (base_offset == -1)
 	    error (_("virtual baseclass botch"));
 	}
@@ -1579,10 +1858,6 @@ value_struct_elt (struct value **argp, struct value **args,
 
       /* C++: If it was not found as a data field, then try to
          return it as a pointer to a method.  */
-
-      if (destructor_name_p (name, t))
-	error (_("Cannot get value of destructor"));
-
       v = search_struct_method (name, argp, args, 0, 
 				static_memfuncp, t);
 
@@ -1598,32 +1873,6 @@ value_struct_elt (struct value **argp, struct value **args,
       return v;
     }
 
-  if (destructor_name_p (name, t))
-    {
-      if (!args[1])
-	{
-	  /* Destructors are a special case.  */
-	  int m_index, f_index;
-
-	  v = NULL;
-	  if (get_destructor_fn_field (t, &m_index, &f_index))
-	    {
-	      v = value_fn_field (NULL, 
-				  TYPE_FN_FIELDLIST1 (t, m_index),
-				  f_index, NULL, 0);
-	    }
-	  if (v == NULL)
-	    error (_("could not find destructor function named %s."), 
-		   name);
-	  else
-	    return v;
-	}
-      else
-	{
-	  error (_("destructor should not have any argument"));
-	}
-    }
-  else
     v = search_struct_method (name, argp, args, 0, 
 			      static_memfuncp, t);
   
@@ -1637,6 +1886,10 @@ value_struct_elt (struct value **argp, struct value **args,
          back.  If it's not callable (i.e., a pointer to function),
          gdb should give an error.  */
       v = search_struct_field (name, *argp, 0, t, 0);
+      /* If we found an ordinary field, then it is not a method call.
+	 So, treat it as if it were a static member function.  */
+      if (v && static_memfuncp)
+	*static_memfuncp = 1;
     }
 
   if (!v)
@@ -1645,7 +1898,7 @@ value_struct_elt (struct value **argp, struct value **args,
 }
 
 /* Search through the methods of an object (and its bases) to find a
-   specified method. Return the pointer to the fn_field list of
+   specified method.  Return the pointer to the fn_field list of
    overloaded instances.
 
    Helper function for value_find_oload_list.
@@ -1700,7 +1953,7 @@ find_method_list (struct value **argp, char *method,
 	  base_offset = value_offset (*argp) + offset;
 	  base_offset = baseclass_offset (type, i,
 					  value_contents (*argp) + base_offset,
-					  VALUE_ADDRESS (*argp) + base_offset);
+					  value_address (*argp) + base_offset);
 	  if (base_offset == -1)
 	    error (_("virtual baseclass botch"));
 	}
@@ -1918,8 +2171,11 @@ find_overload_match (struct type **arg_types, int nargs,
 
   if (objp)
     {
-      if (TYPE_CODE (value_type (temp)) != TYPE_CODE_PTR
-	  && TYPE_CODE (value_type (*objp)) == TYPE_CODE_PTR)
+      struct type *temp_type = check_typedef (value_type (temp));
+      struct type *obj_type = check_typedef (value_type (*objp));
+      if (TYPE_CODE (temp_type) != TYPE_CODE_PTR
+	  && (TYPE_CODE (obj_type) == TYPE_CODE_PTR
+	      || TYPE_CODE (obj_type) == TYPE_CODE_REF))
 	{
 	  temp = value_addr (temp);
 	}
@@ -2222,8 +2478,6 @@ classify_oload_match (struct badness_vector *oload_champ_bv,
 int
 destructor_name_p (const char *name, const struct type *type)
 {
-  /* Destructors are a special case.  */
-
   if (name[0] == '~')
     {
       char *dname = type_name_no_tag (type);
@@ -2243,12 +2497,12 @@ destructor_name_p (const char *name, const struct type *type)
   return 0;
 }
 
-/* Helper function for check_field: Given TYPE, a structure/union,
+/* Given TYPE, a structure/union,
    return 1 if the component named NAME from the ultimate target
    structure/union is defined, otherwise, return 0.  */
 
-static int
-check_field_in (struct type *type, const char *name)
+int
+check_field (struct type *type, const char *name)
 {
   int i;
 
@@ -2262,14 +2516,6 @@ check_field_in (struct type *type, const char *name)
   /* C++: If it was not found as a data field, then try to return it
      as a pointer to a method.  */
 
-  /* Destructors are a special case.  */
-  if (destructor_name_p (name, type))
-    {
-      int m_index, f_index;
-
-      return get_destructor_fn_field (type, &m_index, &f_index);
-    }
-
   for (i = TYPE_NFN_FIELDS (type) - 1; i >= 0; --i)
     {
       if (strcmp_iw (TYPE_FN_FIELDLIST_NAME (type, i), name) == 0)
@@ -2277,42 +2523,10 @@ check_field_in (struct type *type, const char *name)
     }
 
   for (i = TYPE_N_BASECLASSES (type) - 1; i >= 0; i--)
-    if (check_field_in (TYPE_BASECLASS (type, i), name))
+    if (check_field (TYPE_BASECLASS (type, i), name))
       return 1;
 
   return 0;
-}
-
-
-/* C++: Given ARG1, a value of type (pointer to a)* structure/union,
-   return 1 if the component named NAME from the ultimate target
-   structure/union is defined, otherwise, return 0.  */
-
-int
-check_field (struct value *arg1, const char *name)
-{
-  struct type *t;
-
-  arg1 = coerce_array (arg1);
-
-  t = value_type (arg1);
-
-  /* Follow pointers until we get to a non-pointer.  */
-
-  for (;;)
-    {
-      CHECK_TYPEDEF (t);
-      if (TYPE_CODE (t) != TYPE_CODE_PTR 
-	  && TYPE_CODE (t) != TYPE_CODE_REF)
-	break;
-      t = TYPE_TARGET_TYPE (t);
-    }
-
-  if (TYPE_CODE (t) != TYPE_CODE_STRUCT
-      && TYPE_CODE (t) != TYPE_CODE_UNION)
-    error (_("Internal error: `this' is not an aggregate"));
-
-  return check_field_in (t, name);
 }
 
 /* C++: Given an aggregate type CURTYPE, and a member name NAME,
@@ -2370,7 +2584,7 @@ value_struct_elt_for_reference (struct type *domain, int offset,
 
       if (t_field_name && strcmp (t_field_name, name) == 0)
 	{
-	  if (TYPE_FIELD_STATIC (t, i))
+	  if (field_is_static (&TYPE_FIELD (t, i)))
 	    {
 	      v = value_static_field (t, i);
 	      if (v == NULL)
@@ -2396,12 +2610,6 @@ value_struct_elt_for_reference (struct type *domain, int offset,
 
   /* C++: If it was not found as a data field, then try to return it
      as a pointer to a method.  */
-
-  /* Destructors are a special case.  */
-  if (destructor_name_p (name, t))
-    {
-      error (_("member pointers to destructors not implemented yet"));
-    }
 
   /* Perform all necessary dereferencing.  */
   while (intype && TYPE_CODE (intype) == TYPE_CODE_PTR)
@@ -2447,7 +2655,7 @@ value_struct_elt_for_reference (struct type *domain, int offset,
 	    {
 	      struct symbol *s = 
 		lookup_symbol (TYPE_FN_FIELD_PHYSNAME (f, j),
-			       0, VAR_DOMAIN, 0, NULL);
+			       0, VAR_DOMAIN, 0);
 	      if (s == NULL)
 		return NULL;
 
@@ -2463,7 +2671,8 @@ value_struct_elt_for_reference (struct type *domain, int offset,
 		{
 		  result = allocate_value
 		    (lookup_methodptr_type (TYPE_FN_FIELD_TYPE (f, j)));
-		  cplus_make_method_ptr (value_contents_writeable (result),
+		  cplus_make_method_ptr (value_type (result),
+					 value_contents_writeable (result),
 					 TYPE_FN_FIELD_VOFFSET (f, j), 1);
 		}
 	      else if (noside == EVAL_AVOID_SIDE_EFFECTS)
@@ -2476,7 +2685,7 @@ value_struct_elt_for_reference (struct type *domain, int offset,
 	    {
 	      struct symbol *s = 
 		lookup_symbol (TYPE_FN_FIELD_PHYSNAME (f, j),
-			       0, VAR_DOMAIN, 0, NULL);
+			       0, VAR_DOMAIN, 0);
 	      if (s == NULL)
 		return NULL;
 
@@ -2486,8 +2695,9 @@ value_struct_elt_for_reference (struct type *domain, int offset,
 	      else
 		{
 		  result = allocate_value (lookup_methodptr_type (TYPE_FN_FIELD_TYPE (f, j)));
-		  cplus_make_method_ptr (value_contents_writeable (result),
-					 VALUE_ADDRESS (v), 0);
+		  cplus_make_method_ptr (value_type (result),
+					 value_contents_writeable (result),
+					 value_address (v), 0);
 		}
 	    }
 	  return result;
@@ -2555,7 +2765,7 @@ value_maybe_namespace_elt (const struct type *curtype,
 
   sym = cp_lookup_symbol_namespace (namespace_name, name, NULL,
 				    get_selected_block (0), 
-				    VAR_DOMAIN, NULL);
+				    VAR_DOMAIN);
 
   if (sym == NULL)
     return NULL;
@@ -2646,7 +2856,7 @@ value_full_object (struct value *argp,
   /* Go back by the computed top_offset from the beginning of the
      object, adjusting for the embedded offset of argp if that's what
      value_rtti_type used for its computation.  */
-  new_val = value_at_lazy (real_type, VALUE_ADDRESS (argp) - top +
+  new_val = value_at_lazy (real_type, value_address (argp) - top +
 			   (using_enc ? 0 : value_embedded_offset (argp)));
   deprecated_set_value_type (new_val, value_type (argp));
   set_value_embedded_offset (new_val, (using_enc
@@ -2720,10 +2930,9 @@ value_of_local (const char *name, int complain)
 struct value *
 value_of_this (int complain)
 {
-  if (current_language->la_language == language_objc)
-    return value_of_local ("self", complain);
-  else
-    return value_of_local ("this", complain);
+  if (!current_language->la_name_of_this)
+    return 0;
+  return value_of_local (current_language->la_name_of_this, complain);
 }
 
 /* Create a slice (sub-string, sub-array) of ARRAY, that is LENGTH
@@ -2777,7 +2986,7 @@ value_slice (struct value *array, int lowbound, int length)
 	  else if (element > 0)
 	    {
 	      int j = i % TARGET_CHAR_BIT;
-	      if (gdbarch_bits_big_endian (current_gdbarch))
+	      if (gdbarch_bits_big_endian (get_type_arch (array_type)))
 		j = TARGET_CHAR_BIT - 1 - j;
 	      value_contents_raw (slice)[i / TARGET_CHAR_BIT] |= (1 << j);
 	    }
@@ -2798,20 +3007,17 @@ value_slice (struct value *array, int lowbound, int length)
 				      slice_range_type);
       TYPE_CODE (slice_type) = TYPE_CODE (array_type);
 
-      slice = allocate_value (slice_type);
-      if (value_lazy (array))
-	set_value_lazy (slice, 1);
+      if (VALUE_LVAL (array) == lval_memory && value_lazy (array))
+	slice = allocate_value_lazy (slice_type);
       else
-	memcpy (value_contents_writeable (slice),
-		value_contents (array) + offset,
-		TYPE_LENGTH (slice_type));
+	{
+	  slice = allocate_value (slice_type);
+	  memcpy (value_contents_writeable (slice),
+		  value_contents (array) + offset,
+		  TYPE_LENGTH (slice_type));
+	}
 
-      if (VALUE_LVAL (array) == lval_internalvar)
-	VALUE_LVAL (slice) = lval_internalvar_component;
-      else
-	VALUE_LVAL (slice) = VALUE_LVAL (array);
-
-      VALUE_ADDRESS (slice) = VALUE_ADDRESS (array);
+      set_value_component_location (slice, array);
       VALUE_FRAME_ID (slice) = VALUE_FRAME_ID (array);
       set_value_offset (slice, value_offset (array) + offset);
     }

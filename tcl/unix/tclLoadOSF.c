@@ -3,7 +3,7 @@
 # All Rights Reserved.
 # Modified by QUALCOMM INCORPORATED on $Date$
 *****************************************************************/
-/* 
+/*
  * tclLoadOSF.c --
  *
  *	This procedure provides a version of the TclLoadFile that works
@@ -18,8 +18,8 @@
  *		HP OSF/1 1.0 ("Acorn") using COFF
  *
  *	This is likely to be useful for:
- *		Paragon OSF/1 (from Intel) 
- *		HI-OSF/1 (from Hitachi) 
+ *		Paragon OSF/1 (from Intel)
+ *		HI-OSF/1 (from Hitachi)
  *
  *	This is NOT to be used on:
  *		Digitial Alpha OSF/1 systems
@@ -67,9 +67,9 @@ TclpDlopen(interp, pathPtr, loadHandle, unloadProcPtr)
     Tcl_Obj *pathPtr;		/* Name of the file containing the desired
 				 * code (UTF-8). */
     Tcl_LoadHandle *loadHandle;	/* Filled with token for dynamically loaded
-				 * file which will be passed back to 
+				 * file which will be passed back to
 				 * (*unloadProcPtr)() to unload the file. */
-    Tcl_FSUnloadFileProc **unloadProcPtr;	
+    Tcl_FSUnloadFileProc **unloadProcPtr;
 				/* Filled with address of Tcl_FSUnloadFileProc
 				 * function which should be used for
 				 * this file. */
@@ -79,7 +79,7 @@ TclpDlopen(interp, pathPtr, loadHandle, unloadProcPtr)
     char *fileName = Tcl_GetString(pathPtr);
     CONST char *native;
 
-    /* 
+    /*
      * First try the full path the user gave us.  This is particularly
      * important if the cwd is inside a vfs, and we are trying to load
      * using a relative path.
@@ -88,7 +88,7 @@ TclpDlopen(interp, pathPtr, loadHandle, unloadProcPtr)
     lm = (Tcl_PackageInitProc *) load(native, LDR_NOFLAGS);
 
     if (lm == LDR_NULL_MODULE) {
-	/* 
+	/*
 	 * Let the OS loader examine the binary search path for
 	 * whatever string the user gave us which hopefully refers
 	 * to a file on the binary path
@@ -98,7 +98,7 @@ TclpDlopen(interp, pathPtr, loadHandle, unloadProcPtr)
 	lm = (Tcl_PackageInitProc *) load(native, LDR_NOFLAGS);
 	Tcl_DStringFree(&ds);
     }
-    
+
     if (lm == LDR_NULL_MODULE) {
 	Tcl_AppendResult(interp, "couldn't load file \"", fileName,
 	    "\": ", Tcl_PosixError (interp), (char *) NULL);
@@ -106,13 +106,13 @@ TclpDlopen(interp, pathPtr, loadHandle, unloadProcPtr)
     }
 
     *clientDataPtr = NULL;
-    
+
     /*
      * My convention is to use a [OSF loader] package name the same as shlib,
      * since the idiots never implemented ldr_lookup() and it is otherwise
      * impossible to get a package name given a module.
      *
-     * I build loadable modules with a makefile rule like 
+     * I build loadable modules with a makefile rule like
      *		ld ... -export $@: -o $@ $(OBJS)
      */
     if ((pkg = strrchr(fileName, '/')) == NULL) {
@@ -141,7 +141,7 @@ TclpDlopen(interp, pathPtr, loadHandle, unloadProcPtr)
  *----------------------------------------------------------------------
  */
 Tcl_PackageInitProc*
-TclpFindSymbol(interp, loadHandle, symbol) 
+TclpFindSymbol(interp, loadHandle, symbol)
     Tcl_Interp *interp;
     Tcl_LoadHandle loadHandle;
     CONST char *symbol;
@@ -170,8 +170,8 @@ TclpFindSymbol(interp, loadHandle, symbol)
 void
 TclpUnloadFile(loadHandle)
     Tcl_LoadHandle loadHandle;	/* loadHandle returned by a previous call
-				 * to TclpDlopen().  The loadHandle is 
-				 * a token that represents the loaded 
+				 * to TclpDlopen().  The loadHandle is
+				 * a token that represents the loaded
 				 * file. */
 {
 }

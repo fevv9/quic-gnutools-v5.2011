@@ -3,7 +3,7 @@
 # All Rights Reserved.
 # Modified by QUALCOMM INCORPORATED on $Date$
 *****************************************************************/
-/* 
+/*
  * man2tcl.c --
  *
  *	This file contains a program that turns a man page of the
@@ -139,15 +139,15 @@ main(argc, argv)
 		}
 	    }
 	    lineNumber++;
-    
+
 	    if ((line[0] == '\'') && (line[1] == '\\') && (line[2] == '\"')) {
-		/* 
+		/*
 		 * This line is a comment.  Ignore it.
 		 */
-    
+
 		continue;
 	    }
-    
+
 	    if (strlen(line) >= MAX_LINE_SIZE -1) {
 		fprintf(stderr, "Too long line. Max is %d chars.\n",
 			MAX_LINE_SIZE - 1);
@@ -158,14 +158,14 @@ main(argc, argv)
 		/*
 		 * This line is a macro invocation.
 		 */
-    
+
 		DoMacro(line);
 	    } else {
 		/*
 		 * This line is text, possibly with formatting characters
 		 * embedded in it.
 		 */
-    
+
 		DoText(line);
 	    }
 	}

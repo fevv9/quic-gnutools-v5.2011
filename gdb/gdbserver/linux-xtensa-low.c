@@ -1,5 +1,5 @@
 /* GNU/Linux/Xtensa specific low level interface, for the remote server for GDB.
-   Copyright 2007, 2008 Free Software Foundation, Inc.
+   Copyright 2007, 2008, 2009 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -20,6 +20,9 @@
 #include "server.h"
 #include "linux-low.h"
 
+/* Defined in auto-generated file reg-xtensa.c.  */
+void init_registers_xtensa (void);
+
 #include <sys/ptrace.h>
 #include <xtensa-config.h>
 
@@ -30,7 +33,7 @@ enum regnum {
 	R_LBEG,	R_LEND,	R_LCOUNT,
 	R_SAR,
 	R_WS, R_WB,
-	R_A0 = 64 
+	R_A0 = 64
 };
 
 static void
@@ -173,6 +176,7 @@ xtensa_breakpoint_at (CORE_ADDR where)
 }
 
 struct linux_target_ops the_low_target = {
+  init_registers_xtensa,
   0,
   0,
   0,

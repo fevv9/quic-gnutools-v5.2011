@@ -3,7 +3,7 @@
 # All Rights Reserved.
 # Modified by QUALCOMM INCORPORATED on $Date$
 *****************************************************************/
-/* 
+/*
  * tclUnixFile.c --
  *
  *      This file contains wrappers around UNIX file handling functions.
@@ -178,7 +178,7 @@ gotName:
     strcpy(tclNativeExecutableName + Tcl_DStringLength(&buffer) + 1,
 	    Tcl_DStringValue(&nameString));
     Tcl_DStringFree(&nameString);
-    
+
 done:
     Tcl_DStringFree(&buffer);
     return tclNativeExecutableName;
@@ -192,7 +192,7 @@ done:
  *	This routine is used by the globbing code to search a
  *	directory for all files which match a given pattern.
  *
- * Results: 
+ * Results:
  *	The return value is a standard Tcl result indicating whether an
  *	error occurred in globbing.  Errors are left in interp, good
  *	results are lappended to resultPtr (which must be a valid object)
@@ -219,7 +219,7 @@ TclpMatchInDirectory(interp, resultPtr, pathPtr, pattern, types)
     if (fileNamePtr == NULL) {
 	return TCL_ERROR;
     }
-    
+
     if (pattern == NULL || (*pattern == '\0')) {
 	/* Match a file directly */
 	native = (CONST char*) Tcl_FSGetNativePath(pathPtr);
@@ -242,7 +242,7 @@ TclpMatchInDirectory(interp, resultPtr, pathPtr, pattern, types)
 	Tcl_DStringInit(&dsOrig);
 	dirName = Tcl_GetStringFromObj(fileNamePtr, &dirLength);
 	Tcl_DStringAppend(&dsOrig, dirName, dirLength);
-	
+
 	/*
 	 * Make sure that the directory part of the name really is a
 	 * directory.  If the directory name is "", use the name "."
@@ -262,7 +262,7 @@ TclpMatchInDirectory(interp, resultPtr, pathPtr, pattern, types)
 	    }
 	}
 	Tcl_DecrRefCount(fileNamePtr);
-	
+
 	/*
 	 * Now open the directory for reading and iterate over the contents.
 	 */
@@ -300,7 +300,7 @@ TclpMatchInDirectory(interp, resultPtr, pathPtr, pattern, types)
 	    Tcl_DString utfDs;
 	    CONST char *utfname;
 
-	    /* 
+	    /*
 	     * Skip this file if it doesn't agree with the hidden
 	     * parameters requested by the user (via -type or pattern).
 	     */
@@ -326,7 +326,7 @@ TclpMatchInDirectory(interp, resultPtr, pathPtr, pattern, types)
 		    typeOk = NativeMatchType(native, types);
 		}
 		if (typeOk) {
-		    Tcl_ListObjAppendElement(interp, resultPtr, 
+		    Tcl_ListObjAppendElement(interp, resultPtr,
 			    TclNewFSPathObj(pathPtr, utfname,
 				    Tcl_DStringLength(&utfDs)));
 		}
@@ -340,14 +340,14 @@ TclpMatchInDirectory(interp, resultPtr, pathPtr, pattern, types)
 	return TCL_OK;
     }
 }
-static int 
+static int
 NativeMatchType(
     CONST char* nativeEntry,  /* Native path to check */
     Tcl_GlobTypeData *types)  /* Type description to match against */
 {
     Tcl_StatBuf buf;
     if (types == NULL) {
-	/* 
+	/*
 	 * Simply check for the file's existence, but do it
 	 * with lstat, in case it is a link to a file which
 	 * doesn't exist (since that case would not show up
@@ -359,7 +359,7 @@ NativeMatchType(
     } else {
 	if (types->perm != 0) {
 	    if (TclOSstat(nativeEntry, &buf) != 0) {
-		/* 
+		/*
 		 * Either the file has disappeared between the
 		 * 'readdir' call and the 'stat' call, or
 		 * the file is a link to a file which doesn't
@@ -367,13 +367,13 @@ NativeMatchType(
 		 * lstat), or there is some other strange
 		 * problem.  In all these cases, we define this
 		 * to mean the file does not match any defined
-		 * permission, and therefore it is not 
+		 * permission, and therefore it is not
 		 * added to the list of files to return.
 		 */
 		return 0;
 	    }
-	    
-	    /* 
+
+	    /*
 	     * readonly means that there are NO write permissions
 	     * (even for user), but execute is OK for anybody
 	     */
@@ -393,7 +393,7 @@ NativeMatchType(
 	    if (types->perm == 0) {
 		/* We haven't yet done a stat on the file */
 		if (TclOSstat(nativeEntry, &buf) != 0) {
-		    /* 
+		    /*
 		     * Posix error occurred.  The only ok
 		     * case is if this is a link to a nonexistent
 		     * file, and the user did 'glob -l'. So
@@ -480,7 +480,7 @@ TclpGetUserHome(name, bufferPtr)
     native = Tcl_UtfToExternalDString(NULL, name, -1, &ds);
     pwPtr = getpwnam(native);				/* INTL: Native. */
     Tcl_DStringFree(&ds);
-    
+
     if (pwPtr == NULL) {
 	endpwent();
 	return NULL;
@@ -506,7 +506,7 @@ TclpGetUserHome(name, bufferPtr)
  *---------------------------------------------------------------------------
  */
 
-int 
+int
 TclpObjAccess(pathPtr, mode)
     Tcl_Obj *pathPtr;        /* Path of file to access */
     int mode;                /* Permission setting. */
@@ -530,12 +530,12 @@ TclpObjAccess(pathPtr, mode)
  *	See chdir() documentation.
  *
  * Side effects:
- *	See chdir() documentation.  
+ *	See chdir() documentation.
  *
  *---------------------------------------------------------------------------
  */
 
-int 
+int
 TclpObjChdir(pathPtr)
     Tcl_Obj *pathPtr;          /* Path to new working directory */
 {
@@ -563,7 +563,7 @@ TclpObjChdir(pathPtr)
  *----------------------------------------------------------------------
  */
 
-int 
+int
 TclpObjLstat(pathPtr, bufPtr)
     Tcl_Obj *pathPtr;		/* Path of file to stat */
     Tcl_StatBuf *bufPtr;	/* Filled with results of stat call. */
@@ -592,7 +592,7 @@ TclpObjLstat(pathPtr, bufPtr)
  *----------------------------------------------------------------------
  */
 
-Tcl_Obj* 
+Tcl_Obj*
 TclpObjGetCwd(interp)
     Tcl_Interp *interp;
 {
@@ -666,7 +666,7 @@ TclpReadlink(path, linkPtr)
     native = Tcl_UtfToExternalDString(NULL, path, -1, &ds);
     length = readlink(native, link, sizeof(link));	/* INTL: Native. */
     Tcl_DStringFree(&ds);
-    
+
     if (length < 0) {
 	return NULL;
     }
@@ -694,7 +694,7 @@ TclpReadlink(path, linkPtr)
  *----------------------------------------------------------------------
  */
 
-int 
+int
 TclpObjStat(pathPtr, bufPtr)
     Tcl_Obj *pathPtr;		/* Path of file to stat */
     Tcl_StatBuf *bufPtr;	/* Filled with results of stat call. */
@@ -710,7 +710,7 @@ TclpObjStat(pathPtr, bufPtr)
 
 #ifdef S_IFLNK
 
-Tcl_Obj* 
+Tcl_Obj*
 TclpObjLink(pathPtr, toPtr, linkAction)
     Tcl_Obj *pathPtr;
     Tcl_Obj *toPtr;
@@ -719,7 +719,7 @@ TclpObjLink(pathPtr, toPtr, linkAction)
     if (toPtr != NULL) {
 	CONST char *src = Tcl_FSGetNativePath(pathPtr);
 	CONST char *target = Tcl_FSGetNativePath(toPtr);
-	
+
 	if (src == NULL || target == NULL) {
 	    return NULL;
 	}
@@ -733,7 +733,7 @@ TclpObjLink(pathPtr, toPtr, linkAction)
 	    errno = ENOENT;
 	    return NULL;
 	}
-	/* 
+	/*
 	 * Check symbolic link flag first, since we prefer to
 	 * create these.
 	 */
@@ -753,20 +753,20 @@ TclpObjLink(pathPtr, toPtr, linkAction)
 	int length;
 	Tcl_DString ds;
 	Tcl_Obj *transPtr;
-	
+
 	transPtr = Tcl_FSGetTranslatedPath(NULL, pathPtr);
 	if (transPtr == NULL) {
 	    return NULL;
 	}
 	Tcl_DecrRefCount(transPtr);
-	
+
 	length = readlink(Tcl_FSGetNativePath(pathPtr), link, sizeof(link));
 	if (length < 0) {
 	    return NULL;
 	}
 
 	Tcl_ExternalToUtfDString(NULL, link, length, &ds);
-	linkPtr = Tcl_NewStringObj(Tcl_DStringValue(&ds), 
+	linkPtr = Tcl_NewStringObj(Tcl_DStringValue(&ds),
 				   Tcl_DStringLength(&ds));
 	Tcl_DStringFree(&ds);
 	if (linkPtr != NULL) {
@@ -820,7 +820,7 @@ TclpFilesystemPathType(pathObjPtr)
  *
  *---------------------------------------------------------------------------
  */
-int 
+int
 TclpUtime(pathPtr, tval)
     Tcl_Obj *pathPtr;      /* File to modify */
     struct utimbuf *tval;  /* New modification date structure */

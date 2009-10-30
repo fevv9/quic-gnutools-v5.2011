@@ -1,5 +1,5 @@
 dnl Autoconf configure script for GDB server.
-dnl Copyright (C) 2000, 2002, 2003, 2004, 2005, 2006
+dnl Copyright (C) 2000, 2002, 2003, 2004, 2005, 2006, 2007, 2008
 dnl Free Software Foundation, Inc.
 dnl
 dnl This file is part of GDB.
@@ -23,6 +23,7 @@ AC_PREREQ(2.59)dnl
 
 AC_INIT(server.c)
 AC_CONFIG_HEADER(config.h:config.in)
+AC_CONFIG_LIBOBJ_DIR(../gnulib)
 
 AC_PROG_CC
 AC_GNU_SOURCE
@@ -38,10 +39,11 @@ AC_HEADER_STDC
 AC_CHECK_HEADERS(sgtty.h termio.h termios.h sys/reg.h string.h dnl
 		 proc_service.h sys/procfs.h thread_db.h linux/elf.h dnl
 		 stdlib.h unistd.h dnl
- 		 errno.h fcntl.h signal.h sys/file.h malloc.h dnl
+		 errno.h fcntl.h signal.h sys/file.h malloc.h dnl
 		 sys/ioctl.h netinet/in.h sys/socket.h netdb.h dnl
 		 netinet/tcp.h arpa/inet.h sys/wait.h)
 AC_CHECK_FUNCS(pread pwrite pread64)
+AC_REPLACE_FUNCS(memmem)
 
 have_errno=no
 AC_MSG_CHECKING(for errno)
@@ -59,51 +61,17 @@ AC_TRY_LINK([
   [AC_MSG_RESULT(no)])
 fi
 
-AC_CHECK_DECLS([strerror, perror])
+AC_CHECK_DECLS([strerror, perror, memmem])
 
 AC_CHECK_TYPES(socklen_t, [], [],
 [#include <sys/types.h>
 #include <sys/socket.h>
 ])
 
-# Check for various supplementary target information (beyond the
-# triplet) which might affect the choices in configure.srv.
-case "${target}" in
-  arm*-*-linux*)
-    AC_CACHE_CHECK([if iWMMXt is selected], [gdb_cv_arm_iwmmxt],
-		   [save_CPPFLAGS="$CPPFLAGS"
-		   CPPFLAGS="$CPPFLAGS $CFLAGS"
-		   AC_EGREP_CPP([got it], [
-#ifdef __IWMMXT__
-got it
-#endif
-				], [gdb_cv_arm_iwmmxt=yes],
-				[gdb_cv_arm_iwmmxt=no])
-		   CPPFLAGS="$save_CPPFLAGS"])
-    ;;
-  powerpc*-*-*)
-    AC_CACHE_CHECK([if Altivec is selected], [gdb_cv_ppc_altivec],
-      	           [save_CPPFLAGS="$CPPFLAGS"
-                    CPPFLAGS="$CPPFLAGS $CFLAGS"
-                    AC_EGREP_CPP([got it], [
-#ifdef __ALTIVEC__
-got it
-#endif
-                 ], [gdb_cv_ppc_altivec=yes],
-                    [gdb_cv_ppc_altivec=no])
-                    CPPFLAGS="$save_CPPFLAGS"])
-    AC_CACHE_CHECK([if SPE is selected], [gdb_cv_ppc_spe],
-      	           [save_CPPFLAGS="$CPPFLAGS"
-                    CPPFLAGS="$CPPFLAGS $CFLAGS"
-                    AC_EGREP_CPP([got it], [
-#ifdef __SPE__
-got it
-#endif
-                 ], [gdb_cv_ppc_spe=yes],
-                    [gdb_cv_ppc_spe=no])
-                    CPPFLAGS="$save_CPPFLAGS"])
-    ;;
-esac
+ACX_PKGVERSION([GDB])
+ACX_BUGURL([http://www.gnu.org/software/gdb/bugs/])
+AC_DEFINE_UNQUOTED([PKGVERSION], ["$PKGVERSION"], [Additional package description])
+AC_DEFINE_UNQUOTED([REPORT_BUGS_TO], ["$REPORT_BUGS_TO"], [Bug reporting address])
 
 . ${srcdir}/configure.srv
 
@@ -111,6 +79,8 @@ if test "${srv_mingwce}" = "yes"; then
   LIBS="$LIBS -lws2"
 elif test "${srv_mingw}" = "yes"; then
   LIBS="$LIBS -lwsock32"
+elif test "${srv_qnx}" = "yes"; then
+  LIBS="$LIBS -lsocket"
 fi
 
 if test "${srv_mingw}" = "yes"; then
@@ -191,8 +161,8 @@ if test "$srv_linux_thread_db" = "yes"; then
   USE_THREAD_DB="-DUSE_THREAD_DB"
   AC_CACHE_CHECK([for TD_VERSION], gdbsrv_cv_have_td_version,
   [AC_TRY_COMPILE([#include <thread_db.h>], [TD_VERSION;],
-                  [gdbsrv_cv_have_td_version=yes],
-                  [gdbsrv_cv_have_td_version=no])])
+		  [gdbsrv_cv_have_td_version=yes],
+		  [gdbsrv_cv_have_td_version=no])])
   if test $gdbsrv_cv_have_td_version = yes; then
     AC_DEFINE(HAVE_TD_VERSION, 1, [Define if TD_VERSION is available.])
   fi
@@ -202,13 +172,12 @@ if test "$srv_linux_thread_db" = "yes"; then
   fi
 fi
 
-if test "$srv_xmltarget" != ""; then
-  srv_xmltarget="\$(XML_DIR)/$srv_xmltarget"
+if test "$srv_xmlfiles" != ""; then
   srv_xmlbuiltin="xml-builtin.o"
   AC_DEFINE(USE_XML, 1, [Define if an XML target description is available.])
 
   tmp_xmlfiles=$srv_xmlfiles
-  srv_xmlfiles="target.xml"
+  srv_xmlfiles=""
   for f in $tmp_xmlfiles; do
     srv_xmlfiles="$srv_xmlfiles \$(XML_DIR)/$f"
   done
@@ -222,7 +191,6 @@ AC_SUBST(GDBSERVER_LIBS)
 AC_SUBST(USE_THREAD_DB)
 AC_SUBST(srv_xmlbuiltin)
 AC_SUBST(srv_xmlfiles)
-AC_SUBST(srv_xmltarget)
 
 AC_OUTPUT(Makefile,
 [case x$CONFIG_HEADERS in

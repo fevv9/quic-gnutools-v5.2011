@@ -3,7 +3,7 @@
 # All Rights Reserved.
 # Modified by QUALCOMM INCORPORATED on $Date$
 *****************************************************************/
-/* 
+/*
  * strtoull.c --
  *
  *	Source code for the "strtoull" library procedure.
@@ -111,7 +111,7 @@ strtoull(string, endPtr, base)
      * If no base was provided, pick one from the leading characters
      * of the string.
      */
-    
+
     if (base == 0) {
 	if (*p == '0') {
 	    p += 1;

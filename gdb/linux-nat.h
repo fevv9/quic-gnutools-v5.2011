@@ -1,6 +1,6 @@
 /* Native debugging support for GNU/Linux (LWP layer).
 
-   Copyright (C) 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008
+   Copyright (C) 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009
    Free Software Foundation, Inc.
 
    This file is part of GDB.
@@ -62,10 +62,20 @@ struct lwp_info
      be the address of a hardware watchpoint.  */
   struct siginfo siginfo;
 
+  /* Non-zero if we expect a duplicated SIGINT.  */
+  int ignore_sigint;
+
   /* If WAITSTATUS->KIND != TARGET_WAITKIND_SPURIOUS, the waitstatus
      for this LWP's last event.  This may correspond to STATUS above,
      or to a local variable in lin_lwp_wait.  */
   struct target_waitstatus waitstatus;
+
+  /* Signal wether we are in a SYSCALL_ENTRY or
+     in a SYSCALL_RETURN event.
+     Values:
+     - TARGET_WAITKIND_SYSCALL_ENTRY
+     - TARGET_WAITKIND_SYSCALL_RETURN */
+  int syscall_state;
 
   /* Next LWP in list.  */
   struct lwp_info *next;
@@ -83,14 +93,22 @@ extern struct lwp_info *lwp_list;
        (LP) != NULL;							\
        (LP) = (LP)->next, (PTID) = (LP) ? (LP)->ptid : (PTID))
 
+#define GET_LWP(ptid)		ptid_get_lwp (ptid)
+#define GET_PID(ptid)		ptid_get_pid (ptid)
+#define is_lwp(ptid)		(GET_LWP (ptid) != 0)
+#define BUILD_LWP(lwp, pid)	ptid_build (pid, lwp, 0)
+
 /* Attempt to initialize libthread_db.  */
 void check_for_thread_db (void);
 
-/* Tell the thread_db layer what native target operations to use.  */
-void thread_db_init (struct target_ops *);
+int thread_db_attach_lwp (ptid_t ptid);
 
 /* Find process PID's pending signal set from /proc/pid/status.  */
 void linux_proc_pending_signals (int pid, sigset_t *pending, sigset_t *blocked, sigset_t *ignored);
+
+/* Return the TGID of LWPID from /proc/pid/status.  Returns -1 if not
+   found.  */
+extern int linux_proc_get_tgid (int lwpid);
 
 /* linux-nat functions for handling fork events.  */
 extern void linux_enable_event_reporting (ptid_t ptid);
@@ -98,7 +116,8 @@ extern void linux_enable_event_reporting (ptid_t ptid);
 extern int lin_lwp_attach_lwp (ptid_t ptid);
 
 /* Iterator function for lin-lwp's lwp list.  */
-struct lwp_info *iterate_over_lwps (int (*callback) (struct lwp_info *, 
+struct lwp_info *iterate_over_lwps (ptid_t filter,
+				    int (*callback) (struct lwp_info *,
 						     void *), 
 				    void *data);
 
@@ -117,6 +136,14 @@ void linux_nat_add_target (struct target_ops *);
 
 /* Register a method to call whenever a new thread is attached.  */
 void linux_nat_set_new_thread (struct target_ops *, void (*) (ptid_t));
+
+/* Register a method that converts a siginfo object between the layout
+   that ptrace returns, and the layout in the architecture of the
+   inferior.  */
+void linux_nat_set_siginfo_fixup (struct target_ops *,
+				  int (*) (struct siginfo *,
+					   gdb_byte *,
+					   int));
 
 /* Update linux-nat internal state when changing from one fork
    to another.  */

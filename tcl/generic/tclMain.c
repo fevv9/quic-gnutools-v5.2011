@@ -3,7 +3,7 @@
 # All Rights Reserved.
 # Modified by QUALCOMM INCORPORATED on $Date$
 *****************************************************************/
-/* 
+/*
  * tclMain.c --
  *
  *	Main program for Tcl shells and other Tcl-based applications.
@@ -40,7 +40,7 @@ static Tcl_Obj *tclStartupScriptPath = NULL;
 
 static Tcl_MainLoopProc *mainLoopProc = NULL;
 
-/* 
+/*
  * Structure definition for information used to keep the state of
  * an interactive command processor that reads lines from standard
  * input and writes prompts and results to standard output.
@@ -55,7 +55,7 @@ typedef enum {
 typedef struct InteractiveState {
     Tcl_Channel input;		/* The standard input channel from which
 				 * lines are read. */
-    int tty;                    /* Non-zero means standard input is a 
+    int tty;                    /* Non-zero means standard input is a
 				 * terminal-like device.  Zero means it's
 				 * a file. */
     Tcl_Obj *commandPtr;	/* Used to assemble lines of input into
@@ -84,7 +84,7 @@ static void		StdinProc _ANSI_ARGS_((ClientData clientData,
  *      command line processing.
  *
  * Results:
- *	None. 
+ *	None.
  *
  * Side effects:
  *	This procedure initializes the VFS path of the Tcl script to
@@ -136,7 +136,7 @@ Tcl_Obj *TclGetStartupScriptPath()
  *      command line processing.
  *
  * Results:
- *	None. 
+ *	None.
  *
  * Side effects:
  *	This procedure initializes the file name of the Tcl script to
@@ -251,7 +251,7 @@ Tcl_Main(argc, argv, appInitProc)
     Tcl_IncrRefCount(objPtr);
     Tcl_SetVar2Ex(interp, "argc", NULL, objPtr, TCL_GLOBAL_ONLY);
     Tcl_DecrRefCount(objPtr);
-    
+
     argvPtr = Tcl_NewListObj(0, NULL);
     while (argc--) {
 	Tcl_DString ds;
@@ -272,7 +272,7 @@ Tcl_Main(argc, argv, appInitProc)
     Tcl_SetVar(interp, "tcl_interactive",
 	    ((TclGetStartupScriptPath() == NULL) && tty) ? "1" : "0",
 	    TCL_GLOBAL_ONLY);
-    
+
     /*
      * Invoke application-specific initialization.
      */
@@ -371,7 +371,7 @@ Tcl_Main(argc, argv, appInitProc)
 		continue;
 	    }
 
-	    /* 
+	    /*
 	     * Either EOF, or an error on stdin; we're done
 	     */
 
@@ -430,7 +430,7 @@ Tcl_Main(argc, argv, appInitProc)
 	        if (tty) {
 		    Prompt(interp, &prompt);
 	        }
-		isPtr = (InteractiveState *) 
+		isPtr = (InteractiveState *)
 			ckalloc((int) sizeof(InteractiveState));
 		isPtr->input = inChannel;
 		isPtr->tty = tty;

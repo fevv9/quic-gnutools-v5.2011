@@ -1,7 +1,7 @@
 /* Target-dependent code for the MIPS architecture running on IRIX,
    for GDB, the GNU Debugger.
 
-   Copyright (C) 2002, 2007, 2008 Free Software Foundation, Inc.
+   Copyright (C) 2002, 2007, 2008, 2009 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -83,6 +83,9 @@ mips_irix_init_abi (struct gdbarch_info info,
 {
   set_solib_ops (gdbarch, &irix_so_ops);
 }
+
+/* Provide a prototype to silence -Wmissing-prototypes.  */
+extern initialize_file_ftype _initialize_mips_irix_tdep;
 
 void
 _initialize_mips_irix_tdep (void)

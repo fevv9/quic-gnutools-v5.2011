@@ -102,7 +102,7 @@ Tcl_MacOSXOpenBundleResources(
  * Tcl_MacOSXOpenVersionedBundleResources --
  *
  *	Given the bundle and version name for a shared library (version
- *	name can be NULL to indicate latest version), this routine sets 
+ *	name can be NULL to indicate latest version), this routine sets
  *	libraryPath to the Resources/Scripts directory in the framework
  *	package.  If hasResourceFile is true, it will also open the main
  *	resource file for the bundle.
@@ -175,7 +175,7 @@ Tcl_MacOSXOpenVersionedBundleResources(
 	bundleRef = versionedBundleRef;
     }
 
-    if (bundleRef) {	
+    if (bundleRef) {
 	if (hasResourceFile) {
 	    /* Dynamically acquire address for CFBundleOpenBundleResourceMap
 	     * symbol, since it is only present in full CoreFoundation
@@ -212,7 +212,7 @@ Tcl_MacOSXOpenVersionedBundleResources(
 	    CFRelease(libURL);
 	}
     }
-    
+
     if (libraryPath[0]) {
         return TCL_OK;
     } else {

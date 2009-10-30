@@ -1,4 +1,4 @@
-# Copyright 1999, 2001, 2004, 2007, 2008 Free Software Foundation, Inc.
+# Copyright 1999, 2001, 2004, 2007, 2008, 2009 Free Software Foundation, Inc.
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -12,9 +12,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-# Please email any bugs, comments, and/or additions to this file to:
-# bug-gdb@prep.ai.mit.edu
 
 if $tracelevel then {
     strace $tracelevel
@@ -127,22 +124,6 @@ gdb_load_timed $binfile "limit" 0
 #
 # Query GDB for the size of various types
 #
-
-proc get_sizeof { type default } {
-    global gdb_prompt
-    send_gdb "print/d sizeof (${type})\n"
-    gdb_expect {
-	-re "\\$\[0-9\]* = (\[0-9\]*).*$gdb_prompt $" {
-	    set size $expect_out(1,string)
-	    pass "get sizeof ${type} ($size)"
-	}
-	timeout {
-	    set size ${default}
-	    fail "get sizeof ${type} (timeout)"
-	}
-    }
-    return ${size}
-}
 
 # Get the size of random_data table (defaults to 48K).
 set sizeof_random_data [get_sizeof "random_data" 48*1024]

@@ -1,5 +1,5 @@
 /* Register support routines for the remote server for GDB.
-   Copyright (C) 2001, 2002, 2004, 2005, 2007, 2008
+   Copyright (C) 2001, 2002, 2004, 2005, 2007, 2008, 2009
    Free Software Foundation, Inc.
 
    This file is part of GDB.
@@ -53,7 +53,7 @@ get_regcache (struct thread_info *inf, int fetch)
   /* FIXME - fetch registers for INF */
   if (fetch && regcache->registers_valid == 0)
     {
-      fetch_inferior_registers (0);
+      fetch_inferior_registers (-1);
       regcache->registers_valid = 1;
     }
 
@@ -86,25 +86,20 @@ regcache_invalidate ()
   for_each_inferior (&all_threads, regcache_invalidate_one);
 }
 
-int
-registers_length (void)
-{
-  return 2 * register_bytes;
-}
-
 void *
 new_register_cache (void)
 {
   struct inferior_regcache_data *regcache;
 
-  regcache = malloc (sizeof (*regcache));
+  if (register_bytes == 0)
+    return NULL; /* The architecture hasn't been initialized yet.  */
+
+  regcache = xmalloc (sizeof (*regcache));
 
   /* Make sure to zero-initialize the register cache when it is created,
      in case there are registers the target never fetches.  This way they'll
      read as zero instead of garbage.  */
-  regcache->registers = calloc (1, register_bytes);
-  if (regcache->registers == NULL)
-    fatal ("Could not allocate register cache.");
+  regcache->registers = xcalloc (1, register_bytes);
 
   regcache->registers_valid = 0;
 
@@ -117,15 +112,27 @@ free_register_cache (void *regcache_p)
   struct inferior_regcache_data *regcache
     = (struct inferior_regcache_data *) regcache_p;
 
-  free (regcache->registers);
-  free (regcache);
+  if (regcache)
+    {
+      free (regcache->registers);
+      free (regcache);
+    }
+}
+
+static void
+realloc_register_cache (struct inferior_list_entry *thread_p)
+{
+  struct thread_info *thread = (struct thread_info *) thread_p;
+
+  free_register_cache (inferior_regcache_data (thread));
+  set_inferior_regcache_data (thread, new_register_cache ());
 }
 
 void
 set_register_cache (struct reg *regs, int n)
 {
   int offset, i;
-  
+
   reg_defs = regs;
   num_registers = n;
 
@@ -137,6 +144,13 @@ set_register_cache (struct reg *regs, int n)
     }
 
   register_bytes = offset / 8;
+
+  /* Make sure PBUFSIZ is large enough to hold a full register packet.  */
+  if (2 * register_bytes + 32 > PBUFSIZ)
+    fatal ("Register packet size exceeds PBUFSIZ.");
+
+  /* Re-allocate all pre-existing register caches.  */
+  for_each_inferior (&all_threads, realloc_register_cache);
 }
 
 void
@@ -155,7 +169,8 @@ registers_from_string (char *buf)
 
   if (len != register_bytes * 2)
     {
-      warning ("Wrong sized register packet (expected %d bytes, got %d)", 2*register_bytes, len);
+      warning ("Wrong sized register packet (expected %d bytes, got %d)",
+	       2*register_bytes, len);
       if (len > register_bytes * 2)
 	len = register_bytes * 2;
     }

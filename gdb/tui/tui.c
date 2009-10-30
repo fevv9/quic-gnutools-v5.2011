@@ -1,6 +1,6 @@
 /* General functions for the WDB TUI.
 
-   Copyright (C) 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2007, 2008
+   Copyright (C) 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2007, 2008, 2009
    Free Software Foundation, Inc.
 
    Contributed by Hewlett-Packard Company.
@@ -535,10 +535,10 @@ tui_show_source (const char *file, int line)
 }
 
 void
-tui_show_assembly (CORE_ADDR addr)
+tui_show_assembly (struct gdbarch *gdbarch, CORE_ADDR addr)
 {
   tui_add_win_to_layout (DISASSEM_WIN);
-  tui_update_source_windows_with_addr (addr);
+  tui_update_source_windows_with_addr (gdbarch, addr);
 }
 
 int

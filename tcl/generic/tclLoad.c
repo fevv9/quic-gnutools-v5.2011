@@ -3,7 +3,7 @@
 # All Rights Reserved.
 # Modified by QUALCOMM INCORPORATED on $Date$
 *****************************************************************/
-/* 
+/*
  * tclLoad.c --
  *
  *	This file provides the generic portion (those that are the same
@@ -24,7 +24,7 @@
  * either dynamically (with the "load" command) or statically (as
  * indicated by a call to TclGetLoadedPackages).  All such packages
  * are linked together into a single list for the process.  Packages
- * are never unloaded, until the application exits, when 
+ * are never unloaded, until the application exits, when
  * TclFinalizeLoad is called, and these structures are freed.
  */
 
@@ -35,7 +35,7 @@ typedef struct LoadedPackage {
 				 * Malloc-ed. */
     char *packageName;		/* Name of package prefix for the package,
 				 * properly capitalized (first letter UC,
-				 * others LC), no "_", as in "Net". 
+				 * others LC), no "_", as in "Net".
 				 * Malloc-ed. */
     Tcl_LoadHandle loadHandle;	/* Token for the loaded file which should be
 				 * passed to (*unLoadProcPtr)() when the file
@@ -142,7 +142,7 @@ Tcl_LoadObjCmd(dummy, interp, objc, objv)
 	return TCL_ERROR;
     }
     fullFileName = Tcl_GetString(objv[1]);
-    
+
     Tcl_DStringInit(&pkgName);
     Tcl_DStringInit(&initName);
     Tcl_DStringInit(&safeInitName);
@@ -323,7 +323,7 @@ Tcl_LoadObjCmd(dummy, interp, objc, objv)
 	 * character is in caps (or title case) but the others are all
 	 * lower-case.
 	 */
-    
+
 	Tcl_DStringSetLength(&pkgName,
 		Tcl_UtfToTitle(Tcl_DStringValue(&pkgName)));
 
@@ -331,7 +331,7 @@ Tcl_LoadObjCmd(dummy, interp, objc, objv)
 	 * Compute the names of the two initialization procedures,
 	 * based on the package name.
 	 */
-    
+
 	Tcl_DStringAppend(&initName, Tcl_DStringValue(&pkgName), -1);
 	Tcl_DStringAppend(&initName, "_Init", 5);
 	Tcl_DStringAppend(&safeInitName, Tcl_DStringValue(&pkgName), -1);
@@ -512,7 +512,7 @@ Tcl_StaticPackage(interp, pkgName, initProc, safeInitProc)
 
 	/*
 	 * If we're loading the package into an interpreter,
-	 * determine whether it's already loaded. 
+	 * determine whether it's already loaded.
 	 */
 
 	ipFirstPtr = (InterpPackage *) Tcl_GetAssocData(interp, "tclLoad",
@@ -574,7 +574,7 @@ TclGetLoadedPackages(interp, targetName)
     char *prefix;
 
     if (targetName == NULL) {
-	/* 
+	/*
 	 * Return information about all of the available packages.
 	 */
 
@@ -674,7 +674,7 @@ TclFinalizeLoad()
 
     /*
      * No synchronization here because there should just be
-     * one thread alive at this point.  Logically, 
+     * one thread alive at this point.  Logically,
      * packageMutex should be grabbed at this point, but
      * the Mutexes get finalized before the call to this routine.
      * The only subsystem left alive at this point is the

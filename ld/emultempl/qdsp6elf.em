@@ -36,8 +36,13 @@ static size_t ld_mach_arch_options_size =
 static void
 qdsp6_after_parse (void)
 {
+  /* Do not try to relax to add trampolines with -r. */
   if (link_info.qdsp6_trampolines)
     link_info.qdsp6_trampolines = command_line.relax = !link_info.relocatable;
+
+  /* It likely does not make sense to have a DSO using the TCM. */
+  if (config.use_tcm && link_info.shared)
+    einfo (_("%P%F: \"-tcm\" not supported with \"-shared\"\n"));
 }
 
 EOF
@@ -88,10 +93,11 @@ PARSE_AND_LIST_ARGS_CASES=$'
          the input files according to qdsp6_bfd_compatible (). */
       if (!qdsp6_cmdline_set_arch)
         {
-          const struct bfd_arch_info *arch_info;
+          static const struct bfd_arch_info *arch_info = NULL;
           bfd *in_bfd;
           char *in_bfd_name;
           char **matching;
+          size_t i;
 
           in_bfd = bfd_openr (optarg, NULL);
           if (in_bfd == NULL)
@@ -118,6 +124,16 @@ PARSE_AND_LIST_ARGS_CASES=$'
                   ldfile_output_machine      = arch_info->mach;
                   ldfile_output_machine_name = arch_info->printable_name;
                 }
+
+              for (i = 0; i < ld_mach_arch_options_size; i++)
+                if (!strcmp (in_bfd_name, ld_mach_arch_options [i].march_name_be))
+                  {
+                    /* Only set if the cmdline has not set the type yet. */
+                    ldfile_set_output_arch (ld_mach_arch_options [i].march_name_be, bfd_arch_qdsp6);
+
+                    break;
+                  }
+
               bfd_close (in_bfd);
             }
         }
@@ -140,7 +156,7 @@ PARSE_AND_LIST_ARGS_CASES=$'
     case OPTION_MCPU:
       /* The output architecture is specified. */
         {
-          char *temp_qdsp6_arch_name;
+          char *temp_qdsp6_arch_name = (char *)0;
           size_t i;
 
           switch (optc)

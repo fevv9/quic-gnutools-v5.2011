@@ -3,7 +3,7 @@
 # All Rights Reserved.
 # Modified by QUALCOMM INCORPORATED on $Date$
 *****************************************************************/
-/* 
+/*
  * tclStubInit.c --
  *
  *	This file contains the initializers for the Tcl stub vectors.

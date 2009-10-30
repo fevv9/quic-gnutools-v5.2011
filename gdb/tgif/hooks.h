@@ -6,7 +6,7 @@
 #ifndef __HOOKS_H
 #define __HOOKS_H
 /*
- * 
+ *
  * File: hooks.h
  *
  * Purpose: This file contains headers for the hook functions.

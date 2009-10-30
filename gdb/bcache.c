@@ -2,7 +2,7 @@
    Written by Fred Fish <fnf@cygnus.com>
    Rewritten by Jim Blandy <jimb@cygnus.com>
 
-   Copyright (C) 1999, 2000, 2002, 2003, 2007, 2008
+   Copyright (C) 1999, 2000, 2002, 2003, 2007, 2008, 2009
    Free Software Foundation, Inc.
 
    This file is part of GDB.
@@ -194,13 +194,38 @@ expand_hash_table (struct bcache *bcache)
 /* Find a copy of the LENGTH bytes at ADDR in BCACHE.  If BCACHE has
    never seen those bytes before, add a copy of them to BCACHE.  In
    either case, return a pointer to BCACHE's copy of that string.  */
-static void *
-bcache_data (const void *addr, int length, struct bcache *bcache)
+const void *
+bcache (const void *addr, int length, struct bcache *bcache)
+{
+  return bcache_full (addr, length, bcache, NULL);
+}
+
+/* Find a copy of the LENGTH bytes at ADDR in BCACHE.  If BCACHE has
+   never seen those bytes before, add a copy of them to BCACHE.  In
+   either case, return a pointer to BCACHE's copy of that string.  If
+   optional ADDED is not NULL, return 1 in case of new entry or 0 if
+   returning an old entry.  */
+
+const void *
+bcache_full (const void *addr, int length, struct bcache *bcache, int *added)
 {
   unsigned long full_hash;
   unsigned short half_hash;
   int hash_index;
   struct bstring *s;
+
+  if (added)
+    *added = 0;
+
+  /* Lazily initialize the obstack.  This can save quite a bit of
+     memory in some cases.  */
+  if (bcache->total_count == 0)
+    {
+      /* We could use obstack_specify_allocation here instead, but
+	 gdb_obstack.h specifies the allocation/deallocation
+	 functions.  */
+      obstack_init (&bcache->cache);
+    }
 
   /* If our average chain length is too high, expand the hash table.  */
   if (bcache->unique_count >= bcache->num_buckets * CHAIN_LENGTH_THRESHOLD)
@@ -242,20 +267,11 @@ bcache_data (const void *addr, int length, struct bcache *bcache)
     bcache->unique_size += length;
     bcache->structure_size += BSTRING_SIZE (length);
 
+    if (added)
+      *added = 1;
+
     return &new->d.data;
   }
-}
-
-void *
-deprecated_bcache (const void *addr, int length, struct bcache *bcache)
-{
-  return bcache_data (addr, length, bcache);
-}
-
-const void *
-bcache (const void *addr, int length, struct bcache *bcache)
-{
-  return bcache_data (addr, length, bcache);
 }
 
 /* Allocating and freeing bcaches.  */
@@ -265,10 +281,6 @@ bcache_xmalloc (void)
 {
   /* Allocate the bcache pre-zeroed.  */
   struct bcache *b = XCALLOC (1, struct bcache);
-  /* We could use obstack_specify_allocation here instead, but
-     gdb_obstack.h specifies the allocation/deallocation
-     functions.  */
-  obstack_init (&b->cache);
   return b;
 }
 
@@ -278,7 +290,9 @@ bcache_xfree (struct bcache *bcache)
 {
   if (bcache == NULL)
     return;
-  obstack_free (&bcache->cache, 0);
+  /* Only free the obstack if we actually initialized it.  */
+  if (bcache->total_count > 0)
+    obstack_free (&bcache->cache, 0);
   xfree (bcache->bucket);
   xfree (bcache);
 }
@@ -437,5 +451,7 @@ print_bcache_statistics (struct bcache *c, char *type)
 int
 bcache_memory_used (struct bcache *bcache)
 {
+  if (bcache->total_count == 0)
+    return 0;
   return obstack_memory_used (&bcache->cache);
 }

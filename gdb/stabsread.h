@@ -1,6 +1,6 @@
 /* Include file for stabs debugging format support functions.
    Copyright (C) 1986, 1987, 1988, 1989, 1990, 1991, 1992, 1993, 1994, 1995,
-   1996, 1997, 1999, 2000, 2001, 2002, 2003, 2007, 2008
+   1996, 1997, 1999, 2000, 2001, 2002, 2003, 2007, 2008, 2009
    Free Software Foundation, Inc.
 
    This file is part of GDB.
@@ -129,7 +129,7 @@ EXTERN int n_this_object_header_files;
 
 EXTERN int n_allocated_this_object_header_files;
 
-extern void cleanup_undefined_types (void);
+extern void cleanup_undefined_types (struct objfile *);
 
 extern long read_number (char **, int);
 

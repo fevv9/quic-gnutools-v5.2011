@@ -3,7 +3,7 @@
 # All Rights Reserved.
 # Modified by QUALCOMM INCORPORATED on $Date$
 *****************************************************************/
-/* 
+/*
  * tclMacTest.c --
  *
  *	Contains commands for platform specific tests for
@@ -38,7 +38,7 @@ static int		DebuggerCmd _ANSI_ARGS_((ClientData dummy,
 			    Tcl_Interp *interp, int argc, CONST char **argv));
 static int		WriteTextResource _ANSI_ARGS_((ClientData dummy,
 			    Tcl_Interp *interp, int argc, CONST char **argv));
-			    
+
 
 /*
  *----------------------------------------------------------------------
@@ -64,7 +64,7 @@ TclplatformtestInit(
     /*
      * Add commands for platform specific tests on MacOS here.
      */
-    
+
     Tcl_CreateCommand(interp, "debugger", DebuggerCmd,
             (ClientData) 0, (Tcl_CmdDeleteProc *) NULL);
     Tcl_CreateCommand(interp, "testWriteTextResource", WriteTextResource,
@@ -105,9 +105,9 @@ DebuggerCmd(
  *
  * WriteTextResource --
  *
- *	This procedure will write a text resource out to the 
+ *	This procedure will write a text resource out to the
  *	application or a given file.  The format for this command is
- *	textwriteresource 
+ *	textwriteresource
  *
  * Results:
  *	A standard Tcl result.
@@ -156,7 +156,7 @@ WriteTextResource(
 	    data = argv[i];
 	}
     }
-	
+
     if ((rsrcName == NULL && rsrcID < 0) ||
 	    (fileName == NULL) || (data == NULL)) {
     	errStr = errBad;
@@ -171,7 +171,7 @@ WriteTextResource(
 	Tcl_AppendResult(interp, "couldn't validate file name", (char *) NULL);
 	return TCL_ERROR;
     }
-    
+
     if (err == fnfErr) {
 	FSpCreateResFile(&fileSpec, 'WIsH', 'rsrc', smSystemScript);
     }
@@ -180,7 +180,7 @@ WriteTextResource(
 	Tcl_AppendResult(interp, "couldn't open resource file", (char *) NULL);
 	return TCL_ERROR;
     }
-		
+
     UseResFile(fileRef);
 
     /*
@@ -189,28 +189,28 @@ WriteTextResource(
     if (rsrcID < 0) {
 	rsrcID = UniqueID('TEXT');
     }
-    
+
     strcpy((char *) resourceName, rsrcName);
     c2pstr((char *) resourceName);
-    
+
     dataHandle = NewHandle(strlen(data));
     HLock(dataHandle);
     strcpy(*dataHandle, data);
     HUnlock(dataHandle);
-     
+
     /*
      * Add the resource to the file and close it.
      */
     AddResource(dataHandle, 'TEXT', rsrcID, resourceName);
-    
+
     UpdateResFile(fileRef);
     if (protectIt) {
         SetResAttrs(Get1Resource('TEXT', rsrcID), resProtected);
     }
-    
+
     CloseResFile(fileRef);
     return TCL_OK;
-    
+
     sourceFmtErr:
     Tcl_AppendResult(interp, errStr, "error in \"", argv[0], "\"",
 	    (char *) NULL);

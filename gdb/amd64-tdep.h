@@ -1,6 +1,7 @@
 /* Target-dependent definitions for AMD64.
 
-   Copyright (C) 2001, 2003, 2004, 2007, 2008 Free Software Foundation, Inc.
+   Copyright (C) 2001, 2003, 2004, 2007, 2008, 2009
+   Free Software Foundation, Inc.
    Contributed by Jiri Smid, SuSE Labs.
 
    This file is part of GDB.
@@ -39,8 +40,14 @@ enum amd64_regnum
   AMD64_RDI_REGNUM,		/* %rdi */
   AMD64_RBP_REGNUM,		/* %rbp */
   AMD64_RSP_REGNUM,		/* %rsp */
-  AMD64_R8_REGNUM = 8,		/* %r8 */
-  AMD64_R15_REGNUM = 15,	/* %r15 */
+  AMD64_R8_REGNUM,		/* %r8 */
+  AMD64_R9_REGNUM,		/* %r9 */
+  AMD64_R10_REGNUM,		/* %r10 */
+  AMD64_R11_REGNUM,		/* %r11 */
+  AMD64_R12_REGNUM,		/* %r12 */
+  AMD64_R13_REGNUM,		/* %r13 */
+  AMD64_R14_REGNUM,		/* %r14 */
+  AMD64_R15_REGNUM,		/* %r15 */
   AMD64_RIP_REGNUM,		/* %rip */
   AMD64_EFLAGS_REGNUM,		/* %eflags */
   AMD64_CS_REGNUM,		/* %cs */
@@ -59,6 +66,14 @@ enum amd64_regnum
 
 /* Number of general purpose registers.  */
 #define AMD64_NUM_GREGS		24
+
+extern struct displaced_step_closure *amd64_displaced_step_copy_insn
+  (struct gdbarch *gdbarch, CORE_ADDR from, CORE_ADDR to,
+   struct regcache *regs);
+extern void amd64_displaced_step_fixup (struct gdbarch *gdbarch,
+					struct displaced_step_closure *closure,
+					CORE_ADDR from, CORE_ADDR to,
+					struct regcache *regs);
 
 extern void amd64_init_abi (struct gdbarch_info info, struct gdbarch *gdbarch);
 

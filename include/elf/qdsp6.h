@@ -50,7 +50,7 @@ START_RELOC_NUMBERS (elf_qdsp6_reloc_type)
 
 END_RELOC_NUMBERS (R_QDSP6_max)
 
-/* Processor-specific flags for the ELF header e_TYPE field.  */
+/* Processor-specific flags for the ELF header e_type field.  */
 
 /* Object is WHIRL, matching ET_SGI_IR. */
 #define ET_QDSP6_IR (ET_LOPROC)
@@ -60,12 +60,12 @@ END_RELOC_NUMBERS (R_QDSP6_max)
 /* Four bit QDSP6 machine type field.  */
 #define EF_QDSP6_MACH 0x0f
 /* Limit to 16 CPU types for now. */
-
+#define EF_QDSP6_MACH_VER(e_flags) ((e_flags) & EF_QDSP6_MACH)
 /* Various CPU types.  */
-#define E_QDSP6_MACH    0
-#define E_QDSP6_MACH_V2 1
-#define E_QDSP6_MACH_V3 2
-#define E_QDSP6_MACH_V4 3
+#define EF_QDSP6_MACH_V1 0
+#define EF_QDSP6_MACH_V2 1
+#define EF_QDSP6_MACH_V3 2
+#define EF_QDSP6_MACH_V4 4
 
 /* File contains position independent code.  */
 #define EF_QDSP6_PIC 0x00000100
@@ -89,7 +89,7 @@ END_RELOC_NUMBERS (R_QDSP6_max)
 /* Processor-specific section type.  */
 
 /* Link editor is to sort the entries in this section based on their sizes. */
-#define SHT_QDSP6_ORDERED SHT_LOPROC
+#define SHT_QDSP6_ORDERED (SHT_LOPROC + 0)
 
 /* Processor specific program header types.  */
 
@@ -98,12 +98,18 @@ END_RELOC_NUMBERS (R_QDSP6_max)
 #define PT_QDSP6_SMI (PT_LOPROC + 0)
 #define PT_QDSP6_TCM (PT_LOPROC + 1)
 
-/* Processor specific program header flags.  */
+/* Processor-specific program header flags.  */
 
 /* Cacheability memory flags. */
-#define PF_QDSP6_UC 0x80000000  /* Cacheable/uncacheable */
-#define PF_QDSP6_WT 0x40000000  /* Write-back/write-through */
-#define PF_QDSP6_N2 0x20000000  /* L2 cacheable/uncacheable */
+#define PF_QDSP6_UC 0x80000000	/* Cacheable/uncacheable */
+#define PF_QDSP6_WT 0x40000000	/* Write-back/write-through */
+#define PF_QDSP6_U2 0x20000000	/* L2 cacheable/uncacheable */
+#define PF_QDSP6_SH 0x10000000	/* Non-shared/shared */
+
+/* Processor-specific dynamic array tags.  */
+
+#define DT_QDSP6_SYMSZ (DT_LOPROC + 0) /* Size, in bytes, of the .dynsym section, also DT_SYMTAB. */
+#define DT_QDSP6_VER   (DT_LOPROC + 1) /* Version of the dynamic sections. */
 
 /* Various port-specific parameters. */
 
@@ -117,4 +123,3 @@ END_RELOC_NUMBERS (R_QDSP6_max)
 #define QDSP6_SMALL_GPSIZE 8
 
 #endif /* _ELF_QDSP6_H */
-

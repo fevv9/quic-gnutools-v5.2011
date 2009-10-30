@@ -3,7 +3,7 @@
 # All Rights Reserved.
 # Modified by QUALCOMM INCORPORATED on $Date$
 *****************************************************************/
-/* 
+/*
  * tclMacUtil.c --
  *
  *  This contains utility functions used to help with
@@ -33,7 +33,7 @@
 #include <TextUtils.h>
 #include <MoreFilesExtras.h>
 
-/* 
+/*
  * The following two Includes are from the More Files package.
  */
 #include <FileCopy.h>
@@ -57,7 +57,7 @@
  *
  *----------------------------------------------------------------------
  */
- 
+
 #if defined(THINK_C)
 double hypotd(double x, double y);
 
@@ -100,12 +100,12 @@ FSpGetDefaultDir(
     long int dirID = 0;
 
     err = HGetVol(NULL, &vRefNum, &dirID);
-	
+
     if (err == noErr) {
 	err = FSMakeFSSpecCompat(vRefNum, dirID, (ConstStr255Param) NULL,
 		dirSpec);
     }
-	
+
     return err;
 }
 
@@ -136,13 +136,13 @@ FSpSetDefaultDir(
      * The following special case is needed to work around a bug
      * in the Macintosh OS.  (Acutally PC Exchange.)
      */
-    
+
     if (dirSpec->parID == fsRtParID) {
 	err = HSetVol(NULL, dirSpec->vRefNum, fsRtDirID);
     } else {
 	err = HSetVol(dirSpec->name, dirSpec->vRefNum, dirSpec->parID);
     }
-    
+
     return err;
 }
 
@@ -151,7 +151,7 @@ FSpSetDefaultDir(
  *
  * FSpFindFolder --
  *
- *	This function is a version of the FindFolder function that 
+ *	This function is a version of the FindFolder function that
  *	returns the result as a FSSpec rather than a vRefNum and dirID.
  *
  * Results:
@@ -179,7 +179,7 @@ FSpFindFolder(
     if (err != noErr) {
 	return err;
     }
-		
+
     err = FSMakeFSSpecCompat(foundVRefNum, foundDirID, "\p", spec);
     return err;
 }
@@ -196,7 +196,7 @@ FSpLocationFromPathAlias _ANSI_ARGS_((int length, CONST char *path,
  *	This function obtains an FSSpec for a given macintosh path.
  *	Unlike the More Files function FSpLocationFromFullPath, this
  *	function will also accept partial paths and resolve any aliases
- *	along the path.  
+ *	along the path.
  *
  * Results:
  *	OSErr code.
@@ -302,7 +302,7 @@ FSpLocationFromPathAlias(
 	    cur = 0;
 	}
     }
-    
+
     isDirectory = 1;
     while (cur < length) {
 	if (!isDirectory) {
@@ -339,10 +339,10 @@ FSpLocationFromPathAlias(
 	    cur++;
 	}
     }
-    
+
     if(!resolveLink && wasAlias)
     	*fileSpecPtr=lastFileSpec;
-    
+
     return noErr;
 }
 
@@ -374,27 +374,27 @@ FSpPathFromLocation(
     OSErr err;
     FSSpec tempSpec;
     CInfoPBRec pb;
-	
+
     *fullPath = NULL;
-	
-    /* 
+
+    /*
      * Make a copy of the input FSSpec that can be modified.
      */
     BlockMoveData(spec, &tempSpec, sizeof(FSSpec));
-	
+
     if (tempSpec.parID == fsRtParID) {
-	/* 
-	 * The object is a volume.  Add a colon to make it a full 
+	/*
+	 * The object is a volume.  Add a colon to make it a full
 	 * pathname.  Allocate a handle for it and we are done.
 	 */
 	tempSpec.name[0] += 2;
 	tempSpec.name[tempSpec.name[0] - 1] = ':';
 	tempSpec.name[tempSpec.name[0]] = '\0';
-		
+
 	err = PtrToHand(&tempSpec.name[1], fullPath, tempSpec.name[0]);
     } else {
-	/* 
-	 * The object isn't a volume.  Is the object a file or a directory? 
+	/*
+	 * The object isn't a volume.  Is the object a file or a directory?
 	 */
 	pb.dirInfo.ioNamePtr = tempSpec.name;
 	pb.dirInfo.ioVRefNum = tempSpec.vRefNum;
@@ -403,7 +403,7 @@ FSpPathFromLocation(
 	err = PBGetCatInfoSync(&pb);
 
 	if ((err == noErr) || (err == fnfErr)) {
-	    /* 
+	    /*
 	     * If the file doesn't currently exist we start over.  If the
 	     * directory exists everything will work just fine.  Otherwise we
 	     * will just fail later.  If the object is a directory, append a
@@ -419,16 +419,16 @@ FSpPathFromLocation(
 		    tempSpec.name[tempSpec.name[0]] = ':';
 		}
 	    }
-			
-	    /* 
+
+	    /*
 	     * Create a new Handle for the object - make it a C string.
 	     */
 	    tempSpec.name[0] += 1;
 	    tempSpec.name[tempSpec.name[0]] = '\0';
 	    err = PtrToHand(&tempSpec.name[1], fullPath, tempSpec.name[0]);
 	    if (err == noErr) {
-		/* 
-		 * Get the ancestor directory names - loop until we have an 
+		/*
+		 * Get the ancestor directory names - loop until we have an
 		 * error or find the root directory.
 		 */
 		pb.dirInfo.ioNamePtr = tempSpec.name;
@@ -439,13 +439,13 @@ FSpPathFromLocation(
 		    pb.dirInfo.ioDrDirID = pb.dirInfo.ioDrParID;
 		    err = PBGetCatInfoSync(&pb);
 		    if (err == noErr) {
-			/* 
-			 * Append colon to directory name and add 
+			/*
+			 * Append colon to directory name and add
 			 * directory name to beginning of fullPath.
 			 */
 			++tempSpec.name[0];
 			tempSpec.name[tempSpec.name[0]] = ':';
-						
+
 			(void) Munger(*fullPath, 0, NULL, 0, &tempSpec.name[1],
 				tempSpec.name[0]);
 			err = MemError();
@@ -455,7 +455,7 @@ FSpPathFromLocation(
 	    }
 	}
     }
-    
+
     /*
      * On error Dispose the handle, set it to NULL & return the err.
      * Otherwise, set the length & return.
@@ -495,12 +495,12 @@ GetGlobalMouseTcl(
     Point *mouse)		/* Mouse position. */
 {
     EventRecord event;
-    
+
     OSEventAvail(0, &event);
     *mouse = event.where;
 }
 
-pascal OSErr	FSpGetDirectoryIDTcl (CONST FSSpec * spec, 
+pascal OSErr	FSpGetDirectoryIDTcl (CONST FSSpec * spec,
 				long * theDirID, Boolean * isDirectory)
 {
 	return(FSpGetDirectoryID(spec, theDirID, isDirectory));
@@ -512,7 +512,7 @@ pascal short	FSpOpenResFileCompatTcl (CONST FSSpec * spec, SignedByte permission
 }
 
 pascal void	FSpCreateResFileCompatTcl (
-				CONST FSSpec * spec, OSType creator, 
+				CONST FSSpec * spec, OSType creator,
 				OSType fileType, ScriptCode scriptTag)
 {
 	FSpCreateResFileCompat (spec,creator,fileType,scriptTag);

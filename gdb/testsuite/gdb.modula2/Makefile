@@ -1,5 +1,5 @@
 # Makefile for regression testing the GNU debugger.
-# Copyright 2007, 2008 Free Software Foundation, Inc.
+# Copyright 2007, 2008, 2009 Free Software Foundation, Inc.
 
 # This file is part of GDB.
 
@@ -17,8 +17,8 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-VPATH = ../../.././gdb/testsuite/gdb.modula2
-srcdir = ../../.././gdb/testsuite/gdb.modula2
+
+srcdir = .
 
 EXECUTABLES = 
 

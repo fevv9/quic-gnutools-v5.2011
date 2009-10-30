@@ -3,7 +3,7 @@
 # All Rights Reserved.
 # Modified by QUALCOMM INCORPORATED on $Date$
 *****************************************************************/
-/* 
+/*
  * strtoul.c --
  *
  *	Source code for the "strtoul" library procedure.
@@ -101,7 +101,7 @@ strtoul(string, endPtr, base)
      * If no base was provided, pick one from the leading characters
      * of the string.
      */
-    
+
     if (base == 0)
     {
 	if (*p == '0') {
@@ -215,7 +215,7 @@ strtoul(string, endPtr, base)
     if (overflow) {
 	errno = ERANGE;
 	return ULONG_MAX;
-    } 
+    }
     if (negative) {
 	return -result;
     }

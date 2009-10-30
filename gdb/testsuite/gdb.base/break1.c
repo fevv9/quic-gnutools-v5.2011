@@ -1,6 +1,6 @@
 /* This testcase is part of GDB, the GNU debugger.
 
-   Copyright 1992, 1993, 1994, 1995, 1999, 2002, 2003, 2007, 2008
+   Copyright 1992, 1993, 1994, 1995, 1999, 2002, 2003, 2007, 2008, 2009
    Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or modify
@@ -14,10 +14,7 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-   Please email any bugs, comments, and/or additions to this file to:
-   bug-gdb@prep.ai.mit.edu  */
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
 
 /* The code for this file was extracted from the gdb testsuite
    testcase "break.c". */
@@ -41,3 +38,12 @@ int marker2 (a) int a; { return (1); }	/* set breakpoint 9 here */
 void marker3 (a, b) char *a, *b; {}	/* set breakpoint 18 here */
 void marker4 (d) long d; {}		/* set breakpoint 13 here */
 #endif
+
+/* A structure we use for field name completion tests.  */
+struct some_struct
+{
+  int a_field;
+  int b_field;
+};
+
+struct some_struct values[50];

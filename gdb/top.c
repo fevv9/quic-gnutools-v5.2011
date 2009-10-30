@@ -2,7 +2,7 @@
 
    Copyright (C) 1986, 1987, 1988, 1989, 1990, 1991, 1992, 1993, 1994, 1995,
    1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007,
-   2008 Free Software Foundation, Inc.
+   2008, 2009 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -46,6 +46,7 @@
 #include "gdb_assert.h"
 #include "main.h"
 #include "event-loop.h"
+#include "gdbthread.h"
 
 /* readline include files */
 #include "readline/readline.h"
@@ -62,26 +63,6 @@
 #include <ctype.h>
 #include "ui-out.h"
 #include "cli-out.h"
-
-#ifdef HAVE_TCL
-#include "tgif/tgif.h"
-#include "tcl.h"
-/* Global integer for gdb->tcl output control. */
-extern int was_gdb_command;
-jmp_buf error_return; // [ams]
-
-/* Free resources allocated by qdsp6-tdep.c */
-extern void free_q6alloc_mem(void);
-
-/* One func is the standard the other is the TCL front end */
-int (*exec_cmd_func[2])(char *, int) = {0, 0};
-
-/* Global variable cmd_result_flag which will indicate 
-   if we need to return an error. */
-int cmd_result_flag;
-
-#endif 
-
 
 /* Default command line prompt.  This is overriden in some configs. */
 
@@ -151,9 +132,6 @@ void (*window_hook) (FILE *, char *);
 int epoch_interface;
 int xgdb_verbose;
 
-/* gdb prints this when reading a command interactively */
-static char *gdb_prompt_string;	/* the global prompt string */
-
 /* Buffer used for reading command lines, and the size
    allocated for it so far.  */
 
@@ -200,12 +178,6 @@ int remote_timeout = 2;
 /* Non-zero tells remote* modules to output debugging info.  */
 
 int remote_debug = 0;
-
-/* Non-zero means the target is running. Note: this is different from
-   saying that there is an active target and we are stopped at a
-   breakpoint, for instance. This is a real indicator whether the
-   target is off and running, which gdb is doing something else. */
-int target_executing = 0;
 
 /* Sbrk location on entry to main.  Used for statistics only.  */
 #ifdef HAVE_SBRK
@@ -271,13 +243,6 @@ void (*deprecated_readline_begin_hook) (char *, ...);
 char *(*deprecated_readline_hook) (char *);
 void (*deprecated_readline_end_hook) (void);
 
-/* Called as appropriate to notify the interface of the specified breakpoint
-   conditions.  */
-
-void (*deprecated_create_breakpoint_hook) (struct breakpoint * bpt);
-void (*deprecated_delete_breakpoint_hook) (struct breakpoint * bpt);
-void (*deprecated_modify_breakpoint_hook) (struct breakpoint * bpt);
-
 /* Called as appropriate to notify the interface that we have attached
    to or detached from an already running process. */
 
@@ -301,7 +266,8 @@ void (*deprecated_memory_changed_hook) (CORE_ADDR addr, int len);
    while waiting for target events.  */
 
 ptid_t (*deprecated_target_wait_hook) (ptid_t ptid,
-				       struct target_waitstatus * status);
+				       struct target_waitstatus *status,
+				       int options);
 
 /* Used by UI as a wrapper around command execution.  May do various things
    like enabling/disabling buttons, etc...  */
@@ -317,11 +283,6 @@ void (*deprecated_set_hook) (struct cmd_list_element * c);
 /* Called when the current thread changes.  Argument is thread id.  */
 
 void (*deprecated_context_hook) (int id);
-
-/* Takes control from error ().  Typically used to prevent longjmps out of the
-   middle of the GUI.  Usually used in conjunction with a catch routine.  */
-
-void (*deprecated_error_hook) (void);
 
 /* Handler for SIGHUP.  */
 
@@ -384,23 +345,50 @@ do_chdir_cleanup (void *old_dir)
 }
 #endif
 
-/* Execute the line P as a command.
+void
+prepare_execute_command (void)
+{
+  free_all_values ();
+
+  /* With multiple threads running while the one we're examining is stopped,
+     the dcache can get stale without us being able to detect it.
+     For the duration of the command, though, use the dcache to help
+     things like backtrace.  */
+  if (non_stop)
+    target_dcache_invalidate ();
+}
+
+/* Execute the line P as a command, in the current user context.
    Pass FROM_TTY as second argument to the defining function.  */
 
-#ifdef HAVE_TCL
-int
-execute_command_default (char *p, int from_tty)
-#else
 void
 execute_command (char *p, int from_tty)
-#endif
 {
   struct cmd_list_element *c;
   enum language flang;
   static int warned = 0;
   char *line;
-  
-  free_all_values ();
+  long time_at_cmd_start = 0;
+#ifdef HAVE_SBRK
+  long space_at_cmd_start = 0;
+#endif
+  extern int display_time;
+  extern int display_space;
+
+  if (target_can_async_p ())
+    {
+      time_at_cmd_start = get_run_time ();
+
+      if (display_space)
+	{
+#ifdef HAVE_SBRK
+	  char *lim = (char *) sbrk (0);
+	  space_at_cmd_start = lim - lim_at_start;
+#endif
+	}
+    }
+
+  prepare_execute_command ();
 
   /* Force cleanup of any alloca areas if using C alloca instead of
      a builtin alloca.  */
@@ -408,11 +396,7 @@ execute_command (char *p, int from_tty)
 
   /* This can happen when command_line_input hits end of file.  */
   if (p == NULL)
-#ifdef HAVE_TCL
-    return 0;
-#else
     return;
-#endif
 
   target_log_command (p);
 
@@ -428,15 +412,6 @@ execute_command (char *p, int from_tty)
 
       c = lookup_cmd (&p, cmdlist, "", 0, 1);
 
-      /* If the target is running, we allow only a limited set of
-         commands. */
-      if (target_can_async_p () && target_executing)
-	if (strcmp (c->name, "help") != 0
-	    && strcmp (c->name, "pwd") != 0
-	    && strcmp (c->name, "show") != 0
-	    && strcmp (c->name, "stop") != 0)
-	  error (_("Cannot execute this command while the target is running."));
-
       /* Pass null arg rather than an empty one.  */
       arg = *p ? p : 0;
 
@@ -498,7 +473,7 @@ execute_command (char *p, int from_tty)
   /* FIXME:  This should be cacheing the frame and only running when
      the frame changes.  */
 
-  if (target_has_stack)
+  if (has_stack_frames ())
     {
       flang = get_frame_language ();
       if (!warned
@@ -509,219 +484,7 @@ execute_command (char *p, int from_tty)
 	  warned = 1;
 	}
     }
-#ifdef HAVE_TCL
-    return 1;
-#endif
 }
-
-#ifdef HAVE_TCL
-void
-non_tcl_execute_command (char *p, int from_tty)
-{
-  struct cmd_list_element *c;
-  enum language flang;
-  static int warned = 0;
-  char *line;
-  struct cleanup *saved_cleanup_chain;
-  char *saved_error_pre_print;
-  char *saved_quit_pre_print;
-  int oldInteractive;
-
-  /*
-   * This is the jump buffer init stuff.
-   */
-  jmp_buf tempE, tempQ;
-  memcpy (tempE, error_return, sizeof (jmp_buf));
-
-  saved_cleanup_chain = save_cleanups ();
-  saved_error_pre_print = error_pre_print;
-  saved_quit_pre_print = quit_pre_print;
-  
-  free_all_values ();
-
-  /* Force cleanup of any alloca areas if using C alloca instead of
-     a builtin alloca.  */
-  alloca (0);
-
-  /* This can happen when command_line_input hits end of file.  */
-  if (p == NULL)
-    return;
-
- /* main entry to non-tcl commands, so we set our global was_gdb_comand
-   * here.
-   */
-  /* We added the jump buffer reset so that a command that screwed up
-   * wont reset all of tcl/tk too.
-   */
-  was_gdb_command = 1;
-  cmd_result_flag = TCL_OK;
-  oldInteractive = isInteractive();
-
-  if ( setjmp( error_return ) != 0 ) {
-    cmd_result_flag = TCL_ERROR;
-    fix_error_level ();
-    goto RESTORE_STATE;
-  }
-
-  if (*p)
-    {
-      char *arg;
-      line = p;
-
-      /* If trace-commands is set then this will print this command.  */
-      print_command_trace (p);
-
-      c = lookup_cmd (&p, cmdlist, "", 0, 1);
-
-      /* If the target is running, we allow only a limited set of
-         commands. */
-      if (target_can_async_p () && target_executing)
-	if (strcmp (c->name, "help") != 0
-	    && strcmp (c->name, "pwd") != 0
-	    && strcmp (c->name, "show") != 0
-	    && strcmp (c->name, "stop") != 0)
-	  error (_("Cannot execute this command while the target is running."));
-
-      /* Pass null arg rather than an empty one.  */
-      arg = *p ? p : 0;
-
-      /* FIXME: cagney/2002-02-02: The c->type test is pretty dodgy
-         while the is_complete_command(cfunc) test is just plain
-         bogus.  They should both be replaced by a test of the form
-         c->strip_trailing_white_space_p.  */
-      /* NOTE: cagney/2002-02-02: The function.cfunc in the below
-         can't be replaced with func.  This is because it is the
-         cfunc, and not the func, that has the value that the
-         is_complete_command hack is testing for.  */
-      /* Clear off trailing whitespace, except for set and complete
-         command.  */
-      if (arg
-	  && c->type != set_cmd
-	  && !is_complete_command (c))
-	{
-	  p = arg + strlen (arg) - 1;
-	  while (p >= arg && (*p == ' ' || *p == '\t'))
-	    p--;
-	  *(p + 1) = '\0';
-	}
-
-      /* If this command has been pre-hooked, run the hook first. */
-      execute_cmd_pre_hook (c);
-
-      if (c->flags & DEPRECATED_WARN_USER)
-	deprecated_cmd_warning (&line);
-
-      if (c->class == class_user)
-	execute_user_command (c, arg);
-      else if (c->type == set_cmd || c->type == show_cmd)
-	do_setshow_command (arg, from_tty & caution, c);
-      else if (!cmd_func_p (c))
-	error (_("That is not a command, just a help topic."));
-      else if (deprecated_call_command_hook)
-	deprecated_call_command_hook (c, arg, from_tty & caution);
-      else
-	cmd_func (c, arg, from_tty & caution);
-       
-      /* If this command has been post-hooked, run the hook last. */
-      execute_cmd_post_hook (c);
-
-    }
-
-   /* [ams] moved "bpstat_do_actions"  from command_loop to here
-    * to execute callbacks of gdb commands inside tcl loops */
-   /* Do any commands attached to breakpoint we stopped at.  */
-   bpstat_do_actions (&stop_bpstat);
-
-  /* Tell the user if the language has changed (except first time).  */
-  if (current_language != expected_language)
-    {
-      if (language_mode == language_mode_auto)
-	{
-	  language_info (1);	/* Print what changed.  */
-	}
-      warned = 0;
-    }
-
-  /* Warn the user if the working language does not match the
-     language of the current frame.  Only warn the user if we are
-     actually running the program, i.e. there is a stack. */
-  /* FIXME:  This should be cacheing the frame and only running when
-     the frame changes.  */
-
-  if (target_has_stack)
-    {
-      flang = get_frame_language ();
-      if (!warned
-	  && flang != language_unknown
-	  && flang != current_language->la_language)
-	{
-	  printf_filtered ("%s\n", lang_frame_mismatch_warn);
-	  warned = 1;
-	}
-    }
-
-RESTORE_STATE:
-  setInteractive (oldInteractive);
-  memcpy (tempE, error_return, sizeof (jmp_buf));
-  restore_cleanups (saved_cleanup_chain);
-  error_pre_print = saved_error_pre_print;
-  quit_pre_print = saved_quit_pre_print;
-
-}
-
-/* This is the new "execute_command" which first sends the command to 
- * Tcl for evaluation and processing. It returns a 0 if the command 
- * sent is incomplete and 1 otherwise.*/
-/* Read commands from `instream' and execute them
-   until end of file or error reading instream.  */
-int
-execute_command_tcl (p, from_tty)
-     char *p;
-     int from_tty;
-{  
-
-  
-  /* This can happen when command_line_input hits end of file.  */
-  if (p == NULL)
-      return 0;
- 
-  serial_log_command (p);
- 
-  while (*p == ' ' || *p == '\t') p++;
-
-  {
-        int Tgif_execute_command (char *cmd, int from_tty);
-
-        /* This code is a hook into the Tgif. It takes the command-line
-         * and processes it so that its acceptable to Gdb. Does all the
-         * relevant substitutions, script processing and more. It might
-         * just call "execute_command" recursively.
-         */
-        return (Tgif_execute_command (p, from_tty));
-   }
-}
-
-
-
-int execute_command (char *p, int from_tty)
-{
-   extern int Q6_tcl_fe_state;
-
-/* Q6_tcl_fe_state == 0 means the TCL front end is disabled (default)
-   Q6_tcl_fe_state == 1 means the TCL front end is enabled
-   from the gdb promt say: set tclfe on/off to switch between */
-   
-    if ((Q6_tcl_fe_state == 0) || (Q6_tcl_fe_state == 1))
-        return exec_cmd_func[Q6_tcl_fe_state](p, from_tty);
-    else
-    {
-        error ("Command execution func ptr index is corrupt. Should be 0 or 1, not: %d\n", Q6_tcl_fe_state);
-	return 0;
-    }
-
-}
-
-#endif
 
 /* Read commands from `instream' and execute them
    until end of file or error reading instream.  */
@@ -738,9 +501,6 @@ command_loop (void)
 #endif
   extern int display_time;
   extern int display_space;
-#ifdef HAVE_TCL
-  extern int Q6_tcl_fe_state;
-#endif
 
   while (instream && !feof (instream))
     {
@@ -770,13 +530,10 @@ command_loop (void)
 	}
 
       execute_command (command, instream == stdin);
-#ifdef HAVE_TCL
-      if (Q6_tcl_fe_state == 1)
-        bpstat_do_actions (&stop_bpstat);
-#else
-      /* Do any commands attached to breakpoint we stopped at.  */
-      bpstat_do_actions (&stop_bpstat);
-#endif
+
+      /* Do any commands attached to breakpoint we are stopped at.  */
+      bpstat_do_actions ();
+
       do_cleanups (old_chain);
 
       if (display_time)
@@ -800,41 +557,6 @@ command_loop (void)
 			     space_diff);
 #endif
 	}
-    }
-}
-
-/* Read commands from `instream' and execute them until end of file or
-   error reading instream. This command loop doesnt care about any
-   such things as displaying time and space usage. If the user asks
-   for those, they won't work. */
-void
-simplified_command_loop (char *(*read_input_func) (char *),
-			 void (*execute_command_func) (char *, int))
-{
-  struct cleanup *old_chain;
-  char *command;
-  int stdin_is_tty = ISATTY (stdin);
-
-  while (instream && !feof (instream))
-    {
-      quit_flag = 0;
-      if (instream == stdin && stdin_is_tty)
-	reinitialize_more_filter ();
-      old_chain = make_cleanup (null_cleanup, 0);
-
-      /* Get a command-line. */
-      command = (*read_input_func) (instream == stdin ?
-				    get_prompt () : (char *) NULL);
-
-      if (command == 0)
-	return;
-
-      (*execute_command_func) (command, instream == stdin);
-
-      /* Do any commands attached to breakpoint we stopped at.  */
-      bpstat_do_actions (&stop_bpstat);
-
-      do_cleanups (old_chain);
     }
 }
 
@@ -1392,11 +1114,11 @@ print_gdb_version (struct ui_file *stream)
      program to parse, and is just canonical program name and version
      number, which starts after last space. */
 
-  fprintf_filtered (stream, "GNU gdb %s\n", version);
+  fprintf_filtered (stream, "GNU gdb %s%s\n", PKGVERSION, version);
 
   /* Second line is a copyright notice. */
 
-  fprintf_filtered (stream, "Copyright (C) 2008 Free Software Foundation, Inc.\n");
+  fprintf_filtered (stream, "Copyright (C) 2009 Free Software Foundation, Inc.\n");
 
   /* Following the copyright is a brief statement that the program is
      free software, that users are free to copy and change it on
@@ -1421,6 +1143,13 @@ and \"show warranty\" for details.\n");
       fprintf_filtered (stream, "%s", host_name);
     }
   fprintf_filtered (stream, "\".");
+
+  if (REPORT_BUGS_TO[0])
+    {
+      fprintf_filtered (stream, 
+			_("\nFor bug reporting instructions, please see:\n"));
+      fprintf_filtered (stream, "%s.", REPORT_BUGS_TO);
+    }
 }
 
 /* get_prompt: access method for the GDB prompt string.  */
@@ -1435,42 +1164,13 @@ void
 set_prompt (char *s)
 {
 /* ??rehrauer: I don't know why this fails, since it looks as though
-   assignments to prompt are wrapped in calls to savestring...
+   assignments to prompt are wrapped in calls to xstrdup...
    if (prompt != NULL)
    xfree (prompt);
  */
-  PROMPT (0) = savestring (s, strlen (s));
+  PROMPT (0) = xstrdup (s);
 }
 
-
-/* If necessary, make the user confirm that we should quit.  Return
-   non-zero if we should quit, zero if we shouldn't.  */
-
-int
-quit_confirm (void)
-{
-  if (! ptid_equal (inferior_ptid, null_ptid) && target_has_execution)
-    {
-      char *s;
-
-      /* This is something of a hack.  But there's no reliable way to
-         see if a GUI is running.  The `use_windows' variable doesn't
-         cut it.  */
-      if (deprecated_init_ui_hook)
-	s = "A debugging session is active.\nDo you still want to close the debugger?";
-      else if (attach_flag)
-	s = "The program is running.  Quit anyway (and detach it)? ";
-      else
-	s = "The program is running.  Exit anyway? ";
-
-      if (!query ("%s", s))
-	return 0;
-    }
-
-  return 1;
-}
-
-/* Helper routine for quit_force that requires error handling.  */
 
 struct qt_args
 {
@@ -1478,21 +1178,107 @@ struct qt_args
   int from_tty;
 };
 
+/* Callback for iterate_over_inferiors.  Kills or detaches the given
+   inferior, depending on how we originally gained control of it.  */
+
+static int
+kill_or_detach (struct inferior *inf, void *args)
+{
+  struct qt_args *qt = args;
+  struct thread_info *thread;
+
+  thread = any_thread_of_process (inf->pid);
+  if (thread != NULL)
+    {
+      switch_to_thread (thread->ptid);
+
+      /* Leave core files alone.  */
+      if (target_has_execution)
+	{
+	  if (inf->attach_flag)
+	    target_detach (qt->args, qt->from_tty);
+	  else
+	    target_kill ();
+	}
+    }
+
+  return 0;
+}
+
+/* Callback for iterate_over_inferiors.  Prints info about what GDB
+   will do to each inferior on a "quit".  ARG points to a struct
+   ui_out where output is to be collected.  */
+
+static int
+print_inferior_quit_action (struct inferior *inf, void *arg)
+{
+  struct ui_file *stb = arg;
+
+  if (inf->attach_flag)
+    fprintf_filtered (stb,
+		      _("\tInferior %d [%s] will be detached.\n"), inf->num,
+		      target_pid_to_str (pid_to_ptid (inf->pid)));
+  else
+    fprintf_filtered (stb,
+		      _("\tInferior %d [%s] will be killed.\n"), inf->num,
+		      target_pid_to_str (pid_to_ptid (inf->pid)));
+
+  return 0;
+}
+
+/* If necessary, make the user confirm that we should quit.  Return
+   non-zero if we should quit, zero if we shouldn't.  */
+
+int
+quit_confirm (void)
+{
+  struct ui_file *stb;
+  struct cleanup *old_chain;
+  char *str;
+  int qr;
+
+  /* Don't even ask if we're only debugging a core file inferior.  */
+  if (!have_live_inferiors ())
+    return 1;
+
+  /* Build the query string as a single string.  */
+  stb = mem_fileopen ();
+  old_chain = make_cleanup_ui_file_delete (stb);
+
+  /* This is something of a hack.  But there's no reliable way to see
+     if a GUI is running.  The `use_windows' variable doesn't cut
+     it.  */
+  if (deprecated_init_ui_hook)
+    fprintf_filtered (stb, _("A debugging session is active.\n"
+			     "Do you still want to close the debugger?"));
+  else
+    {
+      fprintf_filtered (stb, _("A debugging session is active.\n\n"));
+      iterate_over_inferiors (print_inferior_quit_action, stb);
+      fprintf_filtered (stb, _("\nQuit anyway? "));
+    }
+
+  str = ui_file_xstrdup (stb, NULL);
+  make_cleanup (xfree, str);
+
+  qr = query ("%s", str);
+  do_cleanups (old_chain);
+  return qr;
+}
+
+/* Helper routine for quit_force that requires error handling.  */
+
 static int
 quit_target (void *arg)
 {
   struct qt_args *qt = (struct qt_args *)arg;
 
-  if (! ptid_equal (inferior_ptid, null_ptid) && target_has_execution)
-    {
-      if (attach_flag)
-        target_detach (qt->args, qt->from_tty);
-      else
-        target_kill ();
-    }
+  /* Kill or detach all inferiors.  */
+  iterate_over_inferiors (kill_or_detach, qt);
 
-  /* UDI wants this, to kill the TIP.  */
-  target_close (&current_target, 1);
+  /* Give all pushed targets a chance to do minimal cleanup, and pop
+     them all out.  */
+  pop_all_targets (1);
 
   /* Save the history information if it is appropriate to do so.  */
   if (write_history_p && history_filename)
@@ -1532,12 +1318,38 @@ quit_force (char *args, int from_tty)
   exit (exit_code);
 }
 
+/* If OFF, the debugger will run in non-interactive mode, which means
+   that it will automatically select the default answer to all the
+   queries made to the user.  If ON, gdb will wait for the user to
+   answer all queries.  If AUTO, gdb will determine whether to run
+   in interactive mode or not depending on whether stdin is a terminal
+   or not.  */
+static enum auto_boolean interactive_mode = AUTO_BOOLEAN_AUTO;
+
+/* Implement the "show interactive-mode" option.  */
+
+static void
+show_interactive_mode (struct ui_file *file, int from_tty,
+                       struct cmd_list_element *c,
+                       const char *value)
+{
+  if (interactive_mode == AUTO_BOOLEAN_AUTO)
+    fprintf_filtered (file, "\
+Debugger's interactive mode is %s (currently %s).\n",
+                      value, input_from_terminal_p () ? "on" : "off");
+  else
+    fprintf_filtered (file, "Debugger's interactive mode is %s.\n", value);
+}
+
 /* Returns whether GDB is running on a terminal and input is
    currently coming from that terminal.  */
 
 int
 input_from_terminal_p (void)
 {
+  if (interactive_mode != AUTO_BOOLEAN_AUTO)
+    return interactive_mode == AUTO_BOOLEAN_TRUE;
+
   if (gdb_has_a_terminal () && instream == stdin)
     return 1;
 
@@ -1706,7 +1518,7 @@ init_history (void)
 
   tmpenv = getenv ("GDBHISTFILE");
   if (tmpenv)
-    history_filename = savestring (tmpenv, strlen (tmpenv));
+    history_filename = xstrdup (tmpenv);
   else if (!history_filename)
     {
       /* We include the current directory so that if the user changes
@@ -1764,13 +1576,13 @@ init_main (void)
      whatever the DEFAULT_PROMPT is.  */
   the_prompts.top = 0;
   PREFIX (0) = "";
-  PROMPT (0) = savestring (DEFAULT_PROMPT, strlen (DEFAULT_PROMPT));
+  PROMPT (0) = xstrdup (DEFAULT_PROMPT);
   SUFFIX (0) = "";
   /* Set things up for annotation_level > 1, if the user ever decides
      to use it.  */
   async_annotation_suffix = "prompt";
   /* Set the variable associated with the setshow prompt command.  */
-  new_async_prompt = savestring (PROMPT (0), strlen (PROMPT (0)));
+  new_async_prompt = xstrdup (PROMPT (0));
 
   /* If gdb was started with --annotate=2, this is equivalent to the
      user entering the command 'set annotate 2' at the gdb prompt, so
@@ -1783,12 +1595,8 @@ init_main (void)
   history_expansion_p = 0;
   write_history_p = 0;
 
-#ifdef HAVE_TCL
-  exec_cmd_func[0] = execute_command_default;
-  exec_cmd_func[1] = execute_command_tcl;
-#endif
-
   /* Setup important stuff for command line editing.  */
+  rl_completion_word_break_hook = gdb_completion_word_break_characters;
   rl_completion_entry_function = readline_line_completion_function;
   rl_completer_word_break_characters = default_word_break_characters ();
   rl_completer_quote_characters = get_gdb_completer_quote_characters ();
@@ -1872,6 +1680,27 @@ Use \"on\" to enable the notification, and \"off\" to disable it."),
 			   NULL,
 			   show_exec_done_display_p,
 			   &setlist, &showlist);
+
+  add_setshow_auto_boolean_cmd ("interactive-mode", class_support,
+                                &interactive_mode, _("\
+Set whether GDB should run in interactive mode or not"), _("\
+Show whether GDB runs in interactive mode"), _("\
+If on, run in interactive mode and wait for the user to answer\n\
+all queries.  If off, run in non-interactive mode and automatically\n\
+assume the default answer to all queries.  If auto (the default),\n\
+determine which mode to use based on the standard input settings"),
+                        NULL,
+                        show_interactive_mode,
+                        &setlist, &showlist);
+
+  add_setshow_filename_cmd ("data-directory", class_maintenance,
+                           &gdb_datadir, _("Set GDB's data directory."),
+                           _("Show GDB's data directory."),
+                           _("\
+When set, GDB uses the specified path to search for data files."),
+                           NULL, NULL,
+                           &setlist,
+                           &showlist);
 }
 
 void
@@ -1881,9 +1710,6 @@ gdb_init (char *argv0)
     pre_init_ui_hook ();
 
   /* Run the init function of each source file */
-
-  getcwd (gdb_dirbuf, sizeof (gdb_dirbuf));
-  current_directory = gdb_dirbuf;
 
 #ifdef __MSDOS__
   /* Make sure we return to the original directory upon exit, come

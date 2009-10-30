@@ -102,7 +102,7 @@
 
 2006-03-27  Pat Thoyts  <patthoyts@users.sourceforge.net>
 
-	* win/tclWinTest.c:     Fixes for bug #1456373 (mingw-gcc issue) 
+	* win/tclWinTest.c:     Fixes for bug #1456373 (mingw-gcc issue)
 
 2006-03-23  Don Porter  <dgp@users.sourceforge.net>
 
@@ -125,7 +125,7 @@
 2006-03-16  Andreas Kupries <andreask@activestate.com>
 
 	* doc/open.n: Documented the changed behaviour of 'a'ppend mode.
-	
+
 	* tests/io.test (io-43.1 io-44.[1234]): Rewritten to be
 	  self-contained with regard to setup and cleanup. [Bug 681793].
 
@@ -188,10 +188,10 @@
 	of the TclFinalizeIOSubsystem().
 
 	* unix/tclUnixSock: Added no-op TclpFinalizeSockets().
-	
+
 	* mac/tclMacSock.c:
 	* win/tclWinPipe.c
-	* win/tclWinSock.c: Finalization of the sockets/pipes 
+	* win/tclWinSock.c: Finalization of the sockets/pipes
 	is now solely done in TclpFinalizeSockets() and
 	TclpFinalizePipes() and not over the thread-exit handler,
 	because the order of actions the Tcl generic core will
@@ -200,10 +200,10 @@
 
 2006-03-10  Vince Darley  <vincentdarley@sourceforge.net>
 
-	* win/tclWin32Dll.c: 
-	* win/tclWinInt.h: 
+	* win/tclWin32Dll.c:
+	* win/tclWinInt.h:
 	* win/tclWinFile.c: backported some fixes from HEAD relating
-	to 'file readable' and 'file writable', but main 'file writable' 
+	to 'file readable' and 'file writable', but main 'file writable'
 	bug still outstanding.
 
 2006-03-07  Don Porter  <dgp@users.sourceforge.net>
@@ -266,17 +266,17 @@
 
 2006-01-23  Miguel Sofer  <msofer@users.sf.net>
 
-	* generic/tclStringObj.c (Tcl_GetRange): 
+	* generic/tclStringObj.c (Tcl_GetRange):
 	* tests/stringTest (string-12.21):fixed incorrect handling of
 	internal rep in Tcl_GetRange [Bug 1410553]. Thanks to twylite and
-	Peter Spjuth. 
+	Peter Spjuth.
 
 2006-01-16  Reinhard Max  <max@suse.de>
 
 	* generic/tclPipe.c (FileForRedirect): Prevent nameString from
 	being freed without having been initialized.
 	* tests/exec.test: Added a test for the above.
-	
+
 2006-01-12  Zoran Vasiljevic <vasiljevic@users.sourceforge.net>
 
 	* generic/tclIOUtil.c (Tcl_FSGetInternalRep): fixed potential
@@ -295,7 +295,7 @@
 	* unix/tcl.m4:       quoting, sync relevant tclconfig/tcl.m4 and HEAD
 	changes and gratuitous formatting differences, fix SC_CONFIG_MANPAGES
 	with default argument, Darwin improvements to SC_LOAD_*CONFIG.
-	
+
 2006-01-09  Don Porter  <dgp@users.sourceforge.net>
 
 	* generic/tclNamesp.c (NamespaceInscopeCmd):	[namespace inscope]

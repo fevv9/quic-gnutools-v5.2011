@@ -47,7 +47,7 @@ int  orig_from_tty = HARDSTATUS;
  *
  */
 int
-Tgif_ProcessGDB (ClientData clientdata, Tcl_Interp *interp, 
+Tgif_ProcessGDB (ClientData clientdata, Tcl_Interp *interp,
 		 int argc, char * argv[]) {
 
 	char *gdbCmd;
@@ -68,15 +68,15 @@ Tgif_ProcessGDB (ClientData clientdata, Tcl_Interp *interp,
 
 	if (!need_concatenation)
        inset_into_buffer = tcl_status_buffer;
-   
+
     /* Check if we need to suppress gdb's display */
     //if(tcl_getInteractive() != 0)
     //    setInteractive(0);
-    
+
 	non_tcl_execute_command (gdbCmd, orig_from_tty);
-    if ( inset_into_buffer != tcl_status_buffer ) 
+    if ( inset_into_buffer != tcl_status_buffer )
        Tcl_SetResult( interp, tcl_status_buffer, TCL_VOLATILE );
-	
+
 
 	if (tmp->post_processing) {
 		(*tmp->post_processing)();
@@ -111,9 +111,9 @@ cmd_struct type3_cmds[] = {
 };
 #undef TYPE3
 
-void RenameDuplicateTclCmds (Tcl_Interp * interp) 
+void RenameDuplicateTclCmds (Tcl_Interp * interp)
 {
-    
+
     Tcl_Eval(interp, "rename append t_append");
     Tcl_Eval(interp, "rename break t_break");
     Tcl_Eval(interp, "rename catch t_catch");
@@ -131,11 +131,11 @@ void RenameDuplicateTclCmds (Tcl_Interp * interp)
     Tcl_Eval(interp, "rename trace t_unset");
 }
 
-void RegisterAllCmds (Tcl_Interp * interp) { 
+void RegisterAllCmds (Tcl_Interp * interp) {
 	int i = 0;
 
     RenameDuplicateTclCmds (interp);
-    
+
 	while (type1_cmds[i].type) {
 		Tcl_CreateCommand (interp, type1_cmds[i].new_name, Tgif_ProcessGDB,
                                    (ClientData *)& type1_cmds[i],
@@ -168,7 +168,7 @@ char *Tgif_Concat (int argc, char **argv) {
 		catBufferSize = INIT_FILTER_SIZE;
 	}
 
-	for (i = 0, catLen = argc*2; i < argc; i++)	
+	for (i = 0, catLen = argc*2; i < argc; i++)
 		catLen += strlen (argv[i]);
 
 	if (catLen > catBufferSize) {

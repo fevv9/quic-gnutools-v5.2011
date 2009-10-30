@@ -23,8 +23,8 @@ BUILD_DIR		?= ${CURDIR}/../../build
 SYMROOT			?= ${BUILD_DIR}/${PROJECT}
 OBJROOT			?= ${SYMROOT}
 
-EXTRA_CONFIGURE_ARGS 	?= 
-EXTRA_MAKE_ARGS		?= 
+EXTRA_CONFIGURE_ARGS 	?=
+EXTRA_MAKE_ARGS		?=
 
 INSTALL_PATH		?= /Library/Frameworks
 PREFIX			?= /usr/local
@@ -33,7 +33,7 @@ LIBDIR			?= ${INSTALL_PATH}
 MANDIR			?= ${PREFIX}/man
 
 # set to non-empty value to install manpages in addition to html help:
-INSTALL_MANPAGES 	?= 
+INSTALL_MANPAGES 	?=
 
 #-------------------------------------------------------------------------------------------------------
 # meta targets
@@ -80,7 +80,7 @@ deploy_make_args	:= BUILD_STYLE=Deployment INSTALL_TARGET=install-strip \
 embedded_make_args	:= EMBEDDED_BUILD=1
 install_make_args	:= INSTALL_BUILD=1
 
-${targets}: 
+${targets}:
 	${MAKE} ${action}${PROJECT} \
 	$(foreach s,${styles} embedded install,$(if $(findstring $s,$@),${${s}_make_args}))
 
@@ -190,7 +190,7 @@ clean-${PROJECT}: %-${PROJECT}:
 distclean-${PROJECT}: %-${PROJECT}: clean-${PROJECT}
 	${DO_MAKE}
 	rm -rf ${OBJ_DIR}
-	
+
 test-${PROJECT}: %-${PROJECT}: build-${PROJECT}
 	${DO_MAKE}
 

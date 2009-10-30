@@ -1,7 +1,7 @@
 /* Cache and manage the values of registers for GDB, the GNU debugger.
 
    Copyright (C) 1986, 1987, 1989, 1991, 1994, 1995, 1996, 1998, 2000, 2001,
-   2002, 2007, 2008 Free Software Foundation, Inc.
+   2002, 2007, 2008, 2009 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -26,6 +26,7 @@ struct gdbarch;
 
 extern struct regcache *get_current_regcache (void);
 extern struct regcache *get_thread_regcache (ptid_t ptid);
+extern struct regcache *get_thread_arch_regcache (ptid_t, struct gdbarch *);
 
 void regcache_xfree (struct regcache *regcache);
 struct cleanup *make_cleanup_regcache_xfree (struct regcache *regcache);
@@ -93,6 +94,11 @@ void regcache_cooked_read_part (struct regcache *regcache, int regnum,
 				int offset, int len, gdb_byte *buf);
 void regcache_cooked_write_part (struct regcache *regcache, int regnum,
 				 int offset, int len, const gdb_byte *buf);
+
+/* Special routines to read/write the PC.  */
+
+extern CORE_ADDR regcache_read_pc (struct regcache *regcache);
+extern void regcache_write_pc (struct regcache *regcache, CORE_ADDR pc);
 
 /* Transfer a raw register [0..NUM_REGS) between the regcache and the
    target.  These functions are called by the target in response to a

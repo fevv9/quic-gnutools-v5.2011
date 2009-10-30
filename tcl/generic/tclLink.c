@@ -3,7 +3,7 @@
 # All Rights Reserved.
 # Modified by QUALCOMM INCORPORATED on $Date$
 *****************************************************************/
-/* 
+/*
  * tclLink.c --
  *
  *	This file implements linked variables (a C variable that is
@@ -65,7 +65,7 @@ typedef struct Link {
  */
 
 static char *		LinkTraceProc _ANSI_ARGS_((ClientData clientData,
-			    Tcl_Interp *interp, CONST char *name1, 
+			    Tcl_Interp *interp, CONST char *name1,
                             CONST char *name2, int flags));
 static Tcl_Obj *	ObjValue _ANSI_ARGS_((Link *linkPtr));
 
@@ -96,7 +96,7 @@ Tcl_LinkVar(interp, varName, addr, type)
     CONST char *varName;	/* Name of a global variable in interp. */
     char *addr;			/* Address of a C variable to be linked
 				 * to varName. */
-    int type;			/* Type of C variable: TCL_LINK_INT, etc. 
+    int type;			/* Type of C variable: TCL_LINK_INT, etc.
 				 * Also may have TCL_LINK_READ_ONLY
 				 * OR'ed in. */
 {

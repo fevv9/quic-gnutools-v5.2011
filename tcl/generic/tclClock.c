@@ -3,7 +3,7 @@
 # All Rights Reserved.
 # Modified by QUALCOMM INCORPORATED on $Date$
 *****************************************************************/
-/* 
+/*
  * tclClock.c --
  *
  *	Contains the time and date related commands.  This code
@@ -78,7 +78,7 @@ Tcl_ClockObjCmd (client, interp, objc, objv)
     Tcl_Obj *baseObjPtr = NULL;
     char *scanStr;
     int n;
-    
+
     static CONST char *switches[] =
 	{"clicks", "format", "scan", "seconds", (char *) NULL};
     enum command { COMMAND_CLICKS, COMMAND_FORMAT, COMMAND_SCAN,
@@ -103,7 +103,7 @@ Tcl_ClockObjCmd (client, interp, objc, objv)
 
 	    if (objc == 3) {
 		format = Tcl_GetStringFromObj(objv[2], &n);
-		if ( ( n >= 2 ) 
+		if ( ( n >= 2 )
 		     && ( strncmp( format, "-milliseconds",
 				   (unsigned int) n) == 0 ) ) {
 		    forceMilli = 1;
@@ -143,7 +143,7 @@ Tcl_ClockObjCmd (client, interp, objc, objv)
 		    != TCL_OK) {
 		return TCL_ERROR;
 	    }
-    
+
 	    objPtr = objv+3;
 	    objc -= 3;
 	    while (objc > 1) {
@@ -328,14 +328,14 @@ FormatClock(interp, clockVal, useGMT, format)
 #else
         savedTimeZone = timezone;
         timezone = 0;
-#endif     
+#endif
         tzset();
     }
 #endif
 
     tclockVal = (time_t) clockVal;
     timeDataPtr = TclpGetDate((TclpTime_t) &tclockVal, useGMT);
-    
+
     /*
      * Make a guess at the upper limit on the substituted string size
      * based on the number of percents in the string.
@@ -373,12 +373,12 @@ FormatClock(interp, clockVal, useGMT, format)
         } else {
             Tcl_UnsetVar2(interp, "env", "TZ", TCL_GLOBAL_ONLY);
         }
-               
+
 #ifdef __CYGWIN__
          _timezone = savedTimeZone;
 #else
          timezone = savedTimeZone;
-#endif       
+#endif
         tzset();
     }
     Tcl_MutexUnlock( &clockMutex );

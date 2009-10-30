@@ -3,7 +3,7 @@
 # All Rights Reserved.
 # Modified by QUALCOMM INCORPORATED on $Date$
 *****************************************************************/
-/* 
+/*
  * tclXtNotify.c --
  *
  *	This file contains the notifier driver implementation for the
@@ -21,7 +21,7 @@
 #include <tclInt.h>
 
 /*
- * This structure is used to keep track of the notifier info for a 
+ * This structure is used to keep track of the notifier info for a
  * a registered file.
  */
 
@@ -89,7 +89,7 @@ static void		NotifierExitHandler _ANSI_ARGS_((
 			    ClientData clientData));
 static void		TimerProc _ANSI_ARGS_((caddr_t clientData,
 			    XtIntervalId *id));
-static void		CreateFileHandler _ANSI_ARGS_((int fd, int mask, 
+static void		CreateFileHandler _ANSI_ARGS_((int fd, int mask,
 				Tcl_FileProc * proc, ClientData clientData));
 static void		DeleteFileHandler _ANSI_ARGS_((int fd));
 static void		SetTimer _ANSI_ARGS_((Tcl_Time * timePtr));
@@ -131,7 +131,7 @@ TclSetAppContext(appContext)
      * new context. If so, we panic because we try to prevent switching
      * contexts by mistake. Otherwise, we return the one we have.
      */
-    
+
     if (notifier.appContext != NULL) {
         if (appContext != NULL) {
 
@@ -139,7 +139,7 @@ TclSetAppContext(appContext)
              * We already have a context. We do not allow switching contexts
              * after initialization, so we panic.
              */
-        
+
             panic("TclSetAppContext:  multiple application contexts");
 
         }
@@ -156,7 +156,7 @@ TclSetAppContext(appContext)
              * We must create a new context and tell our caller what it is, so
              * she can use it too.
              */
-    
+
             notifier.appContext = XtCreateApplicationContext();
             notifier.appContextCreated = 1;
         } else {
@@ -165,12 +165,12 @@ TclSetAppContext(appContext)
              * Otherwise we remember the context that our caller gave us
              * and use it.
              */
-    
+
             notifier.appContextCreated = 0;
             notifier.appContext = appContext;
         }
     }
-    
+
     return notifier.appContext;
 }
 
@@ -214,7 +214,7 @@ InitNotifier()
      * DO NOT create the application context yet; doing so would prevent
      * external applications from setting it for us to their own ones.
      */
-    
+
     initialized = 1;
     memset(&notifier, 0, sizeof(notifier));
     Tcl_CreateExitHandler(NotifierExitHandler, NULL);
@@ -534,7 +534,7 @@ FileProc(clientData, fd, id)
     if (!(filePtr->mask & mask) || (filePtr->readyMask & mask)) {
 	return;
     }
-    
+
     /*
      * This is an interesting event, so put it onto the event queue.
      */

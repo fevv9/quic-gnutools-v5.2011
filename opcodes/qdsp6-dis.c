@@ -45,13 +45,7 @@ qdsp6_dis_inst(
   int len;
   char *errmsg = NULL;
 
-  if (QDSP6_IS16INSN(insn)) {
-    insn &= 0xffff;
-    len = 2;
-  }
-  else {
-    len = 4;
-  }
+  len = QDSP6_INSN_LEN;
 
   opcode = qdsp6_lookup_insn(insn);
   if (opcode) {
@@ -103,18 +97,16 @@ qdsp6_decode_inst(
     insn = bfd_getb16(buffer);
   }
 
-  if (!QDSP6_IS16INSN(insn)) {
-    status = (*info->read_memory_func)(address, buffer, 4, info);
-    if (status != 0) {
-      (*info->memory_error_func)(status, address, info);
-      return -1;
-    }
-    if (info->endian == BFD_ENDIAN_LITTLE) {
-      insn = bfd_getl32(buffer);
-    }
-    else {
-      insn = bfd_getb32(buffer);
-    }
+  status = (*info->read_memory_func)(address, buffer, 4, info);
+  if (status != 0) {
+    (*info->memory_error_func)(status, address, info);
+    return -1;
+  }
+  if (info->endian == BFD_ENDIAN_LITTLE) {
+    insn = bfd_getl32(buffer);
+  }
+  else {
+    insn = bfd_getb32(buffer);
   }
 
   /* disassemble  */
@@ -152,7 +144,7 @@ qdsp6_decode_inst(
 }
 
 /* Return the print_insn function to use. */
-disassembler_ftype
+static disassembler_ftype
 qdsp6_get_disassembler_from_mach(
   unsigned long machine,
   unsigned long big_p

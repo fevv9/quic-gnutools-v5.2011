@@ -3,7 +3,7 @@
 # All Rights Reserved.
 # Modified by QUALCOMM INCORPORATED on $Date$
 *****************************************************************/
-/* 
+/*
  * pkgd.c --
  *
  *	This file contains a simple Tcl package "pkgd" that is intended

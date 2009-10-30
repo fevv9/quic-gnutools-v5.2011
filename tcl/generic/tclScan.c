@@ -3,7 +3,7 @@
 # All Rights Reserved.
 # Modified by QUALCOMM INCORPORATED on $Date$
 *****************************************************************/
-/* 
+/*
  * tclScan.c --
  *
  *	This file contains the implementation of the "scan" command.
@@ -94,7 +94,7 @@ BuildCharSet(cset, format)
     char *end;
 
     memset(cset, 0, sizeof(CharSet));
-    
+
     offset = Tcl_UtfToUniChar(format, &ch);
     if (ch == '^') {
 	cset->exclude = 1;
@@ -168,7 +168,7 @@ BuildCharSet(cset, format)
 		} else {
 		    cset->ranges[cset->nranges].start = ch;
 		    cset->ranges[cset->nranges].end = start;
-		}		    
+		}
 		cset->nranges++;
 	    }
 	} else {
@@ -218,7 +218,7 @@ CharInSet(cset, c)
 	    }
 	}
     }
-    return (cset->exclude ? !match : match);    
+    return (cset->exclude ? !match : match);
 }
 
 /*
@@ -535,7 +535,7 @@ ValidateFormat(interp, format, numVars, totalSubs)
 	Tcl_SetResult(interp, "\"%n$\" argument index out of range",
 		TCL_STATIC);
     } else {
-	Tcl_SetResult(interp, 
+	Tcl_SetResult(interp,
 		"different numbers of variable names and field specifiers",
 		TCL_STATIC);
     }
@@ -606,7 +606,7 @@ Tcl_ScanObjCmd(dummy, interp, objc, objv)
     /*
      * Check for errors in the format string.
      */
-    
+
     if (ValidateFormat(interp, format, numVars, &totalVars) == TCL_ERROR) {
 	return TCL_ERROR;
     }
@@ -653,7 +653,7 @@ Tcl_ScanObjCmd(dummy, interp, objc, objv)
 	    }
 	    continue;
 	}
-	    
+
 	if (ch != '%') {
 	    literal:
 	    if (*string == '\0') {
@@ -800,7 +800,7 @@ Tcl_ScanObjCmd(dummy, interp, objc, objv)
 	    underflow = 1;
 	    goto done;
 	}
-	
+
 	/*
 	 * Skip any leading whitespace at the beginning of a field unless
 	 * the format suppresses this behavior.
@@ -823,7 +823,7 @@ Tcl_ScanObjCmd(dummy, interp, objc, objv)
 	/*
 	 * Perform the requested scanning operation.
 	 */
-	
+
 	switch (op) {
 	    case 's':
 		/*
@@ -885,7 +885,7 @@ Tcl_ScanObjCmd(dummy, interp, objc, objv)
 		    objs[objIndex++] = objPtr;
 		}
 		string = end;
-		
+
 		break;
 	    }
 	    case 'c':
@@ -958,7 +958,7 @@ Tcl_ScanObjCmd(dummy, interp, objc, objv)
 			    goto addToInt;
 
 			case 'A': case 'B': case 'C':
-			case 'D': case 'E': case 'F': 
+			case 'D': case 'E': case 'F':
 			case 'a': case 'b': case 'c':
 			case 'd': case 'e': case 'f':
 			    if (base <= 10) {
@@ -1174,7 +1174,7 @@ Tcl_ScanObjCmd(dummy, interp, objc, objv)
 	for (i = 0; i < totalVars; i++) {
 	    if (objs[i] != NULL) {
 		Tcl_Obj *tmpPtr;
-		
+
 		result++;
 		tmpPtr = Tcl_ObjSetVar2(interp, objv[i+3], NULL, objs[i], 0);
 		Tcl_DecrRefCount(objs[i]);

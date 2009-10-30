@@ -27,7 +27,7 @@ if {[lsearch [namespace children] ::tcltest] == -1} {
 test misc-1.1 {error in variable ref. in command in array reference} {
     proc tstProc {} {
 	global a
-    
+
 	set tst $a([winfo name $zz])
 	# this is a bogus comment
 	# this is a bogus comment
@@ -44,7 +44,7 @@ test misc-1.1 {error in variable ref. in command in array reference} {
 test misc-1.2 {error in variable ref. in command in array reference} {
     proc tstProc {} "
 	global a
-    
+
 	set tst \$a(\[winfo name \$\{zz)
 	# this is a bogus comment
 	# this is a bogus comment

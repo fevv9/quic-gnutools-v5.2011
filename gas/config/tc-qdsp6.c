@@ -28,10 +28,15 @@
    QDSP6 machine-specific port contributed by Qualcomm, Inc.
 */
 
+#if defined (__MINGW32__)
+#include "mingw_regex.h"
+#else
 #include <regex.h>
+#endif
 #include <stdint.h>
 #include <stdio.h>
 #include <sys/param.h>
+#include <assert.h>
 #include "as.h"
 #include "dwarf2dbg.h"
 #include "elf/qdsp6.h"
@@ -42,7 +47,19 @@
 #include "safe-ctype.h"
 #include "subsegs.h"
 
-#ifdef __CYGWIN__
+#if defined (__MINGW32__)
+#  ifndef MAX
+#    define MAX(a,b) ((a) > (b) ? (a) : (b))
+#  endif
+#  ifndef MIN
+#    define MIN(a,b) ((a) < (b) ? (a) : (b))
+#  endif
+
+#define regcomp xregcomp
+#define regexec xregexec
+#endif
+
+#if defined(__CYGWIN__)
 #  define REGEX_LEFT(re) "[[:<:]]" re
 #  define REGEX_RITE(re) re "[[:>:]]"
 #else
@@ -84,8 +101,6 @@
   (1 + 1 + 1 + \
    MAX (MAX (sizeof (SMALL_COM_SECTION), sizeof (SMALL_BSS_SECTION)), \
         sizeof (SMALL_DATA_SECTION)))
-
-#define QDSP6_INSN_LEN (4) /* This is the instruction size. */
 
 #define QDSP6_NOP         "nop"
 #define QDSP6_NOP_LEN     (3)
@@ -201,7 +216,8 @@ typedef struct
 typedef struct
   {
     size_t size; /* Number of insns. */
-    char faligned; /* Packet is .falign'ed. */
+    size_t free; /* Slots left while still fetch-aligned. */
+    char is_falign; /* Packet is fetch-aligned. */
     char is_inner; /* Packet has :endloop0. */
     char is_outer; /* Packet has :endloop1. */
     size_t offset;
@@ -234,6 +250,7 @@ enum _qdsp_falign_counters
     QDSP6_FALIGN_LABEL,   /* ... due to a label. */
     QDSP6_FALIGN_ALIGN,   /* ... due to an alignment performed. */
     QDSP6_FALIGN_NOP,     /* ... due to a NOP packet inserted. */
+    QDSP6_FALIGN_SHUF,    /* ... due to failure inserting a NOP. */
     QDSP6_FALIGN_COUNTERS
   };
 
@@ -277,15 +294,17 @@ segT qdsp6_create_sbss_section (const char *, flagword, unsigned int);
 segT qdsp6_create_scom_section (const char *, flagword, unsigned int);
 segT qdsp6_create_literal_section (const char *, flagword, unsigned int);
 qdsp6_literal *qdsp6_add_to_lit_pool (expressionS *, size_t);
+void qdsp6_shuffle_init (qdsp6_packet *, size_t *);
 void qdsp6_shuffle_packet (qdsp6_packet *, size_t *);
 void qdsp6_handle_shuffle (size_t *);
 void qdsp6_do_shuffle (void);
 int qdsp6_do_shuffle_helper (qdsp6_packet *, size_t, size_t *);
 int qdsp6_discard_dcfetch (int);
-int qdsp6_find_single_memop (qdsp6_packet *);
 addressT qdsp6_frag_fix_addr (void);
+int qdsp6_has_mem1 (const qdsp6_packet *);
+int qdsp6_has_mem (const qdsp6_packet *);
 int qdsp6_is_nop_should_keep (int);
-int qdsp6_find_noslot1 (qdsp6_packet_insn *, int);
+int qdsp6_find_noslot1 (qdsp6_packet *, size_t);
 void qdsp6_check_register (int *, int, int, const qdsp6_operand *, qdsp6_insn, const qdsp6_opcode *);
 int qdsp6_packet_check_solo (void);
 
@@ -294,7 +313,7 @@ static asection qdsp6_scom_section;
 static asymbol  qdsp6_scom_symbol;
 
 static qdsp6_literal *litpool;
-static size_t litpoolcounter;
+static unsigned litpoolcounter;
 
 static qdsp6_packet_insn qdsp6_nop_insn;
 
@@ -371,18 +390,20 @@ struct option md_longopts [] =
     { "mfalign-info", no_argument, NULL, OPTION_QDSP6_FALIGN_INFO_NEW },
 #define OPTION_QDSP6_FALIGN_MORE_INFO (OPTION_MD_BASE + 4)
     { "mfalign-more-info", no_argument, NULL, OPTION_QDSP6_FALIGN_MORE_INFO },
+#define OPTION_QDSP6_NO_2MEMORY (OPTION_MD_BASE + 5)
+    { "mno-dual-memory", no_argument, NULL, OPTION_QDSP6_NO_2MEMORY },
 /* Code in md_parse_option () assumes that the options -mv*, are sequential. */
-#define OPTION_QDSP6_MQDSP6V2 (OPTION_MD_BASE + 5)
+#define OPTION_QDSP6_MQDSP6V2 (OPTION_MD_BASE + 6)
     { "mv2", no_argument, NULL, OPTION_QDSP6_MQDSP6V2 },
-#define OPTION_QDSP6_MQDSP6V3 (OPTION_MD_BASE + 6)
+#define OPTION_QDSP6_MQDSP6V3 (OPTION_MD_BASE + 7)
     { "mv3", no_argument, NULL, OPTION_QDSP6_MQDSP6V3 },
-#define OPTION_QDSP6_MARCH (OPTION_MD_BASE + 7)
+#define OPTION_QDSP6_MARCH (OPTION_MD_BASE + 8)
     { "march", required_argument, NULL, OPTION_QDSP6_MARCH },
-#define OPTION_QDSP6_MCPU (OPTION_MD_BASE + 8)
+#define OPTION_QDSP6_MCPU (OPTION_MD_BASE + 9)
     { "mcpu", required_argument, NULL, OPTION_QDSP6_MCPU },
-#define OPTION_QDSP6_MSORT_SDA (OPTION_MD_BASE + 9)
+#define OPTION_QDSP6_MSORT_SDA (OPTION_MD_BASE + 10)
     { "msort-sda", no_argument, NULL, OPTION_QDSP6_MSORT_SDA },
-#define OPTION_QDSP6_MNO_SORT_SDA (OPTION_MD_BASE + 10)
+#define OPTION_QDSP6_MNO_SORT_SDA (OPTION_MD_BASE + 11)
     { "mno-sort-sda", no_argument, NULL, OPTION_QDSP6_MNO_SORT_SDA },
   };
 size_t md_longopts_size = sizeof (md_longopts);
@@ -394,9 +415,7 @@ static int qdsp6_sort_sda = TRUE;
 
 static size_t qdsp6_gp_size = QDSP6_SMALL_GPSIZE;
 
-static int qdsp6_packet_reverse = FALSE;
-static int qdsp6_packet_shuffle = TRUE;
-static int qdsp6_packet_native  = FALSE;
+static int qdsp6_no_dual_memory = FALSE;
 
 static int qdsp6_in_packet = FALSE;
 
@@ -406,12 +425,12 @@ static int faligning; /* 1 => .falign next packet we see */
 static int qdsp6_falign_info; /* 1 => report statistics about .falign usage */
 static int qdsp6_falign_more; /* report more statistics about .falign. */
 static char *falign_file;
-static unsigned int falign_line;
+static unsigned falign_line;
 
 static symbolS *falign_labels [MAX_FALIGN_LABELS]; /* labels seen between .falign and next pkt */
-static size_t falign_label_count; /* # labels seen between .falign and next pkt */
+static unsigned falign_label_count; /* # labels seen between .falign and next pkt */
 
-static size_t n_falign [QDSP6_FALIGN_COUNTERS]; /* .falign statistics. */
+static unsigned n_falign [QDSP6_FALIGN_COUNTERS]; /* .falign statistics. */
 
 // Arrays to keep track of register writes
 static int gArray [QDSP6_NUM_GENERAL_PURPOSE_REGS],
@@ -419,7 +438,8 @@ static int gArray [QDSP6_NUM_GENERAL_PURPOSE_REGS],
            sArray [QDSP6_NUM_SYS_CTRL_REGS],
            pArray [QDSP6_NUM_PREDICATE_REGS],
 // To keep track of register reads
-           pNewArray [QDSP6_NUM_PREDICATE_REGS];
+           pNewArray [QDSP6_NUM_PREDICATE_REGS],
+           pLateArray [QDSP6_NUM_PREDICATE_REGS];
 
 static int implicit_sr_ovf_bit_flag;  /* keeps track of the ovf bit in SR */
 static int num_inst_in_packet_from_src;
@@ -503,7 +523,7 @@ md_parse_option
                 }
 
             if (i == mach_arch_options_size)
-              as_fatal (_("invalid architecture."));
+              as_fatal (_("invalid architecture specified."));
             break;
        }
 
@@ -537,6 +557,10 @@ md_parse_option
 
     case OPTION_QDSP6_MNO_SORT_SDA:
       qdsp6_sort_sda = FALSE;
+      break;
+
+    case OPTION_QDSP6_NO_2MEMORY:
+      qdsp6_no_dual_memory = TRUE;
       break;
 
     default:
@@ -580,7 +604,7 @@ md_begin ()
   target_big_endian = byte_order == BIG_ENDIAN;
 
   if (!bfd_set_arch_mach (stdoutput, bfd_arch_qdsp6, qdsp6_mach_type))
-    as_warn (_("could not set architecture and machine."));
+    as_warn (_("architecture and machine types not set; using default settings."));
 
   /* This call is necessary because we need to initialize `qdsp6_operand_map'
      which may be needed before we see the first insn.  */
@@ -736,7 +760,7 @@ init_opcode_tables(
 )
 {
   if (!bfd_set_arch_mach (stdoutput, bfd_arch_qdsp6, mach))
-    as_warn (_("could not set architecture and machine."));
+    as_warn (_("architecture and machine types not set; using default settings."));
 
   /* This initializes a few things in qdsp6-opc.c that we need.
      This must be called before the various qdsp6_xxx_supported fns.  */
@@ -756,25 +780,16 @@ qdsp6_insert_operand
   const qdsp6_opcode *opcode;
   char *errmsg = NULL;
 
-  // Decide if it's a 16 or 32-bit instruction
   if (target_big_endian) {
-    insn = bfd_getb16 ((unsigned char *) where);
+    insn = bfd_getb32 ((unsigned char *) where);
   }
   else {
-    insn = bfd_getl16 ((unsigned char *) where);
-  }
-  if (!QDSP6_IS16INSN (insn)) {
-    if (target_big_endian) {
-      insn = bfd_getb32 ((unsigned char *) where);
-    }
-    else {
-      insn = bfd_getl32 ((unsigned char *) where);
-    }
+    insn = bfd_getl32 ((unsigned char *) where);
   }
 
   opcode = qdsp6_lookup_insn(insn);
   if (!opcode) {
-    as_bad("could not find opcode");
+    as_bad (_("opcode not found."));
   }
 
   if (!qdsp6_encode_operand(operand, &insn, opcode->enc, val, &errmsg)) {
@@ -782,7 +797,7 @@ qdsp6_insert_operand
       if(fixP!=NULL && fixP->fx_file!=NULL)
 	{
 	  char tmpError[200];
-	  sprintf(tmpError, " when resolving symbol in file %s at line %d", fixP->fx_file, fixP->fx_line);
+	  sprintf(tmpError, " when resolving symbol in file %s at line %d.", fixP->fx_file, fixP->fx_line);
 	  strcat(errmsg, tmpError);
 	}
 
@@ -790,21 +805,11 @@ qdsp6_insert_operand
     }
   }
 
-  if (QDSP6_IS16INSN (insn)) {
-    if (target_big_endian) {
-      bfd_putb16 ((bfd_vma) insn, (unsigned char *) where);
-    }
-    else {
-      bfd_putl16 ((bfd_vma) insn, (unsigned char *) where);
-    }
+  if (target_big_endian) {
+    bfd_putb32 ((bfd_vma) insn, (unsigned char *) where);
   }
   else {
-    if (target_big_endian) {
-      bfd_putb32 ((bfd_vma) insn, (unsigned char *) where);
-    }
-    else {
-      bfd_putl32 ((bfd_vma) insn, (unsigned char *) where);
-    }
+    bfd_putl32 ((bfd_vma) insn, (unsigned char *) where);
   }
 }
 
@@ -865,7 +870,7 @@ qdsp6_parse_immediate
       /* Check for closing paren */
       if (*str != ')')
         {
-          as_bad("missing )");
+          as_bad (_("missing `)'."));
           return NULL;
         }
       else
@@ -874,17 +879,17 @@ qdsp6_parse_immediate
 
   if (exp.X_op == O_illegal)
     {
-      as_bad("illegal operand");
+      as_bad (_("illegal operand."));
       return NULL;
     }
   else if (exp.X_op == O_absent)
     {
-      as_bad("missing operand");
+      as_bad (_("missing operand."));
       return NULL;
     }
   else if (exp.X_op == O_register)
     {
-      as_bad("unexpected register");
+      as_bad (_("unexpected register."));
       return NULL;
     }
   else if (exp.X_op == O_constant)
@@ -904,7 +909,7 @@ qdsp6_parse_immediate
       /* This expression involves one or more symbols.
         Record a fixup to process later */
       if (qdsp6_packets [0].insns [qdsp6_packets [0].size].fc >= MAX_FIXUPS)
-        as_fatal (_("too many fixups."));
+        as_fatal (_("expression too complex."));
 
       if (operand->reloc_type == BFD_RELOC_NONE)
         {
@@ -924,7 +929,7 @@ qdsp6_parse_immediate
 char*
 qdsp6_insn_write
 (qdsp6_insn insn, size_t fc, qdsp6_fixup *fixups,
- size_t offset, fixS **fixSP, int lineno)
+ size_t offset, fixS **fixSP, int lineno ATTRIBUTE_UNUSED)
 {
   char *f;
   size_t i;
@@ -933,36 +938,13 @@ qdsp6_insn_write
      It is important to fetch enough space in one call to `frag_more'.
      We use (f - frag_now->fr_literal) to compute where we are and we
      don't want frag_now to change between calls.  */
-  if (QDSP6_IS16INSN (insn))
-    {
-      // 16-bit instruction
-      f = frag_more (2);
-      if ((frag_now->fr_address + frag_now_fix ()) % 2)
-        as_warn (_("current location is not %d-byte aligned."), 2);
+  // 32-bit instruction
+  f = frag_more (QDSP6_INSN_LEN);
+  if ((frag_now->fr_address + frag_now_fix ()) % QDSP6_INSN_LEN)
+    as_warn (_("current location is not %d-byte aligned."), QDSP6_INSN_LEN);
 
-      md_number_to_chars (f, insn, 2);
-/*
- * XXX_SM: this was modified in 2.14 so that loc.line is set to
- * lineno as seen here.  My sense is that because packets are
- * broken up across lines this is needed and that as_where()
- * isn't smart enough to figure out the correct line number.
- * These calculations have change so I'm leaving reverting to
- * the baseline for now.
- * Old Q6 wants:
- *	dwarf2_emit_insn (2, lineno);
- */
-      dwarf2_emit_insn (2); /* XXX_SM */
-    }
-  else
-    {
-      // 32-bit instruction
-      f = frag_more (QDSP6_INSN_LEN);
-      if ((frag_now->fr_address + frag_now_fix ()) % QDSP6_INSN_LEN)
-        as_warn (_("current location is not %d-byte aligned."), QDSP6_INSN_LEN);
-
-      md_number_to_chars (f, insn, QDSP6_INSN_LEN);
-      dwarf2_emit_insn (QDSP6_INSN_LEN); /* XXX_SM */
-    }
+  md_number_to_chars (f, insn, QDSP6_INSN_LEN);
+  dwarf2_emit_insn (QDSP6_INSN_LEN);
 
   /* Create any fixups */
   if (fixSP)
@@ -974,7 +956,7 @@ qdsp6_insn_write
 
       fixS *fixP =
         fix_new_exp (frag_now, f - frag_now->fr_literal,
-                     QDSP6_IS16INSN (insn)? 2: QDSP6_INSN_LEN,
+                     QDSP6_INSN_LEN,
                      &fixups [i].exp,
                      (operand->flags & QDSP6_OPERAND_PC_RELATIVE) != 0,
                      operand->reloc_type);
@@ -1066,7 +1048,7 @@ qdsp6_align_code
 
       if ((skip = count % QDSP6_INSN_LEN))
         /* Pad to 4-byte boundary first. */
-        bzero (fragP->fr_literal + fragP->fr_fix, skip);
+        memset (fragP->fr_literal + fragP->fr_fix, 0, skip);
       /* Add NOPs to packet. */
       for (here = 0; skip + here + QDSP6_INSN_LEN < count; here += QDSP6_INSN_LEN)
         {
@@ -1181,9 +1163,9 @@ size_t
 qdsp6_insert_nops
 (size_t nops)
 {
-  size_t left, still;
-  size_t last;
-  size_t i, j;
+  unsigned left, still;
+  unsigned last;
+  unsigned i, j;
   int go;
   int incorp = FALSE, insert = FALSE;
 
@@ -1195,8 +1177,9 @@ qdsp6_insert_nops
       qdsp6_packet packet;
 
       /* Possible reasons to stop walking the history early. */
-      if (!qdsp6_packets [j].size) /* Empty packet. */
+      if (!qdsp6_packets [j].size)
         {
+           /* Empty packet. */
           if (qdsp6_packets [j].reason & QDSP6_FLUSH_LABEL)
             n_falign [QDSP6_FALIGN_LABEL]++;
           if (qdsp6_packets [j].reason & QDSP6_FLUSH_ALIGN)
@@ -1209,38 +1192,47 @@ qdsp6_insert_nops
 
           break;
         }
-      if (qdsp6_packets [j].faligned) /* An .falign'ed packet. */
+      if (qdsp6_packets [j].is_falign && !qdsp6_packets [j].free)
         {
+          /* An .falign'ed packet on a boundary. */
           if (qdsp6_packets [j].size == 1)
             n_falign [QDSP6_FALIGN_FALIGN1]++;
           else
             n_falign [QDSP6_FALIGN_FALIGN]++;
           break;
         }
-      if (   qdsp6_packets [j].seg != now_seg     /* Not in the same section... */
-          || qdsp6_packets [j].sub != now_subseg) /* nor sub-section. */
+      if (   qdsp6_packets [j].seg != now_seg
+          || qdsp6_packets [j].sub != now_subseg)
         {
+          /* Not in the same section nor sub-section. */
           n_falign [QDSP6_FALIGN_SECTION]++;
           break;
         }
 
-      /* Skip a full packet. */
+      /* Possible reasons to skip a packet. */
       if (qdsp6_packets [j].size >= MAX_PACKET_INSNS)
+        /* Full packet. */
+	continue;
+      if (   qdsp6_packets [j].size == 1
+          && (qdsp6_packets [j].insns [0].opcode->attributes & A_RESTRICT_NOPACKET))
+        /* A solo insn. */
 	continue;
 
-      /* Prepare the packet for reshuffling and collect some restrictions. */
+      /* Prepare the packet for reshuffling. */
       for (i = 0, packet = qdsp6_packets [j];
            i < MAX_PACKET_INSNS && go;
            i++)
 	if (i < packet.size)
-	  {
-	    packet.insns [i].used = FALSE;
-
-	    /* Fix ups don't allow to move an insn. */
-	    // go &= !packet.insns [i].fix && !packet.insns [i].fc;
-          }
+          packet.insns [i].used = FALSE;
 	else
-	  bzero (packet.insns + i, sizeof (packet.insns [i]));
+          {
+            memset (packet.insns + i, 0, sizeof (packet.insns [i]));
+
+            /* Pad packet. */
+            packet.insns [i].insn   = qdsp6_nop_insn.insn;
+            packet.insns [i].opcode = qdsp6_nop_insn.opcode;
+            packet.insns [i].padded = TRUE;
+          }
 
       /* Stop at a packet with restrictions. */
       if (!go)
@@ -1248,33 +1240,24 @@ qdsp6_insert_nops
 
       /* Fill up scratch packet with NOP. */
       for (still = left;
-	   still && packet.size < MAX_PACKET_INSNS;
-	   still--, packet.size++)
+	   still && packet.size < MAX_PACKET_INSNS && (!packet.is_falign || packet.free);
+	   still--, packet.size++, packet.is_falign && packet.free--)
 	{
-	  packet.insns [packet.size].insn = qdsp6_nop_insn.insn;
-	  packet.insns [packet.size].opcode = qdsp6_nop_insn.opcode;
-	  packet.insns [packet.size].lineno
-	    = packet.insns [packet.size - 1].lineno;
+          /* Reuse pad. */
+          packet.insns [packet.size].padded = FALSE;
+          packet.insns [packet.size].lineno = packet.insns [packet.size - 1].lineno;
+
 	  packet.offset += QDSP6_INSN_LEN;
         }
 
-      /* Try to reshuffle packet. */
-      if (!qdsp6_do_shuffle_helper (&packet, 0, NULL))
-	continue;
-      else
+      /* Try to reshuffle scratch packet. */
+      /* TODO: somehow, this reshuffling is not successful as often as when
+               assembling the source code.  It seems that whenever there's
+               already a multiple insn packet with one restricted to slot #0,
+               unless there are enough pad NOPs to fill the packet up to the
+               brim, shuffling will fail. */
+      if (qdsp6_do_shuffle_helper (&packet, 0, NULL))
         {
-	  /* Undo tweaks to PC-relative fixup offsets when rewriting. */
-/*
-	  for (i = 0; i < MAX_PACKET_INSNS; i++)
-	    if (   packet.insns [i].fix
-		&& packet.insns [i].fix->fx_pcrel)
-	      packet.insns [i].fix->fx_offset -= i * QDSP6_INSN_LEN;
-*/
-          /* Update the packet. */
-/*
-          qdsp6_packet_rewrite (&packet, left - still);
-*/
-
 	  /* Commit scratch packet back to the packet history. */
 	  qdsp6_packets [j] = packet;
 
@@ -1283,9 +1266,17 @@ qdsp6_insert_nops
 
 	  incorp = TRUE;
         }
-    }
+      else
+        n_falign [QDSP6_FALIGN_SHUF] += 0;
 
-  if (j >= MAX_PACKETS) /* End of history reached. */
+      /* Possible reasons to stop walking the history late. */
+      if (left && qdsp6_packets [j].is_falign)
+        /* An .falign'ed packet. */
+        break;
+   }
+
+  if (j >= MAX_PACKETS)
+    /* End of history reached. */
     n_falign [QDSP6_FALIGN_END]++;
 
   /* Commit changes. */
@@ -1303,7 +1294,7 @@ qdsp6_insert_nops
       if (qdsp6_falign_info)
         as_warn_where
           (falign_file, falign_line,
-            _("`.falign' inserted a new %lu-`nop' packet."), left);
+            _("\".falign\" inserted a new %u-`nop' packet."), left);
 
       while (--left)
         qdsp6_insn_write (qdsp6_nop_insn.insn | QDSP6_END_NOT, 0, NULL, 0, NULL, falign_line);
@@ -1339,19 +1330,20 @@ qdsp6_packet_falign
 
   new_pkt_off  = new_pkt_addr % (1 << DEFAULT_CODE_FALIGN);
   new_pkt_over = new_pkt_off + (new_pkt_size * QDSP6_INSN_LEN);
-  new_pkt_over = new_pkt_over > (1 << DEFAULT_CODE_FALIGN)
-               ? new_pkt_over % (1 << DEFAULT_CODE_FALIGN)
-	       : 0;
 
   /* Check if new packet will cross a decode-window. */
-  if (new_pkt_over)
+  if (new_pkt_over > (1 << DEFAULT_CODE_FALIGN))
     {
       int nops_add, nops_left;
 
+      /* Add NOP to previous packets to .falign the current one. */
       nops_add =  ((1 << DEFAULT_CODE_FALIGN) - new_pkt_off) / QDSP6_INSN_LEN;
-
-      /* Add NOP to .falign the current packet. */
       nops_left = qdsp6_insert_nops (nops_add);
+
+      new_pkt_over %= (1 << DEFAULT_CODE_FALIGN);
+      qdsp6_packets [0].free = MIN (MAX_PACKET_INSNS - new_pkt_size,
+                                      ((1 << DEFAULT_CODE_FALIGN) - new_pkt_over)
+                                    / QDSP6_INSN_LEN);
 
       /* Update any labels that refer to the original packet address. */
       if (nops_left < nops_add)
@@ -1364,6 +1356,10 @@ qdsp6_packet_falign
     }
   else
     {
+      qdsp6_packets [0].free = MIN (MAX_PACKET_INSNS - new_pkt_size,
+                                      ((1 << DEFAULT_CODE_FALIGN) - new_pkt_over)
+                                    / QDSP6_INSN_LEN);
+
       falign_label_count = 0;
 
       faligning = FALSE;
@@ -1379,20 +1375,31 @@ it should go in slot 0.
 @return True if so.
 */
 int
-qdsp6_find_single_memop
-(qdsp6_packet *packet)
+qdsp6_has_mem1
+(const qdsp6_packet *apacket)
 {
-  int i;
+  return (qdsp6_has_mem (apacket) == 1);
+}
+
+/** Check if packet has memory operation insns.
+
+@param packet Packet to examine.
+@return Number of such insns.
+*/
+int
+qdsp6_has_mem
+(const qdsp6_packet *apacket)
+{
+  size_t i;
   int count;
 
   /* Count number of memory ops in this packet. */
   for (i = count = 0; i < MAX_PACKET_INSNS; i++)
-      if (   packet->insns [i].opcode
-	  && (  packet->insns [i].opcode->attributes
-              & A_RESTRICT_SINGLE_MEM_FIRST))
+    if (   apacket->insns [i].opcode
+        && (apacket->insns [i].opcode->attributes & A_RESTRICT_SINGLE_MEM_FIRST))
       count++;
 
-  return (count == 1);
+  return (count);
 }
 
 int
@@ -1449,7 +1456,7 @@ qdsp6_history_flush
   number = MIN (number, MAX_PACKETS);
   flushed = MIN (number? number: 1, MAX_PACKETS);
 
-  bzero (qdsp6_packets + number,
+  memset (qdsp6_packets + number, 0,
          (MAX_PACKETS - number) * sizeof (qdsp6_packets [0]));
 
   if (flushed < MAX_PACKETS)
@@ -1480,7 +1487,7 @@ qdsp6_history_push
       qdsp6_packets [1] = *packet;
     }
 
-  bzero (qdsp6_packets + 0, sizeof (qdsp6_packets [0]));
+  memset (qdsp6_packets + 0, 0, sizeof (qdsp6_packets [0]));
 }
 
 /** Coalesce history locations starting at specified insn.
@@ -1523,8 +1530,8 @@ qdsp6_history_coalesce (size_t ip, size_t ii)
         {
           qdsp6_packets [ip].insns [ii].loc
             = qdsp6_packets [jp].insns [ji].loc;
-          bzero (&qdsp6_packets [jp].insns [ji].loc,
-                sizeof (qdsp6_packets [jp].insns [ji].loc));
+          memset (&qdsp6_packets [jp].insns [ji].loc, 0,
+                  sizeof (qdsp6_packets [jp].insns [ji].loc));
 
           if (++ji >= qdsp6_packets [jp].size)
             {
@@ -1709,7 +1716,7 @@ qdsp6_packet_write
      determine which packet bits to set. */
   req_insns = qdsp6_packets [0].size - max_skip;
 
-  if ((qdsp6_packets [0].faligned = faligning))
+  if ((qdsp6_packets [0].is_falign = faligning))
     qdsp6_packet_falign (req_insns);
 
   /* Initialize scratch packet. */
@@ -1721,7 +1728,7 @@ qdsp6_packet_write
     {
       /* Make sure that the packet bits are clear. */
       if (qdsp6_packets [0].insns [i].insn & QDSP6_PACKET_BIT_MASK)
-	as_fatal (_("unexpected value in instruction packet bits."));
+	as_fatal (_("internal assembler error."));
 
       /* Skip the padded NOP, not every NOP. */
       if (   max_skip
@@ -1755,9 +1762,7 @@ qdsp6_packet_write
       packet.insns [packet.size].loc.offset
         = packet.insns [packet.size].loc.ptr - frag_now->fr_literal;
 
-      packet.offset += QDSP6_IS16INSN (packet.insns [packet.size].insn)
-		     ? 2
-		     : QDSP6_INSN_LEN;
+      packet.offset += QDSP6_INSN_LEN;
 
       /* Count insn as legit. */
       packet.size++;
@@ -1884,14 +1889,15 @@ qdsp6_literal *
 qdsp6_add_to_lit_pool
 (expressionS *exp, size_t size)
 {
-  qdsp6_literal *litptr, *lastptr;
+  qdsp6_literal *litptr = (qdsp6_literal *)0;
+  qdsp6_literal *lastptr = (qdsp6_literal *)0;
   segT current_section = now_seg;
   int current_subsec = now_subseg;
   offsetT mask = (size == 8)? 0xffffffffffffffffULL: 0xffffffffULL;
 
   /* Sanity check for illegal constant literals. */
   if (size != 8 && size != 4)
-    as_fatal (_("bad literal constant."));
+    as_fatal (_("invalid literal constant."));
 
   /* try to find the existing one for the expression "exp"
    * to reuse the literal
@@ -1941,14 +1947,19 @@ qdsp6_add_to_lit_pool
         {
           if (size == 8)
             {
-              sprintf (litptr->name, "%s_%016llx",
-                     LITERAL_PREFIX, (long long) litptr->e.X_add_number);
+              sprintf (litptr->name,
+#if defined (__MINGW32__)
+                       "%s_%016I64x",
+#else
+                       "%s_%016llx",
+#endif
+                       LITERAL_PREFIX, (long long) litptr->e.X_add_number);
               sprintf (litptr->secname, "%s%s", LITERAL_SECTION_ONCE_8, litptr->name);
             }
           else
             {
               sprintf (litptr->name, "%s_%08x",
-                     LITERAL_PREFIX, (int) litptr->e.X_add_number);
+                       LITERAL_PREFIX, (int) litptr->e.X_add_number);
               sprintf (litptr->secname, "%s%s", LITERAL_SECTION_ONCE_4, litptr->name);
             }
 
@@ -1959,7 +1970,7 @@ qdsp6_add_to_lit_pool
       else /* if (litptr->e.X_op == O_symbol) */
         /* Create a label symbol (with the literal order as the suffix). */
         {
-          sprintf (litptr->name, "%s_%04lx", LITERAL_PREFIX, litpoolcounter);
+          sprintf (litptr->name, "%s_%04x", LITERAL_PREFIX, litpoolcounter);
           strcpy (litptr->secname, LITERAL_SECTION_A);
 
           litptr->sec = qdsp6_create_literal_section (litptr->secname, 0, bfd_log2 (size));
@@ -2112,9 +2123,10 @@ qdsp6_gp_const_lookup
   return TRUE;
 }
 
- /* This routine is called for each instruction to be assembled.  */
+/* This routine is called for each instruction to be assembled.  */
 static void
-qdsp6_md_assemble(char *str, int padded)
+qdsp6_md_assemble
+(char *str, int padded)
 {
   const qdsp6_opcode *std_opcode;
   char *start;
@@ -2297,43 +2309,6 @@ qdsp6_md_assemble(char *str, int padded)
 
           if (qdsp6_in_packet)
             {
-              if (qdsp6_packet_reverse)
-                {
-                  /*
-                   * Check the issue slot
-                   * This might seem backward, but the bits in the opcode's
-                   * issue slot mask are based on an old ordering which is
-                   * the reverse of the current correct ordering.
-                   *
-                   * Note that the default case (below) uses the reverse
-                   * of this ordering.
-                  */
-                  unsigned int slot = qdsp6_packets [0].size;
-                  unsigned int slot_mask = 1 << slot;
-
-                  if ((qdsp6_packets [0].insns [qdsp6_packets [0].size].opcode->slot_mask & slot_mask) == 0)
-                    as_bad (_("instruction not valid in this issue slot "
-                              "(ordering reversed)"));
-                }
-              else if (qdsp6_packet_shuffle)
-                {
-                  /* Nothing to do - we'll rearrange them later */
-                }
-              else if (qdsp6_packet_native)
-                {
-                  /* Check the issue slot */
-                  unsigned int slot = MAX_PACKET_INSNS
-                                    - qdsp6_packets [0].size - 1;
-	          unsigned int slot_mask = 1 << slot;
-
-                  if ((qdsp6_packets [0].insns [qdsp6_packets [0].size].opcode->slot_mask & slot_mask) == 0)
-                    as_bad (_("instruction not valid in this issue slot."));
-                }
-              else
-                {
-                  as_fatal (_("unknown packet ordering."));
-                }
-
 	      qdsp6_packets [0].insns [qdsp6_packets [0].size].used = 0;
 	      qdsp6_packets [0].insns [qdsp6_packets [0].size].padded = padded;
 	      qdsp6_packets [0].insns [qdsp6_packets [0].size].lineno = cur_line;
@@ -2346,7 +2321,7 @@ qdsp6_md_assemble(char *str, int padded)
 	        (qdsp6_packets [0].insns [0].opcode,
 		 qdsp6_packets [0].insns [0].insn);
 
-              qdsp6_packets [0].faligned = faligning;
+              qdsp6_packets [0].is_falign = faligning;
               qdsp6_packets [0].is_inner = FALSE;
               qdsp6_packets [0].is_outer = FALSE;
 
@@ -2414,7 +2389,8 @@ qdsp6_md_assemble(char *str, int padded)
 
               if (!is_end_of_line [(unsigned char) *str])
                 {
-                  as_bad (_("junk at end of line: `%s'"), str);
+                 /* TODO: finish message with a period. */
+                  as_bad (_("extra symbols at end of line: `%s'"), str);
                 }
               else if (!qdsp6_packets [0].is_inner || !qdsp6_packets [0].is_outer)
                 {
@@ -2436,7 +2412,8 @@ qdsp6_md_assemble(char *str, int padded)
             }
           else if (!is_end_of_line [(unsigned char) *str])
             {
-              as_bad (_("junk at end of line: `%s'"), str);
+              /* TODO: finish message with a period. */
+              as_bad (_("extra symbols at end of line: `%s'"), str);
             }
 
           /* All done.  */
@@ -2452,7 +2429,8 @@ qdsp6_md_assemble(char *str, int padded)
     {
       int big = strlen (start) > MAX_MESSAGE - 3? TRUE: FALSE;
 
-      as_bad (_("bad instruction `%.*s%s'"),
+      /* TODO: finish message with a period. */
+      as_bad (_("invalid instruction `%.*s%s'"),
               big? MAX_MESSAGE - 3: MAX_MESSAGE, start, big? "...": "");
     }
   else
@@ -2502,7 +2480,7 @@ qdsp6_common
 
   if (size < 0)
     {
-      as_bad (_("negative symbol length."));
+      as_bad (_("invalid symbol length."));
       ignore_rest_of_line ();
       return;
     }
@@ -2513,7 +2491,7 @@ qdsp6_common
 
   if (S_IS_DEFINED (symbolP) && !S_IS_COMMON (symbolP))
     {
-      as_bad (_("attempt to re-define symbol `%s'."), S_GET_NAME (symbolP));
+      as_bad (_("symbol `%s' is already defined."), S_GET_NAME (symbolP));
       ignore_rest_of_line ();
       return;
     }
@@ -2537,7 +2515,7 @@ qdsp6_common
       align = get_absolute_expression ();
 
       if (align < 0)
-        as_warn (_("negative alignment, defaulting to %ld."),
+        as_warn (_("invalid symbol alignment, defaulting to %ld."),
                  (long) (align = 0));
     }
 
@@ -2549,7 +2527,7 @@ qdsp6_common
   alignb = 1 << align2;
 
   if (align && alignb != temp)
-    as_warn (_("alignment not a power of 2, defaulting to %ld."),
+    as_warn (_("invalid symbol alignment, defaulting to %ld."),
              (long) (alignb = 1 << ++align2));
 
   /* Start assuming that the access is 0, i.e.
@@ -2561,12 +2539,8 @@ qdsp6_common
       input_line_pointer++;
       access = get_absolute_expression ();
 
-      if (access < 0)
-        as_warn (_("negative access, defaulting to %ld."),
-                 (long) (access = 0));
-
-      if (access != (1 << bfd_log2 (access)))
-        as_warn (_("access not a power of 2, defaulting to %ld."),
+      if (access < 0 || access != (1 << bfd_log2 (access)))
+        as_warn (_("invalid symbol access size, defaulting to %ld."),
                  (long) (access = 0));
     }
 
@@ -2675,20 +2649,20 @@ qdsp6_option
   /* If an instruction has already been seen, it's too late.  */
   if (cpu_tables_init_p)
     {
-      as_bad ("\".option\" must appear before any instructions");
+      as_bad (_("\".option\" directive must appear before any instructions."));
       ignore_rest_of_line ();
       return;
     }
 
   if (mach < 0)
     {
-      as_bad (_("invalid identifier for \".option\"."));
+      as_bad (_("invalid architecture specified for \".option\"."));
       ignore_rest_of_line ();
       return;
     }
   else if (mach_type_specified_p && mach != qdsp6_mach_type)
     {
-      as_bad ("\".option\" conflicts with initial definition");
+      as_bad (_("architecture specified for \".option\" conflicts with current setting."));
       ignore_rest_of_line ();
       return;
     }
@@ -2696,11 +2670,11 @@ qdsp6_option
     {
       /* The cpu may have been selected on the command line.  */
       if (mach != qdsp6_mach_type)
-	as_warn (_("\".option\" overrides the command-line or the default value."));
+	as_warn (_("\".option\" directive overrides default or command-line setting."));
       qdsp6_mach_type = mach;
 
       if (!bfd_set_arch_mach (stdoutput, bfd_arch_qdsp6, mach))
-	as_fatal (_("could not set architecture and machine."));
+	as_fatal (_("assembler internal error."));
 
       mach_type_specified_p = TRUE;
     }
@@ -2786,7 +2760,7 @@ md_estimate_size_before_relax(
      asection *seg ATTRIBUTE_UNUSED
 )
 {
-  as_fatal (_("md_estimate_size_before_relax."));
+  as_fatal (_("assembler internal error."));
   return 1;
 }
 
@@ -2799,7 +2773,7 @@ md_convert_frag(
      fragS *fragp ATTRIBUTE_UNUSED
 )
 {
-  as_fatal (_("md_convert_frag."));
+  as_fatal (_("assembler internal error."));
 }
 
 void
@@ -2832,7 +2806,7 @@ qdsp6_code_symbol
     }
   else
     {
-      as_bad (_("expression too complex code symbol."));
+      as_bad (_("expression too complex."));
       return;
     }
 }
@@ -2918,9 +2892,10 @@ qdsp6_parse_cons_expression(
 /*
  * XXX:SM change to use the #define version in expr.h
  * Was expr(0,exp) if we don't want to use the macro then then
- * 2.19 version would be: "expr (0, exp, expr_normal)"
+ * 2.20 version would be: "expr (0, exp, expr_normal)"
  */
   expression (exp);
+
   if (code_symbol_fix)
     {
       qdsp6_code_symbol (exp);
@@ -2997,7 +2972,7 @@ md_apply_fix
 
   /* We can't actually support subtracting a symbol.  */
   if (fixP->fx_subsy != NULL)
-    as_bad_where (fixP->fx_file, fixP->fx_line, _("expression too complex"));
+    as_bad_where (fixP->fx_file, fixP->fx_line, _("expression too complex."));
 
   operand = (qdsp6_operand *) fixP->tc_fix_data;
   if (operand)
@@ -3063,7 +3038,7 @@ tc_gen_reloc(
   reloc->howto = bfd_reloc_type_lookup (stdoutput, fixP->fx_r_type);
   if (reloc->howto == (reloc_howto_type *) NULL) {
     as_bad_where (fixP->fx_file, fixP->fx_line,
-                  "internal error: can't export reloc type %d (\"%s\")",
+                  "assembler internal error: can't export reloc type %d (\"%s\").",
                   fixP->fx_r_type,
                   bfd_get_reloc_code_name (fixP->fx_r_type));
     return NULL;
@@ -3078,20 +3053,22 @@ tc_gen_reloc(
   return reloc;
 }
 
-//Look for unused noslot1 instruction, if found, return its index,
-//otherwise return -1.
+/** Look for insns in the packet which restricts slot #1.
+
+@return the insn index in the packet, otherwise -1.
+*/
 int
 qdsp6_find_noslot1
-(qdsp6_packet_insn input [], int current)
+(qdsp6_packet *packet, size_t current)
 {
-  int i;
+  size_t i;
 
-  for (i = 0; i < MAX_PACKET_INSNS; i++)
-      if( i != current && !input[i].used )
-      if (input [i].opcode->attributes & A_RESTRICT_NOSLOT1)
+  for (i = 0; i < packet->size; i++)
+    if (i != current && !packet->insns [i].used )
+      if (packet->insns [i].opcode->attributes & A_RESTRICT_NOSLOT1)
 	return (i);
 
-  return -1;
+  return (-1);
 }
 
 /** Shuffle packet accoding to from-to mapping.
@@ -3102,7 +3079,7 @@ qdsp6_find_noslot1
 void
 qdsp6_shuffle_packet
 (qdsp6_packet *packet, size_t *fromto)
-	{
+{
   qdsp6_packet_insn insns [MAX_PACKET_INSNS];
   size_t to;
   size_t i;
@@ -3137,12 +3114,13 @@ qdsp6_do_shuffle_helper
   size_t slot_mask = 1 << slot;
   size_t tmp_slot_mask;
   size_t *fromto, aux [MAX_PACKET_INSNS];
-  int single_memop = qdsp6_find_single_memop (packet);
-  int changed;
+  int single, changed;
   size_t i;
 
   if (slot_num >= packet->size)
     return TRUE;
+
+  single = qdsp6_has_mem1 (packet);
 
   /* Choose from-to map. */
   if (shuffle)
@@ -3159,11 +3137,9 @@ qdsp6_do_shuffle_helper
        i < packet->size && !changed;
        i++)
     {
-          /* check if there is only one memory op
-           * (A_RESTRICT_SINGLE_MEM_FIRST). If so, it requires
-           * the slot 0 (slot_mask is 1) */
-      if (   single_memop
-	  && (packet->insns [i].opcode->attributes & A_RESTRICT_SINGLE_MEM_FIRST))
+      /* A packet with a single load or store must use slot #0 for it. */
+      if (   single
+          && (packet->insns [i].opcode->attributes & A_RESTRICT_SINGLE_MEM_FIRST))
 	tmp_slot_mask = packet->insns [i].opcode->slot_mask & 1;
       else
 	tmp_slot_mask = packet->insns [i].opcode->slot_mask;
@@ -3172,7 +3148,7 @@ qdsp6_do_shuffle_helper
 	{
 	  /* Check for NOSLOT1 restriction. */
 	  if (slot == 1 && !qdsp6_is_nop (packet->insns [i].insn))
-	    if (qdsp6_find_noslot1 (packet->insns, i) >= 0)
+	    if (qdsp6_find_noslot1 (packet, i) >= 0)
 	      /* If so, then skip this slot. */
 	      continue;
 
@@ -3224,7 +3200,7 @@ qdsp6_discard_dcfetch
                   found++;
 
                   if (found > MAX_DCFETCH)
-                    as_warn (_("too many `dcfetch' in packet."));
+                    as_warn (_("more than one `dcfetch' instruction in packet."));
 
                   if (found > 1)
                     /* Delete extra DCFETCH. */
@@ -3282,127 +3258,131 @@ qdsp6_handle_shuffle
     }
 }
 
+void
+qdsp6_shuffle_init
+(qdsp6_packet *apacket, size_t *fromto)
+{
+  size_t aux [MAX_PACKET_INSNS];
+  size_t i, j, k;
+  unsigned mask;
+  int found, single;
+
+  if (!fromto)
+    fromto = aux;
+
+  /* Initialize shuffle map. */
+  for (i = 0; i < MAX_PACKET_INSNS; i++)
+    fromto [i] = MAX_PACKET_INSNS;
+
+  single = qdsp6_has_mem1 (apacket);
+
+  /* Reorder the instructions in the packet so that they start with
+      slot #3 (index #0) instead of slot #0.
+
+      1 - Go through all non-padded instructions, find the highest slot each
+          insn can go to and put it in the corresponding position.  If an
+          position is already assigned, then try the next one.  If all
+          positions after the wanted one are taken, then try again from the
+          beginning of the array.
+
+      2 - For all padded instructions, put them one by one starting from the
+          first available position (or higher slot). */
+
+  /* Step 1. */
+  for (i = 0; i < MAX_PACKET_INSNS; i++)
+    if (!apacket->insns [i].padded)
+      {
+        found = FALSE;
+
+        mask = single
+               ? apacket->insns [i].opcode->slot_mask & 1
+               : apacket->insns [i].opcode->slot_mask;
+
+        /* Find the highest slot this instruction can go to. */
+        for (j = 0;  j < MAX_PACKET_INSNS; j++)
+          if (  apacket->insns [i].opcode->slot_mask
+              & (1 << (MAX_PACKET_INSNS - j - 1)))
+            {
+              for (k = j; k < MAX_PACKET_INSNS; k++)
+                if (fromto [k] >= MAX_PACKET_INSNS)
+                  {
+                    fromto [k] = i;
+                    found = TRUE;
+                    break;
+                  }
+
+              break;
+            }
+
+        /* If all the positions after the wanted one are taken, go back to
+           the beginning of the array and pick the first free position. */
+        for (j = 0; j < MAX_PACKET_INSNS && !found; j++)
+          if (fromto [j] >= MAX_PACKET_INSNS)
+            {
+              fromto [j] = i;
+              found = TRUE;
+              break;
+            }
+      }
+
+  /* Step 2. */
+  for (i = 0; i < MAX_PACKET_INSNS; i++)
+    if (apacket->insns [i].padded)
+      /* Find the first unused position for this padded insn. */
+      for (j = 0; j < MAX_PACKET_INSNS; j++)
+        if (fromto [j] >= MAX_PACKET_INSNS)
+          {
+            fromto [j] = i;
+            break;
+          }
+
+  qdsp6_shuffle_packet (apacket, fromto);
+
+  for (i = 0; i < MAX_PACKET_INSNS; i++)
+    if ((apacket->insns [i].opcode->attributes & A_RESTRICT_PREFERSLOT0))
+      {
+        qdsp6_packet_insn insn;
+
+        /* Swap with insn at slot #0. */
+        insn = apacket->insns [i];
+        apacket->insns [i] = apacket->insns [MAX_PACKET_INSNS - 1];
+        apacket->insns [MAX_PACKET_INSNS - 1] = insn;
+
+        break;
+      }
+}
+
 /* Top level function for packet shuffling
      1) Set up the recursive call
      2) Rearrange the instructions
      3) Reports an error if necessary
  */
 
-    void
+void
 qdsp6_do_shuffle
 (void)
 {
-  qdsp6_packet_insn insn;
   size_t fromto [MAX_PACKET_INSNS];
   char *file;
-  char found, has_prefer_slot0;
-  size_t i, j, k;
+  unsigned i;
 
   if (!qdsp6_if_arch_v1 ())
-{
-      /* Get rid of extra insns. */
-      qdsp6_discard_dcfetch (0);
+    /* Get rid of extra insns. */
+    qdsp6_discard_dcfetch (0);
 
-      /* Initialize shuffle map. */
-      for (i = 0; i < MAX_PACKET_INSNS; i++)
-        fromto [i] = MAX_PACKET_INSNS;
+  /* Prepare packet for shuffling. */
+  qdsp6_shuffle_init (qdsp6_packets + 0, fromto);
 
-      // to reorder the instructions in the packet so it
-      // starts with slot 3 instead of slot 0 when shuffle
-      // 1. first, go through all non-padded instructions, find
-      // the highest slot each instruction can go to, and put
-      // it in the corresponding position (slot 3 goes to index 0)
-      // if an index is already assigned, then go to the next one
-      // if all the positions after the wanted one are taken, then
-      // go back to the beginning of the array
-      // 2. for all padded instructions, put them one by one starting
-      // from the first available position (index 0 -> 3)
-
-      // step 1
-      for (i = 0; i < MAX_PACKET_INSNS; i++)
-	{
-          if (!qdsp6_packets [0].insns [i].padded)
-	    {
-              /* Find the highest slot this instruction can go to. */
-              for (j = 0, found = FALSE;
-	           j < MAX_PACKET_INSNS && !found;
-	           j++)
-		{
-                  if (qdsp6_packets [0].insns [i].opcode->slot_mask & (1 << (MAX_PACKET_INSNS - j - 1)))
-		    {
-                      for (k = j;
-                           k < MAX_PACKET_INSNS && !found;
-		           k++)
-			if (fromto [k] >= MAX_PACKET_INSNS)
-			  {
-			    fromto [k] = i;
-			    found = TRUE;
-                      }
-                      break;
-                  }
-		}
-
-              // if all the positions after the wanted one are taken
-              // go back to the beginning of the array
-	      for (j = 0;
-		   j < MAX_PACKET_INSNS && !found;
-		   j++)
-		if (fromto [j] >= MAX_PACKET_INSNS)
-		  {
-		    fromto [j] = i;
-		    found = TRUE;
-              }
-          } // end if (!...padded)
-      } // end for (i=0 ...)
-
-      // step 2
-      for (i = 0; i < MAX_PACKET_INSNS; i++)
-	{
-          if (qdsp6_packets [0].insns [i].padded)
-	    {
-              // find the first unused index and put this padded
-              // instruction there
-              for (j = 0; j < MAX_PACKET_INSNS; j++)
-		{
-                  if (fromto [j] >= MAX_PACKET_INSNS)
-		    {
-                      fromto [j] = i;
-                      break;
-                  }
-              }
-          }
-      } // end for (i=0; ...)
-
-      qdsp6_shuffle_packet (qdsp6_packets + 0, fromto);
-
-      for (i = 0, has_prefer_slot0 = FALSE;
-           i < MAX_PACKET_INSNS && !has_prefer_slot0;
-           i++)
-	{
-          if (qdsp6_packets [0].insns [i].opcode->attributes & A_RESTRICT_PREFERSLOT0)
-	    {
-              has_prefer_slot0 = TRUE;
-              // Place the prefer_slot0 insn at index (MAX_PACKET_INSNS - 1), by swapping i
-			  // and (MAX_PACKET_INSNS - 1)
-              insn = qdsp6_packets [0].insns [i];
-              qdsp6_packets [0].insns [i] = qdsp6_packets [0].insns [MAX_PACKET_INSNS - 1];
-              qdsp6_packets [0].insns [MAX_PACKET_INSNS - 1] = insn;
-          }
-      }
-  }
-
+  /* Shuffle it. */
   qdsp6_handle_shuffle (fromto);
 
-  if (has_prefer_slot0)
-    {
-      as_where (&file, NULL);
-
-      for (i = 0; i < MAX_PACKET_INSNS - 1; i++)
-	  if (qdsp6_packets [0].insns [i].opcode->attributes & A_RESTRICT_PREFERSLOT0)
-	      as_warn_where (file, qdsp6_packets [0].insns [i].lineno,
-	                     _("instruction `%s' prefers slot #0, but has been assigned to slot #%lu."),
-			     qdsp6_packets [0].insns [i].opcode->syntax, i);
-    }
+  /* Check for proper shuffling of insns restricted to slot #0. */
+  as_where (&file, NULL);
+  for (i = 0; i < MAX_PACKET_INSNS - 1; i++)
+    if (qdsp6_packets [0].insns [i].opcode->attributes & A_RESTRICT_PREFERSLOT0)
+        as_warn_where (file, qdsp6_packets [0].insns [i].lineno,
+                        _("instruction `%s' prefers slot #0, but has been assigned to slot #%u."),
+                        qdsp6_packets [0].insns [i].opcode->syntax, i);
 }
 
 /* Determine if an instruction is a nop */
@@ -3440,19 +3420,21 @@ int
 qdsp6_check_new_predicate
 (void)
 {
-  size_t i;
+  unsigned i;
 
   /* No need to check for V1, since P.new read array will never be set. */
   for (i = 0; i < QDSP6_NUM_PREDICATE_REGS; i++)
-    if (pNewArray [i] && !pArray [i])
+    if (pNewArray [i] && (!pArray [i] || pLateArray [i]))
       {
         if (cArray [QDSP6_P30])
-          as_warn (_("modifying `c4/p3:0' does not apply to `p%lu.new'."),
-                   (unsigned long) i);
+          as_warn (_("modifying `C4/P3:0' does not apply to `p%u.new'."), i);
 
-        as_bad
-          (_("register `p%lu' used with `.new' but not modified in the same packet."),
-           (unsigned long) i);
+        if (pArray [i] && pLateArray [i])
+          as_bad
+            (_("cannot use register `p%u' with `.new' in the packet."), i);
+        else
+          as_bad
+            (_("register `p%u' used with `.new' but not modified in the same packet."), i);
 
         return FALSE;
       }
@@ -3467,7 +3449,10 @@ qdsp6_check_implicit
   if (opcode->implicit_reg_def & implicit)
     {
       if (array [reg])
-	as_bad (_("register `%s' modified multiple times."), name);
+        {
+          if (name)
+            as_bad (_("register `%s' modified more than once."), name);
+        }
       else
 	array [reg]++;
     }
@@ -3517,7 +3502,7 @@ qdsp6_check_register(
 	      = qdsp6_dis_operand (operand, insn, 0, opcode->enc, buff, &errmsg);
 
 	    if (reg_name)
-	      as_bad (_("register `%s' modified multiple times."), buff);
+	      as_bad (_("register `%s' modified more than once."), buff);
 	    else if (errmsg)
 	      as_bad (errmsg);
 	  }
@@ -3545,7 +3530,7 @@ qdsp6_check_insn
   if(   (opcode->attributes & A_RESTRICT_NOPACKET)
      && num_inst_in_packet_from_src > 1)
     {
-      as_bad (_("illegal instruction in packet."));
+      as_bad (_("instruction cannot appear in packet with other instructions."));
       qdsp6_in_packet = 0;
       return;
     }
@@ -3583,12 +3568,21 @@ qdsp6_check_insn
       qdsp6_check_implicit (opcode, IMPLICIT_LR,  QDSP6_LR,  gArray, "r31/lr");
       qdsp6_check_implicit (opcode, IMPLICIT_SP,  QDSP6_SP,  gArray, "r29/sp");
       qdsp6_check_implicit (opcode, IMPLICIT_FP,  QDSP6_FP,  gArray, "r30/fp");
+
       qdsp6_check_implicit (opcode, IMPLICIT_LC0, QDSP6_LC0, cArray, "c1/lc0");
       qdsp6_check_implicit (opcode, IMPLICIT_SA0, QDSP6_SA0, cArray, "c0/sa0");
       qdsp6_check_implicit (opcode, IMPLICIT_LC1, QDSP6_LC1, cArray, "c3/lc1");
       qdsp6_check_implicit (opcode, IMPLICIT_SA1, QDSP6_SA1, cArray, "c2/sa1");
-      qdsp6_check_implicit (opcode, IMPLICIT_P3,  3,         pArray, "p3");
-      qdsp6_check_implicit (opcode, IMPLICIT_P0,  0,         pArray, "p0"); /* V3 */
+
+      qdsp6_check_implicit
+        (opcode, (opcode->attributes & A_RESTRICT_LATEPRED)? IMPLICIT_P3: 0, 3,
+         pLateArray, NULL);
+      qdsp6_check_implicit
+        (opcode, (opcode->attributes & A_RESTRICT_LATEPRED)? IMPLICIT_P0: 0, 0,
+         pLateArray, NULL);
+
+      qdsp6_check_implicit (opcode, IMPLICIT_P3, 3, pArray, "p3");
+      qdsp6_check_implicit (opcode, IMPLICIT_P0, 0, pArray, "p0");
     }
 
   // check for attributes (currently checking for only OVF bit
@@ -3608,7 +3602,7 @@ qdsp6_check_insn
 
           cp += strlen (operand->fmt) - 1; // Move the pointer to the end of the operand
 
-          if (   is_arch_v1 == 0
+          if (   !is_arch_v1
               && (operand->flags & QDSP6_OPERAND_IS_READ)
               && (operand->flags & QDSP6_OPERAND_IS_PREDICATE_REG))
             {
@@ -3628,7 +3622,7 @@ qdsp6_check_insn
               if (opcode->attributes & CONDITION_DOTNEW)
                 {
                   pred_reg_rd_mask |= 1 << (pred_reg_offset + COND_EXEC_DOT_NEW_OFF);
-                  pNewArray [reg_num] = 1;
+                  pNewArray [reg_num]++;
                 }
             }
 
@@ -3648,9 +3642,12 @@ qdsp6_check_insn
 
                   if (cArray [QDSP6_P30])
                     {
-                      as_bad (_("register `p%d' modified multiple times."), reg_num);
+                      as_bad (_("register `P%d' modified more than once."), reg_num);
                       break;
                     }
+
+                  if (opcode->attributes & A_RESTRICT_LATEPRED)
+                    pLateArray [reg_num]++;
                 }
               // check whether it is a modifier register
               else if (operand->flags & QDSP6_OPERAND_IS_MODIFIER_REG)
@@ -3684,7 +3681,7 @@ qdsp6_check_insn
                           for (j = 0; j < QDSP6_NUM_PREDICATE_REGS; j++)
                             if (pArray [j])
                               {
-                                //as_bad (("register `c%d' modified multiple times."), reg_num);
+                                //as_bad (("register `C%d' modified more than once."), reg_num);
                                 cArray[reg_num] = 1;
                                 break;
                               }
@@ -3711,11 +3708,12 @@ void
 qdsp6_init_reg
 (void)
 {
-  bzero (gArray,    sizeof (gArray));
-  bzero (cArray,    sizeof (cArray));
-  bzero (sArray,    sizeof (sArray));
-  bzero (pArray,    sizeof (pArray));
-  bzero (pNewArray, sizeof (pNewArray));
+  memset (gArray,     0, sizeof (gArray));
+  memset (cArray,     0, sizeof (cArray));
+  memset (sArray,     0, sizeof (sArray));
+  memset (pArray,     0, sizeof (pArray));
+  memset (pNewArray,  0, sizeof (pNewArray));
+  memset (pLateArray, 0, sizeof (pLateArray));
 }
 
 void
@@ -3807,12 +3805,6 @@ qdsp6_packet_end
   numOfBranchMax1 = 0;
   numOfLoopMax1 = 0;
 
-  // check for number of instructions in the packet
-  if (!qdsp6_packet_shuffle && qdsp6_packets [0].size != MAX_PACKET_INSNS) {
-    as_bad (_("too many instructions in packet (maximum is %d).\n"),
-            MAX_PACKET_INSNS);
-  }
-
   // pad packet with NOPs to MAX_PACKET_INSNS
   for (i = qdsp6_packets [0].size; i < MAX_PACKET_INSNS; i++) {
     qdsp6_md_assemble (QDSP6_NOP, 1); //1 means padded by as
@@ -3829,7 +3821,7 @@ qdsp6_packet_end
   // check for multiple writes to SR (implicit not allowed if explicit writes are present)
   if (implicit_sr_ovf_bit_flag && cArray [QDSP6_SR])
     {
-      as_bad (_("implicit definition of OVF bit in SR register not allowed in packet with explicit SR register definition."));
+      as_bad (_("`OVF' bit in `SR' register cannot be set (implicitly or explicitly) more than once in packet."));
       qdsp6_in_packet = FALSE;
       return;
     }
@@ -3842,7 +3834,7 @@ qdsp6_packet_end
 
   if (numOfBranchAddrMax1 && numOfBranchAddr > 1)
     {
-      as_bad (_("branch immediate and loop setup instructions cannot exist in same packet."));
+      as_bad (_("loop setup and direct branch instructions cannot be in same packet."));
       qdsp6_in_packet = FALSE;
       return;
     }
@@ -3850,23 +3842,15 @@ qdsp6_packet_end
   if (   (numOfBranchMax1 > 1 && numOfBranchMax1 > numOfBranchRelax)
       || (numOfBranchAddr > 1 && numOfBranchAddr > numOfBranchRelax))
     {
-      as_bad (_("illegal number of branches in packet."));
+      as_bad (_("too many branches in packet."));
       qdsp6_in_packet = FALSE;
       return;
     }
 
-  /* See if we need to reorder the instructions */
-  if (qdsp6_packet_reverse) {
-    for (i = 0; i < MAX_PACKET_INSNS / 2; i++) {
-      qdsp6_packet_insn tmp = qdsp6_packets [0].insns [i];
-      qdsp6_packets [0].insns [i] =
-        qdsp6_packets [0].insns [MAX_PACKET_INSNS - i - 1];
-      qdsp6_packets [0].insns [MAX_PACKET_INSNS - i - 1] = tmp;
-      }
-  }
-  else if (qdsp6_packet_shuffle) {
-    qdsp6_do_shuffle ();
-}
+  if (qdsp6_no_dual_memory && qdsp6_has_mem (qdsp6_packets) > 1)
+    as_bad (_("multiple memory operations in packet."));
+
+  qdsp6_do_shuffle ();
 
   qdsp6_in_packet = FALSE;
 }
@@ -3896,7 +3880,7 @@ qdsp6_packet_end_inner
   if (  cArray [QDSP6_P30] | cArray [QDSP6_SR]
       | cArray [QDSP6_SA0] | cArray [QDSP6_LC0] | cArray [QDSP6_PC])
     as_bad (_("packet marked with `:endloop0' cannot contain instructions that " \
-              "modify registers `c4/p3:0', `c8/usr', `sa0', `lc0' or `pc'."));
+              "modify registers `C4/P3:0', `C8/USR', `SA0', `LC0' or `PC'."));
 
   /* Although it may be dangerous to modify P3 then, legacy code is full of this. */
 /*
@@ -3922,7 +3906,7 @@ qdsp6_packet_end_outer
   /* Check whether registers updated by :endloop1 are updated in packet. */
   if (cArray [QDSP6_SA1] | cArray [QDSP6_LC1] | cArray [QDSP6_PC])
     as_bad (_("packet marked with `:endloop1' cannot contain instructions that " \
-              "modify registers `sa1', `lc1' or `pc'."));
+              "modify registers `SA1', `LC1' or `PC'."));
 
   /* Check for a solo instruction in a packet with :endloop1. */
   if (qdsp6_packet_check_solo ())
@@ -3943,10 +3927,9 @@ void
 qdsp6_packet_end_lookahead
 (int *inner_p, int *outer_p)
 {
-  extern char *get_buffer_limit(); /* exposes read.c static buffer limit*/
-  extern void put_buffer_limit(char *);
 
   char *buffer_limit = get_buffer_limit(); /* read.c */
+
   int inner = 0;
   int outer = 0;
 
@@ -4074,7 +4057,7 @@ void
 qdsp6_cleanup
 (void)
 {
-  size_t n_faligned;
+  unsigned n_is_falign;
 
   if (qdsp6_in_packet)
     {
@@ -4088,48 +4071,51 @@ qdsp6_cleanup
   qdsp6_history_flush (0, QDSP6_FLUSH_INIT);
 
   /* Add up effective instances of .falign. */
-  n_faligned = n_falign [QDSP6_FALIGN_INS] + n_falign [QDSP6_FALIGN_INC];
+  n_is_falign = n_falign [QDSP6_FALIGN_INS] + n_falign [QDSP6_FALIGN_INC];
 
   if (qdsp6_falign_info && n_falign [QDSP6_FALIGN_TOTAL])
     {
-      as_warn (_("%lu of %lu `.falign' (%lu%%) inserted new `nop' instructions."),
-                n_faligned, n_falign [QDSP6_FALIGN_TOTAL],
-                n_faligned * 100 / n_falign [QDSP6_FALIGN_TOTAL]);
+      as_warn (_("%u of %u \".falign\" (%u%%) inserted new `nop' instructions."),
+                n_is_falign, n_falign [QDSP6_FALIGN_TOTAL],
+                n_is_falign * 100 / n_falign [QDSP6_FALIGN_TOTAL]);
 
-      if (n_faligned)
-        as_warn (_("%lu of %lu `.falign' (%lu%%) inserted new `nop' packets."),
-                n_falign [QDSP6_FALIGN_INS], n_faligned,
-                n_falign [QDSP6_FALIGN_INS] * 100 / n_faligned);
+      if (n_is_falign)
+        as_warn (_("%u of %u \".falign\" (%u%%) inserted new `nop' packets."),
+                n_falign [QDSP6_FALIGN_INS], n_is_falign,
+                n_falign [QDSP6_FALIGN_INS] * 100 / n_is_falign);
     }
 
   if (qdsp6_falign_more && n_falign [QDSP6_FALIGN_INS])
     {
-      as_warn (_("reasons for `.falign' inserting new `nop' packets:"));
-      as_warn (_("  %lu of %lu (%lu%%) reached another `.falign'."),
+      as_warn (_("reasons for \".falign\" inserting new `nop' packets:"));
+      as_warn (_("  %u of %u (%u%%) reached a packet \".falign\"."),
                n_falign [QDSP6_FALIGN_FALIGN], n_falign [QDSP6_FALIGN_INS],
                n_falign [QDSP6_FALIGN_FALIGN] * 100 / n_falign [QDSP6_FALIGN_INS]);
-      as_warn (_("  %lu of %lu (%lu%%) reached a single-instruction `.falign'."),
+      as_warn (_("  %u of %u (%u%%) reached a single-instruction \".falign\"."),
                n_falign [QDSP6_FALIGN_FALIGN1], n_falign [QDSP6_FALIGN_INS],
                n_falign [QDSP6_FALIGN_FALIGN1] * 100 / n_falign [QDSP6_FALIGN_INS]);
-      as_warn (_("  %lu of %lu (%lu%%) in different sections."),
+      as_warn (_("  %u of %u (%u%%) in different sections."),
                n_falign [QDSP6_FALIGN_SECTION], n_falign [QDSP6_FALIGN_INS],
                n_falign [QDSP6_FALIGN_SECTION] * 100 / n_falign [QDSP6_FALIGN_INS]);
-      as_warn (_("  %lu of %lu (%lu%%) reached end of history."),
+      as_warn (_("  %u of %u (%u%%) reached end of history."),
                n_falign [QDSP6_FALIGN_END], n_falign [QDSP6_FALIGN_INS],
                n_falign [QDSP6_FALIGN_END] * 100 / n_falign [QDSP6_FALIGN_INS]);
-      as_warn (_("  %lu of %lu (%lu%%) exhausted history."),
+      as_warn (_("  %u of %u (%u%%) exhausted history."),
                n_falign [QDSP6_FALIGN_TOP], n_falign [QDSP6_FALIGN_INS],
                n_falign [QDSP6_FALIGN_TOP] * 100 / n_falign [QDSP6_FALIGN_INS]);
-      as_warn (_("  %lu of %lu (%lu%%) reached a label."),
+      as_warn (_("  %u of %u (%u%%) reached a label."),
                n_falign [QDSP6_FALIGN_LABEL], n_falign [QDSP6_FALIGN_INS],
                n_falign [QDSP6_FALIGN_LABEL] * 100 / n_falign [QDSP6_FALIGN_INS]);
-      as_warn (_("  %lu of %lu (%lu%%) reached a `.align'."),
+      as_warn (_("  %u of %u (%u%%) reached a \".align\"."),
                n_falign [QDSP6_FALIGN_ALIGN], n_falign [QDSP6_FALIGN_INS],
                n_falign [QDSP6_FALIGN_ALIGN] * 100 / n_falign [QDSP6_FALIGN_INS]);
-      as_warn (_("  %lu of %lu (%lu%%) reached another `nop' packet."),
+      as_warn (_("  %u of %u (%u%%) reached another `nop' packet."),
                n_falign [QDSP6_FALIGN_NOP], n_falign [QDSP6_FALIGN_INS],
                n_falign [QDSP6_FALIGN_NOP] * 100 / n_falign [QDSP6_FALIGN_INS]);
+      as_warn (_("  %u of %u (%u%%) failed inserting new `nop' instruction."),
+               n_falign [QDSP6_FALIGN_SHUF], n_falign [QDSP6_FALIGN_INS],
+               n_falign [QDSP6_FALIGN_SHUF] * 100 / n_falign [QDSP6_FALIGN_INS]);
     }
 
-  bzero (n_falign, sizeof (n_falign));
+  memset (n_falign, 0, sizeof (n_falign));
 }

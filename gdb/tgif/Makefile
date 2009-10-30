@@ -9,7 +9,7 @@ ARCH = tgif.a
 
 gdb_src = ../..
 INCLUDE_GDB = -I$(gdb_src)/include -I$(gdb_src)/config -I$(gdb_src)/gdb -I$(gdb_src)/bfd -I$(gdb_src)/gdb/config -I$(gdb_src)/mmalloc
-TCL_INCLUDE = -I$(gdb_src)/tcl/generic 
+TCL_INCLUDE = -I$(gdb_src)/tcl/generic
 LOCAL_CFLAGS = -g $(CFLAGS) $(INCLUDE_GDB) $(TCL_INCLUDE) -DHAVETK -DHAVETCL -DNOINIT -DPTHREAD_DEBUG -DNEW_PROCEED_HANDLING
 CC = gcc
 
@@ -33,20 +33,20 @@ distclean realclean clean:
 
 # DO NOT DELETE THIS LINE -- make depend depends on it.
 
-tgifBasic.o: ../../tcl/generic/tcl.h 
-tgifBasic.o: tgif.h 
+tgifBasic.o: ../../tcl/generic/tcl.h
+tgifBasic.o: tgif.h
 tgifInit.o:  ../../tcl/generic/tcl.h
 tgifInit.o:  ../../tcl/generic/tclInt.h
-tgifInit.o: ../../tcl/generic/tclRegexp.h 
+tgifInit.o: ../../tcl/generic/tclRegexp.h
 tgifInit.o: tgif.h
-tgif.o: ../../tcl/generic/tcl.h 
-tgifCmdPass.o: ../../tcl/generic/tcl.h 
-tgifCmdPass.o: tgif.h 
+tgif.o: ../../tcl/generic/tcl.h
+tgifCmdPass.o: ../../tcl/generic/tcl.h
+tgifCmdPass.o: tgif.h
 tgifCmdPass.o: tgifCmds.h
-tgifCmdCare.o: ../../tcl/generic/tcl.h 
-tgifCmdCare.o: tgif.h 
+tgifCmdCare.o: ../../tcl/generic/tcl.h
+tgifCmdCare.o: tgif.h
 tgifCmdCare.o: tgifCmds.h
-tgifAddCmds.o: ../../gdb/defs.h  
+tgifAddCmds.o: ../../gdb/defs.h
 tgifAddCmds.o: ../../include/ansidecl.h
 tgifAddCmds.o: ../../include/libiberty.h ../../include/progress.h
 tgifAddCmds.o: ../../mmalloc/mmalloc.h ../../include/fopen-same.h

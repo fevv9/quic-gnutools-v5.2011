@@ -1,6 +1,6 @@
 /* Abstraction of GNU v2 abi.
 
-   Copyright (C) 2001, 2002, 2003, 2005, 2007, 2008
+   Copyright (C) 2001, 2002, 2003, 2005, 2007, 2008, 2009
    Free Software Foundation, Inc.
 
    Contributed by Daniel Berlin <dberlin@redhat.com>
@@ -97,8 +97,7 @@ gnuv2_virtual_fn_field (struct value **arg1p, struct fn_field * f, int j,
   struct value *entry;
   struct value *vfn;
   struct value *vtbl;
-  struct value *vi = value_from_longest (builtin_type_int,
-				     (LONGEST) TYPE_FN_FIELD_VOFFSET (f, j));
+  LONGEST vi = (LONGEST) TYPE_FN_FIELD_VOFFSET (f, j);
   struct type *fcontext = TYPE_FN_FIELD_FCONTEXT (f, j);
   struct type *context;
   struct type *context_vptr_basetype;
@@ -151,7 +150,7 @@ gnuv2_virtual_fn_field (struct value **arg1p, struct fn_field * f, int j,
   else
     {
       /* Handle the case where the vtbl field points directly to a structure. */
-      vtbl = value_add (vtbl, vi);
+      vtbl = value_ptradd (vtbl, vi);
       entry = value_ind (vtbl);
     }
 
@@ -242,7 +241,7 @@ gnuv2_value_rtti_type (struct value *v, int *full, int *top, int *using_enc)
     we'd waste a bunch of time figuring out we already know the type.
     Besides, we don't care about the type, just the actual pointer
   */
-  if (VALUE_ADDRESS (value_field (v, known_type_vptr_fieldno)) == 0)
+  if (value_address (value_field (v, known_type_vptr_fieldno)) == 0)
     return NULL;
 
   vtbl = value_as_address (value_field (v, known_type_vptr_fieldno));
@@ -250,7 +249,7 @@ gnuv2_value_rtti_type (struct value *v, int *full, int *top, int *using_enc)
   /* Try to find a symbol that is the vtable */
   minsym=lookup_minimal_symbol_by_pc(vtbl);
   if (minsym==NULL
-      || (demangled_name=DEPRECATED_SYMBOL_NAME (minsym))==NULL
+      || (demangled_name=SYMBOL_LINKAGE_NAME (minsym))==NULL
       || !is_vtable_name (demangled_name))
     return NULL;
 

@@ -3,7 +3,7 @@
 # All Rights Reserved.
 # Modified by QUALCOMM INCORPORATED on $Date$
 *****************************************************************/
-/* 
+/*
  * tclPreserve.c --
  *
  *	This file contains a collection of procedures that are used
@@ -314,7 +314,7 @@ Tcl_EventuallyFree(clientData, freeProc)
  * TclHandleCreate --
  *
  *	Allocate a handle that contains enough information to determine
- *	if an arbitrary malloc'd block has been deleted.  This is 
+ *	if an arbitrary malloc'd block has been deleted.  This is
  *	used to avoid the more time-expensive algorithm of Tcl_Preserve().
  *
  * Results:
@@ -402,7 +402,7 @@ TclHandleFree(handle)
  * TclHandlePreserve --
  *
  *	Declare an interest in the arbitrary malloc'd block associated
- *	with the handle.  
+ *	with the handle.
  *
  * Results:
  *	The return value is the handle argument, with its ref count
@@ -457,7 +457,7 @@ TclHandlePreserve(handle)
  *
  *---------------------------------------------------------------------------
  */
- 
+
 void
 TclHandleRelease(handle)
     TclHandle handle;		/* Unregister interest in the block of
@@ -481,4 +481,4 @@ TclHandleRelease(handle)
 	ckfree((char *) handlePtr);
     }
 }
-    
+

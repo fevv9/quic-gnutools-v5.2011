@@ -1,5 +1,5 @@
 # Copyright 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002,
-# 2003, 2004, 2005, 2007, 2008 Free Software Foundation, Inc.
+# 2003, 2004, 2005, 2007, 2008, 2009 Free Software Foundation, Inc.
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -42,11 +42,19 @@ if ![info exists GDB] {
 }
 verbose "using GDB = $GDB" 2
 
+# GDBFLAGS is available for the user to set on the command line.
+# E.g. make check RUNTESTFLAGS=GDBFLAGS=mumble
+# Testcases may use it to add additional flags, but they must:
+# - append new flags, not overwrite
+# - restore the original value when done
 global GDBFLAGS
 if ![info exists GDBFLAGS] {
-    set GDBFLAGS "-nx"
+    set GDBFLAGS ""
 }
 verbose "using GDBFLAGS = $GDBFLAGS" 2
+
+# INTERNAL_GDBFLAGS contains flags that the testsuite requires.
+set INTERNAL_GDBFLAGS "-nw -nx"
 
 # The variable gdb_prompt is a regexp which matches the gdb prompt.
 # Set it if it is not already set.
@@ -57,17 +65,17 @@ if ![info exists gdb_prompt] then {
 
 # The variable fullname_syntax_POSIX is a regexp which matches a POSIX 
 # absolute path ie. /foo/ 
-set fullname_syntax_POSIX "/.*/"
+set fullname_syntax_POSIX {/[^\n]*/}
 # The variable fullname_syntax_UNC is a regexp which matches a Windows 
 # UNC path ie. \\D\foo\ 
-set fullname_syntax_UNC {\\\\[^\\]+\\.+\\}
+set fullname_syntax_UNC {\\\\[^\\]+\\[^\n]+\\}
 # The variable fullname_syntax_DOS_CASE is a regexp which matches a 
 # particular DOS case that GDB most likely will output
 # ie. \foo\, but don't match \\.*\ 
-set fullname_syntax_DOS_CASE {\\[^\\].*\\}
+set fullname_syntax_DOS_CASE {\\[^\\][^\n]*\\}
 # The variable fullname_syntax_DOS is a regexp which matches a DOS path
 # ie. a:\foo\ && a:foo\ 
-set fullname_syntax_DOS {[a-zA-Z]:.*\\}
+set fullname_syntax_DOS {[a-zA-Z]:[^\n]*\\}
 # The variable fullname_syntax is a regexp which matches what GDB considers
 # an absolute path. It is currently debatable if the Windows style paths 
 # d:foo and \abc should be considered valid as an absolute path.
@@ -94,22 +102,22 @@ set octal "\[0-7\]+"
 #
 proc default_gdb_version {} {
     global GDB
-    global GDBFLAGS
+    global INTERNAL_GDBFLAGS GDBFLAGS
     global gdb_prompt
     set fileid [open "gdb_cmd" w];
     puts $fileid "q";
     close $fileid;
     set cmdfile [remote_download host "gdb_cmd"];
-    set output [remote_exec host "$GDB -nw --command $cmdfile"]
+    set output [remote_exec host "$GDB $INTERNAL_GDBFLAGS --command $cmdfile"]
     remote_file build delete "gdb_cmd";
     remote_file host delete "$cmdfile";
     set tmp [lindex $output 1];
     set version ""
     regexp " \[0-9\]\[^ \t\n\r\]+" "$tmp" version
     if ![is_remote host] {
-	clone_output "[which $GDB] version $version $GDBFLAGS\n"
+	clone_output "[which $GDB] version $version $INTERNAL_GDBFLAGS $GDBFLAGS\n"
     } else {
-	clone_output "$GDB on remote host version $version $GDBFLAGS\n"
+	clone_output "$GDB on remote host version $version $INTERNAL_GDBFLAGS $GDBFLAGS\n"
     }
 }
 
@@ -325,7 +333,8 @@ proc gdb_start_cmd {args} {
 }
 
 # Set a breakpoint at FUNCTION.  If there is an additional argument it is
-# a list of options; the supported options are allow-pending and temporary.
+# a list of options; the supported options are allow-pending, temporary,
+# and no-message.
 
 proc gdb_breakpoint { function args } {
     global gdb_prompt
@@ -337,19 +346,28 @@ proc gdb_breakpoint { function args } {
     }
 
     set break_command "break"
+    set break_message "Breakpoint"
     if {[lsearch -exact [lindex $args 0] temporary] != -1} {
 	set break_command "tbreak"
+	set break_message "Temporary breakpoint"
+    }
+
+    set no_message 0
+    if {[lsearch -exact [lindex $args 0] no-message] != -1} {
+	set no_message 1
     }
 
     send_gdb "$break_command $function\n"
     # The first two regexps are what we get with -g, the third is without -g.
     gdb_expect 30 {
-	-re "Breakpoint \[0-9\]* at .*: file .*, line $decimal.\r\n$gdb_prompt $" {}
-	-re "Breakpoint \[0-9\]*: file .*, line $decimal.\r\n$gdb_prompt $" {}
-	-re "Breakpoint \[0-9\]* at .*$gdb_prompt $" {}
-	-re "Breakpoint \[0-9\]* \\(.*\\) pending.*$gdb_prompt $" {
+	-re "$break_message \[0-9\]* at .*: file .*, line $decimal.\r\n$gdb_prompt $" {}
+	-re "$break_message \[0-9\]*: file .*, line $decimal.\r\n$gdb_prompt $" {}
+	-re "$break_message \[0-9\]* at .*$gdb_prompt $" {}
+	-re "$break_message \[0-9\]* \\(.*\\) pending.*$gdb_prompt $" {
 		if {$pending_response == "n"} {
-			fail "setting breakpoint at $function"
+			if { $no_message == 0 } {
+				fail "setting breakpoint at $function"
+			}
 			return 0
 		}
 	}
@@ -357,8 +375,18 @@ proc gdb_breakpoint { function args } {
 		send_gdb "$pending_response\n"
 		exp_continue
 	}
-	-re "$gdb_prompt $" { fail "setting breakpoint at $function" ; return 0 }
-	timeout { fail "setting breakpoint at $function (timeout)" ; return 0 }
+	-re "$gdb_prompt $" {
+		if { $no_message == 0 } {
+			fail "setting breakpoint at $function"
+		}
+		return 0
+	}
+	timeout {
+		if { $no_message == 0 } {
+			fail "setting breakpoint at $function (timeout)"
+		}
+		return 0
+	}
     }
     return 1;
 }    
@@ -393,6 +421,10 @@ proc runto { function args } {
 	}
 	-re "$gdb_prompt $" { 
 	    fail "running to $function in runto"
+	    return 0
+	}
+	eof { 
+	    fail "running to $function in runto (end of file)"
 	    return 0
 	}
 	timeout { 
@@ -430,13 +462,13 @@ proc runto_main { } {
 ### worked.  Use NAME as part of the test name; each call to
 ### continue_to_breakpoint should use a NAME which is unique within
 ### that test file.
-proc gdb_continue_to_breakpoint {name} {
+proc gdb_continue_to_breakpoint {name {location_pattern .*}} {
     global gdb_prompt
     set full_name "continue to breakpoint: $name"
 
     send_gdb "continue\n"
     gdb_expect {
-	-re "Breakpoint .* at .*\r\n$gdb_prompt $" {
+	-re "Breakpoint .* (at|in) $location_pattern\r\n$gdb_prompt $" {
 	    pass $full_name
 	}
 	-re ".*$gdb_prompt $" {
@@ -990,7 +1022,7 @@ proc gdb_reinitialize_dir { subdir } {
 #
 proc default_gdb_exit {} {
     global GDB
-    global GDBFLAGS
+    global INTERNAL_GDBFLAGS GDBFLAGS
     global verbose
     global gdb_spawn_id;
 
@@ -1000,7 +1032,7 @@ proc default_gdb_exit {} {
 	return;
     }
 
-    verbose "Quitting $GDB $GDBFLAGS"
+    verbose "Quitting $GDB $INTERNAL_GDBFLAGS $GDBFLAGS"
 
     if { [is_remote host] && [board_info host exists fileid] } {
 	send_gdb "quit\n";
@@ -1130,14 +1162,30 @@ proc gdb_file_cmd { arg } {
 proc default_gdb_start { } {
     global verbose
     global GDB
-    global GDBFLAGS
+    global INTERNAL_GDBFLAGS GDBFLAGS
     global gdb_prompt
     global timeout
     global gdb_spawn_id;
+    global env
 
     gdb_stop_suppressing_tests;
 
-    verbose "Spawning $GDB -nw $GDBFLAGS"
+    set env(LC_CTYPE) C
+
+    # Don't let a .inputrc file or an existing setting of INPUTRC mess up
+    # the test results.  Even if /dev/null doesn't exist on the particular
+    # platform, the readline library will use the default setting just by
+    # failing to open the file.  OTOH, opening /dev/null successfully will
+    # also result in the default settings being used since nothing will be
+    # read from this file.
+    set env(INPUTRC) "/dev/null"
+
+    # The gdb.base/readline.exp arrow key test relies on the standard VT100
+    # bindings, so make sure that an appropriate terminal is selected.
+    # The same bug doesn't show up if we use ^P / ^N instead.
+    set env(TERM) "vt100"
+
+    verbose "Spawning $GDB $INTERNAL_GDBFLAGS $GDBFLAGS"
 
     if [info exists gdb_spawn_id] {
 	return 0;
@@ -1149,7 +1197,7 @@ proc default_gdb_start { } {
 	    exit 1
 	}
     }
-    set res [remote_spawn host "$GDB -nw $GDBFLAGS [host_info gdb_opts]"];
+    set res [remote_spawn host "$GDB $INTERNAL_GDBFLAGS $GDBFLAGS [host_info gdb_opts]"];
     if { $res < 0 || $res == "" } {
 	perror "Spawning $GDB failed."
 	return 1;
@@ -1329,6 +1377,92 @@ proc skip_altivec_tests {} {
     return $skip_vmx_tests_saved
 }
 
+# Run a test on the target to see if it supports vmx hardware.  Return 0 if so,
+# 1 if it does not.  Based on 'check_vmx_hw_available' from the GCC testsuite.
+
+proc skip_vsx_tests {} {
+    global skip_vsx_tests_saved
+    global srcdir subdir gdb_prompt
+
+    # Use the cached value, if it exists.
+    set me "skip_vsx_tests"
+    if [info exists skip_vsx_tests_saved] {
+        verbose "$me:  returning saved $skip_vsx_tests_saved" 2
+        return $skip_vsx_tests_saved
+    }
+
+    # Some simulators are known to not support Altivec instructions, so
+    # they won't support VSX instructions as well.
+    if { [istarget powerpc-*-eabi] || [istarget powerpc*-*-eabispe] } {
+        verbose "$me:  target known to not support VSX, returning 1" 2
+        return [set skip_vsx_tests_saved 1]
+    }
+
+    # Make sure we have a compiler that understands altivec.
+    set compile_flags {debug nowarnings quiet}
+    if [get_compiler_info not-used] {
+       warning "Could not get compiler info"
+       return 1
+    }
+    if [test_compiler_info gcc*] {
+        set compile_flags "$compile_flags additional_flags=-mvsx"
+    } elseif [test_compiler_info xlc*] {
+        set compile_flags "$compile_flags additional_flags=-qvsx"
+    } else {
+        verbose "Could not compile with vsx support, returning 1" 2
+        return 1
+    }
+
+    set src vsx[pid].c
+    set exe vsx[pid].x
+
+    set f [open $src "w"]
+    puts $f "int main() {"
+    puts $f "#ifdef __MACH__"
+    puts $f "  asm volatile (\"lxvd2x v0,v0,v0\");"
+    puts $f "#else"
+    puts $f "  asm volatile (\"lxvd2x 0,0,0\");"
+    puts $f "#endif"
+    puts $f "  return 0; }"
+    close $f
+
+    verbose "$me:  compiling testfile $src" 2
+    set lines [gdb_compile $src $exe executable $compile_flags]
+    file delete $src
+
+    if ![string match "" $lines] then {
+        verbose "$me:  testfile compilation failed, returning 1" 2
+        return [set skip_vsx_tests_saved 1]
+    }
+
+    # No error message, compilation succeeded so now run it via gdb.
+
+    gdb_exit
+    gdb_start
+    gdb_reinitialize_dir $srcdir/$subdir
+    gdb_load "$exe"
+    gdb_run_cmd
+    gdb_expect {
+        -re ".*Illegal instruction.*${gdb_prompt} $" {
+            verbose -log "\n$me VSX hardware not detected"
+            set skip_vsx_tests_saved 1
+        }
+        -re ".*Program exited normally.*${gdb_prompt} $" {
+            verbose -log "\n$me: VSX hardware detected"
+            set skip_vsx_tests_saved 0
+        }
+        default {
+          warning "\n$me: default case taken"
+            set skip_vsx_tests_saved 1
+        }
+    }
+    gdb_exit
+    remote_file build delete $exe
+
+    verbose "$me:  returning $skip_vsx_tests_saved" 2
+    return $skip_vsx_tests_saved
+}
+
 # Skip all the tests in the file if you are not on an hppa running
 # hpux target.
 
@@ -1336,6 +1470,37 @@ proc skip_hp_tests {} {
     eval set skip_hp [ expr ![isnative] || ![istarget "hppa*-*-hpux*"] ]
     verbose "Skip hp tests is $skip_hp"
     return $skip_hp
+}
+
+# Return whether we should skip tests for showing inlined functions in
+# backtraces.  Requires get_compiler_info and get_debug_format.
+
+proc skip_inline_frame_tests {} {
+    # GDB only recognizes inlining information in DWARF 2 (DWARF 3).
+    if { ! [test_debug_format "DWARF 2"] } {
+	return 1
+    }
+
+    # GCC before 4.1 does not emit DW_AT_call_file / DW_AT_call_line.
+    if { ([test_compiler_info "gcc-2-*"]
+	  || [test_compiler_info "gcc-3-*"]
+	  || [test_compiler_info "gcc-4-0-*"]) } {
+	return 1
+    }
+
+    return 0
+}
+
+# Return whether we should skip tests for showing variables from
+# inlined functions.  Requires get_compiler_info and get_debug_format.
+
+proc skip_inline_var_tests {} {
+    # GDB only recognizes inlining information in DWARF 2 (DWARF 3).
+    if { ! [test_debug_format "DWARF 2"] } {
+	return 1
+    }
+
+    return 0
 }
 
 set compiler_info		"unknown"
@@ -1422,7 +1587,17 @@ proc get_compiler_info {binfile args} {
     # Run $ifile through the right preprocessor.
     # Toggle gdb.log to keep the compiler output out of the log.
     log_file
-    set cppout [ gdb_compile "${ifile}" "" preprocess [list "$args" quiet] ]
+    if [is_remote host] {
+	# We have to use -E and -o together, despite the comments
+	# above, because of how DejaGnu handles remote host testing.
+	set ppout "$outdir/compiler.i"
+	gdb_compile "${ifile}" "$ppout" preprocess [list "$args" quiet]
+	set file [open $ppout r]
+	set cppout [read $file]
+	close $file
+    } else {
+	set cppout [ gdb_compile "${ifile}" "" preprocess [list "$args" quiet] ]
+    }
     log_file -a "$outdir/$tool.log" 
 
     # Eval the output.
@@ -1516,11 +1691,18 @@ proc gdb_wrapper_init { args } {
     set gdb_wrapper_initialized 1
 }
 
+# Some targets need to always link a special object in.  Save its path here.
+global gdb_saved_set_unbuffered_mode_obj
+set gdb_saved_set_unbuffered_mode_obj ""
+
 proc gdb_compile {source dest type options} {
     global GDB_TESTCASE_OPTIONS;
     global gdb_wrapper_file;
     global gdb_wrapper_flags;
     global gdb_wrapper_initialized;
+    global srcdir
+    global objdir
+    global gdb_saved_set_unbuffered_mode_obj
 
     set outdir [file dirname $dest]
 
@@ -1605,6 +1787,45 @@ proc gdb_compile {source dest type options} {
 	    set flag "additional_flags=-w"
 	}
 	set options [lreplace $options $nowarnings $nowarnings $flag]
+    }
+
+    if { $type == "executable" } {
+	if { ([istarget "*-*-mingw*"]
+	      || [istarget "*-*-*djgpp"]
+	      || [istarget "*-*-cygwin*"])} {
+	    # Force output to unbuffered mode, by linking in an object file
+	    # with a global contructor that calls setvbuf.
+	    #
+	    # Compile the special object seperatelly for two reasons:
+	    #  1) Insulate it from $options.
+	    #  2) Avoid compiling it for every gdb_compile invocation,
+	    #  which is time consuming, especially if we're remote
+	    #  host testing.
+	    #
+	    if { $gdb_saved_set_unbuffered_mode_obj == "" } {
+		verbose "compiling gdb_saved_set_unbuffered_obj"
+		set unbuf_src ${srcdir}/lib/set_unbuffered_mode.c
+		set unbuf_obj ${objdir}/set_unbuffered_mode.o
+
+		set result [gdb_compile "${unbuf_src}" "${unbuf_obj}" object {nowarnings}]
+		if { $result != "" } {
+		    return $result
+		}
+
+		set gdb_saved_set_unbuffered_mode_obj ${objdir}/set_unbuffered_mode_saved.o
+		# Link a copy of the output object, because the
+		# original may be automatically deleted.
+		remote_exec host "cp -f $unbuf_obj $gdb_saved_set_unbuffered_mode_obj"
+	    } else {
+		verbose "gdb_saved_set_unbuffered_obj already compiled"
+	    }
+
+	    # Rely on the internal knowledge that the global ctors are ran in
+	    # reverse link order.  In that case, we can use ldflags to
+	    # avoid copying the object file to the host multiple
+	    # times.
+	    lappend options "ldflags=$gdb_saved_set_unbuffered_mode_obj"
+	}
     }
 
     set result [target_compile $source $dest $type $options];
@@ -1776,34 +1997,44 @@ proc send_gdb { string } {
 
 proc gdb_expect { args } {
     if { [llength $args] == 2  && [lindex $args 0] != "-re" } {
-	set gtimeout [lindex $args 0];
+	set atimeout [lindex $args 0];
 	set expcode [list [lindex $args 1]];
     } else {
-	upvar timeout timeout;
-
 	set expcode $args;
-	if [target_info exists gdb,timeout] {
-	    if [info exists timeout] {
-		if { $timeout < [target_info gdb,timeout] } {
-		    set gtimeout [target_info gdb,timeout];
-		} else {
-		    set gtimeout $timeout;
-		}
-	    } else {
-		set gtimeout [target_info gdb,timeout];
-	    }
-	}
+    }
 
-	if ![info exists gtimeout] {
-	    global timeout;
-	    if [info exists timeout] {
-		set gtimeout $timeout;
+    upvar timeout timeout;
+
+    if [target_info exists gdb,timeout] {
+	if [info exists timeout] {
+	    if { $timeout < [target_info gdb,timeout] } {
+		set gtimeout [target_info gdb,timeout];
 	    } else {
-		# Eeeeew.
-		set gtimeout 60;
+		set gtimeout $timeout;
 	    }
+	} else {
+	    set gtimeout [target_info gdb,timeout];
 	}
     }
+
+    if ![info exists gtimeout] {
+	global timeout;
+	if [info exists timeout] {
+	    set gtimeout $timeout;
+	}
+    }
+
+    if [info exists atimeout] {
+	if { ![info exists gtimeout] || $gtimeout < $atimeout } {
+	    set $gtimeout $atimeout;
+	}
+    } else {
+	if ![info exists gtimeout] {
+	    # Eeeeew.
+	    set gtimeout 60;
+	}
+    }
+
     global suppress_flag;
     global remote_suppress_flag;
     if [info exists remote_suppress_flag] {
@@ -2015,7 +2246,7 @@ proc gdb_load_cmd { args } {
 	    return -1
 	}
 	timeout {
-	    perror "Timed out trying to load $arg."
+	    perror "Timed out trying to load $args."
 	    return -1
 	}
     }
@@ -2642,4 +2873,172 @@ proc test_prefix_command_help { command_list expected_initial_lines args } {
     } else {
         help_test_raw "help ${command}" $l_entire_body
     }
+}
+
+# Build executable named EXECUTABLE, from SOURCES.  If SOURCES are not
+# provided, uses $EXECUTABLE.c.  The TESTNAME paramer is the name of test
+# to pass to untested, if something is wrong.  OPTIONS are passed
+# to gdb_compile directly.
+proc build_executable { testname executable {sources ""} {options {debug}} } {
+
+    global objdir
+    global subdir
+    global srcdir
+    if {[llength $sources]==0} {
+        set sources ${executable}.c
+    }
+
+    set binfile ${objdir}/${subdir}/${executable}
+
+    set objects {}
+    for {set i 0} "\$i<[llength $sources]" {incr i} {
+        set s [lindex $sources $i]
+        if  { [gdb_compile "${srcdir}/${subdir}/${s}" "${binfile}${i}.o" object $options] != "" } {
+            untested $testname
+            return -1
+        }
+        lappend objects "${binfile}${i}.o"
+    }
+    
+    if  { [gdb_compile $objects "${binfile}" executable $options] != "" } {
+        untested $testname
+        return -1
+    }
+
+    if [get_compiler_info ${binfile}] {
+        return -1
+    }
+    return 0
+}
+
+# Starts fresh GDB binary and loads EXECUTABLE into GDB. EXECUTABLE is
+# the name of binary in ${objdir}/${subdir}.
+proc clean_restart { executable } {
+    global srcdir
+    global objdir
+    global subdir
+    set binfile ${objdir}/${subdir}/${executable}
+
+    gdb_exit
+    gdb_start
+    gdb_reinitialize_dir $srcdir/$subdir
+    gdb_load ${binfile}
+
+    if [target_info exists gdb_stub] {
+        gdb_step_for_stub;
+    }    
+}
+
+# Prepares for testing, by calling build_executable, and then clean_restart.
+# Please refer to build_executable for parameter description.
+proc prepare_for_testing { testname executable {sources ""} {options {debug}}} {
+
+    if {[build_executable $testname $executable $sources $options] == -1} {
+        return -1
+    }
+    clean_restart $executable
+
+    return 0
+}
+
+proc get_valueof { fmt exp default } {
+    global gdb_prompt
+
+    set test "get valueof \"${exp}\""
+    set val ${default}
+    gdb_test_multiple "print${fmt} ${exp}" "$test" {
+	-re "\\$\[0-9\]* = (.*)\[\r\n\]*$gdb_prompt $" {
+	    set val $expect_out(1,string)
+	    pass "$test ($val)"
+	}
+	timeout {
+	    fail "$test (timeout)"
+	}
+    }
+    return ${val}
+}
+
+proc get_integer_valueof { exp default } {
+    global gdb_prompt
+
+    set test "get integer valueof \"${exp}\""
+    set val ${default}
+    gdb_test_multiple "print /d ${exp}" "$test" {
+	-re "\\$\[0-9\]* = (\[-\]*\[0-9\]*).*$gdb_prompt $" {
+	    set val $expect_out(1,string)
+	    pass "$test ($val)"
+	}
+	timeout {
+	    fail "$test (timeout)"
+	}
+    }
+    return ${val}
+}
+
+proc get_hexadecimal_valueof { exp default } {
+    global gdb_prompt
+    send_gdb "print /x ${exp}\n"
+    set test "get hexadecimal valueof \"${exp}\""
+    gdb_expect {
+	-re "\\$\[0-9\]* = (0x\[0-9a-zA-Z\]+).*$gdb_prompt $" {
+	    set val $expect_out(1,string)
+	    pass "$test"
+	}
+	timeout {
+	    set val ${default}
+	    fail "$test (timeout)"
+	}
+    }
+    return ${val}
+}
+
+proc get_sizeof { type default } {
+    return [get_integer_valueof "sizeof (${type})" $default]
+}
+
+# Log gdb command line and script if requested.
+if {[info exists TRANSCRIPT]} {
+  rename send_gdb real_send_gdb
+  rename remote_spawn real_remote_spawn
+  rename remote_close real_remote_close
+
+  global gdb_transcript
+  set gdb_transcript ""
+
+  global gdb_trans_count
+  set gdb_trans_count 1
+
+  proc remote_spawn {args} {
+    global gdb_transcript gdb_trans_count outdir
+
+    if {$gdb_transcript != ""} {
+      close $gdb_transcript
+    }
+    set gdb_transcript [open [file join $outdir transcript.$gdb_trans_count] w]
+    puts $gdb_transcript [lindex $args 1]
+    incr gdb_trans_count
+
+    return [uplevel real_remote_spawn $args]
+  }
+
+  proc remote_close {args} {
+    global gdb_transcript
+
+    if {$gdb_transcript != ""} {
+      close $gdb_transcript
+      set gdb_transcript ""
+    }
+
+    return [uplevel real_remote_close $args]
+  }
+
+  proc send_gdb {args} {
+    global gdb_transcript
+
+    if {$gdb_transcript != ""} {
+      puts -nonewline $gdb_transcript [lindex $args 0]
+    }
+
+    return [uplevel real_send_gdb $args]
+  }
 }

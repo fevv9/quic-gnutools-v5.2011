@@ -83,13 +83,8 @@ Sized_dynobj<size, big_endian>::Sized_dynobj(
 
 template<int size, bool big_endian>
 void
-Sized_dynobj<size, big_endian>::setup(
-    const elfcpp::Ehdr<size, big_endian>& ehdr)
+Sized_dynobj<size, big_endian>::setup()
 {
-  this->set_target(ehdr.get_e_machine(), size, big_endian,
-		   ehdr.get_e_ident()[elfcpp::EI_OSABI],
-		   ehdr.get_e_ident()[elfcpp::EI_ABIVERSION]);
-
   const unsigned int shnum = this->elf_file_.shnum();
   this->set_shnum(shnum);
 }
@@ -413,7 +408,7 @@ Sized_dynobj<size, big_endian>::do_initialize_xindex()
 
 // Lay out the input sections for a dynamic object.  We don't want to
 // include sections from a dynamic object, so all that we actually do
-// here is check for .gnu.warning sections.
+// here is check for .gnu.warning and .note.GNU-split-stack sections.
 
 template<int size, bool big_endian>
 void
@@ -448,6 +443,7 @@ Sized_dynobj<size, big_endian>::do_layout(Symbol_table* symtab,
       const char* name = pnames + shdr.get_sh_name();
 
       this->handle_gnu_warning_section(name, i, symtab);
+      this->handle_split_stack_section(name);
     }
 
   delete sd->section_headers;
@@ -655,7 +651,8 @@ Sized_dynobj<size, big_endian>::make_version_map(
 template<int size, bool big_endian>
 void
 Sized_dynobj<size, big_endian>::do_add_symbols(Symbol_table* symtab,
-					       Read_symbols_data* sd)
+					       Read_symbols_data* sd,
+					       Layout*)
 {
   if (sd->symbols == NULL)
     {

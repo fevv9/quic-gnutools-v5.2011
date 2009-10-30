@@ -3,7 +3,7 @@
 # All Rights Reserved.
 # Modified by QUALCOMM INCORPORATED on $Date$
 *****************************************************************/
-/* 
+/*
  * tclUnixThrd.c --
  *
  *	This file implements the UNIX-specific thread support.
@@ -430,10 +430,10 @@ Tcl_MutexLock(mutexPtr)
     if (*mutexPtr == NULL) {
 	MASTER_LOCK;
 	if (*mutexPtr == NULL) {
-	    /* 
+	    /*
 	     * Double inside master lock check to avoid a race condition.
 	     */
-    
+
 	    pmutexPtr = (pthread_mutex_t *)ckalloc(sizeof(pthread_mutex_t));
 	    pthread_mutex_init(pmutexPtr, NULL);
 	    *mutexPtr = (Tcl_Mutex)pmutexPtr;
@@ -707,7 +707,7 @@ Tcl_ConditionWait(condPtr, mutexPtr, timePtr)
     if (*condPtr == NULL) {
 	MASTER_LOCK;
 
-	/* 
+	/*
 	 * Double check inside mutex to avoid race,
 	 * then initialize condition variable if necessary.
 	 */
@@ -841,7 +841,7 @@ TclpInetNtoa(struct in_addr addr)
     	unsigned long l;
     	unsigned char b[4];
     } u;
-    
+
     u.l = (unsigned long) addr.s_addr;
     sprintf(tsdPtr->nabuf, "%u.%u.%u.%u", u.b[0], u.b[1], u.b[2], u.b[3]);
     return tsdPtr->nabuf;

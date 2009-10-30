@@ -3,7 +3,7 @@
 # All Rights Reserved.
 # Modified by QUALCOMM INCORPORATED on $Date$
 *****************************************************************/
-/* 
+/*
  * strncasecmp.c --
  *
  *	Source code for the "strncasecmp" library routine.

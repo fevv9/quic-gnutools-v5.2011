@@ -1,6 +1,7 @@
 /* Remote File-I/O communications
 
-   Copyright (C) 2003, 2005, 2006, 2007, 2008 Free Software Foundation, Inc.
+   Copyright (C) 2003, 2005, 2006, 2007, 2008, 2009
+   Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -28,6 +29,7 @@
 #include "gdb_stat.h"
 #include "exceptions.h"
 #include "remote-fileio.h"
+#include "event-loop.h"
 
 #include <fcntl.h>
 #include <sys/time.h>
@@ -46,6 +48,8 @@ static struct {
 #define FIO_FD_CONSOLE_OUT	-3
 
 static int remote_fio_system_call_allowed = 0;
+
+static struct async_signal_handler *sigint_fileio_token;
 
 static int
 remote_fileio_init_fd_map (void)
@@ -504,12 +508,18 @@ remote_fileio_sig_exit (void)
 }
 
 static void
+async_remote_fileio_interrupt (gdb_client_data arg)
+{
+  deprecated_throw_reason (RETURN_QUIT);
+}
+
+static void
 remote_fileio_ctrl_c_signal_handler (int signo)
 {
   remote_fileio_sig_set (SIG_IGN);
   remote_fio_ctrl_c_flag = 1;
   if (!remote_fio_no_longjmp)
-    deprecated_throw_reason (RETURN_QUIT);
+    gdb_call_async_signal_handler (sigint_fileio_token, 1);
   remote_fileio_sig_set (remote_fileio_ctrl_c_signal_handler);
 }
 
@@ -1389,7 +1399,7 @@ remote_fileio_reset (void)
     }
   if (remote_fio_data.fd_map)
     {
-      free (remote_fio_data.fd_map);
+      xfree (remote_fio_data.fd_map);
       remote_fio_data.fd_map = NULL;
       remote_fio_data.fd_map_size = 0;
     }
@@ -1451,6 +1461,9 @@ void
 initialize_remote_fileio (struct cmd_list_element *remote_set_cmdlist,
 			  struct cmd_list_element *remote_show_cmdlist)
 {
+  sigint_fileio_token =
+    create_async_signal_handler (async_remote_fileio_interrupt, NULL);
+
   add_cmd ("system-call-allowed", no_class,
 	   set_system_call_allowed,
 	   _("Set if the host system(3) call is allowed for the target."),

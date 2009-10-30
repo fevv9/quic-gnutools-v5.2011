@@ -1,5 +1,5 @@
 /* Disassemble support for GDB.
-   Copyright (C) 2002, 2007, 2008 Free Software Foundation, Inc.
+   Copyright (C) 2002, 2007, 2008, 2009 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -19,12 +19,14 @@
 #ifndef DISASM_H
 #define DISASM_H
 
+#define DISASSEMBLY_SOURCE	(0x1 << 0)
+#define DISASSEMBLY_RAW_INSN	(0x1 << 1)
+
 struct ui_out;
 struct ui_file;
 
-extern void gdb_disassembly (struct ui_out *uiout,
+extern void gdb_disassembly (struct gdbarch *gdbarch, struct ui_out *uiout,
 			     char *file_string,
-			     int line_num,
 			     int mixed_source_and_assembly,
 			     int how_many, CORE_ADDR low, CORE_ADDR high);
 
@@ -32,8 +34,7 @@ extern void gdb_disassembly (struct ui_out *uiout,
    on STREAM.  Returns the length of the instruction, in bytes,
    and, if requested, the number of branch delay slot instructions.  */
 
-extern int gdb_print_insn (CORE_ADDR memaddr,
-			   struct ui_file *stream,
-			   int *branch_delay_insns);
+extern int gdb_print_insn (struct gdbarch *gdbarch, CORE_ADDR memaddr,
+			   struct ui_file *stream, int *branch_delay_insns);
 
 #endif

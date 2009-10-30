@@ -1,7 +1,8 @@
 /* Definitions for reading symbol files into GDB.
 
    Copyright (C) 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999,
-   2000, 2001, 2002, 2003, 2004, 2007, 2008 Free Software Foundation, Inc.
+   2000, 2001, 2002, 2003, 2004, 2007, 2008, 2009
+   Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -25,7 +26,7 @@
 #include "symtab.h"
 
 /* Opaque declarations.  */
-struct section_table;
+struct target_section;
 struct objfile;
 struct obj_section;
 struct obstack;
@@ -209,18 +210,34 @@ extern int free_named_symtabs (char *);
 
 extern void add_symtab_fns (struct sym_fns *);
 
+/* This enum encodes bit-flags passed as ADD_FLAGS parameter to
+   syms_from_objfile, symbol_file_add, etc.  */
+
+enum symfile_add_flags
+  {
+    /* Be chatty about what you are doing.  */
+    SYMFILE_VERBOSE = 1 << 1,
+
+    /* This is the main symbol file (as opposed to symbol file for dynamically
+       loaded code).  */
+    SYMFILE_MAINLINE = 1 << 2,
+
+    /* Do not call breakpoint_re_set when adding this symbol file.  */
+    SYMFILE_DEFER_BP_RESET = 1 << 3
+  };
+
 extern void syms_from_objfile (struct objfile *,
 			       struct section_addr_info *,
-			       struct section_offsets *, int, int, int);
+			       struct section_offsets *, int, int);
 
-extern void new_symfile_objfile (struct objfile *, int, int);
+extern void new_symfile_objfile (struct objfile *, int);
 
 extern struct objfile *symbol_file_add (char *, int,
-					struct section_addr_info *, int, int);
+					struct section_addr_info *, int);
 
 extern struct objfile *symbol_file_add_from_bfd (bfd *, int,
                                                  struct section_addr_info *,
-                                                 int, int);
+                                                 int);
 
 /* Create a new section_addr_info, with room for NUM_SECTIONS.  */
 
@@ -236,9 +253,9 @@ extern struct section_addr_info *(copy_section_addr_info
    existing section table.  */
 
 extern struct section_addr_info
-  *build_section_addr_info_from_section_table (const struct section_table
+  *build_section_addr_info_from_section_table (const struct target_section
 					       *start,
-					       const struct section_table
+					       const struct target_section
 					       *end);
 
 /* Free all memory allocated by
@@ -312,32 +329,32 @@ extern enum overlay_debugging_state
 extern int overlay_cache_invalid;
 
 /* Return the "mapped" overlay section containing the PC.  */
-extern asection *find_pc_mapped_section (CORE_ADDR);
+extern struct obj_section *find_pc_mapped_section (CORE_ADDR);
 
 /* Return any overlay section containing the PC (even in its LMA
    region).  */
-extern asection *find_pc_overlay (CORE_ADDR);
+extern struct obj_section *find_pc_overlay (CORE_ADDR);
 
 /* Return true if the section is an overlay.  */
-extern int section_is_overlay (asection *);
+extern int section_is_overlay (struct obj_section *);
 
 /* Return true if the overlay section is currently "mapped".  */
-extern int section_is_mapped (asection *);
+extern int section_is_mapped (struct obj_section *);
 
 /* Return true if pc belongs to section's VMA.  */
-extern CORE_ADDR pc_in_mapped_range (CORE_ADDR, asection *);
+extern CORE_ADDR pc_in_mapped_range (CORE_ADDR, struct obj_section *);
 
 /* Return true if pc belongs to section's LMA.  */
-extern CORE_ADDR pc_in_unmapped_range (CORE_ADDR, asection *);
+extern CORE_ADDR pc_in_unmapped_range (CORE_ADDR, struct obj_section *);
 
 /* Map an address from a section's LMA to its VMA.  */
-extern CORE_ADDR overlay_mapped_address (CORE_ADDR, asection *);
+extern CORE_ADDR overlay_mapped_address (CORE_ADDR, struct obj_section *);
 
 /* Map an address from a section's VMA to its LMA.  */
-extern CORE_ADDR overlay_unmapped_address (CORE_ADDR, asection *);
+extern CORE_ADDR overlay_unmapped_address (CORE_ADDR, struct obj_section *);
 
 /* Convert an address in an overlay section (force into VMA range).  */
-extern CORE_ADDR symbol_overlayed_address (CORE_ADDR, asection *);
+extern CORE_ADDR symbol_overlayed_address (CORE_ADDR, struct obj_section *);
 
 /* Load symbols from a file.  */
 extern void symbol_file_add_main (char *args, int from_tty);

@@ -3,8 +3,8 @@
 # All Rights Reserved.
 # Modified by QUALCOMM INCORPORATED on $Date$
 *****************************************************************/
-/* 
- * stub16.c 
+/*
+ * stub16.c
  *
  *	A helper program used for running 16-bit DOS applications under
  *	Windows 95.
@@ -35,8 +35,8 @@ static HANDLE		CreateTempFile(void);
  *	1. EOF on a pipe that connects a detached 16-bit process and a
  *	32-bit process is never seen.  So, this process runs the 16-bit
  *	process _attached_, and then it is run detached from the calling
- *	32-bit process.  
- * 
+ *	32-bit process.
+ *
  *	2. If a 16-bit process blocks reading from or writing to a pipe,
  *	it never wakes up, and eventually brings the whole system down
  *	with it if you try to kill the process.  This app simulates
@@ -130,7 +130,7 @@ main()
 
     ZeroMemory(&si, sizeof(si));
     si.cb = sizeof(si);
-    if (CreateProcess(NULL, cmdLine, NULL, NULL, TRUE, 0, NULL, NULL, &si, 
+    if (CreateProcess(NULL, cmdLine, NULL, NULL, TRUE, 0, NULL, NULL, &si,
 	    &pi) == FALSE) {
 	goto cleanup;
     }
@@ -197,7 +197,7 @@ CreateTempFile()
     sa.nLength = sizeof(sa);
     sa.lpSecurityDescriptor = NULL;
     sa.bInheritHandle = TRUE;
-    return CreateFile(name, GENERIC_READ | GENERIC_WRITE, 0, &sa, 
+    return CreateFile(name, GENERIC_READ | GENERIC_WRITE, 0, &sa,
 	    CREATE_ALWAYS, FILE_ATTRIBUTE_TEMPORARY | FILE_FLAG_DELETE_ON_CLOSE,
 	    NULL);
 }

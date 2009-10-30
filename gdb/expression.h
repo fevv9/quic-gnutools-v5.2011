@@ -1,6 +1,6 @@
 /* Definitions for expressions stored in reversed prefix form, for GDB.
 
-   Copyright (C) 1986, 1989, 1992, 1994, 2000, 2003, 2005, 2007, 2008
+   Copyright (C) 1986, 1989, 1992, 1994, 2000, 2003, 2005, 2007, 2008, 2009
    Free Software Foundation, Inc.
 
    This file is part of GDB.
@@ -193,8 +193,9 @@ enum exp_opcode
        indicates that we have found something of the form <name> ( <stuff> ) */
     OP_F77_UNDETERMINED_ARGLIST,
 
-    /* The following OP is a special one, it introduces a F77 complex
-       literal. It is followed by exactly two args that are doubles.  */
+    /* OP_COMPLEX takes a type in the following element, followed by another
+       OP_COMPLEX, making three exp_elements.  It is followed by two double
+       args, and converts them into a complex number of the given type. */
     OP_COMPLEX,
 
     /* OP_STRING represents a string constant.
@@ -334,24 +335,27 @@ enum exp_opcode
     OP_DECFLOAT,
 
      /* First extension operator.  Individual language modules define
-        extra operators they need as constants with values 
-        OP_LANGUAGE_SPECIFIC0 + k, for k >= 0, using a separate 
-        enumerated type definition:
-           enum foo_extension_operator {
+	extra operators in *.inc include files below always starting with
+	numbering at OP_EXTENDED0:
              BINOP_MOGRIFY = OP_EXTENDED0,
  	     BINOP_FROB,
- 	     ...
-           };      */
+ 	     ...  */
     OP_EXTENDED0,
   
     /* Last possible extension operator.  Defined to provide an
        explicit and finite number of extended operators. */
-    OP_EXTENDED_LAST = 0xff
+    OP_EXTENDED_LAST = 0xff,
     /* NOTE: Eventually, we expect to convert to an object-oriented 
        formulation for expression operators that does away with the
        need for these extension operators, and indeed for this
        entire enumeration type.  Therefore, consider the OP_EXTENDED
        definitions to be a temporary measure. */
+
+    /* Each language specific set of operators starts at OP_EXTENDED0.  */
+#include "ada-operator.inc"
+
+    /* Existing only to swallow the last comma (',') from last .inc file.  */
+    OP_UNUSED_LAST
   };
 
 union exp_element
@@ -373,6 +377,7 @@ union exp_element
 struct expression
   {
     const struct language_defn *language_defn;	/* language it was entered in */
+    struct gdbarch *gdbarch;  /* architecture it was parsed in */
     int nelts;
     union exp_element elts[1];
   };
@@ -389,7 +394,13 @@ struct expression
 
 extern struct expression *parse_expression (char *);
 
+extern struct type *parse_field_expression (char *, char **);
+
 extern struct expression *parse_exp_1 (char **, struct block *, int);
+
+/* For use by parsers; set if we want to parse an expression and
+   attempt to complete a field name.  */
+extern int in_parse_field;
 
 /* The innermost context required by the stack and register variables
    we've encountered so far.  To use this, set it to NULL, then call

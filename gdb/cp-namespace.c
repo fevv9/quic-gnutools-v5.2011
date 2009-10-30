@@ -1,5 +1,5 @@
 /* Helper routines for C++ support in GDB.
-   Copyright (C) 2003, 2004, 2007, 2008 Free Software Foundation, Inc.
+   Copyright (C) 2003, 2004, 2007, 2008, 2009 Free Software Foundation, Inc.
 
    Contributed by David Carlton and by Kealia, Inc.
 
@@ -30,41 +30,7 @@
 #include "dictionary.h"
 #include "command.h"
 #include "frame.h"
-
-/* When set, the file that we're processing is known to have debugging
-   info for C++ namespaces.  */
-
-/* NOTE: carlton/2004-01-13: No currently released version of GCC (the
-   latest of which is 3.3.x at the time of this writing) produces this
-   debug info.  GCC 3.4 should, however.  */
-
-unsigned char processing_has_namespace_info;
-
-/* This contains our best guess as to the name of the current
-   enclosing namespace(s)/class(es), if any.  For example, if we're
-   within the method foo() in the following code:
-
-    namespace N {
-      class C {
-	void foo () {
-	}
-      };
-    }
-
-   then processing_current_prefix should be set to "N::C".  If
-   processing_has_namespace_info is false, then this variable might
-   not be reliable.  */
-
-const char *processing_current_prefix;
-
-/* List of using directives that are active in the current file.  */
-
-static struct using_direct *using_list;
-
-static struct using_direct *cp_add_using (const char *name,
-					  unsigned int inner_len,
-					  unsigned int outer_len,
-					  struct using_direct *next);
+#include "buildsym.h"
 
 static struct using_direct *cp_copy_usings (struct using_direct *using,
 					    struct obstack *obstack);
@@ -73,7 +39,6 @@ static struct symbol *lookup_namespace_scope (const char *name,
 					      const char *linkage_name,
 					      const struct block *block,
 					      const domain_enum domain,
-					      struct symtab **symtab,
 					      const char *scope,
 					      int scope_len);
 
@@ -81,7 +46,6 @@ static struct symbol *lookup_symbol_file (const char *name,
 					  const char *linkage_name,
 					  const struct block *block,
 					  const domain_enum domain,
-					  struct symtab **symtab,
 					  int anonymous_namespace);
 
 static struct type *cp_lookup_transparent_type_loop (const char *name,
@@ -102,37 +66,9 @@ static int check_one_possible_namespace_symbol (const char *name,
 						int len,
 						struct objfile *objfile);
 
-static
-struct symbol *lookup_possible_namespace_symbol (const char *name,
-						 struct symtab **symtab);
+static struct symbol *lookup_possible_namespace_symbol (const char *name);
 
 static void maintenance_cplus_namespace (char *args, int from_tty);
-
-/* Set up support for dealing with C++ namespace info in the current
-   symtab.  */
-
-void cp_initialize_namespace ()
-{
-  processing_has_namespace_info = 0;
-  using_list = NULL;
-}
-
-/* Add all the using directives we've gathered to the current symtab.
-   STATIC_BLOCK should be the symtab's static block; OBSTACK is used
-   for allocation.  */
-
-void
-cp_finalize_namespace (struct block *static_block,
-		       struct obstack *obstack)
-{
-  if (using_list != NULL)
-    {
-      block_set_using (static_block,
-		       cp_copy_usings (using_list, obstack),
-		       obstack);
-      using_list = NULL;
-    }
-}
 
 /* Check to see if SYMBOL refers to an object contained within an
    anonymous namespace; if so, add an appropriate using directive.  */
@@ -144,10 +80,9 @@ cp_finalize_namespace (struct block *static_block,
 void
 cp_scan_for_anonymous_namespaces (const struct symbol *symbol)
 {
-  if (!processing_has_namespace_info
-      && SYMBOL_CPLUS_DEMANGLED_NAME (symbol) != NULL)
+  if (SYMBOL_DEMANGLED_NAME (symbol) != NULL)
     {
-      const char *name = SYMBOL_CPLUS_DEMANGLED_NAME (symbol);
+      const char *name = SYMBOL_DEMANGLED_NAME (symbol);
       unsigned int previous_component;
       unsigned int next_component;
       const char *len;
@@ -168,14 +103,23 @@ cp_scan_for_anonymous_namespaces (const struct symbol *symbol)
 			  "(anonymous namespace)",
 			  ANONYMOUS_NAMESPACE_LEN) == 0)
 	    {
+	      int dest_len = (previous_component == 0 ? 0 : previous_component - 2);
+	      int src_len = next_component;
+
+	      char *dest = alloca (dest_len + 1);
+	      char *src = alloca (src_len + 1);
+
+	      memcpy (dest, name, dest_len);
+	      memcpy (src, name, src_len);
+
+	      dest[dest_len] = '\0';
+	      src[src_len] = '\0';
+
 	      /* We've found a component of the name that's an
 		 anonymous namespace.  So add symbols in it to the
 		 namespace given by the previous component if there is
 		 one, or to the global namespace if there isn't.  */
-	      cp_add_using_directive (name,
-				      previous_component == 0
-				      ? 0 : previous_component - 2,
-				      next_component);
+	      cp_add_using_directive (dest, src);
 	    }
 	  /* The "+ 2" is for the "::".  */
 	  previous_component = next_component + 2;
@@ -186,32 +130,26 @@ cp_scan_for_anonymous_namespaces (const struct symbol *symbol)
     }
 }
 
-/* Add a using directive to using_list.  NAME is the start of a string
-   that should contain the namespaces we want to add as initial
-   substrings, OUTER_LENGTH is the end of the outer namespace, and
-   INNER_LENGTH is the end of the inner namespace.  If the using
-   directive in question has already been added, don't add it
-   twice.  */
+/* Add a using directive to using_list. If the using directive in question
+   has already been added, don't add it twice.  */
 
 void
-cp_add_using_directive (const char *name, unsigned int outer_length,
-			unsigned int inner_length)
+cp_add_using_directive (const char *dest, const char *src)
 {
   struct using_direct *current;
   struct using_direct *new;
 
   /* Has it already been added?  */
 
-  for (current = using_list; current != NULL; current = current->next)
+  for (current = using_directives; current != NULL; current = current->next)
     {
-      if ((strncmp (current->inner, name, inner_length) == 0)
-	  && (strlen (current->inner) == inner_length)
-	  && (strlen (current->outer) == outer_length))
+      if (strcmp (current->import_src, src) == 0
+          && strcmp (current->import_dest, dest) == 0)
 	return;
     }
 
-  using_list = cp_add_using (name, inner_length, outer_length,
-			     using_list);
+  using_directives = cp_add_using (dest, src, using_directives);
+
 }
 
 /* Record the namespace that the function defined by SYMBOL was
@@ -221,38 +159,34 @@ cp_add_using_directive (const char *name, unsigned int outer_length,
 void
 cp_set_block_scope (const struct symbol *symbol,
 		    struct block *block,
-		    struct obstack *obstack)
+		    struct obstack *obstack,
+		    const char *processing_current_prefix,
+		    int processing_has_namespace_info)
 {
-  /* Make sure that the name was originally mangled: if not, there
-     certainly isn't any namespace information to worry about!  */
-
-  if (SYMBOL_CPLUS_DEMANGLED_NAME (symbol) != NULL)
+  if (processing_has_namespace_info)
     {
-      if (processing_has_namespace_info)
-	{
-	  block_set_scope
-	    (block, obsavestring (processing_current_prefix,
-				  strlen (processing_current_prefix),
-				  obstack),
-	     obstack);
-	}
-      else
-	{
-	  /* Try to figure out the appropriate namespace from the
-	     demangled name.  */
+      block_set_scope
+	(block, obsavestring (processing_current_prefix,
+			      strlen (processing_current_prefix),
+			      obstack),
+	 obstack);
+    }
+  else if (SYMBOL_DEMANGLED_NAME (symbol) != NULL)
+    {
+      /* Try to figure out the appropriate namespace from the
+	 demangled name.  */
 
-	  /* FIXME: carlton/2003-04-15: If the function in question is
-	     a method of a class, the name will actually include the
-	     name of the class as well.  This should be harmless, but
-	     is a little unfortunate.  */
+      /* FIXME: carlton/2003-04-15: If the function in question is
+	 a method of a class, the name will actually include the
+	 name of the class as well.  This should be harmless, but
+	 is a little unfortunate.  */
 
-	  const char *name = SYMBOL_CPLUS_DEMANGLED_NAME (symbol);
-	  unsigned int prefix_len = cp_entire_prefix_len (name);
+      const char *name = SYMBOL_DEMANGLED_NAME (symbol);
+      unsigned int prefix_len = cp_entire_prefix_len (name);
 
-	  block_set_scope (block,
-			   obsavestring (name, prefix_len, obstack),
-			   obstack);
-	}
+      block_set_scope (block,
+		       obsavestring (name, prefix_len, obstack),
+		       obstack);
     }
 }
 
@@ -266,26 +200,22 @@ cp_is_anonymous (const char *namespace)
 	  != NULL);
 }
 
-/* Create a new struct using direct whose inner namespace is the
-   initial substring of NAME of leng INNER_LEN and whose outer
-   namespace is the initial substring of NAME of length OUTER_LENGTH.
+/* Create a new struct using direct which imports the namespace SRC
+   into the scope DEST.
    Set its next member in the linked list to NEXT; allocate all memory
    using xmalloc.  It copies the strings, so NAME can be a temporary
    string.  */
 
-static struct using_direct *
-cp_add_using (const char *name,
-	      unsigned int inner_len,
-	      unsigned int outer_len,
+struct using_direct *
+cp_add_using (const char *dest,
+              const char *src,
 	      struct using_direct *next)
 {
   struct using_direct *retval;
 
-  gdb_assert (outer_len < inner_len);
-
   retval = xmalloc (sizeof (struct using_direct));
-  retval->inner = savestring (name, inner_len);
-  retval->outer = savestring (name, outer_len);
+  retval->import_src = savestring (src, strlen(src));
+  retval->import_dest = savestring (dest, strlen(dest));
   retval->next = next;
 
   return retval;
@@ -307,14 +237,14 @@ cp_copy_usings (struct using_direct *using,
     {
       struct using_direct *retval
 	= obstack_alloc (obstack, sizeof (struct using_direct));
-      retval->inner = obsavestring (using->inner, strlen (using->inner),
+      retval->import_src = obsavestring (using->import_src, strlen (using->import_src),
 				    obstack);
-      retval->outer = obsavestring (using->outer, strlen (using->outer),
+      retval->import_dest = obsavestring (using->import_dest, strlen (using->import_dest),
 				    obstack);
       retval->next = cp_copy_usings (using->next, obstack);
 
-      xfree (using->inner);
-      xfree (using->outer);
+      xfree (using->import_src);
+      xfree (using->import_dest);
       xfree (using);
 
       return retval;
@@ -333,11 +263,10 @@ struct symbol *
 cp_lookup_symbol_nonlocal (const char *name,
 			   const char *linkage_name,
 			   const struct block *block,
-			   const domain_enum domain,
-			   struct symtab **symtab)
+			   const domain_enum domain)
 {
   return lookup_namespace_scope (name, linkage_name, block, domain,
-				 symtab, block_scope (block), 0);
+				 block_scope (block), 0);
 }
 
 /* Lookup NAME at namespace scope (or, in C terms, in static and
@@ -360,7 +289,6 @@ lookup_namespace_scope (const char *name,
 			const char *linkage_name,
 			const struct block *block,
 			const domain_enum domain,
-			struct symtab **symtab,
 			const char *scope,
 			int scope_len)
 {
@@ -381,8 +309,7 @@ lookup_namespace_scope (const char *name,
 	}
       new_scope_len += cp_find_first_component (scope + new_scope_len);
       sym = lookup_namespace_scope (name, linkage_name, block,
-				    domain, symtab,
-				    scope, new_scope_len);
+				    domain, scope, new_scope_len);
       if (sym != NULL)
 	return sym;
     }
@@ -394,7 +321,7 @@ lookup_namespace_scope (const char *name,
   strncpy (namespace, scope, scope_len);
   namespace[scope_len] = '\0';
   return cp_lookup_symbol_namespace (namespace, name, linkage_name,
-				     block, domain, symtab);
+				     block, domain);
 }
 
 /* Look up NAME in the C++ namespace NAMESPACE, applying the using
@@ -406,8 +333,7 @@ cp_lookup_symbol_namespace (const char *namespace,
 			    const char *name,
 			    const char *linkage_name,
 			    const struct block *block,
-			    const domain_enum domain,
-			    struct symtab **symtab)
+			    const domain_enum domain)
 {
   const struct using_direct *current;
   struct symbol *sym;
@@ -420,14 +346,13 @@ cp_lookup_symbol_namespace (const char *namespace,
        current != NULL;
        current = current->next)
     {
-      if (strcmp (namespace, current->outer) == 0)
+      if (strcmp (namespace, current->import_dest) == 0)
 	{
-	  sym = cp_lookup_symbol_namespace (current->inner,
+	  sym = cp_lookup_symbol_namespace (current->import_src,
 					    name,
 					    linkage_name,
 					    block,
-					    domain,
-					    symtab);
+					    domain);
 	  if (sym != NULL)
 	    return sym;
 	}
@@ -440,7 +365,7 @@ cp_lookup_symbol_namespace (const char *namespace,
   if (namespace[0] == '\0')
     {
       return lookup_symbol_file (name, linkage_name, block,
-				 domain, symtab, 0);
+				 domain, 0);
     }
   else
     {
@@ -450,7 +375,7 @@ cp_lookup_symbol_namespace (const char *namespace,
       strcat (concatenated_name, "::");
       strcat (concatenated_name, name);
       sym = lookup_symbol_file (concatenated_name, linkage_name,
-				block, domain, symtab,
+				block, domain, 
 				cp_is_anonymous (namespace));
       return sym;
     }
@@ -466,12 +391,11 @@ lookup_symbol_file (const char *name,
 		    const char *linkage_name,
 		    const struct block *block,
 		    const domain_enum domain,
-		    struct symtab **symtab,
 		    int anonymous_namespace)
 {
   struct symbol *sym = NULL;
 
-  sym = lookup_symbol_static (name, linkage_name, block, domain, symtab);
+  sym = lookup_symbol_static (name, linkage_name, block, domain);
   if (sym != NULL)
     return sym;
 
@@ -485,11 +409,11 @@ lookup_symbol_file (const char *name,
       
       if (global_block != NULL)
 	sym = lookup_symbol_aux_block (name, linkage_name, global_block,
-				       domain, symtab);
+				       domain);
     }
   else
     {
-      sym = lookup_symbol_global (name, linkage_name, block, domain, symtab);
+      sym = lookup_symbol_global (name, linkage_name, block, domain);
     }
 
   if (sym != NULL)
@@ -507,7 +431,7 @@ lookup_symbol_file (const char *name,
 
   if (domain == VAR_DOMAIN)
     {
-      sym = lookup_possible_namespace_symbol (name, symtab);
+      sym = lookup_possible_namespace_symbol (name);
       if (sym != NULL)
 	return sym;
     }
@@ -541,8 +465,7 @@ cp_lookup_nested_type (struct type *parent_type,
 							 nested_name,
 							 NULL,
 							 block,
-							 VAR_DOMAIN,
-							 NULL);
+							 VAR_DOMAIN);
 	if (sym == NULL || SYMBOL_CLASS (sym) != LOC_TYPEDEF)
 	  return NULL;
 	else
@@ -814,11 +737,10 @@ check_one_possible_namespace_symbol (const char *name, int len,
 }
 
 /* Look for a symbol named NAME in all the possible namespace blocks.
-   If one is found, return it; if SYMTAB is non-NULL, set *SYMTAB to
-   equal the symtab where it was found.  */
+   If one is found, return it.  */
 
 static struct symbol *
-lookup_possible_namespace_symbol (const char *name, struct symtab **symtab)
+lookup_possible_namespace_symbol (const char *name)
 {
   struct objfile *objfile;
 
@@ -830,12 +752,7 @@ lookup_possible_namespace_symbol (const char *name, struct symtab **symtab)
 				 name, NULL, VAR_DOMAIN);
 
       if (sym != NULL)
-	{
-	  if (symtab != NULL)
-	    *symtab = objfile->cp_namespace_symtab;
-
-	  return sym;
-	}
+	return sym;
     }
 
   return NULL;
@@ -859,6 +776,9 @@ maintenance_cplus_namespace (char *args, int from_tty)
 	}
     }
 }
+
+/* Provide a prototype to silence -Wmissing-prototypes.  */
+extern initialize_file_ftype _initialize_cp_namespace;
 
 void
 _initialize_cp_namespace (void)

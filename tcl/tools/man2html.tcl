@@ -34,8 +34,8 @@ proc sarray {file args} {
 	if ![array exists array] {
 	    puts "sarray: \"$a\" isn't an array"
 	    break
-	}	
-    
+	}
+
 	foreach name [lsort [array names array]] {
 	    regsub -all " " $name "\\ " name1
 	    puts $file "set ${a}($name1) \{$array($name)\}"
@@ -91,7 +91,7 @@ if {$argc < 2} {
     puts stderr "usage: $argv0 -clean html_dir"
     exit 1
 }
-	
+
 if {[lindex $argv 0] == "-clean"} {
     set html_dir [lindex $argv 1]
     puts -nonewline "recursively remove: $html_dir? "
@@ -136,16 +136,16 @@ set footer [footer $packages]
 
 
 # make the hyperlink arrays and contents.html for all packages
-	
+
 foreach package $packages {
     global homeDir
     exec mkdir $html_dir/$package
-    
+
     # build hyperlink database arrays: NAME_file and KEY_file
     #
     puts "\nScanning man pages in $tcl_dir/$package/doc..."
     source $homeDir/man2html1.tcl
-    
+
     doDir $tcl_dir/$package/doc
 
     # clean up the NAME_file and KEY_file database arrays
@@ -175,7 +175,7 @@ foreach package $packages {
     unset NAME_file
 }
 
-	
+
 
 } result] {
     global errorInfo

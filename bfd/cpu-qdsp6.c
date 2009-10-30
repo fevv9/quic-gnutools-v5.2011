@@ -4,26 +4,24 @@
 # Modified by QUALCOMM INCORPORATED on $Date$
 *****************************************************************/
 /* BFD support for the QDSP6 processor
-   Copyright 1994, 1995, 1997, 2001, 2002, 2007
-   Free Software Foundation, Inc.
-   Derived from Doug Evans' (dje@cygnus.com) ARC processor
+   Copyright 1994, 1995, 1997, 2001, 2002 Free Software Foundation, Inc.
+   Contributed by Doug Evans (dje@cygnus.com).
 
-   This file is part of BFD, the Binary File Descriptor library.
+This file is part of BFD, the Binary File Descriptor library.
 
-   This program is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 3 of the License, or
-   (at your option) any later version.
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
 
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
-   MA 02110-1301, USA.  */
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.  */
 
 #include "bfd.h"
 #include "sysdep.h"
@@ -38,7 +36,7 @@ static const bfd_arch_info_type *qdsp6_bfd_compatible
     32,	/* 32 bits in an address  */	 \
     8,	/* 8 bits in a byte  */		 \
     bfd_arch_qdsp6,			 \
-    mach,			 	 \
+    mach,				 \
     "qdsp6",				 \
     print_name,				 \
     4, /* section alignment power  */	 \
@@ -48,26 +46,25 @@ static const bfd_arch_info_type *qdsp6_bfd_compatible
     next,				 \
   }
 
-
 static const bfd_arch_info_type qdsp6_arch_info [] =
 {
-  QDSP6 (bfd_mach_qdsp6_v3, "qdsp6v3", FALSE, &qdsp6_arch_info[1]),
-  QDSP6 (bfd_mach_qdsp6_v4, "qdsp6v4", FALSE, &qdsp6_arch_info[2]),
+  QDSP6 (bfd_mach_qdsp6_v3, "qdsp6v3", FALSE, qdsp6_arch_info+1 ),
+  QDSP6 (bfd_mach_qdsp6_v4, "qdsp6v4", FALSE, qdsp6_arch_info+2 ),
   QDSP6 (bfd_mach_qdsp6,    "qdsp6",   FALSE, NULL)
 };
 
 /* This is the default ISA. */
 const bfd_arch_info_type bfd_qdsp6_arch =
-  QDSP6 (bfd_mach_qdsp6_v2, "qdsp6v2", TRUE, &qdsp6_arch_info[0]);
-
+  QDSP6 (bfd_mach_qdsp6_v2, "qdsp6v2", TRUE, qdsp6_arch_info+0 );
 
 /* Utility routines.  */
-
-/* Given CPU type, return its bfd_mach_qdsp6_xx value.
-   Returns -1 if not found.  */
-
 int qdsp6_get_mach PARAMS ((char *));
 
+/** Given CPU type, return its bfd_mach_qdsp6* value.
+
+@param name CPU type.
+@return bfd_mach_qdsp6* value if successful or -1 otherwise.
+*/
 int
 qdsp6_get_mach
 (char *name)
@@ -75,8 +72,9 @@ qdsp6_get_mach
   const bfd_arch_info_type *p;
 
   for (p = &bfd_qdsp6_arch; p != NULL; p = p->next)
-    if (strcmp (name, p->printable_name) == 0)
+    if (!strcmp (name, p->printable_name))
       return p->mach;
+
   return -1;
 }
 
@@ -92,7 +90,7 @@ qdsp6_bfd_compatible
       && a->mach != b->mach)
     return NULL;
 
-  /* The V2 ABI is not compatible with that introduced with V3. */
+  /* V3 uses a new ABI that is not compatible with the V2 ABI. */
   if (   (a->mach == bfd_mach_qdsp6_v2 || b->mach == bfd_mach_qdsp6_v2)
       && a->mach != b->mach)
     return NULL;

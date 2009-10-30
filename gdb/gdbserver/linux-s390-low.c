@@ -1,6 +1,6 @@
 /* GNU/Linux S/390 specific low level interface, for the remote server
    for GDB.
-   Copyright (C) 2001, 2002, 2005, 2006, 2007, 2008
+   Copyright (C) 2001, 2002, 2005, 2006, 2007, 2008, 2009
    Free Software Foundation, Inc.
 
    This file is part of GDB.
@@ -24,6 +24,12 @@
 #include "linux-low.h"
 
 #include <asm/ptrace.h>
+
+/* Defined in auto-generated file reg-s390.c.  */
+void init_registers_s390 (void);
+/* Defined in auto-generated file reg-s390x.c.  */
+void init_registers_s390x (void);
+
 
 #define s390_num_regs 51
 
@@ -73,6 +79,45 @@ s390_cannot_store_register (int regno)
   return 0;
 }
 
+static void
+s390_collect_ptrace_register (int regno, char *buf)
+{
+  int size = register_size (regno);
+  if (size < sizeof (long))
+    {
+      memset (buf, 0, sizeof (long));
+
+      if (regno == find_regno ("pswa")
+	  || (regno >= find_regno ("r0") && regno <= find_regno ("r15")))
+	collect_register (regno, buf + sizeof (long) - size);
+      else
+	collect_register (regno, buf);
+
+      /* When debugging a 32-bit inferior on a 64-bit host, make sure
+	 the 31-bit addressing mode bit is set in the PSW mask.  */
+      if (regno == find_regno ("pswm"))
+	buf[size] |= 0x80;
+    }
+  else
+    collect_register (regno, buf);
+}
+
+static void
+s390_supply_ptrace_register (int regno, const char *buf)
+{
+  int size = register_size (regno);
+  if (size < sizeof (long))
+    {
+      if (regno == find_regno ("pswa")
+	  || (regno >= find_regno ("r0") && regno <= find_regno ("r15")))
+	supply_register (regno, buf + sizeof (long) - size);
+      else
+	supply_register (regno, buf);
+    }
+  else
+    supply_register (regno, buf);
+}
+
 /* Provide only a fill function for the general register set.  ps_lgetregs
    will use this for NPTL support.  */
 
@@ -81,7 +126,7 @@ static void s390_fill_gregset (void *buf)
   int i;
 
   for (i = 0; i < 34; i++)
-    collect_register (i, (char *) buf + s390_regmap[i]);
+    s390_collect_ptrace_register (i, (char *) buf + s390_regmap[i]);
 }
 
 struct regset_info target_regsets[] = {
@@ -96,23 +141,60 @@ static const unsigned char s390_breakpoint[] = { 0, 1 };
 static CORE_ADDR
 s390_get_pc ()
 {
-  unsigned long pc;
-  collect_register_by_name ("pswa", &pc);
+  if (register_size (0) == 4)
+    {
+      unsigned int pc;
+      collect_register_by_name ("pswa", &pc);
 #ifndef __s390x__
-  pc &= 0x7fffffff;
+      pc &= 0x7fffffff;
 #endif
-  return pc;
+      return pc;
+    }
+  else
+    {
+      unsigned long pc;
+      collect_register_by_name ("pswa", &pc);
+      return pc;
+    }
 }
 
 static void
 s390_set_pc (CORE_ADDR newpc)
 {
-  unsigned long pc = newpc;
+  if (register_size (0) == 4)
+    {
+      unsigned int pc = newpc;
 #ifndef __s390x__
-  pc |= 0x80000000;
+      pc |= 0x80000000;
 #endif
-  supply_register_by_name ("pswa", &pc);
+      supply_register_by_name ("pswa", &pc);
+    }
+  else
+    {
+      unsigned long pc = newpc;
+      supply_register_by_name ("pswa", &pc);
+    }
 }
+
+
+static void
+s390_arch_setup (void)
+{
+  /* Assume 31-bit inferior process.  */
+  init_registers_s390 ();
+
+  /* On a 64-bit host, check the low bit of the (31-bit) PSWM
+     -- if this is one, we actually have a 64-bit inferior.  */
+#ifdef __s390x__
+  {
+    unsigned int pswm;
+    collect_register_by_name ("pswm", &pswm);
+    if (pswm & 1)
+      init_registers_s390x ();
+  }
+#endif
+}
+
 
 static int
 s390_breakpoint_at (CORE_ADDR pc)
@@ -124,6 +206,7 @@ s390_breakpoint_at (CORE_ADDR pc)
 
 
 struct linux_target_ops the_low_target = {
+  s390_arch_setup,
   s390_num_regs,
   s390_regmap,
   s390_cannot_fetch_register,
@@ -135,5 +218,10 @@ struct linux_target_ops the_low_target = {
   NULL,
   s390_breakpoint_len,
   s390_breakpoint_at,
+  NULL,
+  NULL,
+  NULL,
+  NULL,
+  s390_collect_ptrace_register,
+  s390_supply_ptrace_register,
 };
-

@@ -3,7 +3,7 @@
 # All Rights Reserved.
 # Modified by QUALCOMM INCORPORATED on $Date$
 *****************************************************************/
-/* 
+/*
  * tclPkg.c --
  *
  *	This file implements package and version control for Tcl via
@@ -57,7 +57,7 @@ typedef struct Package {
 
 static int		CheckVersion _ANSI_ARGS_((Tcl_Interp *interp,
 			    CONST char *string));
-static int		ComparePkgVersions _ANSI_ARGS_((CONST char *v1, 
+static int		ComparePkgVersions _ANSI_ARGS_((CONST char *v1,
                             CONST char *v2,
 			    int *satPtr));
 static Package *	FindPackage _ANSI_ARGS_((Tcl_Interp *interp,
@@ -199,7 +199,7 @@ Tcl_PkgRequireEx(interp, name, version, exact, clientDataPtr)
      * initialised. If it has not been then return immediately as nothing will
      * work.
      */
-    
+
     if (tclEmptyStringRep == NULL) {
 
 	/*
@@ -248,11 +248,11 @@ Tcl_PkgRequireEx(interp, name, version, exact, clientDataPtr)
 	 * After all, two Tcl libraries can't be a good thing!)
 	 *
 	 * Trouble is that's going to be tricky.  We're now using a Tcl
-	 * library that's not fully initialized.  In particular, it 
+	 * library that's not fully initialized.  In particular, it
 	 * doesn't have a proper value for tclEmptyStringRep.  The
 	 * Tcl_Obj system heavily depends on the value of tclEmptyStringRep
 	 * and all of Tcl depends (increasingly) on the Tcl_Obj system, we
-	 * need to correct that flaw before making the calls to set the 
+	 * need to correct that flaw before making the calls to set the
 	 * interpreter result to the error message.  That's the only flaw
 	 * corrected; other problems with initialization of the Tcl library
 	 * are not remedied, so be very careful about adding any other calls
@@ -261,7 +261,7 @@ Tcl_PkgRequireEx(interp, name, version, exact, clientDataPtr)
 	 */
 
 	tclEmptyStringRep = &tclEmptyString;
-        Tcl_AppendResult(interp, "Cannot load package \"", name, 
+        Tcl_AppendResult(interp, "Cannot load package \"", name,
                 "\" in standalone executable: This package is not ",
                 "compiled with stub support", NULL);
         return NULL;
@@ -280,7 +280,7 @@ Tcl_PkgRequireEx(interp, name, version, exact, clientDataPtr)
 	    break;
 	}
 
-	/* 
+	/*
 	 * Check whether we're already attempting to load some version
 	 * of this package (circular dependency detection).
 	 */
@@ -299,7 +299,7 @@ Tcl_PkgRequireEx(interp, name, version, exact, clientDataPtr)
 	 * The package isn't yet present.  Search the list of available
 	 * versions and invoke the script for the best available version.
 	 */
-    
+
 	bestPtr = NULL;
 	for (availPtr = pkgPtr->availPtr; availPtr != NULL;
 		availPtr = availPtr->nextPtr) {
@@ -568,7 +568,7 @@ Tcl_PkgPresentEx(interp, name, version, exact, clientDataPtr)
     if (hPtr) {
 	pkgPtr = (Package *) Tcl_GetHashValue(hPtr);
 	if (pkgPtr->version != NULL) {
-	    
+
 	    /*
 	     * At this point we know that the package is present.  Make sure
 	     * that the provided version meets the current requirement.
@@ -578,7 +578,7 @@ Tcl_PkgPresentEx(interp, name, version, exact, clientDataPtr)
 		if (clientDataPtr) {
 		    *clientDataPtr = pkgPtr->clientData;
 		}
-		
+
 		return pkgPtr->version;
 	    }
 	    result = ComparePkgVersions(pkgPtr->version, version, &satisfies);
@@ -586,7 +586,7 @@ Tcl_PkgPresentEx(interp, name, version, exact, clientDataPtr)
 		if (clientDataPtr) {
 		    *clientDataPtr = pkgPtr->clientData;
 		}
-    
+
 		return pkgPtr->version;
 	    }
 	    Tcl_AppendResult(interp, "version conflict for package \"",
@@ -666,7 +666,7 @@ Tcl_PackageObjCmd(dummy, interp, objc, objv)
 		keyString = Tcl_GetString(objv[i]);
 		hPtr = Tcl_FindHashEntry(&iPtr->packageTable, keyString);
 		if (hPtr == NULL) {
-		    continue;	
+		    continue;
 		}
 		pkgPtr = (Package *) Tcl_GetHashValue(hPtr);
 		Tcl_DeleteHashEntry(hPtr);
@@ -1035,7 +1035,7 @@ CheckVersion(interp, string)
 {
     CONST char *p = string;
     char prevChar;
-    
+
     if (!isdigit(UCHAR(*p))) {	/* INTL: digit */
 	goto error;
     }

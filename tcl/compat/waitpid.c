@@ -3,7 +3,7 @@
 # All Rights Reserved.
 # Modified by QUALCOMM INCORPORATED on $Date$
 *****************************************************************/
-/* 
+/*
  * waitpid.c --
  *
  *	This procedure emulates the POSIX waitpid kernel call on

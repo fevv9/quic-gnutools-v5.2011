@@ -15,7 +15,7 @@
  *
  * SCCS: @(#)
  */
- 
+
 #ifndef _TCLMACTHRD
 #define _TCLMACTHRD
 

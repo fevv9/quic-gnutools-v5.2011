@@ -80,11 +80,12 @@ test "$LD_FLAG" = "N" && DATA_ADDR=.
 test -n "$CREATE_SHLIB" && test -n "$SHLIB_DATA_ADDR" && COMMONPAGESIZE=""
 test -z "$CREATE_SHLIB" && test -n "$DATA_ADDR" && COMMONPAGESIZE=""
 
-DATA_SEGMENT_ALIGN="ALIGN(${SEGMENT_SIZE}) + (. & (${MAXPAGESIZE} - 1))"
+DATA_SEGMENT_ALIGN="ALIGN (${SEGMENT_SIZE}) + (. & (${MAXPAGESIZE} - 1))"
 DATA_SEGMENT_END=""
 
 if test -n "${COMMONPAGESIZE}"; then
-  DATA_SEGMENT_ALIGN="ALIGN (${SEGMENT_SIZE}) - ((${MAXPAGESIZE} - .) & (${MAXPAGESIZE} - 1)); . = DATA_SEGMENT_ALIGN (${MAXPAGESIZE}, ${COMMONPAGESIZE})"
+  DATA_SEGMENT_ALIGN="ALIGN (${SEGMENT_SIZE}) - ((${MAXPAGESIZE} - .) & (${MAXPAGESIZE} - 1));" \
+                     ". = DATA_SEGMENT_ALIGN (${MAXPAGESIZE}, ${COMMONPAGESIZE})"
   DATA_SEGMENT_END=". = DATA_SEGMENT_END (.);"
 fi
 
@@ -109,7 +110,7 @@ RODATA="
 
 if test -z "${NO_SMALL_DATA}"; then
   SBSS="
-  ${RELOCATING+. = ALIGN(${ALIGNMENT});}
+  ${RELOCATING+. = ALIGN (${ALIGNMENT});}
   .sbss         ${RELOCATING-0} : ${TCM+AT (__ebi_pa_start__ + ADDR (.sbss) - __ebi_va_start__)}
   {
     ${RELOCATING+PROVIDE (__sbss_start = .);}
@@ -118,7 +119,7 @@ if test -z "${NO_SMALL_DATA}"; then
     *(.sbss${RELOCATING+ .sbss.* .gnu.linkonce.sb.*})
     *(.scommon${RELOCATING+ .scommon.*})
     *(.dynsbss)
-    ${RELOCATING+. = ALIGN(${ALIGNMENT});}
+    ${RELOCATING+. = ALIGN (${ALIGNMENT});}
     ${RELOCATING+PROVIDE (__sbss_end = .);}
     ${RELOCATING+PROVIDE (___sbss_end = .);}
   }"
@@ -126,7 +127,7 @@ if test -z "${NO_SMALL_DATA}"; then
   .sbss2        ${RELOCATING-0} : ${TCM+AT (__ebi_pa_start__ + ADDR (.sbss2) - __ebi_va_start__)}
   { *(.sbss2${RELOCATING+ .sbss2.* .gnu.linkonce.sb2.*}) }"
   SDATA="
-  ${RELOCATING+. = ALIGN(${ALIGNMENT});}
+  ${RELOCATING+. = ALIGN (${ALIGNMENT});}
   .sdata        ${RELOCATING-0} : ${TCM+AT (__ebi_pa_start__ + ADDR (.sdata) - __ebi_va_start__)}
   {
     ${RELOCATING+__default_sda_base__ = .;}
@@ -225,67 +226,67 @@ TCM_ADDRESS=0xd8000000 # Physical address of the TCM.
 
 # EBI memory is the default one, so just define those sections that don't fit the default code and data sections.
 EBI_DATA_WT="
-  . = ALIGN (DEFINED (EBI_DATA_CACHED_WT_ALIGN)? EBI_DATA_CACHED_WT_ALIGN : 4K);
+  . = ALIGN (DEFINED (EBI_DATA_CACHED_WT_ALIGN)? EBI_DATA_CACHED_WT_ALIGN : ${MAXPAGESIZE});
 
   .ebi_data_cached_wt : AT (__ebi_pa_start__ + ADDR (.ebi_data_cached_wt) - __ebi_va_start__)
   { *(.ebi_data_cached_wt) } :EBI_DATA_WT"
 
 EBI_DATA_UN="
-  . = ALIGN (DEFINED (EBI_DATA_UNCACHED_ALIGN)? EBI_DATA_UNCACHED_ALIGN : 4K);
+  . = ALIGN (DEFINED (EBI_DATA_UNCACHED_ALIGN)? EBI_DATA_UNCACHED_ALIGN : ${MAXPAGESIZE});
 
   .ebi_data_uncached : AT (__ebi_pa_start__ + ADDR (.ebi_data_uncached) - __ebi_va_start__)
   { *(.ebi_data_uncached) } :EBI_DATA_UN"
 
 # SMI memory sections.
 SMI_CODE="
-  . = ALIGN (DEFINED (SMI_CODE_CACHED_ALIGN)? SMI_CODE_CACHED_ALIGN : 4K);
-  . = ALIGN (DEFINED (SMI_CODE_UNCACHED_ALIGN)? SMI_CODE_UNCACHED_ALIGN : 4K);
+  . = ALIGN (DEFINED (SMI_CODE_CACHED_ALIGN)? SMI_CODE_CACHED_ALIGN : ${MAXPAGESIZE});
+  . = ALIGN (DEFINED (SMI_CODE_UNCACHED_ALIGN)? SMI_CODE_UNCACHED_ALIGN : ${MAXPAGESIZE});
 
   .smi_code_cached : AT (__smi_pa_start__ + ADDR (.smi_code_cached) - __smi_va_start__)
   { *(.smi_code_cached .smi_code_cached_wb .smi_code_cached_wt .smi_code_uncached) } :SMI_CODE =${NOP-0}"
 
 SMI_DATA="
-  . = ALIGN (DEFINED (SMI_DATA_CACHED_ALIGN)? SMI_DATA_CACHED_ALIGN : 4K);
-  . = ALIGN (DEFINED (SMI_DATA_CACHED_WB_ALIGN)? SMI_DATA_CACHED_WB_ALIGN : 4K);
+  . = ALIGN (DEFINED (SMI_DATA_CACHED_ALIGN)? SMI_DATA_CACHED_ALIGN : ${MAXPAGESIZE});
+  . = ALIGN (DEFINED (SMI_DATA_CACHED_WB_ALIGN)? SMI_DATA_CACHED_WB_ALIGN : ${MAXPAGESIZE});
 
   .smi_data_cached : AT (__smi_pa_start__ + ADDR (.smi_data_cached) - __smi_va_start__)
   { *(.smi_data_cached .smi_data_cached_wb) } :SMI_DATA"
 
 SMI_DATA_WT="
-  . = ALIGN (DEFINED (SMI_DATA_CACHED_WT_ALIGN)? SMI_DATA_CACHED_WT_ALIGN : 4K);
+  . = ALIGN (DEFINED (SMI_DATA_CACHED_WT_ALIGN)? SMI_DATA_CACHED_WT_ALIGN : ${MAXPAGESIZE});
 
   .smi_data_cached_wt : AT (__smi_pa_start__ + ADDR (.smi_data_cached_wt) - __smi_va_start__)
   { *(.smi_data_cached_wt) } :SMI_DATA_WT"
 
 SMI_DATA_UN="
-  . = ALIGN (DEFINED (SMI_DATA_UNCACHED_ALIGN)? SMI_DATA_UNCACHED_ALIGN : 4K);
+  . = ALIGN (DEFINED (SMI_DATA_UNCACHED_ALIGN)? SMI_DATA_UNCACHED_ALIGN : ${MAXPAGESIZE});
 
   .smi_data_uncached : AT (__smi_pa_start__ + ADDR (.smi_data_uncached) - __smi_va_start__)
   { *(.smi_data_uncached) } :SMI_DATA_UN"
 
 # TCM memory sections.
 TCM_CODE="
-  . = ALIGN (DEFINED (TCM_CODE_CACHED_ALIGN)? TCM_CODE_CACHED_ALIGN : 4K);
-  . = ALIGN (DEFINED (TCM_CODE_UNCACHED_ALIGN)? TCM_CODE_UNCACHED_ALIGN : 4K);
+  . = ALIGN (DEFINED (TCM_CODE_CACHED_ALIGN)? TCM_CODE_CACHED_ALIGN : ${MAXPAGESIZE});
+  . = ALIGN (DEFINED (TCM_CODE_UNCACHED_ALIGN)? TCM_CODE_UNCACHED_ALIGN : ${MAXPAGESIZE});
 
   .tcm_code_cached : AT (__tcm_pa_start__ + ADDR (.tcm_code_cached) - __tcm_va_start__)
   { *(.tcm_code_cached .tcm_code_cached_wb .tcm_code_cached_wt .tcm_code_uncached) } :TCM_CODE =${NOP-0}"
 
 TCM_DATA="
-  . = ALIGN (DEFINED (TCM_DATA_CACHED_ALIGN)? TCM_DATA_CACHED_ALIGN : 4K);
-  . = ALIGN (DEFINED (TCM_DATA_CACHED_WB_ALIGN)? TCM_DATA_CACHED_WB_ALIGN : 4K);
+  . = ALIGN (DEFINED (TCM_DATA_CACHED_ALIGN)? TCM_DATA_CACHED_ALIGN : ${MAXPAGESIZE});
+  . = ALIGN (DEFINED (TCM_DATA_CACHED_WB_ALIGN)? TCM_DATA_CACHED_WB_ALIGN : ${MAXPAGESIZE});
 
   .tcm_data_cached : AT (__tcm_pa_start__ + ADDR (.tcm_data_cached) - __tcm_va_start__)
   { *(.tcm_data_cached .tcm_data_cached_wb) } :TCM_DATA"
 
 TCM_DATA_WT="
-  . = ALIGN (DEFINED (TCM_DATA_CACHED_WT_ALIGN)? TCM_DATA_CACHED_WT_ALIGN : 4K);
+  . = ALIGN (DEFINED (TCM_DATA_CACHED_WT_ALIGN)? TCM_DATA_CACHED_WT_ALIGN : ${MAXPAGESIZE});
 
   .tcm_data_cached_wt : AT (__tcm_pa_start__ + ADDR (.tcm_data_cached_wt) - __tcm_va_start__)
   { *(.tcm_data_cached_wt) } :TCM_DATA_WT"
 
 TCM_DATA_UN="
-  . = ALIGN (DEFINED (TCM_DATA_UNCACHED_ALIGN)? TCM_DATA_UNCACHED_ALIGN : 4K);
+  . = ALIGN (DEFINED (TCM_DATA_UNCACHED_ALIGN)? TCM_DATA_UNCACHED_ALIGN : ${MAXPAGESIZE});
 
   .tcm_data_uncached : AT (__tcm_pa_start__ + ADDR (.tcm_data_uncached) - __tcm_va_start__)
   { *(.tcm_data_uncached) } :TCM_DATA_UN"
@@ -296,39 +297,42 @@ OUTPUT_FORMAT ("${OUTPUT_FORMAT}",
 	       "${LITTLE_OUTPUT_FORMAT}")
 OUTPUT_ARCH (${OUTPUT_ARCH})
 ENTRY (${ENTRY})
-
 ${RELOCATING+${LIB_SEARCH_DIRS}}
-${RELOCATING+/* Do we need any of these for elf?
-   __DYNAMIC = 0; ${STACKZERO+${STACKZERO}} ${SHLIB_PATH+${SHLIB_PATH}}  */}
-${RELOCATING+${EXECUTABLE_SYMBOLS}}
-${RELOCATING+${INPUT_FILES}}
-${RELOCATING- /* For some reason, the Solaris linker makes bad executables
-  if gld -r is used and the intermediate file has sections starting
-  at non-zero addresses.  Could be a Solaris ld bug, could be a GNU ld
-  bug.  But for now assigning the zero vmas works.  */}
 
 PHDRS
 {
-  headers PT_PHDR PHDRS FILEHDR;
+${TCM+  HEADERS     PT_PHDR FILEHDR PHDRS;
+/* Dynamic segments */
+  DYNAMIC     PT_DYNAMIC;
+  ${CREATE_SHLIB+INTERP      PT_INTERP;}
 /* EBI segments */
-  CODE        PT_LOAD;                  /* code  */
-  CONST       PT_LOAD;                  /* read-only data  */
-  DATA        PT_LOAD;                  /* read-write data */
-${TCM+/* More EBI segments */
+  BOOTUP      PT_LOAD;                    /* start-up code */
+  CODE        PT_LOAD;                    /* code */
+  CONST       PT_LOAD;                    /* read-only data */
+  DATA        PT_LOAD;                    /* read-write data */
+/* More EBI segments */
   EBI_DATA_WT PT_LOAD FLAGS (0x40000000); /* cached write-thru data */
   EBI_DATA_UN PT_LOAD FLAGS (0x80000000); /* uncached data */
 /* SMI segments */
-  SMI_CODE    PT_LOAD;                  /* cached and uncached code */
-  SMI_DATA    PT_LOAD;                  /* cached and cached write-back data */
+  SMI_CODE    PT_LOAD;                    /* cached and uncached code */
+  SMI_DATA    PT_LOAD;                    /* cached and cached write-back data */
   SMI_DATA_WT PT_LOAD FLAGS (0x40000000); /* cached write-thru data */
   SMI_DATA_UN PT_LOAD FLAGS (0x80000000); /* uncached data */
 /* TCM segments */
   TCM_CODE    PT_LOAD FLAGS (0x20000000); /* cached and uncached code */
   TCM_DATA    PT_LOAD FLAGS (0x20000000); /* cached and cached write-back data */
   TCM_DATA_WT PT_LOAD FLAGS (0x60000000); /* cached write-thru data */
-  TCM_DATA_UN PT_LOAD FLAGS (0xa0000000); /* uncached data */
-  }
+  TCM_DATA_UN PT_LOAD FLAGS (0xa0000000); /* uncached data */}
 }
+
+${RELOCATING+  /* Do we need any of these for elf?
+  __DYNAMIC = 0; ${STACKZERO+${STACKZERO}} ${SHLIB_PATH+${SHLIB_PATH}}  */}
+${RELOCATING+${EXECUTABLE_SYMBOLS}}
+${RELOCATING+${INPUT_FILES}}
+${RELOCATING-  /* For some reason, the Solaris linker makes bad executables
+  if gld -r is used and the intermediate file has sections starting
+  at non-zero addresses.  Could be a Solaris ld bug, could be a GNU ld
+  bug.  But for now assigning the zero vmas works.  */}
 
 SECTIONS
 {
@@ -336,8 +340,8 @@ SECTIONS
   ${CREATE_SHLIB+${RELOCATING+. = ${SHLIB_TEXT_START_ADDR:-0} + SIZEOF_HEADERS;}}
 
 /* Start EBI memory. */
-  ${TCM+__ebi_va_start__ = ALIGN ((DEFINED (EBI_VA_START)? EBI_VA_START : .), 4K);}
-  ${TCM+__ebi_pa_start__ = ALIGN ((DEFINED (EBI_PA_START)? EBI_PA_START : .), 4K);}
+  ${TCM+__ebi_va_start__ = ALIGN ((DEFINED (EBI_VA_START)? EBI_VA_START : .), ${MAXPAGESIZE});}
+  ${TCM+__ebi_pa_start__ = ALIGN ((DEFINED (EBI_PA_START)? EBI_PA_START : .), ${MAXPAGESIZE});}
 
   ${TCM+. = __ebi_va_start__;}
   ${TCM+__ebi_start = __ebi_pa_start__;}
@@ -362,7 +366,6 @@ else
   COMBRELOCCAT="cat > $COMBRELOC"
 fi
 eval $COMBRELOCCAT <<EOF
-
   .rel.init     ${RELOCATING-0} : ${TCM+AT (__ebi_pa_start__ + ADDR (.rel.init) - __ebi_va_start__)} { *(.rel.init) }
   .rela.init    ${RELOCATING-0} : ${TCM+AT (__ebi_pa_start__ + ADDR (.rela.init) - __ebi_va_start__)} { *(.rela.init) }
   .rel.text     ${RELOCATING-0} : ${TCM+AT (__ebi_pa_start__ + ADDR (.rel.text) - __ebi_va_start__)} { *(.rel.text${RELOCATING+ .rel.text.* .rel.gnu.linkonce.t.*}) }
@@ -372,7 +375,6 @@ eval $COMBRELOCCAT <<EOF
   .rel.rodata   ${RELOCATING-0} : ${TCM+AT (__ebi_pa_start__ + ADDR (.rel.rodata) - __ebi_va_start__)} { *(.rel.rodata${RELOCATING+ .rel.rodata.* .rel.gnu.linkonce.r.*}) }
   .rela.rodata  ${RELOCATING-0} : ${TCM+AT (__ebi_pa_start__ + ADDR (.rela.rodata) - __ebi_va_start__)} { *(.rela.rodata${RELOCATING+ .rela.rodata.* .rela.gnu.linkonce.r.*}) }
   ${OTHER_READONLY_RELOC_SECTIONS}
-
   .rel.data     ${RELOCATING-0} : ${TCM+AT (__ebi_pa_start__ + ADDR (.rel.data) - __ebi_va_start__)} { *(.rel.data${RELOCATING+ .rel.data.* .rel.gnu.linkonce.d.*}) }
   .rela.data    ${RELOCATING-0} : ${TCM+AT (__ebi_pa_start__ + ADDR (.rela.data) - __ebi_va_start__)} { *(.rela.data${RELOCATING+ .rela.data.* .rela.gnu.linkonce.d.*}) }
   .rel.tdata	${RELOCATING-0} : ${TCM+AT (__ebi_pa_start__ + ADDR (.rel.tdata) - __ebi_va_start__)} { *(.rel.tdata${RELOCATING+ .rel.tdata.* .rel.gnu.linkonce.td.*}) }
@@ -395,32 +397,30 @@ eval $COMBRELOCCAT <<EOF
 EOF
 if [ -n "$COMBRELOC" ]; then
 cat <<EOF
-
   .rel.dyn      ${RELOCATING-0} : ${TCM+AT (__ebi_pa_start__ + ADDR (.rel.dyn) - __ebi_va_start__)}
     {
 EOF
-sed -e '/^[ 	]*[{}][ 	]*$/d;/:[ 	]*$/d;/\.rela\./d;s/^.*: { *\(.*\)}$/      \1/' $COMBRELOC
+sed -e '/^[ 	]*[{}][ 	]*$/d;/:[ 	]*$/d;/\.rela\./d;s/^.*: .*:*.*{ *\(.*\)}$/      \1/' $COMBRELOC
 cat <<EOF
     }
   .rela.dyn     ${RELOCATING-0} : ${TCM+AT (__ebi_pa_start__ + ADDR (.rela.dyn) - __ebi_va_start__)}
     {
 EOF
-sed -e '/^[ 	]*[{}][ 	]*$/d;/:[ 	]*$/d;/\.rel\./d;s/^.*: { *\(.*\)}/      \1/' $COMBRELOC
+sed -e '/^[ 	]*[{}][ 	]*$/d;/:[ 	]*$/d;/\.rel\./d;s/^.*: .*:*.*{ *\(.*\)}$/      \1/' $COMBRELOC
 cat <<EOF
     }
 EOF
 fi
 cat <<EOF
-
   .rel.plt      ${RELOCATING-0} : ${TCM+AT (__ebi_pa_start__ + ADDR (.rel.plt) - __ebi_va_start__)} { *(.rel.plt) }
   .rela.plt     ${RELOCATING-0} : ${TCM+AT (__ebi_pa_start__ + ADDR (.rela.plt) - __ebi_va_start__)} { *(.rela.plt) }
   ${OTHER_PLT_RELOC_SECTIONS}
 
 /* Code starts. */
-  ${RELOCATING+. = ALIGN (DEFINED (TEXTALIGN)? (TEXTALIGN * 1K) : 4K);}
-  ${TCM+. = ALIGN (DEFINED (EBI_CODE_CACHED_ALIGN)? EBI_CODE_CACHED_ALIGN : 4K);}
+  ${RELOCATING+. = ALIGN (DEFINED (TEXTALIGN)? (TEXTALIGN * 1K) : ${MAXPAGESIZE});}
+  ${TCM+. = ALIGN (DEFINED (EBI_CODE_CACHED_ALIGN)? EBI_CODE_CACHED_ALIGN : ${MAXPAGESIZE});}
 
-  .CODE : {} :CODE
+  .BOOTUP : {} ${TCM+:BOOTUP}
 
   .start        ${RELOCATING-0} : ${TCM+AT (__ebi_pa_start__ + ADDR (.start) - __ebi_va_start__)}
   {
@@ -428,6 +428,8 @@ cat <<EOF
     KEEP (*(.start))
     ${RELOCATING+${INIT_END}}
   } =${NOP-0}
+
+  .CODE : {} ${TCM+:CODE}
 
   .init         ${RELOCATING-0} : ${TCM+AT (__ebi_pa_start__ + ADDR (.init) - __ebi_va_start__)}
   {
@@ -460,10 +462,10 @@ cat <<EOF
   ${RELOCATING+PROVIDE (etext = .);}
 
 /* Constants start. */
-  ${RELOCATING+. = ALIGN (DEFINED (RODATAALIGN)? (RODATAALIGN * 1K) : 4K);}
-  ${TCM+. = ALIGN (DEFINED (EBI_DATA_CACHED_ALIGN)? EBI_DATA_CACHED_ALIGN : 4K);}
+  ${RELOCATING+. = ALIGN (DEFINED (RODATAALIGN)? (RODATAALIGN * 1K) : ${MAXPAGESIZE});}
+  ${TCM+. = ALIGN (DEFINED (EBI_DATA_CACHED_ALIGN)? EBI_DATA_CACHED_ALIGN : ${MAXPAGESIZE});}
 
-  .CONST : {} :CONST
+  .CONST : {} ${TCM+:CONST}
 
   ${WRITABLE_RODATA-${RODATA}}
 
@@ -480,16 +482,16 @@ cat <<EOF
   ${CREATE_SHLIB-${RELOCATING+. = ${DATA_ADDR-${DATA_SEGMENT_ALIGN}};}}
   ${CREATE_SHLIB+${RELOCATING+. = ${SHLIB_DATA_ADDR-${DATA_SEGMENT_ALIGN}};}}
 
-  ${RELOCATING+. = ALIGN (DEFINED (DATAALIGN)? (DATAALIGN * 1K) : 4K);}
-  ${TCM+. = ALIGN (DEFINED (EBI_DATA_CACHED_ALIGN)? EBI_DATA_CACHED_ALIGN : 4K);}
+  ${RELOCATING+. = ALIGN (DEFINED (DATAALIGN)? (DATAALIGN * 1K) : ${MAXPAGESIZE});}
+  ${TCM+. = ALIGN (DEFINED (EBI_DATA_CACHED_ALIGN)? EBI_DATA_CACHED_ALIGN : ${MAXPAGESIZE});}
 
-  .DATA : {} :DATA
+  .DATA : {} ${TCM+:DATA}
 
   /* Ensure the __preinit_array_start label is properly aligned.  We
      could instead move the label definition inside the section, but
      the linker would then create the section even if it turns out to
      be empty, which is not pretty. */
-  ${RELOCATING+. = ALIGN(${ALIGNMENT});}
+  ${RELOCATING+. = ALIGN (${ALIGNMENT});}
   ${RELOCATING+${CREATE_SHLIB-PROVIDE (__preinit_array_start = .);}}
 
   .preinit_array   ${RELOCATING-0} : ${TCM+AT (__ebi_pa_start__ + ADDR (.preinit_array) - __ebi_va_start__)} { *(.preinit_array) }
@@ -528,7 +530,7 @@ cat <<EOF
   ${RELOCATING+_edata = .;}
   ${RELOCATING+PROVIDE (edata = .);}
 
-  ${RELOCATING+. = ALIGN(${ALIGNMENT});}
+  ${RELOCATING+. = ALIGN (${ALIGNMENT});}
   ${RELOCATING+__bss_start = .;}
   ${RELOCATING+${OTHER_BSS_SYMBOLS}}
   ${BSS_PLT+${PLT}}
@@ -541,11 +543,11 @@ cat <<EOF
     /* Align here to ensure that the .bss section occupies space up to
         _end.  Align after .bss to ensure correct alignment even if the
         .bss section disappears because there are no input sections.  */
-    ${RELOCATING+. = ALIGN(${ALIGNMENT});}
+    ${RELOCATING+. = ALIGN (${ALIGNMENT});}
   }
   ${OTHER_BSS_SECTIONS}
 
-  ${RELOCATING+. = ALIGN(${ALIGNMENT});}
+  ${RELOCATING+. = ALIGN (${ALIGNMENT});}
   ${RELOCATING+_end = .;}
   ${RELOCATING+${OTHER_BSS_END_SYMBOLS}}
 
@@ -556,7 +558,7 @@ cat <<EOF
   ${RELOCATING+. = ALIGN (DEFINED (DATAALIGN)? (DATAALIGN * 1K) : 512K);}
   ${TCM+. = ALIGN (DEFINED (EBI_DATA_CACHED_ALIGN)? EBI_DATA_CACHED_ALIGN : 512K);}
 
-  .DATA : {} :DATA
+  .SDATA : {} ${TCM+:DATA}
 
   ${SDATA}
   ${CREATE_SHLIB+${SDATA2}}
@@ -564,15 +566,15 @@ cat <<EOF
   ${OTHER_SDATA_SECTIONS}
   ${SBSS}
 
-  ${RELOCATING+. = ALIGN(${ALIGNMENT});}
+  ${RELOCATING+. = ALIGN (${ALIGNMENT});}
   ${RELOCATING+PROVIDE (end = .);}
   ${RELOCATING+${DATA_SEGMENT_END}}
 
   ${TCM+__ebi_end = __ebi_pa_start__ + . - __ebi_va_start__;}
 
 ${TCM+/* Start SMI memory. */}
-  ${TCM+__smi_va_start__ = ALIGN ((DEFINED (SMI_VA_START)? SMI_VA_START : .), 4K);}
-  ${TCM+__smi_pa_start__ = ALIGN ((DEFINED (SMI_PA_START)? SMI_PA_START : .), 4K);}
+  ${TCM+__smi_va_start__ = ALIGN ((DEFINED (SMI_VA_START)? SMI_VA_START : .), ${MAXPAGESIZE});}
+  ${TCM+__smi_pa_start__ = ALIGN ((DEFINED (SMI_PA_START)? SMI_PA_START : .), ${MAXPAGESIZE});}
 
   ${TCM+. = __smi_va_start__;}
   ${TCM+__smi_start = __smi_pa_start__;}
@@ -585,8 +587,8 @@ ${TCM+/* Start SMI memory. */}
   ${TCM+__smi_end = __smi_pa_start__ + . - __smi_va_start__;}
 
 ${TCM+/* Start TCM memory. */}
-  ${TCM+__tcm_va_start__ = ALIGN ((DEFINED (TCM_VA_START)? TCM_VA_START : ${TCM_ADDRESS-0xd8000000}), 4K);}
-  ${TCM+__tcm_pa_start__ = ALIGN ((DEFINED (TCM_PA_START)? TCM_PA_START : ${TCM_ADDRESS-0xd8000000}), 4K);}
+  ${TCM+__tcm_va_start__ = ALIGN ((DEFINED (TCM_VA_START)? TCM_VA_START : ${TCM_ADDRESS-0xd8000000}), ${MAXPAGESIZE});}
+  ${TCM+__tcm_pa_start__ = ALIGN ((DEFINED (TCM_PA_START)? TCM_PA_START : ${TCM_ADDRESS-0xd8000000}), ${MAXPAGESIZE});}
 
   ${TCM+. = __tcm_va_start__;}
   ${TCM+__tcm_start = __tcm_pa_start__;}
@@ -598,7 +600,7 @@ ${TCM+/* Start TCM memory. */}
 
   ${TCM+__tcm_end = __tcm_pa_start__ + . - __tcm_va_start__;}
 
-  /* Stabs debugging sections.  */
+/* Stabs debugging sections.  */
   .stab          0 : { *(.stab) }
   .stabstr       0 : { *(.stabstr) }
   .stab.excl     0 : { *(.stab.excl) }
@@ -608,7 +610,7 @@ ${TCM+/* Start TCM memory. */}
 
   .comment       0 : { *(.comment) }
 
-  /* DWARF debug sections.
+/* DWARF debug sections.
      Symbols in the DWARF debugging sections are relative to the beginning
      of the section so we begin them at 0.  */
 
