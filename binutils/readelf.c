@@ -8084,6 +8084,8 @@ is_32bit_abs_reloc (unsigned int reloc_type)
       return reloc_type == 1; /* R_PPC64_ADDR32.  */
     case EM_PPC:
       return reloc_type == 1; /* R_PPC_ADDR32.  */
+    case EM_QDSP6:
+      return reloc_type == 6; /* R_QDSP6_32.  */
     case EM_S370:
       return reloc_type == 1; /* R_I370_ADDR31.  */
     case EM_S390_OLD:
