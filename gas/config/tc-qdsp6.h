@@ -157,4 +157,8 @@ extern void qdsp6_align_code PARAMS ((fragS *, size_t));
   { ".sbss",  SHT_NOBITS,   SHF_ALLOC + SHF_WRITE + SHF_QDSP6_GPREL },
 #endif
 
+/* The upper limit is arbitrarily set to 17 because that is what
+   it was in 2.14 */
+#define TC_ALIGN_LIMIT 17
+
 #endif /* TC_QDSP6 */
