@@ -47,10 +47,19 @@
 #define QDSP6_IS_V2 (1 << 31)
 #define QDSP6_IS_V3 (1 << 30)
 
+/* Determine if a number can be represented in 16 bits (unsigned) */
+#define QDSP6_IS16BITS(num)    0	/* not yet implemented */
+
+/* Determine if a number is a 16-bit instruction */
+#define QDSP6_IS16INSN(num) 0	/* not yet implemented */
+
 /* Extract the low 16 bits */
-#define QDSP6_LO16(num) ((num) & 0xffff)
+#define QDSP6_LO16(num) \
+  ((num) & 0xffff)
+
 /* Extract the high 16 bits */
-#define QDSP6_HI16(num) (QDSP6_LO16 ((num) >> 16))
+#define QDSP6_HI16(num) \
+  (QDSP6_LO16 ((num) >> 16))
 
 /* This is the instruction size. */
 #define QDSP6_INSN_LEN (4)
@@ -232,23 +241,22 @@ extern int qdsp6_verify_hw;
 
 #define MAX_PACKET_INSNS 4
 
-// We encode bits 15:14 in the instruction as follows:
-//     00: Reserved (to enable 16-bit instructions)
-//     11: End of packet. A packet can have 1,2,3,4 instructions.
-//     01: Not end of packet and not end of loop
-//     10: Not end of packet and is end of HW loop.
+/** Bits 15:14 in the instruction mark boundaries.
+*/
 #define QDSP6_PACKET_BIT_NUM                14
 #define QDSP6_PACKET_BIT_MASK               (0x3<<QDSP6_PACKET_BIT_NUM)
-#define QDSP6_END_PACKET                    (0x3<<QDSP6_PACKET_BIT_NUM)
-#define QDSP6_END_NOT                       (0x1<<QDSP6_PACKET_BIT_NUM)
-#define QDSP6_END_LOOP                      (0x2<<QDSP6_PACKET_BIT_NUM)
+#define QDSP6_END_PACKET                    (0x3<<QDSP6_PACKET_BIT_NUM) /** < End of packet. */
+#define QDSP6_END_NOT                       (0x1<<QDSP6_PACKET_BIT_NUM) /** < End of loop. */
+#define QDSP6_END_LOOP                      (0x2<<QDSP6_PACKET_BIT_NUM) /** < Neither. */
 
-/** Set packet bits in insn.
-
-@param insn instruction.
-@param bits new packet bits.
+/** Get, set and reset packet bits in insn.
 */
-#define QDSP6_PACKET_BIT_SET(insn, bits) (((insn) & ~QDSP6_PACKET_BIT_MASK) | (bits))
+#define QDSP6_PACKET_BIT_GET(insn) \
+  ((insn) & QDSP6_PACKET_BIT_MASK)               /** < Get */
+#define QDSP6_PACKET_BIT_SET(insn, bits) \
+  (((insn) & ~QDSP6_PACKET_BIT_MASK) | (bits))   /** < Set */
+#define QDSP6_PACKET_BIT_RESET(insn) \
+  (QDSP6_PACKET_BIT_SET ((insn), QDSP6_END_NOT)) /** < Reset */
 
 /* We don't put the packet header in the opcode table */
 extern const qdsp6_opcode qdsp6_packet_header_opcode;

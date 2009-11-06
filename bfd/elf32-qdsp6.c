@@ -41,6 +41,11 @@
 
 #define QDSP6_TRAMPOLINE_PREFIX     ".PAD"
 #define QDSP6_TRAMPOLINE_PREFIX_LEN (sizeof (QDSP6_TRAMPOLINE_PREFIX))
+#define QDSP6_TRAMPLINE_NEEDED(d, b) \
+  (  abs (d) \
+   > (~(~(bfd_signed_vma) 0 << (b)) & -(MAX_PACKET_INSNS * QDSP6_INSN_LEN)))
+
+
 
 /* The name of the dynamic interpreter.  This is put in the .interp
    section.  */
@@ -82,6 +87,8 @@ static bfd_boolean qdsp6_elf_section_processing
   PARAMS ((bfd *, Elf_Internal_Shdr *));
 static void qdsp6_elf_symbol_processing
   PARAMS ((bfd *, asymbol *));
+static bfd_boolean qdsp6_elf_common_definition 
+  PARAMS ((Elf_Internal_Sym *));
 static bfd_boolean qdsp6_elf_add_symbol_hook
   PARAMS ((bfd *, struct bfd_link_info *i,
            Elf_Internal_Sym *, const char **, flagword *,
@@ -142,6 +149,8 @@ typedef struct _qdsp6_elf_link_hash_entry
   } qdsp6_elf_link_hash_entry;
 
 #define qdsp6_elf_hash_entry(ent) ((qdsp6_elf_link_hash_entry *) (ent))
+#define streq(a, b)     (strcmp ((a), (b)) == 0)
+#define strneq(a, b)     (strcmp ((a), (b)) != 0)
 
 typedef struct _qdsp6_elf_link_hash_table
   {
@@ -877,91 +886,7 @@ qdsp6_elf_reloc
 
 	  reloc_entry->address += input_section->output_offset;
 	  //printf("%d: relocation: 0x%x Reloc address: 0x%x\n",__LINE__,relocation,reloc_entry->address);
-
-	  /* WTF?? */
-	  if (abfd->xvec->flavour == bfd_target_coff_flavour
-	      && strcmp (abfd->xvec->name, "coff-Intel-little") != 0
-	      && strcmp (abfd->xvec->name, "coff-Intel-big") != 0)
-	    {
-#if 1
-	      /* For m68k-coff, the addend was being subtracted twice during
-		 relocation with -r.  Removing the line below this comment
-		 fixes that problem; see PR 2953.
-
-However, Ian wrote the following, regarding removing the line below,
-which explains why it is still enabled:  --djm
-
-If you put a patch like that into BFD you need to check all the COFF
-linkers.  I am fairly certain that patch will break coff-i386 (e.g.,
-SCO); see coff_i386_reloc in coff-i386.c where I worked around the
-problem in a different way.  There may very well be a reason that the
-code works as it does.
-
-Hmmm.  The first obvious point is that bfd_perform_relocation should
-not have any tests that depend upon the flavour.  It's seem like
-entirely the wrong place for such a thing.  The second obvious point
-is that the current code ignores the reloc addend when producing
-relocatable output for COFF.  That's peculiar.  In fact, I really
-have no idea what the point of the line you want to remove is.
-
-A typical COFF reloc subtracts the old value of the symbol and adds in
-the new value to the location in the object file (if it's a pc
-relative reloc it adds the difference between the symbol value and the
-location).  When relocating we need to preserve that property.
-
-BFD handles this by setting the addend to the negative of the old
-value of the symbol.  Unfortunately it handles common symbols in a
-non-standard way (it doesn't subtract the old value) but that's a
-different story (we can't change it without losing backward
-compatibility with old object files) (coff-i386 does subtract the old
-value, to be compatible with existing coff-i386 targets, like SCO).
-
-So everything works fine when not producing relocatable output.  When
-we are producing relocatable output, logically we should do exactly
-what we do when not producing relocatable output.  Therefore, your
-patch is correct.  In fact, it should probably always just set
-reloc_entry->addend to 0 for all cases, since it is, in fact, going to
-add the value into the object file.  This won't hurt the COFF code,
-which doesn't use the addend; I'm not sure what it will do to other
-formats (the thing to check for would be whether any formats both use
-the addend and set partial_inplace).
-
-When I wanted to make coff-i386 produce relocatable output, I ran
-into the problem that you are running into: I wanted to remove that
-line.  Rather than risk it, I made the coff-i386 relocs use a special
-function; it's coff_i386_reloc in coff-i386.c.  The function
-specifically adds the addend field into the object file, knowing that
-bfd_perform_relocation is not going to.  If you remove that line, then
-coff-i386.c will wind up adding the addend field in twice.  It's
-trivial to fix; it just needs to be done.
-
-The problem with removing the line is just that it may break some
-working code.  With BFD it's hard to be sure of anything.  The right
-way to deal with this is simply to build and test at least all the
-supported COFF targets.  It should be straightforward if time and disk
-space consuming.  For each target:
-    1) build the linker
-    2) generate some executable, and link it using -r (I would
-       probably use paranoia.o and link against newlib/libc.a, which
-       for all the supported targets would be available in
-       /usr/cygnus/progressive/H-host/target/lib/libc.a).
-    3) make the change to reloc.c
-    4) rebuild the linker
-    5) repeat step 2
-    6) if the resulting object files are the same, you have at least
-       made it no worse
-    7) if they are different you have to figure out which version is
-       right
-*/
-	      relocation -= reloc_entry->addend;
-#endif
-	      reloc_entry->addend = 0;
-	      //printf("%d: relocation: 0x%x Reloc address: 0x%x\n",__LINE__,relocation,reloc_entry->address);
-	    }
-	  else
-	    {
-	      reloc_entry->addend = relocation;
-	    }
+	  reloc_entry->addend = relocation;
 	}
     }
   else
@@ -1745,10 +1670,13 @@ qdsp6_elf_relocate_section
 
 	    if (!qdsp6_reloc_operand (howto, &insn,
 				      relocation + rel->r_addend, NULL))
+	    {
+	      qdsp6_reloc_operand (howto, &insn, relocation + rel->r_addend, NULL);
               r = info->callbacks->reloc_overflow
                     (info, (h ? &h->root : NULL), name,
                     howto->name, (bfd_vma) 0,
                     input_bfd, input_section, rel->r_offset);
+	    }
 	    else
               qdsp6_put_insn (input_bfd, howto, contents + rel->r_offset, insn);
 
@@ -1935,7 +1863,7 @@ qdsp6_elf_relax_section (bfd *input_bfd,
                          struct bfd_link_info *link_info,
                          bfd_boolean *again)
 {
-  Elf_Internal_Shdr *symtab_hdr;
+  Elf_Internal_Shdr *symtab_hdr = NULL;
   Elf_Internal_Rela *irelbuf = NULL;
   Elf_Internal_Rela *irel;
   unsigned int ireloc, creloc;
@@ -1967,7 +1895,6 @@ qdsp6_elf_relax_section (bfd *input_bfd,
                                    _bfd_link_hash_newfunc,
 				   sizeof (struct bfd_link_hash_table)));
 
-  symtab_hdr = &elf_tdata (input_bfd)->symtab_hdr;
 
   /* It's quite hard to get rid of the relocation table once it's been read.
      Ideally, any relocations required by the trampoline should be added to it,
@@ -1984,11 +1911,13 @@ qdsp6_elf_relax_section (bfd *input_bfd,
 
   for (ireloc = 0; ireloc < isec->reloc_count; ireloc++)
     {
-      bfd_vma at_base, to_base, t_base;
-      bfd_vma at, t_at, from, to;
+      bfd_vma t, t_base; 
+      bfd_vma at, at_base;
+      bfd_vma to, to_base;
+      bfd_vma from;
       bfd_signed_vma ioffset;
-      bfd_vma r_type;
-      bfd_boolean is_def;
+      bfd_vma r_type; 
+      bfd_boolean is_def; 
 
       irel = irelbuf + ireloc;
 
@@ -2002,7 +1931,6 @@ qdsp6_elf_relax_section (bfd *input_bfd,
           isec_size = bfd_section_size (input_bfd, isec);
 
           at      = irel->r_offset;
-          from    = irel->r_offset - irel->r_addend;
           at_base = isec->output_section->vma + isec->output_offset;
           if (at >= isec_size)
 	    {
@@ -2013,7 +1941,11 @@ qdsp6_elf_relax_section (bfd *input_bfd,
 */
 	      continue;
 	    }
+          /* This will do for now, but it must be corrected since the addendum
+             is also offset by the position of the branch in the packet. */
+          from = irel->r_offset;
 
+          symtab_hdr = &elf_tdata (input_bfd)->symtab_hdr;
           r_symndx   = ELF32_R_SYM (irel->r_info);
           sym_hashes = elf_sym_hashes (input_bfd);
 
@@ -2030,24 +1962,27 @@ qdsp6_elf_relax_section (bfd *input_bfd,
 	    }
 
           /* Get the value of the symbol referred to by the reloc.  */
-          if (r_symndx < symtab_hdr->sh_info) /* Local to this input_bfd  */
+          if (r_symndx < symtab_hdr->sh_info)
 	    {
 	      /* A local symbol.  */
+              static size_t l_count;
 	      Elf_Internal_Sym *isym;
+              asection *asec;
 
 	      isym = isymbuf + ELF32_R_SYM (irel->r_info);
+              asec = bfd_section_from_elf_index (input_bfd, isym->st_shndx);
 
-              name = bfd_malloc (sizeof (isym->st_name) * 2 + 1);
-              sprintf (name, "%0*lx", (int) sizeof (isym->st_name) * 2, isym->st_name);
+              name = bfd_malloc (sizeof (l_count) * 2 + 1);
+              sprintf (name, "%0*lx", (int) sizeof (l_count) * 2, l_count++);
 
               is_def = TRUE;
 
               to      = isym->st_value;
-              to_base =   isec->output_section->vma
-                        + isec->output_offset;
+              to_base = asec? (asec->output_section->vma + asec->output_offset): 0;
 	    }
 	  else
 	    {
+              /* A global symbol. */
 	      h = sym_hashes [r_symndx - symtab_hdr->sh_info];
 	      while (h && (   h->root.type == bfd_link_hash_indirect
                            || h->root.type == bfd_link_hash_warning))
@@ -2084,20 +2019,18 @@ qdsp6_elf_relax_section (bfd *input_bfd,
 
                   default:
                     continue;
+                    break;
                 }
             }
 
           /* Check if the target is beyond reach. */
           ioffset = abs ((to + to_base) - (from + at_base));
           if (   (is_def && (   (   (r_type == R_QDSP6_B22_PCREL)
-                                 && (ioffset >   ~(~(bfd_signed_vma) 0 << 23)
-                                               - QDSP6_INSN_LEN))
+                                 && QDSP6_TRAMPLINE_NEEDED (ioffset, 23))
                              || (   (r_type == R_QDSP6_B15_PCREL)
-                                 && (ioffset >   ~(~(bfd_signed_vma) 0 << 16)
-                                               - QDSP6_INSN_LEN))
+                                 && QDSP6_TRAMPLINE_NEEDED (ioffset, 16))
                              || (   (r_type == R_QDSP6_B13_PCREL)
-                                 && (ioffset >   ~(~(bfd_signed_vma) 0 << 14)
-                                               - QDSP6_INSN_LEN))))
+                                 && QDSP6_TRAMPLINE_NEEDED (ioffset, 14))))
               || !is_def)
 	    {
               /* Try to add a trampoline. */
@@ -2122,6 +2055,20 @@ qdsp6_elf_relax_section (bfd *input_bfd,
                 elf_section_data (isec)->this_hdr.contents = contents;
 	      }
 
+            /* Subtract the offset of the branch into the packet from
+               the addendum. */
+            for (;
+                 from >= QDSP6_INSN_LEN;
+                 from -= QDSP6_INSN_LEN, irel->r_addend -= QDSP6_INSN_LEN)
+              {
+                qdsp6_insn insn;
+
+                insn = qdsp6_get_insn (input_bfd, elf_qdsp6_howto_table + r_type,
+                                       contents + from - QDSP6_INSN_LEN);
+                if (QDSP6_PACKET_BIT_GET (insn) == QDSP6_END_PACKET)
+                  break;
+              }
+
               /* Create a symbol for the trampoline. */
               t_name = bfd_malloc (  QDSP6_TRAMPOLINE_PREFIX_LEN + 1
                                    + strlen (name) + 1);
@@ -2131,14 +2078,14 @@ qdsp6_elf_relax_section (bfd *input_bfd,
               t_h = bfd_link_hash_lookup (&t_hash, t_name, FALSE, FALSE, FALSE);
               if (!t_h)
                 {
-                  t_at = isec_size;
+                  t = isec_size;
 
                   if (   (   (r_type == R_QDSP6_B22_PCREL)
-                          && ((t_at - from) > ~(~(bfd_signed_vma) 0 << 23)))
+                          && QDSP6_TRAMPLINE_NEEDED (t - from, 23))
                       || (   (r_type == R_QDSP6_B15_PCREL)
-                          && ((t_at - from) > ~(~(bfd_signed_vma) 0 << 16)))
+                          && QDSP6_TRAMPLINE_NEEDED (t - from, 16))
                       || (   (r_type == R_QDSP6_B13_PCREL)
-                          && ((t_at - from) > ~(~(bfd_signed_vma) 0 << 14))))
+                          && QDSP6_TRAMPLINE_NEEDED (t - from, 14)))
                     /* No room for a trampoline. */
                     goto error_return;
 
@@ -2157,7 +2104,7 @@ qdsp6_elf_relax_section (bfd *input_bfd,
                   /* Create the trampoline symbol. */
                   BFD_ASSERT
                     (t_h = bfd_link_hash_lookup (&t_hash, t_name, TRUE, TRUE, FALSE));
-                  t_h->u.def.value   = t_at;
+                  t_h->u.def.value   = t;
                   t_h->u.def.section = isec;
 
                   /* Add trampoline at the end of the section. */
@@ -2165,7 +2112,7 @@ qdsp6_elf_relax_section (bfd *input_bfd,
                        i < sizeof (qdsp6_trampoline);
                        i += sizeof (*qdsp6_trampoline), j++)
                     bfd_put_32 (input_bfd, qdsp6_trampoline [j],
-                                contents + t_at + i);
+                                contents + t + i);
 
                   /* Add relocations for the trampoline. */
                   creloc =   sizeof (qdsp6_trampoline_rels)
@@ -2175,12 +2122,12 @@ qdsp6_elf_relax_section (bfd *input_bfd,
                       creloc = 0;
                         {
                           /* Reuse the original relocation. */
-                          irel->r_offset =   t_h->u.def.value
-                                           + qdsp6_trampoline_rels [creloc].offset;
                           irel->r_info
                             = ELF32_R_INFO (ELF32_R_SYM (irel->r_info),
                                             qdsp6_trampoline_rels [creloc].rtype);
-                          irel->r_addend = 0;
+                          irel->r_offset =   t_h->u.def.value
+                                           + qdsp6_trampoline_rels [creloc].offset;
+                          /* The relocation addendum remains the same. */
                         }
                     }
                 }
@@ -2193,7 +2140,7 @@ qdsp6_elf_relax_section (bfd *input_bfd,
               free (t_name);
 
               /* Get the effective address of the trampoline. */
-              t_at   = t_h->u.def.value;
+              t   = t_h->u.def.value;
               t_base =   t_h->u.def.section->vma +
                        + t_h->u.def.section->output_offset;
 
@@ -2202,7 +2149,7 @@ qdsp6_elf_relax_section (bfd *input_bfd,
                                      elf_qdsp6_howto_table + r_type,
                                      contents + at);
               if (qdsp6_reloc_operand (elf_qdsp6_howto_table + r_type, &insn,
-                                       t_at - from, NULL))
+                                       t - from, NULL))
                 qdsp6_put_insn (input_bfd, elf_qdsp6_howto_table + r_type,
                                 contents + at, insn);
 
