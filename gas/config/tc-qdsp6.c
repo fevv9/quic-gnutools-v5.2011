@@ -2533,7 +2533,7 @@ qdsp6_common
   /* Start assuming that the access is 0, i.e.
      use the natural access for the symbol size and alignment. */
   access = 0;
-  /* Now parse the optional alignment field. */
+  /* Now parse the optional access field. */
   if (*input_line_pointer == ',')
     {
       input_line_pointer++;
