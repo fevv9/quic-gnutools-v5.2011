@@ -656,6 +656,22 @@ get_emulation (int argc, char **argv)
 		 some Linux systems.  Hope that nobody creates an
 		 emulation named 486.  */
 	    }
+	  else if (strcmp (argv[i], "-mv2") == 0
+		   || strcmp (argv[i], "-mv3") == 0
+		   || strcmp (argv[i], "-mv4") == 0)
+	    {
+		/* FIXME: See mips comment */
+	    }
+	  else if (strcmp (argv [i], "-march") == 0
+		   || strcmp (argv [i], "-mcpu") == 0)
+	    {
+              i++;
+	    }
+          else if (strncmp (argv[i], "-march=", 7) == 0
+		   || strncmp (argv[i], "-mcpu=", 6) == 0)
+	    {
+		/* FIXME: Hope nobody create a march= or mcpu= emulation */
+	    }
 	  else
 	    {
 	      /* -mEMUL */
