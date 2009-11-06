@@ -87,6 +87,8 @@ static bfd_boolean qdsp6_elf_section_processing
   PARAMS ((bfd *, Elf_Internal_Shdr *));
 static void qdsp6_elf_symbol_processing
   PARAMS ((bfd *, asymbol *));
+static bfd_boolean qdsp6_elf_common_definition 
+  PARAMS ((Elf_Internal_Sym *));
 static bfd_boolean qdsp6_elf_add_symbol_hook
   PARAMS ((bfd *, struct bfd_link_info *i,
            Elf_Internal_Sym *, const char **, flagword *,
@@ -1173,6 +1175,18 @@ qdsp6_elf_symbol_processing
       break;
     }
 }
+
+static bfd_boolean
+qdsp6_elf_common_definition (Elf_Internal_Sym *sym)
+{
+  return (sym->st_shndx == SHN_COMMON || 
+	  sym->st_shndx == SHN_QDSP6_SCOMMON ||
+	  sym->st_shndx == SHN_QDSP6_SCOMMON_1 ||
+	  sym->st_shndx == SHN_QDSP6_SCOMMON_2 ||
+	  sym->st_shndx == SHN_QDSP6_SCOMMON_4 ||
+	  sym->st_shndx == SHN_QDSP6_SCOMMON_8);
+}
+
 
 /* Work over a section just before writing it out. FIXME: We recognize
    sections that need the SHF_QDSP6_GPREL flag by name; there has to be
@@ -3080,6 +3094,7 @@ qdsp6_elf_ignore_discarded_relocs (asection *s ATTRIBUTE_UNUSED)
                                         _bfd_elf_link_hash_table_create
 #define bfd_elf32_bfd_link_add_symbols  bfd_elf32_bfd_link_add_symbols
 #endif
+#define elf_backend_common_definition   qdsp6_elf_common_definition
 
 /* This is a bit of a hack
    It installs our wrapper for _bfd_elf_set_arch_mach
