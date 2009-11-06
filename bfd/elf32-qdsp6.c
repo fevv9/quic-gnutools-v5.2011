@@ -87,8 +87,6 @@ static bfd_boolean qdsp6_elf_section_processing
   PARAMS ((bfd *, Elf_Internal_Shdr *));
 static void qdsp6_elf_symbol_processing
   PARAMS ((bfd *, asymbol *));
-static bfd_boolean qdsp6_elf_common_definition 
-  PARAMS ((Elf_Internal_Sym *));
 static bfd_boolean qdsp6_elf_add_symbol_hook
   PARAMS ((bfd *, struct bfd_link_info *i,
            Elf_Internal_Sym *, const char **, flagword *,
