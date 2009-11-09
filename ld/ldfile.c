@@ -641,9 +641,12 @@ ldfile_set_output_arch (const char *string, enum bfd_architecture defarch)
 
   if (arch)
     {
-      ldfile_output_architecture = arch->arch;
-      ldfile_output_machine = arch->mach;
-      ldfile_output_machine_name = arch->printable_name;
+      if (ldfile_output_machine < arch->mach)
+        {
+          ldfile_output_architecture = arch->arch;
+          ldfile_output_machine = arch->mach;
+          ldfile_output_machine_name = arch->printable_name;
+        }
     }
   else if (defarch != bfd_arch_unknown)
     ldfile_output_architecture = defarch;
