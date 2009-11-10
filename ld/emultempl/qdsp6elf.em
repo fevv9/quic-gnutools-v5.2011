@@ -43,6 +43,8 @@ qdsp6_after_parse (void)
   /* It likely does not make sense to have a DSO using the TCM. */
   if (config.use_tcm && link_info.shared)
     einfo (_("%P%F: \"-tcm\" not supported with \"-shared\"\n"));
+
+  after_parse_default();
 }
 
 EOF
