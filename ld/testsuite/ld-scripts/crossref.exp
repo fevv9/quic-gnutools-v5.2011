@@ -51,6 +51,10 @@ if [istarget mep*-*-elf] {
     set CFLAGS "-mtiny=0"
 }
 
+if { [istarget qdsp6*] } {
+    append cflags " -G0"
+}
+
 if { ![ld_compile $CC "$srcdir/$subdir/cross1.c" tmpdir/cross1.o] \
      || ![ld_compile $CC "$srcdir/$subdir/cross2.c" tmpdir/cross2.o] } {
     unresolved $test1
