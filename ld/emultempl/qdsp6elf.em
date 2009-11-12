@@ -202,3 +202,4 @@ PARSE_AND_LIST_ARGS_CASES=$'
         }
       break;
 '
+source_em ${srcdir}/emultempl/needrelax.em
