@@ -28,11 +28,6 @@
    QDSP6 machine-specific port contributed by Qualcomm, Inc.
 */
 
-#if defined (__MINGW32__)
-#include "mingw_regex.h"
-#else
-#include <regex.h>
-#endif
 #include <stdint.h>
 #include <stdio.h>
 #include <sys/param.h>
@@ -46,6 +41,7 @@
 #include "struc-symbol.h"
 #include "safe-ctype.h"
 #include "subsegs.h"
+#include <xregex.h>
 
 #if defined (__MINGW32__)
 #  ifndef MAX
@@ -1560,8 +1556,8 @@ modified to reflect these changes.
 void
 qdsp6_history_commit (size_t n)
 {
-  size_t i, j;
-  int on;
+  size_t i = 0, j = 0;
+  int on = 0;
 
   /* Rewrite history packets with (possibly) changed instructions. */
   for (on = TRUE, i = n; on && i > 0; i--)
@@ -2545,7 +2541,7 @@ qdsp6_common
     }
 
   if (!access)
-    access = 1 << MIN (bfd_log2 (size), align2);
+    access = 1 << MIN ((offsetT)bfd_log2 (size), align2);
 
   if (localScope || symbol_get_obj (symbolP)->local)
     {
