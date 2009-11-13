@@ -24,13 +24,23 @@ ifndef PREFIX
 PREFIX = $(DESTDIR)
 endif
 
-all: obj-win obj-lnx obj-lnx32
+MINGW_GCC=/pkg/qct/software/hexagon/windows-cross/gcc-3.4.5-cross/bin
+
+all:
+	@echo "Specify a target:"
+	@echo "	\"obj-win\" for windows"
+	@echo "	\"obj-lnx\" for linux" 
+	@echo
+	@echo "Be sure to set PREFIX to the desired install location"
+	@echo
+	@echo "example: make PREFIX=\$$top/install/gnu obj-lnx"
 
 install: $(PREFIX)
 
 obj-win:
 	mkdir $@
 	cd $@ && \
+	PATH=$(MINGW_GCC):$(PATH) \
 	CC=i386-pc-mingw32-gcc \
 	CC_FOR_TARGET=i386-pc-mingw32-gcc \
 	CC_FOR_BUILD=gcc \
@@ -42,7 +52,8 @@ obj-win:
   		--disable-tcl \
   		--enable-bfd-assembler \
   		--disable-multilib 		&& \
-	make -j 20 all install | tee build.log
+	PATH=$(MINGW_GCC):$(PATH) make -j 8 all | tee build.log && \
+	PATH=$(MINGW_GCC):$(PATH) make install  | tee install.log
 
 obj-lnx: 
 	mkdir $@
@@ -51,8 +62,10 @@ obj-lnx:
 	../configure \
   		--target=qdsp6 \
   		--prefix=$(PREFIX) \
-  		--disable-tcl && \
-	make -j 20 all install | tee build.log
+  		--disable-tcl \
+  		--disable-multilib    && \
+	make -j 8 all | tee build.log && \
+	make install  | tee install.log
 
 obj-lnx32: 
 	mkdir $@
@@ -65,9 +78,9 @@ obj-lnx32:
   		--target=qdsp6 \
   		--prefix=$(PREFIX) \
   		--disable-tcl \
-  		--enable-bfd-assembler \
-  		--disable-multilib 		&& \
-	make -j 20 all install | tee build.log
+  		--disable-multilib    && \
+	make -j 8 all | tee build.log && \
+	make install  | tee install.log
 
 .PHONY: clean
 clean:
