@@ -3346,7 +3346,7 @@ case "${target}" in
     ;;
   qdsp6-*-*)
     noconfigdirs="$noconfigdirs  gdb ${libgcj}"
-    noconfigdirs="$noconfigdirs  gprof"
+    noconfigdirs="$noconfigdirs "
     ;;
   rs6000-*-lynxos*)
     noconfigdirs="$noconfigdirs target-newlib gprof ${libgcj}"
