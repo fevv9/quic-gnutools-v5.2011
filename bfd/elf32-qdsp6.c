@@ -100,10 +100,6 @@ static bfd_boolean qdsp6_elf_fake_sections
 static bfd_boolean qdsp6_elf_relocate_section
   PARAMS ((bfd *, struct bfd_link_info *, bfd *, asection *, bfd_byte *,
            Elf_Internal_Rela *, Elf_Internal_Sym *, asection **));
-static asection * qdsp6_elf_gc_mark_hook
-  PARAMS ((asection *, struct bfd_link_info *,
-           Elf_Internal_Rela *, struct elf_link_hash_entry *,
-           Elf_Internal_Sym *sym));
 static bfd_boolean qdsp6_elf_gc_sweep_hook
   PARAMS ((bfd *, struct bfd_link_info *,
            asection *, const Elf_Internal_Rela *));
@@ -1315,33 +1311,6 @@ qdsp6_put_insn (bfd * ibfd,
 	       "%s: Unrecognized howto->size  ==%d\n", __func__, howto->size);
       abort ();
     }
-}
-
-static asection *
-qdsp6_elf_gc_mark_hook
-(asection *sec, struct bfd_link_info *info ATTRIBUTE_UNUSED,
- Elf_Internal_Rela *rel ATTRIBUTE_UNUSED, struct elf_link_hash_entry *h,
- Elf_Internal_Sym *sym)
-{
-  if (h != NULL)
-    {
-      switch (h->root.type)
-	{
-	case bfd_link_hash_defined:
-	case bfd_link_hash_defweak:
-	  return h->root.u.def.section;
-
-	case bfd_link_hash_common:
-	  return h->root.u.c.p->section;
-
-	default:
-	  break;
-	}
-    }
-  else
-    return bfd_section_from_elf_index (sec->owner, sym->st_shndx);
-
-  return NULL;
 }
 
 static bfd_boolean
@@ -3052,7 +3021,6 @@ qdsp6_elf_ignore_discarded_relocs (asection *s ATTRIBUTE_UNUSED)
 #define elf_info_to_howto_rel           qdsp6_info_to_howto_rel
 
 #define elf_backend_object_p            qdsp6_elf_object_p
-#define elf_backend_gc_mark_hook        qdsp6_elf_gc_mark_hook
 #define elf_backend_gc_sweep_hook       qdsp6_elf_gc_sweep_hook
 #define elf_backend_check_relocs        qdsp6_elf_check_relocs
 #define elf_backend_relocate_section    qdsp6_elf_relocate_section
