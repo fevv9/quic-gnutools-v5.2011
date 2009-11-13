@@ -1954,7 +1954,7 @@ qdsp6_elf_relax_section (bfd *input_bfd,
               asec = bfd_section_from_elf_index (input_bfd, isym->st_shndx);
 
               name = bfd_malloc (sizeof (l_count) * 2 + 1);
-              sprintf (name, "%0*lx", (int) sizeof (l_count) * 2, l_count++);
+              sprintf (name, "%0*lx", (int) sizeof (l_count) * 2, (long)l_count++);
 
               is_def = TRUE;
 
