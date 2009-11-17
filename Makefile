@@ -3,7 +3,7 @@
 # Makefile to build binutils for the QDSP6.
 #
 
-dirs = obj-win obj-lnx32 obj-lnx
+dirs = build_win build_lnx 
 
 
 BS=$(shell uname)
@@ -24,20 +24,36 @@ ifndef PREFIX
 PREFIX = $(DESTDIR)
 endif
 
+ifndef JOBS
+JOBS = 1
+endif
+
 MINGW_GCC=/pkg/qct/software/hexagon/windows-cross/gcc-3.4.5-cross/bin
 
-all:
+
+all: help
+
+.PHONY: help
+help:
 	@echo "Specify a target:"
-	@echo "	\"obj-win\" for windows"
-	@echo "	\"obj-lnx\" for linux" 
+	@echo "	\"build_win\" for windows"
+	@echo "	\"build_lnx\" for linux" 
 	@echo
 	@echo "Be sure to set PREFIX to the desired install location"
 	@echo
-	@echo "example: make PREFIX=\$$top/install/gnu obj-lnx"
+	@echo "example: make PREFIX=\$$top/install/gnu build_lnx"
+
 
 install: $(PREFIX)
 
-obj-win:
+CONFIGURE_OPTIONS = --target=qdsp6 \
+		    --disable-tcl \
+		    --disable-nls \
+		    --enable-bfd-assembler \
+		    --disable-multilib \
+		    --prefix=$(PREFIX)
+
+build_win:
 	mkdir $@
 	cd $@ && \
 	PATH=$(MINGW_GCC):$(PATH) \
@@ -45,43 +61,28 @@ obj-win:
 	CC_FOR_TARGET=i386-pc-mingw32-gcc \
 	CC_FOR_BUILD=gcc \
 	../configure \
-  		--target=qdsp6 \
   		--host=i386-pc-mingw32 \
   		--build=i686-linux \
-  		--prefix=$(PREFIX) \
-  		--disable-tcl \
-  		--enable-bfd-assembler \
-  		--disable-multilib 		&& \
-	PATH=$(MINGW_GCC):$(PATH) make -j 8 all | tee build.log && \
-	PATH=$(MINGW_GCC):$(PATH) make install  | tee install.log
+		$(CONFIGURE_OPTIONS)  && \
+	PATH=$(MINGW_GCC):$(PATH) make -j $(JOBS) all 2>&1| tee build.log 
 
-obj-lnx: 
+build_lnx: 
 	mkdir $@
 	cd $@ && \
 	CFLAGS="$(BUILD_CFLAGS)" \
 	../configure \
-  		--target=qdsp6 \
-  		--prefix=$(PREFIX) \
-  		--disable-tcl \
-  		--disable-multilib    && \
-	make -j 8 all | tee build.log && \
-	make install  | tee install.log
+		$(CONFIGURE_OPTIONS)  && \
+	make -j $(JOBS) all 2>&1| tee build.log
 
-obj-lnx32: 
-	mkdir $@
-	cd $@ && \
-	CC=gcc \
-	CC_FOR_TARGET=gcc \
-	CC_FOR_BUILD=gcc \
-	CFLAGS="-m32 $(BUILD_CFLAGS)" \
-	../configure \
-  		--target=qdsp6 \
-  		--prefix=$(PREFIX) \
-  		--disable-tcl \
-  		--disable-multilib    && \
-	make -j 8 all | tee build.log && \
-	make install  | tee install.log
+
+.PHONY: install_lnx
+install_lnx: build_lnx
+	$(MAKE) -C build_lnx install
+
+.PHONY: install_win
+install_win: build_win
+	PATH=$(MINGW_GCC):$(PATH) $(MAKE) -C build_win install
 
 .PHONY: clean
 clean:
-	rm -rf $(dirs) $(PREFIX)
+	rm -rf $(dirs) 
