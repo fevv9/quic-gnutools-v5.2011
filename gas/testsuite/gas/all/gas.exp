@@ -59,7 +59,8 @@ case $target_triplet in {
 gas_test "eqv-ok.s" "" "" ".eqv support"
 gas_test_error "eqv-bad.s" "" ".eqv for symbol already set"
 
-if { ![istarget "bfin-*-*"] } then {
+if { ![istarget "bfin-*-*"] && \
+     ![istarget qdsp6*] } then {
     gas_test "assign-ok.s" "" "" "== assignment support"
 }
 gas_test_error "assign-bad.s" "" "== assignment for symbol already set"
@@ -112,7 +113,7 @@ case $target_triplet in {
 	    "vax*-*-*" "z8k-*-*"
 	run_dump_test redef2
 	setup_xfail "*-*-aix*" "*-*-coff" "*-*-cygwin" "*-*-mingw*" "*-*-pe*" \
-	    "bfin-*-*" "hppa*-*-hpux*" \
+	    "bfin-*-*" "qdsp6-*-*" "hppa*-*-hpux*" \
 	    "m68hc*-*-*" "maxq-*-*" "or32-*-*" \
 	    "vax*-*-*" "z8k-*-*"
 	run_dump_test redef3
@@ -313,7 +314,8 @@ if {  ([istarget "i*86-*-*pe*"] && ![istarget "i*86-*-openbsd*"]) \
   gas_test "fastcall.s" ""   "" "fastcall labels"
 }
 
-if { ![istarget "bfin-*-*"] } then {
+if { ![istarget "bfin-*-*"] && \
+     ![istarget qdsp6*] } then {
     run_dump_test assign
 }
 run_dump_test sleb128
