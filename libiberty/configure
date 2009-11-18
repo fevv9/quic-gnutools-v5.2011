@@ -589,6 +589,7 @@ ac_includes_default="\
 #endif"
 
 ac_subst_vars='LTLIBOBJS
+EXTRA_OFILES
 INSTALL_DEST
 pexecute
 target_header_dir
@@ -6482,6 +6483,11 @@ case "${host}" in
      *)				pexecute=./pex-unix.o   ;;
 esac
 
+case "${host}" in
+     *-*-mingw* ) EXTRA_OFILES="./win_realpath.o ./winpath.o" ;;
+esac
+
+
 
 if test x$gcc_no_link = xyes; then
   if test "x${ac_cv_func_mmap_fixed_mapped+set}" != xset; then
@@ -6784,6 +6790,7 @@ for l in x $LIBOBJS; do
   esac
 done
 LIBOBJS="$L"
+
 
 
 

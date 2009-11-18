@@ -668,6 +668,11 @@ case "${host}" in
      *-*-msdos*)		pexecute=./pex-msdos.o  ;;
      *)				pexecute=./pex-unix.o   ;;
 esac
+
+case "${host}" in
+     *-*-mingw* ) EXTRA_OFILES="./win_realpath.o ./winpath.o" ;;
+esac
+
 AC_SUBST(pexecute)
 
 libiberty_AC_FUNC_STRNCMP
@@ -695,6 +700,7 @@ dnl Required by html and install-html
 AC_SUBST(datarootdir)
 AC_SUBST(docdir)
 AC_SUBST(htmldir)
+AC_SUBST(EXTRA_OFILES)
 
 # We need multilib support, but only if configuring for the target.
 AC_CONFIG_FILES([Makefile testsuite/Makefile])

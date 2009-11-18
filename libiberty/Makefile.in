@@ -71,7 +71,7 @@ LIBOBJS = @LIBOBJS@
 
 # A configuration can specify extra .o files that should be included,
 # even if they are in libc. (Perhaps the libc version is buggy.)
-EXTRA_OFILES = 
+EXTRA_OFILES = @EXTRA_OFILES@
 
 # Flags to pass to a recursive make.
 FLAGS_TO_PASS = \
@@ -153,7 +153,7 @@ CFILES = alloca.c argv.c asprintf.c atexit.c				\
 	vasprintf.c vfork.c vfprintf.c vprintf.c vsnprintf.c vsprintf.c	\
 	waitpid.c							\
 	xatexit.c xexit.c xmalloc.c xmemdup.c xstrdup.c xstrerror.c	\
-	 xstrndup.c
+	 xstrndup.c win_realpath.c winpath.c
 
 # These are always included in the library.  The first four are listed
 # first and by compile time to optimize parallel builds.
@@ -200,7 +200,7 @@ CONFIGURED_OFILES = ./asprintf.o ./atexit.o				\
 	./tmpnam.o							\
 	./vasprintf.o ./vfork.o ./vfprintf.o ./vprintf.o ./vsnprintf.o	\
 	 ./vsprintf.o							\
-	./waitpid.o
+	./waitpid.o ./win_realpath.o ./winpath.o
 
 # These files are installed if the library has been configured to do so.
 INSTALLED_HEADERS =                                                     \
@@ -1173,4 +1173,18 @@ $(CONFIGURED_OFILES): stamp-picdir
 	  $(COMPILE.c) $(PICFLAG) $(srcdir)/xstrndup.c -o pic/$@; \
 	else true; fi
 	$(COMPILE.c) $(srcdir)/xstrndup.c $(OUTPUT_OPTION)
+
+./win_realpath.o: $(srcdir)/win_realpath.c config.h $(INCDIR)/ansidecl.h \
+	$(INCDIR)/libiberty.h
+	if [ x"$(PICFLAG)" != x ]; then \
+	  $(COMPILE.c) $(PICFLAG) $(srcdir)/win_realpath.c -o pic/$@; \
+	else true; fi
+	$(COMPILE.c) $(srcdir)/win_realpath.c $(OUTPUT_OPTION)
+
+./winpath.o: $(srcdir)/winpath.c config.h $(INCDIR)/ansidecl.h \
+	$(INCDIR)/libiberty.h
+	if [ x"$(PICFLAG)" != x ]; then \
+	  $(COMPILE.c) $(PICFLAG) $(srcdir)/winpath.c -o pic/$@; \
+	else true; fi
+	$(COMPILE.c) $(srcdir)/winpath.c $(OUTPUT_OPTION)
 
