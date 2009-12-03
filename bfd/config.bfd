@@ -1194,6 +1194,7 @@ case "${targ}" in
   qdsp6-*-*)
     targ_defvec=bfd_elf32_littleqdsp6_vec
     targ_selvecs=bfd_elf32_bigqdsp6_vec
+    want64=true
     ;;
 
   s390-*-linux*)
