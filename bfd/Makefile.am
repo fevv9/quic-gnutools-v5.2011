@@ -4,7 +4,7 @@ AUTOMAKE_OPTIONS = 1.11 no-dist foreign
 ACLOCAL_AMFLAGS = -I . -I .. -I ../config
 
 # Uncomment the following line when doing a release.
-RELEASE=y
+# RELEASE=y
 
 INCDIR = $(srcdir)/../include
 CSEARCH = -I. -I$(srcdir) -I$(INCDIR)
@@ -951,7 +951,7 @@ bfdver.h: $(srcdir)/version.h $(srcdir)/Makefile.in
 	report_bugs_to="\"$(REPORT_BUGS_TO)\"" ;\
 	if test "x$(RELEASE)" = x ; then \
 	  bfd_version_date=`sed -n -e 's/.*DATE //p' < $(srcdir)/version.h` ;\
-	  bfd_version_string="\"$(VERSION).$${bfd_version_date}\"" ;\
+	  bfd_version_string="\"$(VERSION) $${bfd_version_date}\"" ;\
 	  bfd_soversion="$(VERSION).$${bfd_version_date}" ;\
 	fi ;\
 	sed -e "s,@bfd_version@,$$bfd_version," \
