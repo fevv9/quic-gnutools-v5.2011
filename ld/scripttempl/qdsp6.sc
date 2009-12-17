@@ -40,7 +40,7 @@
 #	NO_RELA_RELOCS - Don't include .rela.* sections in script
 #	NON_ALLOC_DYN - Place dynamic sections after data segment.
 #	TEXT_DYNAMIC - .dynamic in text segment, not data segment.
-#	EMBEDDED - whether this is for an embedded system. 
+#	EMBEDDED - whether this is for an embedded system.
 #	SHLIB_TEXT_START_ADDR - if set, add to SIZEOF_HEADERS to set
 #		start address of shared library.
 #	INPUT_FILES - INPUT command of files to always include
@@ -143,7 +143,7 @@ RELA_IPLT=".rela.iplt    ${RELOCATING-0} : ${TCM+AT (__ebi_pa_start__ + ADDR (.r
     }"
 DYNAMIC=".dynamic      ${RELOCATING-0} : ${TCM+AT (__ebi_pa_start__ + ADDR (.dynamic) - __ebi_va_start__)} { *(.dynamic) }"
 RODATA=".rodata       ${RELOCATING-0} : ${TCM+AT (__ebi_pa_start__ + ADDR (.rodata) - __ebi_va_start__)}
-        { 
+        {
           *(.rodata${RELOCATING+ .rodata.* .gnu.linkonce.r.*})
           *(.rodata${RELOCATING+ .rodata.* .gnu.linkonce.r.*})
         }"
@@ -383,9 +383,9 @@ OUTPUT_FORMAT("${OUTPUT_FORMAT}", "${BIG_OUTPUT_FORMAT}",
 OUTPUT_ARCH(${OUTPUT_ARCH})
 ${RELOCATING+ENTRY(${ENTRY})}
 
-PHDRS
-{
-${TCM+  HEADERS     PT_PHDR FILEHDR PHDRS;
+${TCM+PHDRS
+"{"
+  HEADERS     PT_PHDR FILEHDR PHDRS;
 /* Dynamic segments */
   DYNAMIC     PT_DYNAMIC;
   ${CREATE_SHLIB+INTERP      PT_INTERP;}
@@ -406,8 +406,8 @@ ${TCM+  HEADERS     PT_PHDR FILEHDR PHDRS;
   TCM_CODE    PT_LOAD FLAGS (0x20000000); /* cached and uncached code */
   TCM_DATA    PT_LOAD FLAGS (0x20000000); /* cached and cached write-back data */
   TCM_DATA_WT PT_LOAD FLAGS (0x60000000); /* cached write-thru data */
-  TCM_DATA_UN PT_LOAD FLAGS (0xa0000000); /* uncached data */}
-}
+  TCM_DATA_UN PT_LOAD FLAGS (0xa0000000); /* uncached data */
+"}"}
 
 ${RELOCATING+${LIB_SEARCH_DIRS}}
 ${RELOCATING+${EXECUTABLE_SYMBOLS}}
@@ -509,14 +509,14 @@ EOF
 fi
 
 cat >> ldscripts/dyntmp.$$ <<EOF
-  .rel.plt      ${RELOCATING-0} : ${TCM+AT (__ebi_pa_start__ + ADDR (.rel.plt) - __ebi_va_start__)} 
+  .rel.plt      ${RELOCATING-0} : ${TCM+AT (__ebi_pa_start__ + ADDR (.rel.plt) - __ebi_va_start__)}
     {
       *(.rel.plt)
       ${IREL_IN_PLT+${RELOCATING+${CREATE_SHLIB-PROVIDE_HIDDEN (${USER_LABEL_PREFIX}__rel_iplt_start = .);}}}
       ${IREL_IN_PLT+${RELOCATING+*(.rel.iplt)}}
       ${IREL_IN_PLT+${RELOCATING+${CREATE_SHLIB-PROVIDE_HIDDEN (${USER_LABEL_PREFIX}__rel_iplt_end = .);}}}
     }
-  .rela.plt     ${RELOCATING-0} : ${TCM+AT (__ebi_pa_start__ + ADDR (.rela.plt) - __ebi_va_start__)} 
+  .rela.plt     ${RELOCATING-0} : ${TCM+AT (__ebi_pa_start__ + ADDR (.rela.plt) - __ebi_va_start__)}
     {
       *(.rela.plt)
       ${IREL_IN_PLT+${RELOCATING+${CREATE_SHLIB-PROVIDE_HIDDEN (${USER_LABEL_PREFIX}__rela_iplt_start = .);}}}
@@ -557,7 +557,7 @@ cat <<EOF
   .CODE : {} ${TCM+:CODE}
 
   .init         ${RELOCATING-0} : ${TCM+AT (__ebi_pa_start__ + ADDR (.init) - __ebi_va_start__)}
-  { 
+  {
     ${RELOCATING+${INIT_START}}
     KEEP (*(.init))
     ${RELOCATING+${INIT_END}}
@@ -672,6 +672,24 @@ cat <<EOF
   ${TCM+${EBI_DATA_WT}}
   ${TCM+${EBI_DATA_UN}}
 
+  ${BSS_PLT+${PLT}}
+  .bss          ${RELOCATING-0} : ${TCM+AT (__ebi_pa_start__ + ADDR (.bss) - __ebi_va_start__)}
+  {
+   *(.bss.hot${RELOCATING+ .bss.hot.* .gnu.linkonce.b.hot.*})
+   *(.dynbss)
+   *(.bss${RELOCATING+ .bss.* .gnu.linkonce.b.*})
+   *(COMMON)
+   /* Align here to ensure that the .bss section occupies space up to
+      _end.  Align after .bss to ensure correct alignment even if the
+      .bss section disappears because there are no input sections. */
+   ${RELOCATING+. = ALIGN(. != 0 ? ${ALIGNMENT} : 1);}
+  }
+  ${OTHER_BSS_SECTIONS}
+  ${RELOCATING+${OTHER_BSS_END_SYMBOLS}}
+  ${RELOCATING+. = ALIGN(${ALIGNMENT});}
+  ${LARGE_SECTIONS}
+  ${RELOCATING+. = ALIGN(${ALIGNMENT});}
+
 /* Small data start. */
   ${RELOCATING+. = ALIGN (DEFINED (DATAALIGN)? (DATAALIGN * 1K) : 512K);}
   ${TCM+. = ALIGN (DEFINED (EBI_DATA_CACHED_ALIGN)? EBI_DATA_CACHED_ALIGN : 512K);}
@@ -684,25 +702,6 @@ cat <<EOF
   ${RELOCATING+${USER_LABEL_PREFIX}__bss_start = .;}
   ${RELOCATING+${OTHER_BSS_SYMBOLS}}
   ${SBSS}
-  ${BSS_PLT+${PLT}}
-  .bss          ${RELOCATING-0} : ${TCM+AT (__ebi_pa_start__ + ADDR (.bss) - __ebi_va_start__)}
-  {
-   *(.bss.hot${RELOCATING+ .bss.hot.* .gnu.linkonce.b.hot.*})
-   *(.dynbss)
-   *(.bss${RELOCATING+ .bss.* .gnu.linkonce.b.*})
-   *(COMMON)
-   /* Align here to ensure that the .bss section occupies space up to
-      _end.  Align after .bss to ensure correct alignment even if the
-      .bss section disappears because there are no input sections.
-      FIXME: Why do we need it? When there is no .bss section, we don't
-      pad the .data section.  */
-   ${RELOCATING+. = ALIGN(. != 0 ? ${ALIGNMENT} : 1);}
-  }
-  ${OTHER_BSS_SECTIONS}
-  ${RELOCATING+${OTHER_BSS_END_SYMBOLS}}
-  ${RELOCATING+. = ALIGN(${ALIGNMENT});}
-  ${LARGE_SECTIONS}
-  ${RELOCATING+. = ALIGN(${ALIGNMENT});}
   ${RELOCATING+${OTHER_END_SYMBOLS}}
   ${RELOCATING+${END_SYMBOLS-${USER_LABEL_PREFIX}_end = .; PROVIDE (${USER_LABEL_PREFIX}end = .);}}
   ${RELOCATING+${DATA_SEGMENT_END}}
