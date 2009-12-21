@@ -1,3 +1,8 @@
+##################################################################
+# Copyright (c) $Date$ QUALCOMM INCORPORATED.
+# All Rights Reserved.
+# Modified by QUALCOMM INCORPORATED on $Date$
+##################################################################
 #
 # Unusual variables checked by this code:
 #	NOP - four byte opcode for no-op (defaults to 0)
@@ -144,7 +149,7 @@ RELA_IPLT=".rela.iplt    ${RELOCATING-0} : ${TCM+AT (__ebi_pa_start__ + ADDR (.r
 DYNAMIC=".dynamic      ${RELOCATING-0} : ${TCM+AT (__ebi_pa_start__ + ADDR (.dynamic) - __ebi_va_start__)} { *(.dynamic) }"
 RODATA=".rodata       ${RELOCATING-0} : ${TCM+AT (__ebi_pa_start__ + ADDR (.rodata) - __ebi_va_start__)}
         {
-          *(.rodata${RELOCATING+ .rodata.* .gnu.linkonce.r.*})
+          *(.rodata.hot .rodata.hot.* .gnu.linkonce.r.hot.*)
           *(.rodata${RELOCATING+ .rodata.* .gnu.linkonce.r.*})
         }"
 DATARELRO=".data.rel.ro : { *(.data.rel.ro.local* .gnu.linkonce.d.rel.ro.local.*) *(.data.rel.ro* .gnu.linkonce.d.rel.ro.*) }"
@@ -154,8 +159,6 @@ if test -z "${NO_SMALL_DATA}"; then
   ${RELOCATING+. = ALIGN (${ALIGNMENT});}
   .sbss         ${RELOCATING-0} : ${TCM+AT (__ebi_pa_start__ + ADDR (.sbss) - __ebi_va_start__)}
   {
-    ${RELOCATING+PROVIDE (___sbss_start = .);}
-    ${RELOCATING+PROVIDE (__sbss_start = .);}
     ${RELOCATING+${SBSS_START_SYMBOLS}}
     ${CREATE_SHLIB+*(.sbss2 .sbss2.* .gnu.linkonce.sb2.*)}
     *(.sbss.hot${RELOCATING+ .sbss.hot.* .gnu.linkonce.sb.hot.*})
@@ -164,8 +167,6 @@ if test -z "${NO_SMALL_DATA}"; then
     *(.dynsbss)
     ${RELOCATING+. = ALIGN (${ALIGNMENT});}
     ${RELOCATING+${SBSS_END_SYMBOLS}}
-    ${RELOCATING+PROVIDE (__sbss_end = .);}
-    ${RELOCATING+PROVIDE (___sbss_end = .);}
   }"
   SBSS2="
   .sbss2        ${RELOCATING-0} : ${TCM+AT (__ebi_pa_start__ + ADDR (.sbss2) - __ebi_va_start__)}
@@ -174,9 +175,6 @@ if test -z "${NO_SMALL_DATA}"; then
   ${RELOCATING+. = ALIGN (${ALIGNMENT});}
   .sdata        ${RELOCATING-0} : ${TCM+AT (__ebi_pa_start__ + ADDR (.sdata) - __ebi_va_start__)}
   {
-    ${RELOCATING+__default_sda_base__ = .;}
-    ${RELOCATING+PROVIDE (_SDA_BASE_ = __default_sda_base__);}
-
     ${RELOCATING+${SDATA_START_SYMBOLS}}
     ${CREATE_SHLIB+*(.sdata2 .sdata2.* .gnu.linkonce.s2.*)}
     *(.sdata.1${RELOCATING+ .sdata.1.* .gnu.linkonce.s.1.*})
@@ -224,7 +222,7 @@ if test -z "${DATA_GOT}"; then
     DATA_GOT=" "
   fi
 fi
-if test -z "${SDATA_GOT}"; then
+if test -z "${SDATA_GOT}" && test -z "${DATA_GOT}"; then
   if test -z "${NO_SMALL_DATA}"; then
     SDATA_GOT=" "
   fi
@@ -376,12 +374,13 @@ TCM_DATA_UN="
   .tcm_data_uncached : AT (__tcm_pa_start__ + ADDR (.tcm_data_uncached) - __tcm_va_start__)
   { *(.tcm_data_uncached) } :TCM_DATA_UN"
 
-
 cat <<EOF
-OUTPUT_FORMAT("${OUTPUT_FORMAT}", "${BIG_OUTPUT_FORMAT}",
+OUTPUT_FORMAT("${OUTPUT_FORMAT}",
+              "${BIG_OUTPUT_FORMAT}",
 	      "${LITTLE_OUTPUT_FORMAT}")
 OUTPUT_ARCH(${OUTPUT_ARCH})
 ${RELOCATING+ENTRY(${ENTRY})}
+${RELOCATING+${LIB_SEARCH_DIRS}}
 
 ${TCM+PHDRS
 "{"
@@ -409,7 +408,6 @@ ${TCM+PHDRS
   TCM_DATA_UN PT_LOAD FLAGS (0xa0000000); /* uncached data */
 "}"}
 
-${RELOCATING+${LIB_SEARCH_DIRS}}
 ${RELOCATING+${EXECUTABLE_SYMBOLS}}
 ${RELOCATING+${INPUT_FILES}}
 ${RELOCATING- /* For some reason, the Solaris linker makes bad executables
@@ -569,9 +567,11 @@ cat <<EOF
   {
     ${RELOCATING+${TEXT_START_SYMBOLS}}
     ${RELOCATING+*(.text.unlikely .text.*_unlikely)}
+    *(.text.hot .text.hot.* .gnu.linkonce.t.hot.*)
     *(.text .stub${RELOCATING+ .text.* .gnu.linkonce.t.*})
     /* .gnu.warning sections are handled specially by elf32.em.  */
     *(.gnu.warning)
+    ${TCM+*(.ebi_code_cached .ebi_code_cached_wb .ebi_code_cached_wt .ebi_code_uncached)}
     ${RELOCATING+${OTHER_TEXT_SECTIONS}}
   } =${NOP-0}
   .fini         ${RELOCATING-0} : ${TCM+AT (__ebi_pa_start__ + ADDR (.fini) - __ebi_va_start__)}
@@ -595,7 +595,9 @@ cat <<EOF
   .eh_frame_hdr : ${TCM+AT (__ebi_pa_start__ + ADDR (.eh_frame_hdr) - __ebi_va_start__)} { *(.eh_frame_hdr) }
   .eh_frame     ${RELOCATING-0} : ${TCM+AT (__ebi_pa_start__ + ADDR (.eh_frame) - __ebi_va_start__)} ONLY_IF_RO { KEEP (*(.eh_frame)) }
   .gcc_except_table ${RELOCATING-0} : ${TCM+AT (__ebi_pa_start__ + ADDR (.gcc_except_table) - __ebi_va_start__)} ONLY_IF_RO { *(.gcc_except_table .gcc_except_table.*) }
+  ${OTHER_READONLY_SECTIONS}
 
+/* Data start. */
   /* Adjust the address for the data segment.  We want to adjust up to
      the same address within the page on the next page up.  */
   ${CREATE_SHLIB-${CREATE_PIE-${RELOCATING+. = ${DATA_ADDR-${DATA_SEGMENT_ALIGN}};}}}
@@ -662,16 +664,14 @@ cat <<EOF
   .data1        ${RELOCATING-0} : ${TCM+AT (__ebi_pa_start__ + ADDR (.data1) - __ebi_va_start__)} { *(.data1) }
   ${WRITABLE_RODATA+${RODATA}}
   ${OTHER_READWRITE_SECTIONS}
-  ${SMALL_DATA_CTOR+${RELOCATING+${CTOR}}}
-  ${SMALL_DATA_DTOR+${RELOCATING+${DTOR}}}
   ${DATA_PLT+${PLT_BEFORE_GOT+${PLT}}}
-  ${SDATA_GOT+${RELOCATING+${OTHER_GOT_SYMBOLS}}}
-  ${SDATA_GOT+${GOT}}
-  ${SDATA_GOT+${OTHER_GOT_SECTIONS}}
-
   ${TCM+${EBI_DATA_WT}}
   ${TCM+${EBI_DATA_UN}}
+  ${RELOCATING+${DATA_END_SYMBOLS-${USER_LABEL_PREFIX}_edata = .; PROVIDE (${USER_LABEL_PREFIX}edata = .);}}
 
+  ${RELOCATING+. = ALIGN (${ALIGNMENT});}
+  ${RELOCATING+${USER_LABEL_PREFIX}__bss_start = .;}
+  ${RELOCATING+${OTHER_BSS_SYMBOLS}}
   ${BSS_PLT+${PLT}}
   .bss          ${RELOCATING-0} : ${TCM+AT (__ebi_pa_start__ + ADDR (.bss) - __ebi_va_start__)}
   {
@@ -685,10 +685,10 @@ cat <<EOF
    ${RELOCATING+. = ALIGN(. != 0 ? ${ALIGNMENT} : 1);}
   }
   ${OTHER_BSS_SECTIONS}
+  ${RELOCATING+. = ALIGN(${ALIGNMENT});}
   ${RELOCATING+${OTHER_BSS_END_SYMBOLS}}
-  ${RELOCATING+. = ALIGN(${ALIGNMENT});}
+  ${RELOCATING+${END_SYMBOLS-${USER_LABEL_PREFIX}_end = .;}}
   ${LARGE_SECTIONS}
-  ${RELOCATING+. = ALIGN(${ALIGNMENT});}
 
 /* Small data start. */
   ${RELOCATING+. = ALIGN (DEFINED (DATAALIGN)? (DATAALIGN * 1K) : 512K);}
@@ -697,13 +697,16 @@ cat <<EOF
   .SDATA : {} ${TCM+:DATA}
 
   ${SDATA}
+  ${SMALL_DATA_CTOR+${RELOCATING+${CTOR}}}
+  ${SMALL_DATA_DTOR+${RELOCATING+${DTOR}}}
+  ${SDATA_GOT+${RELOCATING+${OTHER_GOT_SYMBOLS}}}
+  ${SDATA_GOT+${GOT}}
+  ${SDATA_GOT+${OTHER_GOT_SECTIONS}}
   ${OTHER_SDATA_SECTIONS}
-  ${RELOCATING+${DATA_END_SYMBOLS-${USER_LABEL_PREFIX}_edata = .; PROVIDE (${USER_LABEL_PREFIX}edata = .);}}
-  ${RELOCATING+${USER_LABEL_PREFIX}__bss_start = .;}
-  ${RELOCATING+${OTHER_BSS_SYMBOLS}}
   ${SBSS}
+  ${RELOCATING+. = ALIGN(${ALIGNMENT});}
   ${RELOCATING+${OTHER_END_SYMBOLS}}
-  ${RELOCATING+${END_SYMBOLS-${USER_LABEL_PREFIX}_end = .; PROVIDE (${USER_LABEL_PREFIX}end = .);}}
+  ${RELOCATING+${END_SYMBOLS-PROVIDE (${USER_LABEL_PREFIX}end = .);}}
   ${RELOCATING+${DATA_SEGMENT_END}}
 EOF
 
