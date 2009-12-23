@@ -4,14 +4,16 @@
 # Modified by QUALCOMM INCORPORATED on $Date$
 ##################################################################
 
-# This file is sourced from elf32.em, and defines extra alpha
-# specific routines.
-#
+# This file is sourced from elf32.em, and defines extra
+# QDSP6-specific routines.
+
 cat >>e${EMULATION_NAME}.c <<EOF
 
 #include "elf/internal.h"
 #include "elf/qdsp6.h"
 #include "elf-bfd.h"
+
+#define EMUL_QDSP6
 
 static void qdsp6_after_parse PARAMS ((void));
 
