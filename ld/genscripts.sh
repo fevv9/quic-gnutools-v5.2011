@@ -1,4 +1,9 @@
 #!/bin/sh
+##################################################################
+# Copyright (c) $Date$ Qualcomm Innovation Center, Inc.
+# All Rights Reserved.
+# Modified by Qualcomm Innovation Center, Inc. on $Date$
+##################################################################
 # genscripts.sh - generate the ld-emulation-target specific files
 # Copyright 2004, 2006, 2007, 2008, 2009 Free Software Foundation, Inc.
 #

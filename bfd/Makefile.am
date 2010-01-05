@@ -1,3 +1,9 @@
+##################################################################
+# Copyright (c) $Date$ Qualcomm Innovation Center, Inc.
+# All Rights Reserved.
+# Modified by Qualcomm Innovation Center, Inc. on $Date$
+##################################################################
+
 ## Process this file with automake to generate Makefile.in
 
 AUTOMAKE_OPTIONS = 1.11 no-dist foreign

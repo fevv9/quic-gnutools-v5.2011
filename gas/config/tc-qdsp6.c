@@ -1,7 +1,7 @@
 /*****************************************************************
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
+* Copyright (c) $Date$ Qualcomm Innovation Center, Inc.
+* All Rights Reserved.
+* Modified by Qualcomm Innovation Center, Inc. on $Date$
 *****************************************************************/
 
 /* tc-qdsp6.c -- Assembler for the QDSP6

@@ -18,6 +18,12 @@ License along with libiberty; see the file COPYING.LIB.  If not, write
 to the Free Software Foundation, Inc., 51 Franklin Street - Fifth
 Floor, Boston, MA 02110-1301, USA.  */
 
+/*****************************************************************
+* Copyright (c) $Date$ Qualcomm Innovation Center, Inc.
+* All Rights Reserved.
+* Modified by Qualcomm Innovation Center, Inc. on $Date$
+*****************************************************************/
+
 #include <windows.h>
 #include <errno.h>
 #include <fcntl.h>

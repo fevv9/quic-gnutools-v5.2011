@@ -21,6 +21,12 @@
 # write to the Free Software Foundation, Inc., 51 Franklin Street - Fifth Floor,
 # Boston, MA 02110-1301, USA.
 
+##################################################################
+# Copyright (c) $Date$ Qualcomm Innovation Center, Inc.
+# All Rights Reserved.
+# Modified by Qualcomm Innovation Center, Inc. on $Date$
+##################################################################
+
 libiberty_topdir = @libiberty_topdir@
 srcdir = @srcdir@
 

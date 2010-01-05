@@ -1,4 +1,8 @@
-
+##################################################################
+# Copyright (c) $Date$ Qualcomm Innovation Center, Inc.
+# All Rights Reserved.
+# Modified by Qualcomm Innovation Center, Inc. on $Date$
+##################################################################
 #
 # Makefile to build binutils for the QDSP6.
 #

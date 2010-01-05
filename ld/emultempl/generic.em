@@ -1,3 +1,8 @@
+##################################################################
+# Copyright (c) $Date$ Qualcomm Innovation Center, Inc.
+# All Rights Reserved.
+# Modified by Qualcomm Innovation Center, Inc. on $Date$
+##################################################################
 # This shell script emits a C file. -*- C -*-
 # It does some substitutions.
 fragment <<EOF

@@ -21,6 +21,12 @@
    Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
    MA 02110-1301, USA.  */
 
+/*****************************************************************
+* Copyright (c) $Date$ Qualcomm Innovation Center, Inc.
+* All Rights Reserved.
+* Modified by Qualcomm Innovation Center, Inc. on $Date$
+*****************************************************************/
+
 #include "sysdep.h"
 #include "bfd.h"
 #include "safe-ctype.h"

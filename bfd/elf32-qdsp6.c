@@ -1,7 +1,9 @@
 /*****************************************************************
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
+* Copyright (c) $Date$ Qualcomm Innovation Center, Inc.
+* All Rights Reserved.
+* Modified by Qualcomm Innovation Center, Inc. on $Date$
 *****************************************************************/
+
 /* QDSP6-specific support for 32-bit ELF
    Copyright 1994, 1995, 1997, 1999, 2001, 2002
    Free Software Foundation, Inc.
@@ -140,7 +142,7 @@ typedef struct _qdsp6_elf_dyn_reloc
 typedef struct _qdsp6_elf_link_hash_entry
   {
     struct elf_link_hash_entry elf;
-    /* QDSP6 data. */
+    /* QDSP6 Data. */
     qdsp6_elf_dyn_reloc *dyn_relocs;
   } qdsp6_elf_link_hash_entry;
 
