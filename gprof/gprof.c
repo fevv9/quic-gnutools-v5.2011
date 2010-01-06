@@ -44,6 +44,7 @@
 #include "sym_ids.h"
 #include "demangle.h"
 #include "getopt.h"
+#include "bfdver.h"
 
 static void usage (FILE *, int) ATTRIBUTE_NORETURN;
 
@@ -69,6 +70,8 @@ bfd_boolean print_descriptions = TRUE;
 bfd_boolean print_path = FALSE;
 bfd_boolean ignore_non_functions = FALSE;
 File_Format file_format = FF_AUTO;
+
+int num_aouts = 0, num_gmons = 0;
 
 bfd_boolean first_output = TRUE;
 
@@ -169,7 +172,7 @@ Usage: %s [-[abcDhilLsTvwxyz]] [-[ACeEfFJnNOpPqSQZ][name]] [-I dirs]\n\
 	[--static-call-graph] [--sum] [--table-length=len] [--traditional]\n\
 	[--version] [--width=n] [--ignore-non-functions]\n\
 	[--demangle[=STYLE]] [--no-demangle] [--external-symbol-table=name] [@FILE]\n\
-	[image-file] [profile-file...]\n"),
+	[image-file...] [profile-file...]\n"),
 	   whoami);
   if (REPORT_BUGS_TO[0] && status == 0)
     fprintf (stream, _("Report bugs to %s\n"), REPORT_BUGS_TO);
@@ -183,6 +186,9 @@ main (int argc, char **argv)
   char **sp, *str;
   Sym **cg = 0;
   int ch, user_specified = 0;
+  char *aout_names[500];
+  char *gmon_names[500];
+  int ndx;
 
 #if defined (HAVE_SETLOCALE) && defined (HAVE_LC_MESSAGES)
   setlocale (LC_MESSAGES, "");
@@ -418,8 +424,12 @@ main (int argc, char **argv)
 	  /* This output is intended to follow the GNU standards document.  */
 	  printf (_("GNU gprof %s\n"), BFD_VERSION_STRING);
 	  printf (_("Based on BSD gprof, copyright 1983 Regents of the University of California.\n"));
+	  printf (_("Copyright 1988-2009 Free Software Foundation, Inc.\n"));
 	  printf (_("\
-This program is free software.  This program has absolutely no warranty.\n"));
+This program is free software; you may redistribute it under the terms of\n\
+the GNU General Public License.  This program has absolutely no warranty.\n\
+\n\
+Copyright 2005-2010 Qualcomm, Inc.  All Rights Reserved.\n"));
 	  done (0);
 	case 'w':
 	  output_width = atoi (optarg);
@@ -495,11 +505,28 @@ This program is free software.  This program has absolutely no warranty.\n"));
   if (str)
     search_list_append (&src_search_list, str);
 
-  if (optind < argc)
-    a_out_name = argv[optind++];
+  while(optind < argc)
+    {
+      if(isObjectFile(argv[optind]))
+        {
+	  aout_names[num_aouts++] = argv[optind++];
+	}
+      else
+        {  /* Assume gmon file */
+	  gmon_names[num_gmons++] = argv[optind++];
+	}
+    }
 
-  if (optind < argc)
-    gmon_name = argv[optind++];
+  if(num_aouts == 0)
+    {
+      aout_names[num_aouts++] = (char *) a_out_name;
+    }
+
+  if(num_gmons == 0)
+    {
+      gmon_names[num_aouts++] = gmon_name;
+    }
+
 
   /* Turn off default functions.  */
   for (sp = &default_excluded_list[0]; *sp; sp++)
@@ -509,24 +536,31 @@ This program is free software.  This program has absolutely no warranty.\n"));
       sym_id_add (*sp, EXCL_FLAT);
     }
 
-  /* Read symbol table from core file.  */
-  core_init (a_out_name);
+  for(ndx = 0; ndx < num_aouts; ndx++)
+    {
 
-  /* If we should ignore direct function calls, we need to load to
-     core's text-space.  */
-  if (ignore_direct_calls)
-    core_get_text_space (core_bfd);
+      /* Read symbol table from core file.  */
+      core_init (aout_names[ndx], ndx);
 
-  /* Create symbols from core image.  */
-  if (external_symbol_table)
-    core_create_syms_from (external_symbol_table);
-  else if (line_granularity)
-    core_create_line_syms ();
-  else
-    core_create_function_syms ();
+      /* If we should ignore direct function calls, we need to load to
+         core's text-space.  */
+      if (ignore_direct_calls)
+        core_get_text_space (core_bfd[ndx]);
 
-  /* Translate sym specs into syms.  */
-  sym_id_parse ();
+      /* Create symbols from core image.  */
+      if (external_symbol_table)
+        core_create_syms_from (external_symbol_table);
+      else if (line_granularity)
+        core_create_line_syms (core_bfd[ndx], ndx);
+      else
+        core_create_function_syms (core_bfd[ndx], ndx);
+
+      /* Translate sym specs into syms.  */
+      sym_id_parse ();
+    }
+
+  mergeSymtabs(num_aouts);
+  symtab_finalize(&symtab);
 
   if (file_format == FF_PROF)
     {
@@ -538,13 +572,10 @@ This program is free software.  This program has absolutely no warranty.\n"));
   else
     {
       /* Get information about gmon.out file(s).  */
-      do
-	{
-	  gmon_out_read (gmon_name);
-	  if (optind < argc)
-	    gmon_name = argv[optind];
+      for(ndx = 0; ndx < num_gmons; ndx++)
+        {
+	  gmon_out_read(gmon_names[ndx]);
 	}
-      while (optind++ < argc);
     }
 
   /* If user did not specify output style, try to guess something

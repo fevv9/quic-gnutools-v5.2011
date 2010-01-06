@@ -136,5 +136,6 @@ extern File_Format file_format;		/* requested file format */
 extern bfd_boolean first_output;	/* no output so far? */
 
 extern void done (int status) ATTRIBUTE_NORETURN;
+extern unsigned long long readCompressed (FILE *);
 
 #endif /* gprof_h */

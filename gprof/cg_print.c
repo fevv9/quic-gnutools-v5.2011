@@ -57,6 +57,7 @@ static void order_and_dump_functions_by_arcs
 extern void bsd_callg_blurb (FILE * fp);
 extern void fsf_callg_blurb (FILE * fp);
 
+extern char hist_dimension[16];
 double print_time = 0.0;
 
 
@@ -80,8 +81,8 @@ print_header ()
 	  (long) hist_scale * (long) sizeof (UNIT));
 
   if (print_time > 0.0)
-    printf (_(" for %.2f%% of %.2f seconds\n\n"),
-	    100.0 / print_time, print_time / hz);
+    printf (_(" for %.2f%% of %.2f %s\n\n"),
+	    100.0 / print_time, print_time / hz, hist_dimension);
   else
     {
       printf (_(" no time propagated\n\n"));

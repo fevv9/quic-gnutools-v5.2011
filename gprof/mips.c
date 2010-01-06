@@ -61,7 +61,7 @@ mips_find_call (Sym *parent, bfd_vma p_lowpc, bfd_vma p_highpc)
 			  (unsigned long) p_highpc));
   for (pc = p_lowpc; pc < p_highpc; pc += 4)
     {
-      op = bfd_get_32 (core_bfd, ((unsigned char *)core_text_space
+      op = bfd_get_32 (core_bfd[0], ((unsigned char *)core_text_space
                                  + pc - core_text_sect->vma));
       if ((op & 0xfc000000) == 0x0c000000)
 	{

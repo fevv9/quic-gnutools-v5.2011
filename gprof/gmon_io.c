@@ -64,39 +64,13 @@ int gmon_file_version = 0;	/* 0 == old (non-versioned) file format.  */
 static enum gmon_ptr_size
 gmon_get_ptr_size ()
 {
-  int size;
-
-  /* Pick best size for pointers.  Start with the ELF size, and if not
-     elf go with the architecture's address size.  */
-  size = bfd_get_arch_size (core_bfd);
-  if (size == -1)
-    size = bfd_arch_bits_per_address (core_bfd);
-
-  switch (size)
-    {
-    case 32:
-      return ptr_32bit;
-
-    case 64:
-      return ptr_64bit;
-
-    default:
-      fprintf (stderr, _("%s: address size has unexpected value of %u\n"),
-	       whoami, size);
-      done (1);
-    }
+  return ptr_32bit;
 }
 
 static enum gmon_ptr_signedness
 gmon_get_ptr_signedness ()
 {
-  int sext;
-
-  /* Figure out whether to sign extend.  If BFD doesn't know, assume no.  */
-  sext = bfd_get_sign_extend_vma (core_bfd);
-  if (sext == -1)
-    return ptr_unsigned;
-  return (sext ? ptr_signed : ptr_unsigned);
+  return ptr_unsigned;
 }
 
 int
@@ -106,7 +80,7 @@ gmon_io_read_32 (FILE *ifp, unsigned int *valp)
 
   if (fread (buf, 1, 4, ifp) != 4)
     return 1;
-  *valp = bfd_get_32 (core_bfd, buf);
+  *valp = bfd_get_32 (core_bfd[0], buf);
   return 0;
 }
 
@@ -118,7 +92,7 @@ gmon_io_read_64 (FILE *ifp, BFD_HOST_U_64_BIT *valp)
 
   if (fread (buf, 1, 8, ifp) != 8)
     return 1;
-  *valp = bfd_get_64 (core_bfd, buf);
+  *valp = bfd_get_64 (core_bfd[0], buf);
   return 0;
 }
 #endif
@@ -171,7 +145,7 @@ gmon_io_write_32 (FILE *ofp, unsigned int val)
 {
   char buf[4];
 
-  bfd_put_32 (core_bfd, (bfd_vma) val, buf);
+  bfd_put_32 (core_bfd[0], (bfd_vma) val, buf);
   if (fwrite (buf, 1, 4, ofp) != 4)
     return 1;
   return 0;
@@ -183,7 +157,7 @@ gmon_io_write_64 (FILE *ofp, BFD_HOST_U_64_BIT val)
 {
   char buf[8];
 
-  bfd_put_64 (core_bfd, (bfd_vma) val, buf);
+  bfd_put_64 (core_bfd[0], (bfd_vma) val, buf);
   if (fwrite (buf, 1, 8, ofp) != 8)
     return 1;
   return 0;
@@ -216,7 +190,7 @@ gmon_io_write_8 (FILE *ofp, unsigned int val)
 {
   char buf[1];
 
-  bfd_put_8 (core_bfd, val, buf);
+  bfd_put_8 (core_bfd[0], val, buf);
   if (fwrite (buf, 1, 1, ofp) != 1)
     return 1;
   return 0;
@@ -332,9 +306,9 @@ gmon_out_read (const char *filename)
 	}
 
       /* Right magic, so it's probably really a new gmon.out file.  */
-      gmon_file_version = bfd_get_32 (core_bfd, (bfd_byte *) ghdr.version);
+      gmon_file_version = bfd_get_32 (core_bfd[0], (bfd_byte *) ghdr.version);
 
-      if (gmon_file_version != GMON_VERSION && gmon_file_version != 0)
+      if ((gmon_file_version != GMON_VERSION) && (gmon_file_version != GMON_VERSION_2) && (gmon_file_version != 0))
 	{
 	  fprintf (stderr,
 		   _("%s: file `%s' has unsupported version %d\n"),
@@ -534,7 +508,7 @@ gmon_out_read (const char *filename)
 	    }
 
 	  histograms->sample[i] 
-	    += bfd_get_16 (core_bfd, (bfd_byte *) raw_bin_count);
+	    += bfd_get_16 (core_bfd[0], (bfd_byte *) raw_bin_count);
 	}
 
       /* The rest of the file consists of a bunch of
@@ -609,7 +583,7 @@ gmon_out_write (const char *filename)
       /* Write gmon header.  */
 
       memcpy (&ghdr.cookie[0], GMON_MAGIC, 4);
-      bfd_put_32 (core_bfd, (bfd_vma) GMON_VERSION, (bfd_byte *) ghdr.version);
+      bfd_put_32 (core_bfd[0], (bfd_vma) GMON_VERSION, (bfd_byte *) ghdr.version);
 
       if (fwrite (&ghdr, sizeof (ghdr), 1, ofp) != 1)
 	{
@@ -714,7 +688,7 @@ gmon_out_write (const char *filename)
       /* Dump the samples.  */
       for (i = 0; i < histograms->num_bins; ++i)
 	{
-	  bfd_put_16 (core_bfd, (bfd_vma) histograms->sample[i],
+	  bfd_put_16 (core_bfd[0], (bfd_vma) histograms->sample[i],
 		      (bfd_byte *) &raw_bin_count[0]);
 	  if (fwrite (&raw_bin_count[0], sizeof (raw_bin_count), 1, ofp) != 1)
 	    {
