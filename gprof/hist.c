@@ -389,11 +389,7 @@ hist_read_rec (FILE * ifp, const char *filename)
 		    }
 		}
 
-		if (num_histograms == 1)
-		{
-		    record = &histograms[0];
-		}
-
+		record = &histograms[0];
 		free (new_hist);
 	    }
 	}
@@ -445,7 +441,6 @@ hist_read_rec (FILE * ifp, const char *filename)
 	else /* gmon_file_version == 2 */
 	{
 	    unsigned long long val = readCompressed(ifp);
-//	    printf ("val = %d %d\n", (int)(val >> 32), (int)(val & 0xffffffff));
 
 	    if (val == (unsigned long long) ~0)
 	    {
@@ -455,18 +450,13 @@ hist_read_rec (FILE * ifp, const char *filename)
 		done (1);
 	    }
 
-#if 0
 	    if (num_histograms == 1)
 	    {
-//int *addr=&record->sample[i+offset];
-//*addr += val * scale;
                 record->sample[i+offset] += val * scale;
 	    }
 	    else
-#endif
 	    {
 	        record = find_histogram_for_pc (cur_pc);
-//printf ("i=%d; cur_pc=%p; addr=0%p\n", i,(int *)cur_pc, &record->sample[(cur_pc - record->lowpc)/bin_scale]);
                 record->sample[(cur_pc - record->lowpc)/bin_scale] += val * scale;
 	        cur_pc += bin_scale;
 	    }
