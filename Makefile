@@ -68,7 +68,7 @@ build_win:
   		--host=i386-pc-mingw32 \
   		--build=i686-linux \
 		$(CONFIGURE_OPTIONS)  && \
-	PATH=$(MINGW_GCC):$(PATH) make -j $(JOBS) all 2>&1| tee build.log 
+	PATH=$(MINGW_GCC):$(PATH) $(MAKE) -j $(JOBS) all 2>&1| tee build.log 
 
 build_lnx: 
 	mkdir $@
@@ -76,7 +76,7 @@ build_lnx:
 	CFLAGS="$(BUILD_CFLAGS)" \
 	../configure \
 		$(CONFIGURE_OPTIONS)  && \
-	make -j $(JOBS) all 2>&1| tee build.log
+	$(MAKE) -j $(JOBS) all 2>&1| tee build.log
 
 
 .PHONY: install_lnx
