@@ -34,6 +34,11 @@ endif
 
 MINGW_GCC=/pkg/qct/software/hexagon/windows-cross/gcc-3.4.5-cross/bin
 
+# makeinfo must be version 4.7 or greater
+
+ifneq ("$(shell $(MAKEINFO) --version | egrep 'texinfo[^0-9]*(4\.([0-6]))')","")
+  MAKEINFO := /pkg/qct/software/gnu/texinfo/4.13a/bin/makeinfo
+endif
 
 all: help
 
@@ -64,6 +69,7 @@ build_win:
 	CC=i386-pc-mingw32-gcc \
 	CC_FOR_TARGET=i386-pc-mingw32-gcc \
 	CC_FOR_BUILD=gcc \
+	MAKEINFO=$(MAKEINFO) \
 	../configure \
   		--host=i386-pc-mingw32 \
   		--build=i686-linux \
@@ -74,6 +80,7 @@ build_lnx:
 	mkdir $@
 	cd $@ && \
 	CFLAGS="$(BUILD_CFLAGS)" \
+	MAKEINFO=$(MAKEINFO) \
 	../configure \
 		$(CONFIGURE_OPTIONS)  && \
 	$(MAKE) -j $(JOBS) all
