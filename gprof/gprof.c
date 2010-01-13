@@ -554,13 +554,13 @@ Copyright 2005-2010 Qualcomm, Inc.  All Rights Reserved.\n"));
         core_create_line_syms (core_bfd[ndx], ndx);
       else
         core_create_function_syms (core_bfd[ndx], ndx);
-
-      /* Translate sym specs into syms.  */
-      sym_id_parse ();
     }
 
   mergeSymtabs(num_aouts);
   symtab_finalize(&symtab);
+
+  /* Translate sym specs into syms.  */
+  sym_id_parse ();
 
   if (file_format == FF_PROF)
     {
