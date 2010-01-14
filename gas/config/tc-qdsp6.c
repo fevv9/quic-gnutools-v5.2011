@@ -2810,57 +2810,19 @@ qdsp6_code_symbol
 /* Parse an operand that is machine-specific. */
 
 void
-md_operand(
-    expressionS *expressionP ATTRIBUTE_UNUSED
-)
+md_operand
+(expressionS *expressionP ATTRIBUTE_UNUSED)
 {
-#if 0
-  char *str = input_line_pointer;
-  char ch;
-  int base = 10;
-  unsigned int u_value = 0;
-
-  if (str[0] == '#' && ISDIGIT(str[1])) {
-    /* Read the number */
-    ch = *++str;
-    while (   ISDIGIT(ch)
-           || (base == 16 && ch >= 'a' && ch <= 'f')) {
-      if (ISDIGIT(ch)) {
-        u_value = base*u_value + (ch - '0');
-      }
-      else {
-        u_value = base*u_value + (ch - 'a' + 10);
-      }
-
-      ch = *++str;
-    }
-
-    expressionP->X_op = O_constant;
-    expressionP->X_add_number = u_value;
-
-    input_line_pointer = str;
-  }
-  else {
-    printf("md_operand called: %s\n", input_line_pointer);
-    abort();
-  }
-#else
-    printf("md_operand called: %s\n", input_line_pointer);
-    abort();
-#endif
+  return;
 }
 
 /* We have no need to default values of symbols. */
 
 symbolS *
-md_undefined_symbol(
-     char *name ATTRIBUTE_UNUSED
-)
+md_undefined_symbol
+(char *name ATTRIBUTE_UNUSED)
 {
-#if 0
-  printf("md_undefined_symbol called: %s\n", name);
-#endif
-  return 0;
+  return NULL;
 }
 
 /* Functions concerning expressions.  */
