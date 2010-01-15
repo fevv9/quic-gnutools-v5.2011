@@ -174,8 +174,9 @@ isObjectFile (aout_name)
 
   if (!cbfd)
     {
-      bfd_close(cbfd);
-      return 0;
+      // The file doesn't exist, so assign this bad name to the image file,
+      // so that the user will be alerted with the correct error message.
+      return 1;
     }
 
   if (!bfd_check_format (cbfd, bfd_object))
