@@ -1562,7 +1562,8 @@ qdsp6_elf_relocate_section
 
 	  insn = qdsp6_get_insn (input_bfd, howto, contents + rel->r_offset);
 
-	  if (!qdsp6_reloc_operand (howto, &insn, ioffset, NULL))
+	  if ((! qdsp6_reloc_operand (howto, &insn, ioffset, NULL))
+              && h->root.type != bfd_link_hash_undefined)
             r = info->callbacks->reloc_overflow
                   (info,
                     (h ? &h->root : NULL),
@@ -1583,8 +1584,9 @@ qdsp6_elf_relocate_section
 	  insn = qdsp6_get_insn (input_bfd, elf_qdsp6_howto_table + R_QDSP6_HI16,
                                  contents + rel->r_offset + 0);
 
-	  if (!qdsp6_reloc_operand (elf_qdsp6_howto_table + R_QDSP6_HI16, &insn,
+	  if ((!  qdsp6_reloc_operand (elf_qdsp6_howto_table + R_QDSP6_HI16, &insn,
                                     ioffset, NULL))
+               && h->root.type != bfd_link_hash_undefined)
             r = info->callbacks->reloc_overflow
                   (info, (h ? &h->root : NULL), name,
                    elf_qdsp6_howto_table [R_QDSP6_HI16].name, 0,
@@ -1597,8 +1599,9 @@ qdsp6_elf_relocate_section
 	  insn = qdsp6_get_insn (input_bfd, elf_qdsp6_howto_table + R_QDSP6_LO16,
                                  contents + rel->r_offset + sizeof (insn));
 
-	  if (!qdsp6_reloc_operand (elf_qdsp6_howto_table + R_QDSP6_LO16, &insn,
+	  if ((!  qdsp6_reloc_operand (elf_qdsp6_howto_table + R_QDSP6_LO16, &insn,
                                     ioffset, NULL))
+               && h->root.type != bfd_link_hash_undefined)
             r = info->callbacks->reloc_overflow
                   (info, (h ? &h->root : NULL), name,
                    elf_qdsp6_howto_table [R_QDSP6_LO16].name, 0,
@@ -1651,8 +1654,9 @@ qdsp6_elf_relocate_section
 
 	    ioffset = relocation + rel->r_addend;
 
-	    if (!qdsp6_reloc_operand (howto, &insn,
+	    if ((! qdsp6_reloc_operand (howto, &insn,
 				      relocation + rel->r_addend, NULL))
+                 && h->root.type != bfd_link_hash_undefined)
 	    {
 	      qdsp6_reloc_operand (howto, &insn, relocation + rel->r_addend, NULL);
               r = info->callbacks->reloc_overflow
@@ -1683,7 +1687,8 @@ qdsp6_elf_relocate_section
                     - (input_section->output_section->vma
                        + input_section->output_offset + rel->r_offset);
 
-	  if (!qdsp6_reloc_operand (howto, &insn, ioffset, NULL))
+	  if ((!  qdsp6_reloc_operand (howto, &insn, ioffset, NULL))
+               && h->root.type != bfd_link_hash_undefined)
             r = info->callbacks->reloc_overflow
                 (info, (h ? &h->root : NULL), name,
                  howto->name, (bfd_vma) 0,
