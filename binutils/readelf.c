@@ -27,7 +27,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA
    02110-1301, USA.  */
-
+
 /* The difference between readelf and objdump:
 
   Both programs are capable of displaying the contents of ELF format files,
@@ -46,7 +46,7 @@
   There is also the case that readelf can provide more information about an
   ELF file than is provided by objdump.  In particular it can display DWARF
   debugging information which (at the moment) objdump cannot.  */
-
+
 #include "config.h"
 #include "sysdep.h"
 #include <assert.h>
@@ -289,7 +289,7 @@ static void (* byte_put) (unsigned char *, bfd_vma, int);
 #define streq(a,b)	  (strcmp ((a), (b)) == 0)
 #define strneq(a,b,n)	  (strncmp ((a), (b), (n)) == 0)
 #define const_strneq(a,b) (strncmp ((a), (b), sizeof (b) - 1) == 0)
-
+
 static void *
 get_data (void * var, FILE * file, long offset, size_t size, size_t nmemb,
 	  const char * reason)
@@ -1219,7 +1219,7 @@ dump_relocations (FILE * file,
 	case EM_CR16_OLD:
 	  rtype = elf_cr16_reloc_type (type);
 	  break;
-	
+
 	case EM_MICROBLAZE:
 	case EM_MICROBLAZE_OLD:
 	  rtype = elf_microblaze_reloc_type (type);
@@ -1579,6 +1579,17 @@ get_ia64_dynamic_type (unsigned long type)
 }
 
 static const char *
+get_qdsp6_dynamic_type (unsigned long type)
+{
+  switch (type)
+    {
+    case DT_QDSP6_SYMSZ: return "QDSP6_SYMSZ";
+    default:
+      return NULL;
+    }
+}
+
+static const char *
 get_alpha_dynamic_type (unsigned long type)
 {
   switch (type)
@@ -1711,6 +1722,9 @@ get_dynamic_type (unsigned long type)
 	    case EM_IA_64:
 	      result = get_ia64_dynamic_type (type);
 	      break;
+            case EM_QDSP6:
+              result = get_qdsp6_dynamic_type (type);
+              break;
 	    case EM_ALPHA:
 	      result = get_alpha_dynamic_type (type);
 	      break;
@@ -2447,9 +2461,9 @@ get_machine_flags (unsigned e_flags, unsigned e_machine)
 	  break;
 
         case EM_QDSP6:
-          switch (e_flags & EF_QDSP6_MACH)
+          switch (EF_QDSP6_MACH_VER (e_flags))
             {
-	      case EF_QDSP6_MACH:    strcat (buf, ", V1"); break;
+	      case EF_QDSP6_MACH_V1: strcat (buf, ", V1"); break;
 	      case EF_QDSP6_MACH_V2: strcat (buf, ", V2"); break;
 	      case EF_QDSP6_MACH_V3: strcat (buf, ", V3"); break;
 	      case EF_QDSP6_MACH_V4: strcat (buf, ", V4"); break;
@@ -2579,7 +2593,7 @@ get_qdsp6_segment_type
 {
   switch (type)
     {
-      case PT_QDSP6_EBI:       return "QDSP6_EBI";
+      /* PT_QDSP6_EBI, as the default memory type, is the same as PT_LOAD. */
       case PT_QDSP6_SMI:       return "QDSP6_SMI";
       case PT_QDSP6_TCM:       return "QDSP6_TCM";
     }
@@ -5874,6 +5888,19 @@ dynamic_section_ia64_val (Elf_Internal_Dyn * entry)
   putchar ('\n');
 }
 
+static void
+dynamic_section_qdsp6_val (Elf_Internal_Dyn * entry)
+{
+  switch (entry->d_tag)
+    {
+    case DT_QDSP6_SYMSZ:
+      print_vma (entry->d_un.d_ptr, UNSIGNED);
+      printf (" (bytes)");
+      break;
+    }
+  putchar ('\n');
+}
+
 static int
 get_32bit_dynamic_section (FILE * file)
 {
@@ -6555,6 +6582,9 @@ process_dynamic_section (FILE * file)
 		case EM_IA_64:
 		  dynamic_section_ia64_val (entry);
 		  break;
+                case EM_QDSP6:
+                  dynamic_section_qdsp6_val (entry);
+                  break;
 		default:
 		  print_vma (entry->d_un.d_val, PREFIX_HEX);
 		  putchar ('\n');
@@ -8520,7 +8550,7 @@ get_section_contents (Elf_Internal_Shdr * section, FILE * file)
                              _("section contents"));
 }
 
-		      
+
 static void
 dump_section_as_strings (Elf_Internal_Shdr * section, FILE * file)
 {
