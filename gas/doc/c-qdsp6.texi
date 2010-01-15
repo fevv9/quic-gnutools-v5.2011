@@ -1,0 +1,98 @@
+@c This is part of the GAS manual.
+@c For copying conditions, see the file as.texinfo.
+@ifset GENERIC
+@page
+@node QDSP6-Dependent
+@chapter QDSP6 Dependent Features
+@end ifset
+@ifclear GENERIC
+@node Machine Dependencies
+@chapter QDSP6 Dependent Features
+@end ifclear
+
+@cindex QDSP6 support
+@menu
+* QDSP6-Opts::                   QDSP6 Options
+* QDSP6-Directives::             QDSP6 Machine Directives
+@end menu
+
+@node QDSP6-Opts
+@section QDSP6 Options
+
+@cindex options, QDSP6
+@cindex QDSP6 options
+The Qualcomm QDSP6 version of @code{@value{AS}} has a few machine
+dependent options:
+
+@table @code
+
+@cindex @code{-mv2} option, QDSP6
+@item -mv2
+Generate code for QDSP6 V2 (default).
+
+@cindex @code{-mv3} option, QDSP6
+@item -mv3
+Generate code for QDSP6 V3.
+
+@cindex @code{-march=} option, QDSP6
+@item -march=@var{version}
+Generate code for the specified QDSP6 version.  The following version names are
+valid:
+@code{qdsp6v2} and @code{qdsp6v3}.
+
+@cindex @code{-mcpu=} option, QDSP6
+@item -mcpu=@var{version}
+Equivalent to @code{-march=@var{version}}.
+
+@cindex @code{-msort-sda} option, QDSP6
+@item -msort-sda
+Sort objects in the small-data area in ascending oder by their access size.
+@code{-mno-sort-sda} disables this default behavior.
+
+@cindex @code{-mfalign-info} option, QDSP6
+@item -mfalign-info
+Report usage statistics for the directive @code{.falign}.
+
+@cindex @code{-EB} option, QDSP6
+@item -EB
+Generate code for a big-endian CPU.
+
+@cindex @code{-EL} option, QDSP6
+@item -EL
+Generate code for a little-endian CPU (default).
+
+@cindex @code{-G} option, QDSP6
+@item -G @var{size}
+Set the maximum size of objects to be optimized using the GP register to
+@var{size} (default is 8).
+
+@end table
+
+@node QDSP6-Directives
+@section QDSP6 Machine Directives
+
+@cindex machine directives, QDSP6
+@cindex QDSP6 machine directives
+@table @code
+
+@cindex @code{.falign} directive, QDSP6
+@item .falign
+The @code{.falign} directive guarantees that the next instruction packet does
+not cross a 16-byte address boundary, thereby avoiding a fetch stall, by adding
+NOP instructions to preceding instruction packets if necessary.
+
+@cindex @code{.comm} directive, QDSP6
+@item .comm
+The @code{.comm} directive accepts an additional optional
+argument that specifies the access size of global objects thus defined.  If
+ommited, then the natural access size for the object alignment is assumed.  When
+the option @code{-msort-sda} is specified, the objects in the
+small-data area are sorted in ascending order by their access sizes.
+
+@cindex @code{.lcomm} directive, QDSP6
+@item .lcomm
+The @code{.lcomm} directive accepts an additional optional
+argument that specifies the access size of local objects thus defined,
+similarly to @code{.comm}.
+
+@end table

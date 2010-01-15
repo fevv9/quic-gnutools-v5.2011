@@ -13,6 +13,7 @@
 @set MSP430
 @set POWERPC
 @set POWERPC64
+@set QDSP6
 @set Renesas
 @set SPU
 @set TICOFF

@@ -31,6 +31,7 @@
 @set MSP430
 @set POWERPC
 @set POWERPC64
+@set QDSP6
 @set Renesas
 @set SPU
 @set TICOFF
@@ -155,6 +156,9 @@ in the section entitled ``GNU Free Documentation License''.
 @end ifset
 @ifset POWERPC64
 * PowerPC64 ELF64::             ld and PowerPC64 64-bit ELF Support
+@end ifset
+@ifset QDSP6
+* QDSP6::			ld and the QDSP6 family
 @end ifset
 @ifset SPU
 * SPU ELF::			ld and SPU ELF Support
@@ -1341,7 +1345,7 @@ the linker recursively marks as used any section referenced by their
 relocations.  See @samp{--entry} and @samp{--undefined}.
 
 This option can be set when doing a partial link (enabled with option
-@samp{-r}).  In this case the root of symbols kept must be explicitely 
+@samp{-r}).  In this case the root of symbols kept must be explicitely
 specified either by an @samp{--entry} or @samp{--undefined} option or by
 a @code{ENTRY} command in the linker script.
 
@@ -2141,8 +2145,8 @@ allow their use in executable images as well, or to (probably pointlessly!)
 disallow it in object files, by using these two options.  Executable images
 generated with these long section names are slightly non-standard, carrying
 as they do a string table, and may generate confusing output when examined
-with non-GNU PE-aware tools, such as file viewers and dumpers.  However, 
-GDB relies on the use of PE long section names to find Dwarf-2 debug 
+with non-GNU PE-aware tools, such as file viewers and dumpers.  However,
+GDB relies on the use of PE long section names to find Dwarf-2 debug
 information sections in an executable image at runtime, and so if neither
 option is specified on the command-line, @command{ld} will enable long
 section names, overriding the default and technically correct behaviour,
@@ -2540,7 +2544,7 @@ Do not bind this image.
 @kindex --wdmdriver
 @item --wdmdriver
 The driver uses the MS Windows Driver Model.
- 
+
 @kindex --tsaware
 @item --tsaware
 The image is Terminal Server aware.
@@ -3076,7 +3080,7 @@ systems come with three different memory setups @code{A}, @code{B} and
 @code{C}:
 @multitable @columnfractions .25 .25 .25 .25
 @item Section @tab Variant A @tab Variant B @tab Variant C
-@item .text @tab RAM @tab ROM @tab ROM 
+@item .text @tab RAM @tab ROM @tab ROM
 @item .rodata @tab RAM @tab ROM @tab ROM2
 @item .data @tab RAM @tab RAM/ROM @tab RAM/ROM2
 @item .bss @tab RAM @tab RAM @tab RAM
@@ -4552,7 +4556,7 @@ Region names are stored in a separate name space, and will not conflict
 with symbol names, file names, or section names.  Each memory region
 must have a distinct name within the @code{MEMORY} command.  However you can
 add later alias names to existing memory regions with the @ref{REGION_ALIAS}
-command.  
+command.
 
 @cindex memory region attributes
 The @var{attr} string is an optional list of attributes that specify
@@ -5069,7 +5073,7 @@ The target's default page size.
 So for example:
 
 @smallexample
-  .text ALIGN (CONSTANT (MAXPAGESIZE)) : @{ *(.text) @} 
+  .text ALIGN (CONSTANT (MAXPAGESIZE)) : @{ *(.text) @}
 @end smallexample
 
 will create a text section aligned to the largest page boundary
@@ -5731,6 +5735,9 @@ functionality are not listed.
 @end ifset
 @ifset POWERPC64
 * PowerPC64 ELF64::		@command{ld} and PowerPC64 64-bit ELF Support
+@end ifset
+@ifset QDSP6
+* QDSP6::			@command{ld} and the QDSP6 family
 @end ifset
 @ifset SPU
 * SPU ELF::			@command{ld} and SPU ELF Support
@@ -6457,6 +6464,66 @@ Use this option to turn off this feature.
 @end ifclear
 @end ifset
 
+@ifset QDSP6
+@ifclear GENERIC
+@raisesections
+@end ifclear
+
+@node QDSP6
+@section @command{ld} and the QDSP6 family
+
+@cindex QDSP6 options
+@table @option
+
+@cindex Link for the QDSP6 V2 architecture
+@kindex -mv2
+@item -mv2
+Link for the QDSP6 V2 architecture.  Equivalent to @code{--march=qdsp6v2}.
+
+@cindex Link for the QDSP6 V3 architecture
+@kindex -mv3
+@item -mv3
+Link for the QDSP6 V3 architecture.  Equivalent to @code{--march=qdsp6v3}.
+
+@cindex Link for the specified architecture
+@kindex --march=@var{architecture}
+@item --march=@var{architecture}
+Link for the specified QDSP6 architecture.  By default, the linker will use the
+architecture of input objects to determine the architecture of the output object
+based on several criteria, such as ABI and binary compatibility, as well as when
+to reject input objects.  By using this option, it is possible to
+guarantee the architecture of the output object.
+The following architecture names are valid:
+@code{qdsp6v2} and @code{qdsp6v3}.
+
+@cindex Link for the specified architecture
+@kindex --mcpu=@var{architecture}
+@item --mcpu=@var{architecture}
+Equivalent to @code{--march=@var{architecture}}.
+
+@cindex Use the TCM
+@kindex --tcm
+@item --tcm
+Use the TCM sections and those for other memory buses.
+
+@cindex Enable trampolines
+@kindex --trampolines[=@var{yes|no}]
+@item --trampolines[=@var{yes|no}]
+Add trampolines to certain types of branches when the target is beyond the reach
+of the instruction offset.  Trampolines are appended to the input section which
+contains the branch, so the end of the section must be within its range in order
+to add a trampoline successfully.
+Trampolines are code stubs that use tha largest available branch instruction to
+reach the target.  Therefore, they are not neutral in terms of performance and
+code size.
+The default is @var{yes}.
+@end table
+
+@ifclear GENERIC
+@lowersections
+@end ifclear
+@end ifset
+
 @ifset SPU
 @ifclear GENERIC
 @raisesections
@@ -6603,7 +6670,7 @@ When auto-export is in operation, @command{ld} will export all the non-local
 symbols known to belong to the system's runtime and libraries.  As it will
 often not be desirable to export all of a DLL's symbols, which may include
 private functions that are not part of any public interface, the command-line
-options listed above may be used to filter symbols out from the list for 
+options listed above may be used to filter symbols out from the list for
 exporting.  The @samp{--output-def} option can be used in order to see the
 final list of exported symbols with all exclusions taken into effect.
 

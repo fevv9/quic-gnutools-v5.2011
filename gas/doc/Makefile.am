@@ -15,7 +15,7 @@ POD2MAN = pod2man --center="GNU Development Tools" \
 
 man_MANS = as.1
 
-info_TEXINFOS = as.texinfo 
+info_TEXINFOS = as.texinfo
 as_TEXINFOS = asconfig.texi $(CPU_DOCS)
 
 AM_MAKEINFOFLAGS = -I "$(srcdir)" -I "$(top_srcdir)/../libiberty" \
@@ -58,6 +58,7 @@ CPU_DOCS = \
 	c-pdp11.texi \
 	c-pj.texi \
 	c-ppc.texi \
+        c-qdsp6.texi \
 	c-s390.texi \
 	c-score.texi \
 	c-sh.texi \
