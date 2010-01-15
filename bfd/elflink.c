@@ -8835,7 +8835,9 @@ elf_link_output_extsym (struct elf_link_hash_entry *h, void *data)
 
   /* If we're stripping it, then it was just a dynamic symbol, and
      there's nothing else to do.  */
-  if (strip || (input_sec->flags & SEC_EXCLUDE) != 0)
+  if (strip
+      || (! finfo->info->relocatable
+          && ((input_sec->flags & SEC_EXCLUDE) != 0)))
     return TRUE;
 
   indx = bfd_get_symcount (finfo->output_bfd);
