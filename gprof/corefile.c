@@ -509,7 +509,7 @@ num_of_syms_in (FILE * f)
 /* Read symbol table from a file.  */
 
 void
-core_create_syms_from (const char * sym_table_file)
+core_create_syms_from (const char * sym_table_file, int ndx)
 {
   const int BUFSIZE = 1024;
   char * buf = (char *) xmalloc (BUFSIZE);
@@ -528,18 +528,18 @@ core_create_syms_from (const char * sym_table_file)
     }
 
   /* Pass 1 - determine upper bound on number of function names.  */
-  symtab.len = num_of_syms_in (f);
+  symtabs[ndx].len = num_of_syms_in (f);
 
-  if (symtab.len == 0)
+  if (symtabs[ndx].len == 0)
     {
       fprintf (stderr, _("%s: file `%s' has no symbols\n"), whoami, sym_table_file);
       done (1);
     }
 
-  symtab.base = (Sym *) xmalloc (symtab.len * sizeof (Sym));
+  symtabs[ndx].base = (Sym *) xmalloc (symtabs[ndx].len * sizeof (Sym));
 
   /* Pass 2 - create symbols.  */
-  symtab.limit = symtab.base;
+  symtabs[ndx].limit = symtabs[ndx].base;
 
   if (fseek (f, 0, SEEK_SET) != 0)
     {
@@ -553,25 +553,25 @@ core_create_syms_from (const char * sym_table_file)
         if (type != 't' && type != 'T')
           continue;
 
-      sym_init (symtab.limit);
+      sym_init (symtabs[ndx].limit);
 
-      sscanf (address, "%" BFD_VMA_FMT "x", &(symtab.limit->addr) );
+      sscanf (address, "%" BFD_VMA_FMT "x", &(symtabs[ndx].limit->addr) );
 
-      symtab.limit->name = (char *) xmalloc (strlen (name) + 1);
-      strcpy ((char *) symtab.limit->name, name);
-      symtab.limit->mapped = 0;
-      symtab.limit->is_func = TRUE;
-      symtab.limit->is_bb_head = TRUE;
-      symtab.limit->is_static = (type == 't');
-      min_vma = MIN (symtab.limit->addr, min_vma);
-      max_vma = MAX (symtab.limit->addr, max_vma);
+      symtabs[ndx].limit->name = (char *) xmalloc (strlen (name) + 1);
+      strcpy ((char *) symtabs[ndx].limit->name, name);
+      symtabs[ndx].limit->mapped = 0;
+      symtabs[ndx].limit->is_func = TRUE;
+      symtabs[ndx].limit->is_bb_head = TRUE;
+      symtabs[ndx].limit->is_static = (type == 't');
+      min_vma = MIN (symtabs[ndx].limit->addr, min_vma);
+      max_vma = MAX (symtabs[ndx].limit->addr, max_vma);
 
-      ++symtab.limit;
+      ++symtabs[ndx].limit;
     }
   fclose (f);
 
-  symtab.len = symtab.limit - symtab.base;
-  symtab_finalize (&symtab);
+  symtabs[ndx].len = symtabs[ndx].limit - symtabs[ndx].base;
+  symtab_finalize (&symtabs[ndx]);
 
   free (buf);
   free (address);

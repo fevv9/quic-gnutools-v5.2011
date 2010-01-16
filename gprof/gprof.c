@@ -549,7 +549,7 @@ Copyright 2005-2010 Qualcomm, Inc.  All Rights Reserved.\n"));
 
       /* Create symbols from core image.  */
       if (external_symbol_table)
-        core_create_syms_from (external_symbol_table);
+        core_create_syms_from (external_symbol_table, ndx);
       else if (line_granularity)
         core_create_line_syms (core_bfd[ndx], ndx);
       else

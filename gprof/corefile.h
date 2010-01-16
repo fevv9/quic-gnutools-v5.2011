@@ -44,7 +44,7 @@ extern void core_init                  (const char *, int);
 extern void core_get_text_space        (bfd *);
 extern void core_create_function_syms  (bfd *, int);
 extern void core_create_line_syms      (bfd *, int);
-extern void core_create_syms_from      (const char *);
+extern void core_create_syms_from      (const char *, int);
 
 extern int  isObjectFile               (const char *);
 
