@@ -2759,7 +2759,7 @@ qdsp6_elf_size_dynamic_sections
 		}
 	      else if (p->count != 0)
 		{
-		  elf_section_data (p->sec)->sreloc->rawsize
+		  elf_section_data (p->sec)->sreloc->size
 		    += p->count * sizeof (Elf32_External_Rela);
 		  if (   (  p->sec->output_section->flags & (SEC_READONLY | SEC_ALLOC))
 		      == (SEC_READONLY | SEC_ALLOC))
