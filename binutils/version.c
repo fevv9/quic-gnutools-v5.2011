@@ -37,5 +37,8 @@ print_version (const char *name)
 This program is free software; you may redistribute it under the terms of\n\
 the GNU General Public License version 3 or (at your option) any later version.\n\
 This program has absolutely no warranty.\n"));
+#ifdef QC_COPYRT_MSG
+  printf (_(QC_COPYRT_MSG"\n"));
+#endif
   exit (0);
 }

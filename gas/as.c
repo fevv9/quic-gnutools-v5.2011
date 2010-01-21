@@ -24,9 +24,9 @@
    Understands command arguments.
    Has a few routines that don't fit in other modules because they
    are shared.
-  
+
   			bugs
-  
+
    : initialisers
   	Since no-one else says they will support them in future: I
    don't support them now.  */
@@ -123,7 +123,7 @@ static long start_time;
 
 static int flag_macro_alternate;
 
-
+
 #ifdef USE_EMULATIONS
 #define EMULATION_ENVIRON "AS_EMULATION"
 
@@ -349,7 +349,7 @@ Options:\n\
   --listing-cont-lines    set the maximum number of continuation lines used\n\
                           for the output data column of the listing\n"));
   fprintf (stream, _("\
-  @FILE                   read options from FILE\n")); 
+  @FILE                   read options from FILE\n"));
 
   md_show_usage (stream);
 
@@ -438,7 +438,7 @@ parse_args (int * pargc, char *** pargv)
     /* When you add options here, check that they do
        not collide with OPTION_MD_BASE.  See as.h.  */
     };
-  
+
   static const struct option std_longopts[] =
   {
     /* Note: commas are placed at the start of the line rather than
@@ -608,6 +608,9 @@ the GNU General Public License version 3 or later.\n\
 This program has absolutely no warranty.\n"));
 	  printf (_("This assembler was configured for a target of `%s'.\n"),
 		  TARGET_ALIAS);
+#ifdef QC_COPYRT_MSG
+          printf (_(QC_COPYRT_MSG"\n"));
+#endif
 	  exit (EXIT_SUCCESS);
 
 	case OPTION_EMULATION:
@@ -978,7 +981,7 @@ macro_expr (const char *emsg, int idx, sb *in, int *val)
 
   return idx;
 }
-
+
 /* Here to attempt 1 pass over each input file.
    We scan argv[*] looking for filenames or exactly "" which is
    shorthand for stdin. Any argv that is NULL is not a file-name.
@@ -1048,7 +1051,7 @@ perform_an_assembly_pass (int argc, char ** argv)
   if (!saw_a_file)
     read_a_source_file ("");
 }
-
+
 #ifdef OBJ_ELF
 static void
 create_obj_attrs_section (void)
@@ -1075,7 +1078,7 @@ create_obj_attrs_section (void)
     }
 }
 #endif
-
+
 
 int
 main (int argc, char ** argv)
@@ -1205,7 +1208,7 @@ main (int argc, char ** argv)
       gnustack = subseg_new (".note.GNU-stack", 0);
       bfd_set_section_flags (stdoutput, gnustack,
 			     SEC_READONLY | (flag_execstack ? SEC_CODE : 0));
-                                                                             
+
     }
 #endif
 
@@ -1213,7 +1216,7 @@ main (int argc, char ** argv)
      assembly debugging or on behalf of the compiler, emit it now.  */
   dwarf2_finish ();
 
-  /* If we constructed dwarf2 .eh_frame info, either via .cfi 
+  /* If we constructed dwarf2 .eh_frame info, either via .cfi
      directives from the user or by the backend, emit it now.  */
   cfi_finish ();
 
