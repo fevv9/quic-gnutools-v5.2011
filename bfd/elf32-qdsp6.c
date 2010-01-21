@@ -2644,7 +2644,7 @@ qdsp6_alloc_dynrel
     {
       asection *sreloc = elf_section_data (p->sec)->sreloc;
 
-      sreloc->rawsize += p->count * sizeof (Elf32_External_Rela);
+      sreloc->size += p->count * sizeof (Elf32_External_Rela);
     }
 
   return TRUE;
@@ -2729,7 +2729,7 @@ qdsp6_elf_size_dynamic_sections
         {
           s = bfd_get_section_by_name (htab->elf.dynobj, ".interp");
           BFD_ASSERT (s != NULL);
-          s->rawsize = sizeof ELF_DYNAMIC_INTERPRETER;
+          s->size = sizeof ELF_DYNAMIC_INTERPRETER;
           s->contents = (unsigned char *) ELF_DYNAMIC_INTERPRETER;
         }
     }
@@ -2779,7 +2779,7 @@ qdsp6_elf_size_dynamic_sections
     {
       if (!strncmp (bfd_get_section_name (dynobj, s), ".rela", 5))
 	{
-	  if (s->rawsize == 0)
+	  if (s->size == 0)
 	    {
 	      /* If we don't need this section, strip it from the
 		 output file.  This is mostly to handle .rela.bss and
@@ -2807,7 +2807,7 @@ qdsp6_elf_size_dynamic_sections
 	  continue;
 	}
 
-      if (s->rawsize == 0)
+      if (s->size == 0)
 	{
           /* If we don't need this section, strip it from the
              output file. */
@@ -2816,7 +2816,7 @@ qdsp6_elf_size_dynamic_sections
 	}
 
       /* Allocate memory for the section contents.  */
-      s->contents = (bfd_byte *) bfd_zalloc (htab->elf.dynobj, s->rawsize);
+      s->contents = (bfd_byte *) bfd_zalloc (htab->elf.dynobj, s->size);
       if (!s->contents)
 	return FALSE;
     }
@@ -2888,7 +2888,7 @@ qdsp6_elf_finish_dynamic_sections
       BFD_ASSERT (sdyn);
 
       dyncon = (Elf32_External_Dyn *) sdyn->contents;
-      dynconend = (Elf32_External_Dyn *) (sdyn->contents + sdyn->rawsize);
+      dynconend = (Elf32_External_Dyn *) (sdyn->contents + sdyn->size);
       for (; dyncon < dynconend; dyncon++)
 	{
 	  Elf_Internal_Dyn dyn;
