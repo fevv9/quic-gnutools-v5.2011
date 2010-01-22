@@ -55,7 +55,7 @@ char hist_dimension_abbrev = 's';
 static double accum_time;	/* Accumulated time so far for print_line(). */
 static double total_time;	/* Total time for all routines.  */
 
-typedef enum { UNKNOWN_TYPE=0, IS_ICMISS, IS_DCMISS, IS_CYCLES, IS_L2CMISS } typeofgmon;
+typedef enum { UNKNOWN_TYPE=0, IS_ICMISS, IS_DCMISS, IS_CYCLES, IS_L2CMISS, IS_BACC } typeofgmon;
 typeofgmon gmon_type = UNKNOWN_TYPE;
 
 /* Table of SI prefixes for powers of 10 (used to automatically
@@ -145,6 +145,21 @@ read_histogram_header (histogram *record,
 	  fprintf(stderr, _("%s: D$Miss cannot be mixed with other gmon file types\n"), whoami);
 	  done(1);
 	}
+    }
+  else if (!strncmp(n_hist_dimension, "  bus accesses", 14))
+    {
+      if ((gmon_type == UNKNOWN_TYPE) || (gmon_type == IS_BACC))
+        {
+          *scale = 1.0;
+          strcpy(n_hist_dimension, _("BussAcc"));
+          n_hist_dimension_abbrev = 'm';
+          gmon_type = IS_BACC;
+        }
+      else
+        {
+          fprintf(stderr, _("%s: BussAcc cannot be mixed with other gmon file types\n"), whoami);
+          done(1);
+        }
     }
   else if (!strncmp(n_hist_dimension, "  l2cache miss", 14))
     {
