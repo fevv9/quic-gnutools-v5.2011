@@ -151,13 +151,13 @@ read_histogram_header (histogram *record,
       if ((gmon_type == UNKNOWN_TYPE) || (gmon_type == IS_BACC))
         {
           *scale = 1.0;
-          strcpy(n_hist_dimension, _("BussAcc"));
+          strcpy(n_hist_dimension, _("BusAcc"));
           n_hist_dimension_abbrev = 'm';
           gmon_type = IS_BACC;
         }
       else
         {
-          fprintf(stderr, _("%s: BussAcc cannot be mixed with other gmon file types\n"), whoami);
+          fprintf(stderr, _("%s: BusAcc cannot be mixed with other gmon file types\n"), whoami);
           done(1);
         }
     }
