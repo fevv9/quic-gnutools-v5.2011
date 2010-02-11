@@ -23,27 +23,33 @@
    Boston, MA 02111-1307, USA.  */
 
 #include "defs.h"
-#include "language.h"
-#include "gdb_string.h"
-#include "inferior.h"
-#include "gdbcore.h"
 #include "arch-utils.h"
-#include "regcache.h"
+#include "gdbtypes.h"
+#include "gdbcmd.h"
+#include "gdbcore.h"
+#include "gdb_string.h"
+#include "gdb_assert.h"
 #include "frame.h"
 #include "frame-unwind.h"
 #include "frame-base.h"
 #include "trad-frame.h"
+#include "symtab.h"
+#include "symfile.h"
+#include "value.h"
+#include "inferior.h"
 #include "dis-asm.h"
-#include "gdb_assert.h"
-#include "sim-regno.h"
-#include "symtab.h" 
-#include "command.h"
+#include "objfiles.h"
+#include "language.h"
+#include "regcache.h"
+#include "reggroups.h"
+#include "floatformat.h"
+#include "block.h"
+#include "observer.h"
+#include "infcall.h"
 #include "remote.h"
 #include "gdbthread.h"
-#include "gdbcmd.h"
 #include "completer.h"
 #include "reg_offsets.h"
-#include "objfiles.h"
 #include "cli/cli-decode.h"
 #include "qdsp6-sim.h"
 
@@ -67,6 +73,7 @@
 char *q6targetargsInfo[256];
 char *current_q6_target = NULL;
 int Q6_tcl_fe_state = 0;
+int qdsp6_debug = 0;
 
 /*******************************************************************
  *   Extern Variables                                              *
@@ -150,6 +157,7 @@ typedef enum
   Q6_V1                        = 1,
   Q6_V2                        = 2,   // 31
   Q6_V3                        = 3,   // 31
+  Q6_V4                        = 4,   // 31
 }Qdsp6_Version;
 
 int q6Version = 0;
@@ -162,6 +170,7 @@ struct qdsp6_unwind_cache		/* was struct frame_extra_info */
     /* The previous frame's inner-most stack address.  Used as this
        frame ID's stack_addr.  */
     CORE_ADDR prev_sp;
+    CORE_ADDR reg_lr;
     
     /* The frame's base, optionally used by the high-level debug info.  */
     CORE_ADDR base;
@@ -202,8 +211,6 @@ struct gdbarch_tdep
   char **register_names;
 };
 
-#define CURRENT_VARIANT (gdbarch_tdep (current_gdbarch))
-
 
 /* Allocate a new variant structure, and set up default values for all
    the fields.  */
@@ -220,7 +227,7 @@ new_variant (void)
   var->num_gprs = NUM_GEN_REGS;
   var->num_fprs = 0;
   var->num_hw_watchpoints = 0;
-  var->num_hw_breakpoints = 0;
+  var->num_hw_breakpoints = 20;
 
   /* By default, don't supply any general-purpose or floating-point
      register names.  */
@@ -240,14 +247,14 @@ new_variant (void)
   var->register_names[REG_M0]      = "m0";
   var->register_names[REG_M1]      = "m1";
     var->register_names[REG_SR]      = "usr";
-  /* else if(q6Version == Q6_V3)  XXX_SM anything? */
+  /* else if(q6Version == Q6_V4)  XXX_SM anything? */
 
 
   var->register_names[REG_PC]      = "pc";
   var->register_names[REG_UGP]     = "ugp";
   
     var->register_names[REG_GP]     = "gp";
-  /* else if(q6Version == Q6_V3)  XXX_SM anything? */
+  /* else if(q6Version == Q6_V4)  XXX_SM anything? */
 
 
   /* per thread Supervisor Control Registers (SCR )   */
@@ -301,20 +308,21 @@ set_variant_num_fprs (struct gdbarch_tdep *var, int num_fprs)
 static const char *
 qdsp6_register_name (struct gdbarch *gdbarch, int reg)
 {
+  struct gdbarch_tdep *tdep = gdbarch_tdep (gdbarch);
+
   if (reg < 0)
     return "?toosmall?";
   if (reg >=  qdsp6_num_regs)
     return "?toolarge?";
 
-  return CURRENT_VARIANT->register_names[reg];
+  return tdep->register_names[reg];
 }
 
 
 static struct type *
 qdsp6_register_type (struct gdbarch *gdbarch, int reg)
 {
-  return builtin_type_int32;
-
+    return builtin_type (gdbarch)->builtin_uint32;
 }
 
 static void
@@ -336,21 +344,20 @@ static const unsigned char *
 qdsp6_breakpoint_from_pc (struct gdbarch *gdbarch, CORE_ADDR *pcptr, int *lenp)
 {
   /* breakpoint instruction is trap0(#0xDB) which encodes as  0c db 00 54 for v2*/
-  static unsigned char breakpoint_v2[] = {0x0c, 0xdb, 0x00, 0x54};
-  static unsigned char* breakpoint;
+  static unsigned char breakpoint_insn[] = {0x0c, 0xdb, 0x00, 0x54};
+  static unsigned char *breakpoint;
 
-  if(q6Version == Q6_V2) 
+  if ((q6Version == Q6_V3) || 
+      (q6Version == Q6_V2))
   {
-    breakpoint=breakpoint_v2;
-    *lenp = sizeof (breakpoint_v2);
+    breakpoint=breakpoint_insn;
+    *lenp = sizeof (breakpoint_insn);
   } 
-/* XXX_SM : reserve for V3 update 
- * else if (q6Version == Q6_V3) 
- * {
- *   breakpoint=breakpoint_v3;
- *   *lenp = sizeof (breakpoint_v3);
- * }
- */
+  else
+  {
+    printf_filtered ("%s, invalid setting for arch level %d\n",__func__, q6Version);
+    gdb_assert(0);
+  }
   return breakpoint;
 }
 
@@ -490,12 +497,15 @@ static ULONGEST FUNC_ARG_SAVE_REG_BITS;
 #define FUNC_ARG_SAVE_REG(opcode) (((opcode) >> FUNC_ARG_SAVE_REG_SHIFT) & FUNC_ARG_SAVE_REG_BITS)
 
 static CORE_ADDR
-qdsp6_analyze_prologue (CORE_ADDR pc, struct frame_info *next_frame,
-                      struct qdsp6_unwind_cache *info)
+qdsp6_analyze_prologue (struct gdbarch *gdbarch,  CORE_ADDR pc,
+		        struct frame_info *next_frame,
+                        struct qdsp6_unwind_cache *info)
 {
   ULONGEST op;
+  gdb_byte *op_addr=(gdb_byte *)&op;
 
   //printf("\n ******* Calling qdsp6_analyze_prologue \n");
+  int allocframe = 0;
 
   /* Non-zero iff we've seen the instruction that initializes the
      frame pointer for this function's frame.  */
@@ -534,6 +544,11 @@ qdsp6_analyze_prologue (CORE_ADDR pc, struct frame_info *next_frame,
   /* The upper bound to of the pc values to scan.  */
   CORE_ADDR lim_pc;
 
+  if (qdsp6_debug == 1)
+  {
+      printf_filtered ("QDSP6_DEB: %s\n",__func__);
+  }
+
 
   memset (gr_saved, 0, sizeof (gr_saved));
 
@@ -541,7 +556,7 @@ qdsp6_analyze_prologue (CORE_ADDR pc, struct frame_info *next_frame,
 
   /* Try to compute an upper limit (on how far to scan) based on the
      line number info.  */
-  lim_pc = skip_prologue_using_sal (pc);
+  lim_pc = skip_prologue_using_sal (gdbarch, pc);
   /* If there's no line number info, lim_pc will be 0.  In that case,
      set the limit to be 100 instructions away from pc.  Hopefully, this
      will be far enough away to account for the entire prologue.  Don't
@@ -554,7 +569,7 @@ qdsp6_analyze_prologue (CORE_ADDR pc, struct frame_info *next_frame,
      will catch those cases where the pc is in the prologue.  */
   if (next_frame)
     {
-      CORE_ADDR frame_pc = frame_pc_unwind (next_frame);
+      CORE_ADDR frame_pc = get_frame_pc (next_frame);
       if (frame_pc < lim_pc)
 	lim_pc = frame_pc;
     }
@@ -668,11 +683,12 @@ qdsp6_analyze_prologue (CORE_ADDR pc, struct frame_info *next_frame,
         (FUNC_ARG_SAVE_OPCODE_BITS == (FUNC_ARG_SAVE_OPCODE_MASK & (opcode)) && \
              is_argument_reg(FUNC_ARG_SAVE_REG(opcode)))
 
-      op = read_memory_unsigned_integer (pc, 4);
+      target_read_memory (pc, op_addr, 4);
       if (ALLOCFRAME_MATCH(op)) 
       {
 	//printf("  *** ALLOCFRAME_MATCH(op)\n");
 	int offset = - ALLOCFRAME_SIZE(op);
+	allocframe = offset;
 
        /* process optional additional sp updates 
           (when allocframe immediate was not big enough) */
@@ -680,7 +696,7 @@ qdsp6_analyze_prologue (CORE_ADDR pc, struct frame_info *next_frame,
       do {
         sp_mod_val += offset;
 	pc += 4;
-        op = read_memory_unsigned_integer (pc, 4);
+        target_read_memory (pc, op_addr, 4);
         offset = MORE_SP_UPDATE_SIZE(op); 
         /* offset should be negative since stack grows downward */
       } while ((MORE_SP_UPDATE_MATCH(op) && offset < 0) &&
@@ -700,7 +716,7 @@ qdsp6_analyze_prologue (CORE_ADDR pc, struct frame_info *next_frame,
         gr_saved[callee_save_reg] = 1;
         gr_sp_offset[callee_save_reg] = offset;
 	pc += 4;
-        op = read_memory_unsigned_integer (pc, 4);
+        target_read_memory (pc, op_addr, 4);
         offset = CALLEE_SAVE_OFFSET_B(op);
       }
 
@@ -716,7 +732,7 @@ qdsp6_analyze_prologue (CORE_ADDR pc, struct frame_info *next_frame,
 	gr_saved[callee_save_reg] = 1;
         gr_sp_offset[callee_save_reg] = offset;
 	pc += 4;
-        op = read_memory_unsigned_integer (pc, 4);
+        target_read_memory (pc, op_addr, 4);
         offset = CALLEE_SAVE_OFFSET_H(op);
       }
 
@@ -730,7 +746,7 @@ qdsp6_analyze_prologue (CORE_ADDR pc, struct frame_info *next_frame,
         gr_saved[callee_save_reg] = 1;
         gr_sp_offset[callee_save_reg] = offset;
 	pc += 4;
-        op = read_memory_unsigned_integer (pc, 4);
+        target_read_memory (pc, op_addr, 4);
         offset = CALLEE_SAVE_OFFSET_W(op);
       }
 
@@ -744,7 +760,7 @@ qdsp6_analyze_prologue (CORE_ADDR pc, struct frame_info *next_frame,
         gr_saved[callee_save_reg] = 1;
         gr_sp_offset[callee_save_reg] = offset;
 	pc += 4;
-        op = read_memory_unsigned_integer (pc, 4);
+        target_read_memory (pc, op_addr, 4);
         offset = CALLEE_SAVE_OFFSET_D(op);
       }
 
@@ -755,7 +771,7 @@ qdsp6_analyze_prologue (CORE_ADDR pc, struct frame_info *next_frame,
 	     (pc < lim_pc))
       {
 	pc += 4;
-        op = read_memory_unsigned_integer (pc, 4);
+        target_read_memory (pc, op_addr, 4);
       }
     }
 
@@ -769,8 +785,14 @@ qdsp6_analyze_prologue (CORE_ADDR pc, struct frame_info *next_frame,
     {
       int i;
       ULONGEST this_base;
+      ULONGEST this_sp;
+      ULONGEST this_pc;
+      ULONGEST this_lr;
 
-      frame_unwind_register (next_frame, REG_FP, &this_base);
+      this_base = get_frame_register_unsigned (next_frame, REG_FP);
+      this_sp = get_frame_register_unsigned (next_frame, REG_SP);
+      this_pc = get_frame_register_unsigned (next_frame, REG_PC);
+      this_lr = get_frame_register_unsigned (next_frame, REG_LR);
 
       for (i = 0; i < 64; i++)
 	if (gr_saved[i])
@@ -779,10 +801,25 @@ qdsp6_analyze_prologue (CORE_ADDR pc, struct frame_info *next_frame,
       info->saved_regs[REG_FP].addr = this_base;
       info->saved_regs[REG_LR].addr = this_base + 4;
       info->saved_regs[REG_PC] = info->saved_regs[REG_LR];
+      //info->saved_regs[REG_PC].addr = this_pc;
 
-      info->prev_sp = this_base + 8;
+      info->prev_sp = this_base + 8; /* +4 for saved R30, +4 for saved R31 */
+      info->reg_lr = this_lr;
       info->base = this_base;
       trad_frame_set_value (info->saved_regs, REG_SP, info->prev_sp);
+
+      if (qdsp6_debug == 1)
+      {
+	printf_filtered ("\t QDSP6_DEB: allocframe = %d\n", allocframe);
+	printf_filtered ("\t QDSP6_DEB: info.base = 0x%p\n", info->base);
+	printf_filtered ("\t QDSP6_DEB: reg_sp = 0x%p\n", this_sp);
+	printf_filtered ("\t QDSP6_DEB: reg_lr = 0x%p\n", this_lr);
+	printf_filtered ("\t QDSP6_DEB: info.REG_FP  = 0x%x\n", info->saved_regs[REG_FP].addr);
+	printf_filtered ("\t QDSP6_DEB: info.REG_LR  = 0x%x\n", info->saved_regs[REG_LR].addr);
+	printf_filtered ("\t QDSP6_DEB: info.REG_PC  = 0x%x\n", info->saved_regs[REG_PC].addr);
+	printf_filtered ("\t QDSP6_DEB: info.prev_sp = 0x%x\n", info->saved_regs[REG_PC].addr);
+      }
+
 
     }
 
@@ -794,23 +831,26 @@ static CORE_ADDR
 qdsp6_skip_prologue (struct gdbarch *gdbarch, CORE_ADDR pc)
 {
   CORE_ADDR func_addr, func_end, new_pc;
-  //printf("\n ******* Calling qdsp6_skip_prologue \n");
 
   new_pc = pc;
 
   /* If the line table has entry for a line *within* the function
      (i.e., not in the prologue, and not past the end), then that's
      our location.  */
-  //printf(" **** find_pc_partial_function(0x%08x, 0x0, 0x%08x, 0x%08x) = %d\n", pc, &func_addr, &func_end, find_pc_partial_function (pc, NULL, &func_addr, &func_end));
+
+  if (qdsp6_debug == 1)
+  {
+      printf_filtered ("QDSP6_DEB: %s\n",__func__);
+      printf_filtered ("\tQDSP6_DEB: pc = 0x%lx\n", pc);
+  }
+
   if (find_pc_partial_function (pc, NULL, &func_addr, &func_end))
     {
       struct symtab_and_line sal;
 
-      //printf(" * * func_addr = 0x%08x, func_end = 0x%08x\n", func_addr, func_end);
-
       sal = find_pc_line (func_addr, 0);
 
-      //printf(" * * sal.line = 0x%08x, sal.end = 0x%08x\n", sal.line, sal.end);
+      /* printf(" * * sal.line = 0x%08x, sal.end = 0x%08x\n", sal.line, sal.end); */
 
       if (sal.line != 0 && sal.end < func_end)
 	{
@@ -820,33 +860,50 @@ qdsp6_skip_prologue (struct gdbarch *gdbarch, CORE_ADDR pc)
 
   /* qdsp6 prologue is at least 4 bytes (allocframe) */
   if (new_pc < pc + 4) 
-    new_pc = qdsp6_analyze_prologue (pc, 0, 0);
+    new_pc = qdsp6_analyze_prologue (gdbarch, pc, 0, 0);
 
+  if (qdsp6_debug == 1)
+  {
+      printf_filtered ("\tQDSP6_DEB: returns new_pc = 0x%lx\n", new_pc);
+  }
   return new_pc;
 }
 
 
 static struct qdsp6_unwind_cache *
-qdsp6_frame_unwind_cache (struct frame_info *next_frame,
+qdsp6_frame_unwind_cache (struct frame_info *this_frame,
 			 void **this_prologue_cache)
 {
-  struct gdbarch *gdbarch = get_frame_arch (next_frame);
+  struct gdbarch *gdbarch = get_frame_arch (this_frame);
   CORE_ADDR pc;
   ULONGEST prev_sp;
   ULONGEST this_base;
   struct qdsp6_unwind_cache *info;
 
-  //printf("\n ******* Calling qdsp6_frame_unwind_cache \n");
+  if (qdsp6_debug == 1)
+  {
+      printf_filtered("QDSP6_DEB: %s\n",__func__);
+      printf_filtered("\tQDSP6_DEB: *this_prologue_cache = %p\n",
+	     *this_prologue_cache);
+  }
+
   if ((*this_prologue_cache))
     return (*this_prologue_cache);
 
   info = FRAME_OBSTACK_ZALLOC (struct qdsp6_unwind_cache);
   (*this_prologue_cache) = info;
-  info->saved_regs = trad_frame_alloc_saved_regs (next_frame);
+  info->saved_regs = trad_frame_alloc_saved_regs (this_frame);
 
   /* Prologue analysis does the rest...  */
-  qdsp6_analyze_prologue (frame_func_unwind (next_frame, NORMAL_FRAME), next_frame, info);
+  pc = qdsp6_analyze_prologue (gdbarch,
+			get_frame_func (this_frame), this_frame, info);
 
+  if (qdsp6_debug == 1)
+  {
+      printf_filtered("\tQDSP6_DEB: %s\n",__func__);
+      printf_filtered("\tQDSP6_DEB: pc = 0x%lx\n", pc);
+  }
+  
   return info;
 }
 
@@ -861,15 +918,15 @@ qdsp6_extract_return_value (struct type *type, struct regcache *regcache,
     {
       ULONGEST gpr0_val;
       regcache_cooked_read_unsigned (regcache, 0, &gpr0_val);
-      store_unsigned_integer (valbuf, len, gpr0_val);
+      store_unsigned_integer ((gdb_byte *)valbuf, len, BFD_ENDIAN_LITTLE, gpr0_val);
     }
   else if (len <= 8)
     {
       ULONGEST regval;
       regcache_cooked_read_unsigned (regcache, 0, &regval);
-      store_unsigned_integer (valbuf, 4, regval);
+      store_unsigned_integer ((gdb_byte *)valbuf, 4, BFD_ENDIAN_LITTLE, regval);
       regcache_cooked_read_unsigned (regcache, 1, &regval);
-      store_unsigned_integer ((bfd_byte *) valbuf + 4, 4, regval);
+      store_unsigned_integer ((bfd_byte *) valbuf + 4, 4, BFD_ENDIAN_LITTLE, regval);
     }
   else
     internal_error (__FILE__, __LINE__, "Illegal return value length: %d", len);
@@ -896,26 +953,34 @@ qdsp6_store_return_value (struct type *type, struct regcache *regcache,
                         const void *valbuf);
 
 static enum return_value_convention
-qdsp6_return_value (struct gdbarch *gdbarch, struct type *type,
-                   struct regcache *regcache, void *readbuf,
-                   const void *writebuf)
+qdsp6_return_value (struct gdbarch *gdbarch, struct type *func_type,
+		   struct type *valtype, struct regcache *regcache,
+		   gdb_byte *readbuf, const gdb_byte *writebuf)
 {
   //printf("\nCalling qdsp6_return_value .........................");
 
-  // anything less than 8 bytes go in registers
-  if (((TYPE_CODE (type) == TYPE_CODE_STRUCT
-       || TYPE_CODE (type) == TYPE_CODE_UNION) &&
-       TYPE_LENGTH (type) > 8) || (TYPE_LENGTH (type) > 8))
-      /* Structs, unions, and anything larger than 8 bytes (2 registers)
-       *        goes on the stack.  */
-      return RETURN_VALUE_STRUCT_CONVENTION;
+  /* Structs, unions, and anything larger than 8 bytes (2 registers)
+     goes on the stack.  */
+  int struct_return = (((TYPE_CODE (valtype) == TYPE_CODE_STRUCT
+       			 || TYPE_CODE (valtype) == TYPE_CODE_UNION)
+			 && TYPE_LENGTH (valtype) > 8) 
+			 || (TYPE_LENGTH (valtype) > 8));
 
    if (readbuf)
-       qdsp6_extract_return_value (type, regcache, readbuf);
+     {
+       gdb_assert (!struct_return);
+       qdsp6_extract_return_value (valtype, regcache, readbuf);
+     }
    if (writebuf)
-       qdsp6_store_return_value (type, regcache, writebuf);
+     {
+       gdb_assert (!struct_return);
+       qdsp6_store_return_value (valtype, regcache, writebuf);
+     }
 
-   return RETURN_VALUE_REGISTER_CONVENTION;
+   if (struct_return)
+     return RETURN_VALUE_STRUCT_CONVENTION;
+   else
+     return RETURN_VALUE_REGISTER_CONVENTION;
 }
 
 static CORE_ADDR
@@ -934,7 +999,7 @@ qdsp6_push_dummy_code (struct gdbarch *gdbarch,
 }
 
 static CORE_ADDR
-qdsp6_push_dummy_call (struct gdbarch *gdbarch, CORE_ADDR func_addr,
+qdsp6_push_dummy_call (struct gdbarch *gdbarch, struct value *function,
                      struct regcache *regcache, CORE_ADDR bp_addr,
                      int nargs, struct value **args, CORE_ADDR sp,
 		     int struct_return, CORE_ADDR struct_addr)
@@ -944,8 +1009,8 @@ qdsp6_push_dummy_call (struct gdbarch *gdbarch, CORE_ADDR func_addr,
   int len;
   int stack_space = 0, stack_offset;
   int numOfFixedTypeFunctionArgs = 0;
-  char *val;
-  char valbuf[32];
+  gdb_byte *val;
+  unsigned char valbuf[32];
   char *sDemangledFunctionName    = NULL;
   CORE_ADDR regval;
   enum type_code typecode;
@@ -954,6 +1019,7 @@ qdsp6_push_dummy_call (struct gdbarch *gdbarch, CORE_ADDR func_addr,
   struct type *ftype;
   struct symbol  *pFuncSymbol    =  NULL;
   struct minimal_symbol *msymbol =  NULL;
+  CORE_ADDR func_addr = find_function_addr (function, NULL);
 
   
   
@@ -1016,7 +1082,8 @@ qdsp6_push_dummy_call (struct gdbarch *gdbarch, CORE_ADDR func_addr,
 	   typecode == TYPE_CODE_UNION) &&
 	  (len > 8))
 	{
-	  store_unsigned_integer (valbuf, 4, VALUE_ADDRESS (arg));
+	  store_unsigned_integer (valbuf, 4, 
+				  BFD_ENDIAN_LITTLE, value_address (arg));
 	  typecode = TYPE_CODE_PTR;
 	  val = valbuf;
 	  write_memory (sp+stack_offset, value_contents (arg), len);
@@ -1026,7 +1093,7 @@ qdsp6_push_dummy_call (struct gdbarch *gdbarch, CORE_ADDR func_addr,
 	}
       else
 	{
-	  val = (char *) value_contents (arg);
+	  val = (unsigned char *)value_contents (arg);
 	}
 
 
@@ -1039,7 +1106,8 @@ qdsp6_push_dummy_call (struct gdbarch *gdbarch, CORE_ADDR func_addr,
 	  if ((argreg < q6ArgRegMax) &&
               (argnum < numOfFixedTypeFunctionArgs))
 	    {
-	      regval = extract_unsigned_integer (val, partial_len);
+	      regval = extract_unsigned_integer (val, partial_len,
+						 BFD_ENDIAN_LITTLE);
 #if 0
 	      printf("  Argnum %d data %x -> reg %d\n",
 		     argnum, (int) regval, argreg);
@@ -1060,7 +1128,8 @@ qdsp6_push_dummy_call (struct gdbarch *gdbarch, CORE_ADDR func_addr,
 	    /* This code is a temp. hack for C++ gdb test virtfunc.cc 
 	       which does not return a valid symbol pointer for "thunk" 
 	       function which calls the actual virtual function implementation */
-	    regval = extract_unsigned_integer (val, partial_len);
+	    regval = extract_unsigned_integer (val, partial_len,
+					       BFD_ENDIAN_LITTLE);
 	    typecode = TYPE_CODE (arg_type);
 	    
 	    /*Candidates larger than 32 bits are passed in even-odd reg pair.*/
@@ -1119,72 +1188,38 @@ qdsp6_store_return_value (struct type *type, struct regcache *regcache,
                     "Don't know how to return a %d-byte value.", len);
 }
 
-#if 0
-/* Hardware watchpoint / breakpoint support   */
-
-int
-qdsp6_check_watch_resources (int type, int cnt, int ot)
-{
-  struct gdbarch_tdep *var = CURRENT_VARIANT;
-
-  /* Watchpoints not supported on simulator.  */
-  if (strcmp (target_shortname, "sim") == 0)
-    return 0;
-
-  if (type == bp_hardware_breakpoint)
-    {
-      if (var->num_hw_breakpoints == 0)
-	return 0;
-      else if (cnt <= var->num_hw_breakpoints)
-	return 1;
-    }
-  else
-    {
-      if (var->num_hw_watchpoints == 0)
-	return 0;
-      else if (ot)
-	return -1;
-      else if (cnt <= var->num_hw_watchpoints)
-	return 1;
-    }
-  return -1;
-}
-
-
-CORE_ADDR
-qdsp6_stopped_data_address (void)
-{
-    return 0;
-}
-#endif
-
 static CORE_ADDR
 qdsp6_unwind_pc (struct gdbarch *gdbarch, struct frame_info *next_frame)
 {
-  return frame_unwind_register_unsigned (next_frame, REG_PC);
+  CORE_ADDR pc;
+  if (qdsp6_debug == 1)
+  {
+      printf_filtered ("QDSP6_DEB: %s\n",__func__);
+  }
+
+  pc = frame_unwind_register_unsigned (next_frame, REG_PC);
+  if (qdsp6_debug == 1)
+  {
+      printf_filtered ("\tQDSP6_DEB: pc = 0x%x\n",pc);
+  }
+  return pc;
 }
 
 /* Given a GDB frame, determine the address of the calling function's
    frame.  This will be used to create a new GDB frame struct.  */
 
 static void
-qdsp6_frame_this_id (struct frame_info *next_frame,
+qdsp6_frame_this_id (struct frame_info *this_frame,
 		    void **this_prologue_cache, struct frame_id *this_id)
 {
   struct qdsp6_unwind_cache *info
-    = qdsp6_frame_unwind_cache (next_frame, this_prologue_cache);
+    = qdsp6_frame_unwind_cache (this_frame, this_prologue_cache);
   CORE_ADDR base;
   CORE_ADDR func;
-  struct minimal_symbol *msym_stack;
   struct frame_id id;
 
   /* The FUNC is easy.  */
-  func = frame_func_unwind (next_frame, NORMAL_FRAME);
-
-  /* Check if the stack is empty.  */
-  msym_stack = lookup_minimal_symbol ("_stack", NULL, NULL);
-  if (msym_stack && info->base == SYMBOL_VALUE_ADDRESS (msym_stack))
-    return;
+  func = get_frame_func (this_frame);
 
   /* Hopefully the prologue analysis either correctly determined the
      frame's base (which is the SP from the previous frame), or set
@@ -1193,45 +1228,42 @@ qdsp6_frame_this_id (struct frame_info *next_frame,
   if (base == 0)
     return;
 
-  id = frame_id_build (base, func);
+  id = frame_id_build_special (base, func, info->reg_lr);
 
+#if 0
   /* Check that we're not going round in circles with the same frame
      ID (but avoid applying the test to sentinel frames which do go
      round in circles).  Can't use frame_id_eq() as that doesn't yet
      compare the frame's PC value.  */
-  if (frame_relative_level (next_frame) >= 0
-      && get_frame_type (next_frame) != DUMMY_FRAME
-      && frame_id_eq (get_frame_id (next_frame), id))
+  if (frame_relative_level (this_frame) >= 0
+      && get_frame_type (this_frame) != DUMMY_FRAME
+      && frame_id_eq (get_frame_id (this_frame), id))
     return;
+#endif
 
   (*this_id) = id;
 }
 
-static void
-qdsp6_frame_prev_register (struct frame_info *next_frame,
+static struct value *
+qdsp6_frame_prev_register (struct frame_info *this_frame,
 			  void **this_prologue_cache,
-			  int regnum, int *optimizedp,
-			  enum lval_type *lvalp, CORE_ADDR *addrp,
-			  int *realnump, void *bufferp)
+			  int regnum)
 {
   struct qdsp6_unwind_cache *info
-    = qdsp6_frame_unwind_cache (next_frame, this_prologue_cache);
-    trad_frame_get_prev_register (next_frame, info->saved_regs, regnum,
-                                  optimizedp, lvalp, addrp, realnump, bufferp);
+    = qdsp6_frame_unwind_cache (this_frame, this_prologue_cache);
+
+  return trad_frame_get_prev_register (this_frame, info->saved_regs, regnum);
 
 }
 
 static const struct frame_unwind qdsp6_frame_unwind = {
   NORMAL_FRAME,
   qdsp6_frame_this_id,
-  qdsp6_frame_prev_register
+  qdsp6_frame_prev_register,
+  NULL,
+  default_frame_sniffer
 };
 
-static const struct frame_unwind *
-qdsp6_frame_sniffer (struct frame_info *next_frame)
-{
-  return &qdsp6_frame_unwind;
-}
 
 static CORE_ADDR
 qdsp6_frame_base_address (struct frame_info *next_frame, void **this_cache)
@@ -1260,10 +1292,10 @@ qdsp6_unwind_sp (struct gdbarch *gdbarch, struct frame_info *next_frame)
    breakpoint.  */
 
 static struct frame_id
-qdsp6_unwind_dummy_id (struct gdbarch *gdbarch, struct frame_info *next_frame)
+qdsp6_dummy_id (struct gdbarch *gdbarch, struct frame_info *this_frame)
 {
-  return frame_id_build (qdsp6_unwind_sp (gdbarch, next_frame),
-			 frame_pc_unwind (next_frame));
+  return frame_id_build (qdsp6_unwind_sp (gdbarch, this_frame),
+			 get_frame_pc (this_frame));
 }
 
 
@@ -1360,12 +1392,14 @@ qdsp6_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
   set_gdbarch_unwind_pc (gdbarch, qdsp6_unwind_pc);
   set_gdbarch_unwind_sp (gdbarch, qdsp6_unwind_sp);
   set_gdbarch_frame_align (gdbarch, qdsp6_frame_align);
-  frame_unwind_append_sniffer (gdbarch, qdsp6_frame_sniffer);
+
+  frame_unwind_append_unwinder (gdbarch, &qdsp6_frame_unwind);
+
   frame_base_set_default (gdbarch, &qdsp6_frame_base);
 
   /* Settings for calling functions in the inferior.  */
   set_gdbarch_push_dummy_call (gdbarch, qdsp6_push_dummy_call);
-  set_gdbarch_unwind_dummy_id (gdbarch, qdsp6_unwind_dummy_id);
+  set_gdbarch_dummy_id (gdbarch, qdsp6_dummy_id);
 
   /* Settings that should be unnecessary.  */
   set_gdbarch_inner_than (gdbarch, core_addr_lessthan);
@@ -1378,12 +1412,12 @@ qdsp6_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
   /* set the disassembler */
   set_gdbarch_print_insn (gdbarch, qdsp6_get_disassembler_from_mach
 		                  (info.bfd_arch_info->mach,
-						   (info.byte_order == BFD_ENDIAN_BIG)));
+                                   (info.byte_order == BFD_ENDIAN_BIG)));
 
   /* Bug Fix for bug1316
      Changed CALL_DUMMY_LOCATION from default AT_ENTRY to ON_STACK
    */  
-  set_gdbarch_call_dummy_location (gdbarch, ON_STACK);
+  //set_gdbarch_call_dummy_location (gdbarch, ON_STACK);
 
   return gdbarch;
 }
@@ -1504,7 +1538,7 @@ qdsp6_rtos_info_command (char *args, int from_tty)
 static ULONGEST qdsp6_get_pagetable_size ()
 {
   char *pResponse;
-  ULONGEST pSize = 0;
+  long long unsigned pSize = 0;
 
   putpkt ("qPageTableSize");
   getpkt ( &response, &gdb_rsp_ril_info_max_size , 0);
@@ -1554,7 +1588,7 @@ qdsp6_pagetable_info_command (char *args, int from_tty)
     error ("Page Table memory allocation failed");
   
   putpkt ("qPageTableInfo");
-  getpkt (pageBuf, &gdb_rsp_ril_info_max_size , 0);
+  getpkt (&pageBuf, &gdb_rsp_ril_info_max_size , 0);
 
   /* Display page table info */
   if ((pageBuf[0] != 0) && ((strstr(pageBuf, "timeout") == NULL)))
@@ -1649,7 +1683,8 @@ get_globalregs_buffer (char* args, int printInfo)
       }
 
       /* Get the value of the register */
-      regValues[i] = extract_signed_integer(&sDisplayBuf, lenValue/2);
+      regValues[i] = extract_signed_integer((const gdb_byte *)&sDisplayBuf,
+					    lenValue/2, BFD_ENDIAN_LITTLE);
     
       /* get the length of the string read so far */  
       lenData += namelen+lenDelimiter+lenValue;
@@ -1760,7 +1795,8 @@ qdsp6_globalregs_info_command (char *args, int from_tty)
       }
 
       /* Get the value of the register */
-      regValues[i] = extract_signed_integer(&sDisplayBuf, lenValue/2);
+      regValues[i] = extract_signed_integer((const gdb_byte *)&sDisplayBuf,
+					    lenValue/2, BFD_ENDIAN_LITTLE);
     
       /* get the length of the string read so far */  
       lenData += namelen+lenDelimiter+lenValue;
@@ -2020,7 +2056,7 @@ void init_targetargs()
    /* set global regs */
    add_setshow_string_noescape_cmd ("targetargs",         /* name */
 		            no_class,      /* class category for help list */
-		            &q6targetargsInfo,    /* control var address */
+		            &q6targetargsInfo[0],    /* control var address */
                     "set Q6 target args", /* doc for this cmd */
                     "set Q6 target args", /* doc for this cmd */
                     "set Q6 target args", /* doc for this cmd */
@@ -2686,4 +2722,3 @@ _("set either a cycle count or tlbmiss breakpoint.\n\
 
  }
 
- 

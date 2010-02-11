@@ -8,11 +8,6 @@
 #
 # This configure script is free software; the Free Software Foundation
 # gives unlimited permission to copy, distribute and modify it.
-##################################################################
-# Copyright (c) $Date$ Qualcomm Innovation Center, Inc.
-# All Rights Reserved.
-# Modified by Qualcomm Innovation Center, Inc. on $Date$
-##################################################################
 ## -------------------- ##
 ## M4sh Initialization. ##
 ## -------------------- ##
@@ -3350,7 +3345,7 @@ case "${target}" in
     libgloss_dir=rs6000
     ;;
   qdsp6-*-*)
-    noconfigdirs="$noconfigdirs  gdb ${libgcj}"
+    noconfigdirs="$noconfigdirs ${libgcj}"
     noconfigdirs="$noconfigdirs "
     ;;
   rs6000-*-lynxos*)

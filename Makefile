@@ -56,7 +56,6 @@ help:
 install: $(PREFIX)
 
 CONFIGURE_OPTIONS = --target=qdsp6 \
-		    --disable-tcl \
 		    --disable-nls \
 		    --enable-bfd-assembler \
 		    --disable-multilib \

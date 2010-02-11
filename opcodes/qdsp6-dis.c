@@ -144,7 +144,7 @@ qdsp6_decode_inst(
 }
 
 /* Return the print_insn function to use. */
-static disassembler_ftype
+disassembler_ftype
 qdsp6_get_disassembler_from_mach(
   unsigned long machine,
   unsigned long big_p
