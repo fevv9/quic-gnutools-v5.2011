@@ -2822,6 +2822,27 @@ remote_open (char *name, int from_tty)
   remote_open_1 (name, from_tty, &remote_ops, 0);
 }
 
+/* XXX_SM Needed for clean startup of simulator */
+/* Some targets are only capable of doing downloads, and afterwards
+   they switch to the remote serial protocol.  This function provides
+   a clean way to get from the download target to the remote target.
+   It's basically just a wrapper so that we don't have to expose any
+   of the internal workings of remote.c.
+
+   Prior to calling this routine, you should shutdown the current
+   target code, else you will get the "A program is being debugged
+   already..." message.  Usually a call to pop_target() suffices.  */
+
+void
+push_remote_target (char *name, int from_tty)
+{
+  printf_filtered (_("Switching to remote protocol\n"));
+  remote_open (name, from_tty);
+}
+/* XXX_SM Needed for clean startup of simulator */
+
+
+
 /* Open a connection to a remote debugger using the extended
    remote gdb protocol.  NAME is the filename used for communication.  */
 
@@ -6833,7 +6854,11 @@ remote_insert_breakpoint (struct gdbarch *gdbarch,
       p = rs->buf;
 
       *(p++) = 'Z';
+#ifdef QDSP6
+      *(p++) = '1'; /* XXX_SM:FIXME Hack for simulator was '0' */
+#else
       *(p++) = '0';
+#endif
       *(p++) = ',';
       addr = (ULONGEST) remote_address_masked (addr);
       p += hexnumstr (p, addr);

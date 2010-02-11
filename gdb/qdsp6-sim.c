@@ -21,7 +21,7 @@
 #include <sys/socket.h>
 #include <netinet/tcp.h>
 
-static int qsim_debug = 0;
+static int qsim_debug = 1;
 static struct serial scb;
 
 static pid_t qdsp6_sim_pid = (pid_t) 0;
@@ -158,7 +158,12 @@ qdsp6sim_exec_simulation(char *sim_name, char *exec_name,
         int argc = 0;
 	sprintf (port, "%d", portid);
         sim_args[index++] = strdupa (sim_name);
+
+/* XXX_SM 7.0: the exec_name NULL upon entry
+               the real name is in the args pointer
         sim_args[index++] = strdupa (exec_name);
+*/
+
         sim_args[index++] = strdupa ("--gdbserv");
         sim_args[index++] = strdupa (port);
 
@@ -343,6 +348,12 @@ qdsp6sim_open (char *args, int from_tty)
 	
 }
 
+static int
+qdsp6_can_use_hw_breakpoint (int type, int cnt, int othertype)
+{
+  return 1;
+}
+
 
 void
 _initialize_qdsp6_sim (void)
@@ -360,6 +371,7 @@ running on the Hexagon (qdsp6-sim) simulator";
   t->to_close = qdsp6sim_close;
   t->to_can_run = qdsp6sim_can_run;
   t->to_create_inferior = qdsp6_create_inferior;
+  t->to_can_use_hw_breakpoint = qdsp6_can_use_hw_breakpoint;
 
   /* Register target.  */
   add_target (t);

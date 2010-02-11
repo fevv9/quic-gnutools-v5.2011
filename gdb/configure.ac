@@ -203,6 +203,14 @@ fi
 
 AC_SUBST(TARGET_OBS)
 
+if test "$ac_cv_env_target_alias_value" = "qdsp6"; then
+  AC_DEFINE(TCL_PROMPT, "% ", [Define if qdsp6 is the target. ])
+  AC_DEFINE(DEFAULT_PROMPT, "(qdsp6-gdb) ", [Define if qdsp6 is the target. ])
+  AC_DEFINE(HAVE_TCL, 1, [Define if qdsp6 is the target. ])
+  AC_DEFINE(QDSP6, 1, [Define if qdsp6 is the target. ])
+  AC_CHECK_LIB(dl, dlopen) 
+fi
+
 # For other settings, only the main target counts.
 gdb_sim=
 gdb_osabi=
@@ -1624,9 +1632,9 @@ OLD_CFLAGS=$CFLAGS
 OLD_LDFLAGS=$LDFLAGS
 OLD_LIBS=$LIBS
 CFLAGS="$CFLAGS -I${srcdir}/../include -I../bfd -I${srcdir}/../bfd"
-LDFLAGS="$LDFLAGS -L../bfd -L../libiberty"
+LDFLAGS="$LDFLAGS -L../bfd -L../libiberty -L../opcodes"
 intl=`echo $LIBINTL | sed 's,${top_builddir}/,,g'`
-LIBS="-lbfd -liberty $intl $LIBS"
+LIBS="-lbfd -liberty -lopcodes $intl $LIBS"
 AC_CACHE_CHECK([for ELF support in BFD], gdb_cv_var_elf,
 [AC_TRY_LINK(
 [#include <stdlib.h>

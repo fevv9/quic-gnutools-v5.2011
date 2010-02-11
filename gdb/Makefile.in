@@ -290,6 +290,32 @@ SUBDIR_PYTHON_LDFLAGS=
 SUBDIR_PYTHON_CFLAGS=
 
 
+# TGIF files
+
+# Where is the TCL library?  Typically in ../tcl.
+TCL_DIR = ../tcl
+TCL_LIB = $(TCL_DIR)/libtcl8.4.a
+TCL_SRC_DIR = $(srcdir)/../tcl
+TCL_INCLUDE =  -I$(TCL_SRC_DIR)/unix -I$(TCL_SRC_DIR)/generic
+
+SUBDIR_TGIF_OBS = \
+	hooks.o \
+	setproc.o       \
+	register.o      \
+	GuiSupport.o    \
+	tgifInit.o  
+SUBDIR_TGIF_SRCS = \
+	tgif/GuiSupport.c \
+	tgif/hooks.c \
+	tgif/register.c \
+	tgif/setproc.c \
+	tgif/tgifInit.c 
+SUBDIR_TGIF_DEPS =
+SUBDIR_TGIF_LDFLAGS=
+SUBDIR_TGIF_CFLAGS=
+
+
+
 # Opcodes currently live in one of two places.  Either they are in the
 # opcode library, typically ../opcodes, or they are in a header file
 # in INCLUDE_DIR.
@@ -387,6 +413,8 @@ CFLAGS = @CFLAGS@
 # Set by configure, for e.g. expat.
 INTERNAL_CPPFLAGS = @CPPFLAGS@
 
+QDSP6_CFLAGS = -I$(srcdir)/../../include/arch -I$(srcdir)/../tcl/generic
+
 # Need to pass this to testsuite for "make check".  Probably should be
 # consistent with top-level Makefile.in and gdb/testsuite/Makefile.in
 # so "make check" has the same result no matter where it is run.
@@ -397,7 +425,8 @@ INTERNAL_CFLAGS_BASE = \
 	$(CFLAGS) $(GLOBAL_CFLAGS) $(PROFILE_CFLAGS) \
 	$(GDB_CFLAGS) $(OPCODES_CFLAGS) $(READLINE_CFLAGS) \
 	$(BFD_CFLAGS) $(INCLUDE_CFLAGS) $(LIBDECNUMBER_CFLAGS) \
-	$(INTL_CFLAGS) $(INCGNU) $(ENABLE_CFLAGS) $(INTERNAL_CPPFLAGS)
+	$(INTL_CFLAGS) $(INCGNU) $(ENABLE_CFLAGS) $(INTERNAL_CPPFLAGS) \
+	$(QDSP6_CFLAGS)
 INTERNAL_WARN_CFLAGS = $(INTERNAL_CFLAGS_BASE) $(GDB_WARN_CFLAGS)
 INTERNAL_CFLAGS = $(INTERNAL_WARN_CFLAGS) $(GDB_WERROR_CFLAGS)
 
@@ -425,7 +454,7 @@ INSTALLED_LIBS=-lbfd -lreadline -lopcodes -liberty -ldecnumber \
 CLIBS = $(SIM) $(READLINE) $(OPCODES) $(BFD) $(INTL) $(LIBIBERTY) $(LIBDECNUMBER) \
 	$(XM_CLIBS) $(NAT_CLIBS) $(GDBTKLIBS) @LIBS@ \
 	$(LIBEXPAT) \
-	$(LIBIBERTY) $(WIN32LIBS) $(LIBGNU)
+	$(LIBIBERTY) $(WIN32LIBS) $(LIBGNU) $(TCL_LIB)
 CDEPS = $(XM_CDEPS) $(NAT_CDEPS) $(SIM) $(BFD) $(READLINE_DEPS) \
 	$(OPCODES) $(INTL_DEPS) $(LIBIBERTY) $(CONFIG_DEPS) $(LIBGNU)
 
@@ -508,6 +537,7 @@ ALL_TARGET_OBS = \
 	mt-tdep.o \
 	nto-tdep.o \
 	ppc-linux-tdep.o ppcnbsd-tdep.o ppcobsd-tdep.o ppc-sysv-tdep.o \
+	qdsp6-tdep.o qdsp6-sim.o qdsp6-rumi.o qdsp6-zebu.o \
 	rs6000-aix-tdep.o rs6000-tdep.o \
 	s390-tdep.o \
 	score-tdep.o \
@@ -740,8 +770,8 @@ coff-pe-read.h parser-defs.h gdb_ptrace.h mips-linux-tdep.h \
 m68k-tdep.h spu-tdep.h jv-lang.h environ.h solib-irix.h amd64-tdep.h \
 doublest.h regset.h hppa-tdep.h ppc-linux-tdep.h rs6000-tdep.h \
 gdb_locale.h gdb_dirent.h arch-utils.h trad-frame.h gnu-nat.h \
-language.h nbsd-tdep.h wrapper.h solib-svr4.h \
-macroexp.h ui-file.h regcache.h gdb_string.h tracepoint.h i386-tdep.h \
+language.h nbsd-tdep.h wrapper.h solib-svr4.h macroexp.h ui-file.h \
+qdsp6-sim.h regcache.h gdb_string.h tracepoint.h i386-tdep.h \
 inf-child.h p-lang.h event-top.h gdbtypes.h scm-tags.h user-regs.h \
 regformats/regdef.h config/alpha/nm-osf3.h  config/i386/nm-i386gnu.h \
 config/i386/nm-fbsd.h config/i386/nm-i386sol2.h config/i386/nm-linux.h \
@@ -1449,6 +1479,8 @@ ALLDEPFILES = \
 	ppcnbsd-nat.c ppcnbsd-tdep.c \
 	ppcobsd-nat.c ppcobsd-tdep.c \
 	procfs.c \
+	qdsp6-tdep.c qdsp6-sim.c qdsp6-rumi.c qdsp6-zebu.c \
+	rs6000-aix-tdep.o rs6000-tdep.o \
 	remote-m32r-sdi.c remote-mips.c \
 	remote-sim.c \
 	dcache.c \

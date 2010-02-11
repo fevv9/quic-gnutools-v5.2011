@@ -42,6 +42,9 @@
 /* Define to BFD's default target vector. */
 #undef DEFAULT_BFD_VEC
 
+/* Define if qdsp6 is the target. */
+#undef DEFAULT_PROMPT
+
 /* Define to 1 if translation of program messages to the user's native
    language is requested. */
 #undef ENABLE_NLS
@@ -524,6 +527,9 @@
 /* Define to 1 if you have the <sys/wait.h> header file. */
 #undef HAVE_SYS_WAIT_H
 
+/* Define if qdsp6 is the target. */
+#undef HAVE_TCL
+
 /* Define to 1 if you have the <termios.h> header file. */
 #undef HAVE_TERMIOS_H
 
@@ -647,6 +653,9 @@
    'ptrdiff_t'. */
 #undef PTRDIFF_T_SUFFIX
 
+/* Define if qdsp6 is the target. */
+#undef QDSP6
+
 /* Relocated directory for source files. */
 #undef RELOC_SRCDIR
 
@@ -693,6 +702,9 @@
 /* Define if the system-gdbinit directory should be relocated when GDB is
    moved. */
 #undef SYSTEM_GDBINIT_RELOCATABLE
+
+/* Define if qdsp6 is the target. */
+#undef TCL_PROMPT
 
 /* Define if <thread_db.h> has the TD_NOTALLOC error code. */
 #undef THREAD_DB_HAS_TD_NOTALLOC
