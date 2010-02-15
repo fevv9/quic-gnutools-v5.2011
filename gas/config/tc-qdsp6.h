@@ -53,10 +53,10 @@
 
 /* The endianness of the target format may change based on command
    line arguments.  */
-extern const char *qdsp6_target_format;
 #define DEFAULT_TARGET_FORMAT "elf32-littleqdsp6"
-#define TARGET_FORMAT qdsp6_target_format
 #define DEFAULT_BYTE_ORDER LITTLE_ENDIAN
+#define TARGET_FORMAT qdsp6_target_format
+extern const char *qdsp6_target_format;
 
 #define WORKING_DOT_WORD
 
@@ -68,9 +68,8 @@ extern const char *qdsp6_target_format;
    We need to look at stuff before and after the ":"
    so we access a variable here that is not passed to the macro
  */
+#define TC_START_LABEL(C, B, A) qdsp6_start_label (C, B, A)
 extern int qdsp6_start_label PARAMS ((char c, char *before, char *after));
-
-#define TC_START_LABEL(C, s, STR) qdsp6_start_label(C, s, STR)
 
 /* This hook is used to capture labels defined between .falign
    and the falign-ed packet */
@@ -79,36 +78,28 @@ extern int qdsp6_start_label PARAMS ((char c, char *before, char *after));
 extern void qdsp6_frob_label PARAMS ((symbolS *));
 
 /* The QDSP6 needs to parse reloc specifiers in .word.  */
-
-extern void
-qdsp6_parse_cons_expression PARAMS ((struct expressionS *, unsigned));
-
 #define TC_PARSE_CONS_EXPRESSION(EXP, NBYTES) \
-qdsp6_parse_cons_expression (EXP, NBYTES)
+  qdsp6_parse_cons_expression (EXP, NBYTES)
+extern void qdsp6_parse_cons_expression PARAMS ((struct expressionS *, unsigned));
 
 #define TC_EQUAL_IN_INSN(C, PTR) (1)
 
 #if 0
+#define TC_CONS_FIX_NEW(FRAG, WHERE, NBYTES, EXP) \
+  qdsp6_cons_fix_new (FRAG, WHERE, NBYTES, EXP)
 extern void
 qdsp6_cons_fix_new PARAMS ((struct frag *, int, int, struct expressionS *));
-
-#define TC_CONS_FIX_NEW(FRAG, WHERE, NBYTES, EXP) \
-qdsp6_cons_fix_new (FRAG, WHERE, NBYTES, EXP)
 #endif
+
+#define tc_symbol_chars qdsp6_symbol_chars
+extern const char qdsp6_symbol_chars [];
 
 /* Actually a pointer to a qdsp6_operand. */
 #define TC_FIX_TYPE PTR
 #define TC_INIT_FIX_DATA(F) ((F)->tc_fix_data = NULL)
 
-/* For v1 arch: QDSP6 8 bit pc-relative branch.
-   The lowest bit must be zero and is not stored in the instruction.
-   For v2 arch: QDSP6 7 bit pc-relative branch.
-   The lowest 2 bits must be zero and are not stored in the instruction.*/
-#define IS_PC_RELATIVE_RELOC(RTYPE) \
-   (   (RTYPE) == BFD_RELOC_QDSP6_B22_PCREL \
-    || (RTYPE) == BFD_RELOC_QDSP6_B15_PCREL \
-    || (RTYPE) == BFD_RELOC_QDSP6_B13_PCREL \
-    || (RTYPE) == BFD_RELOC_QDSP6_B7_PCREL)
+struct qdsp6_frag_data;
+#define TC_FRAG_TYPE struct qdsp6_frag_data*
 
 /* Make sure we don't resolve fixups for pc relative relocations */
 #define TC_FORCE_RELOCATION_LOCAL(FIX) \
@@ -119,25 +110,27 @@ qdsp6_cons_fix_new (FRAG, WHERE, NBYTES, EXP)
 /* Values passed to md_apply_fix3 don't include the symbol value.  */
 #define MD_APPLY_SYM_VALUE(FIX) 0
 
-/* No shared lib support, so we don't need to ensure externally
-   visible symbols can be overridden.  */
-#define EXTERN_FORCE_RELOC 0
+/* ELF wants global symbols left alone, so let the default be assumed. */
+/* #define EXTERN_FORCE_RELOC 1 */
 
-extern int qdsp6_unrecognized_line (int ch);
+#define tc_parallel_separator_chars qdsp6_parallel_separator_chars
+extern const char qdsp6_parallel_separator_chars [];
 
 #define tc_unrecognized_line(ch) qdsp6_unrecognized_line (ch)
-
-extern void qdsp6_cleanup (void);
+extern int qdsp6_unrecognized_line (int ch);
 
 #define md_cleanup() qdsp6_cleanup ()
+extern void qdsp6_cleanup (void);
 
-extern void qdsp6_align_code PARAMS ((fragS *, size_t));
+/* This avoids the segments from filling up. */
+#define SUB_SEGMENT_ALIGN(S, F) (0)
 
 #define md_do_align(n, fill, len, max, around)	\
 {						\
-  if ((n) && !need_pass_2			\
-    && !(fill)					\
-    && subseg_text_p (now_seg))			\
+  if ((n) 					\
+      && !need_pass_2				\
+      && !(fill)				\
+      && subseg_text_p (now_seg))		\
   {						\
     frag_align_code ((n), (max));		\
     goto around;				\
@@ -151,6 +144,43 @@ extern void qdsp6_align_code PARAMS ((fragS *, size_t));
                               - fragP->fr_address		\
                               - fragP->fr_fix));		\
 }
+extern void qdsp6_align_code PARAMS ((fragS *, size_t));
+
+/* #define TC_GENERIC_RELAX_TABLE qdsp6_relax_table */
+extern const struct relax_type qdsp6_relax_table [];
+
+#define md_convert_frag qdsp6_convert_frag
+extern void qdsp6_convert_frag (bfd *, segT, fragS *);
+#define md_estimate_size_before_relax qdsp6_estimate_size_before_relax
+extern int qdsp6_estimate_size_before_relax (fragS *, segT);
+
+#define md_relax_frag qdsp6_relax_frag
+extern long qdsp6_relax_frag (segT segment, fragS *fragP, long stretch);
+
+#define md_number_to_chars(buf, val, n)		\
+  ((target_big_endian)				\
+   ? number_to_chars_bigendian (buf, val, n)	\
+   : number_to_chars_littleendian (buf, val, n))
+
+#define IS_GP_RELATIVE_RELOC(r) \
+  ((r) == BFD_RELOC_QDSP6_GPREL16_3 \
+   || (r) == BFD_RELOC_QDSP6_GPREL16_2 \
+   || (r) == BFD_RELOC_QDSP6_GPREL16_1 \
+   || (r) == BFD_RELOC_QDSP6_GPREL16_0)
+
+/* QDSP6 7 bit pc-relative branch.
+   The lowest 2 bits must be zero and are not stored in the instruction.*/
+#define IS_PC_RELATIVE_RELOC(r) \
+   ((r) == BFD_RELOC_QDSP6_B32_PCREL_X \
+    || (r) == BFD_RELOC_QDSP6_B22_PCREL \
+    || (r) == BFD_RELOC_QDSP6_B22_PCREL_X \
+    || (r) == BFD_RELOC_QDSP6_B15_PCREL \
+    || (r) == BFD_RELOC_QDSP6_B15_PCREL_X \
+    || (r) == BFD_RELOC_QDSP6_B13_PCREL \
+    || (r) == BFD_RELOC_QDSP6_B13_PCREL_X \
+    || (r) == BFD_RELOC_QDSP6_B9_PCREL \
+    || (r) == BFD_RELOC_QDSP6_B9_PCREL_X \
+    || (r) == BFD_RELOC_QDSP6_B7_PCREL)
 
 #ifdef OBJ_ELF
 #define ELF_TC_SPECIAL_SECTIONS \

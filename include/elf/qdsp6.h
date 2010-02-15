@@ -32,6 +32,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.  */
 /* Relocations.  */
 START_RELOC_NUMBERS (elf_qdsp6_reloc_type)
 
+  /* V2 */
   RELOC_NUMBER (R_QDSP6_NONE,          0)
   RELOC_NUMBER (R_QDSP6_B22_PCREL,     1)
   RELOC_NUMBER (R_QDSP6_B15_PCREL,     2)
@@ -46,7 +47,26 @@ START_RELOC_NUMBERS (elf_qdsp6_reloc_type)
   RELOC_NUMBER (R_QDSP6_GPREL16_2,    11)
   RELOC_NUMBER (R_QDSP6_GPREL16_3,    12)
   RELOC_NUMBER (R_QDSP6_HL16,         13)
+  /* V3 */
   RELOC_NUMBER (R_QDSP6_B13_PCREL,    14)
+  /* V4 */
+  RELOC_NUMBER (R_QDSP6_B9_PCREL,     15)
+  /* V4 (extenders) */
+  RELOC_NUMBER (R_QDSP6_B32_PCREL_X,  16)
+  RELOC_NUMBER (R_QDSP6_32_6_X,       17)
+  /* V4 (extended) */
+  RELOC_NUMBER (R_QDSP6_B22_PCREL_X,  18)
+  RELOC_NUMBER (R_QDSP6_B15_PCREL_X,  19)
+  RELOC_NUMBER (R_QDSP6_B13_PCREL_X,  20)
+  RELOC_NUMBER (R_QDSP6_B9_PCREL_X,   21)
+  RELOC_NUMBER (R_QDSP6_16_X,         22)
+  RELOC_NUMBER (R_QDSP6_12_X,         23)
+  RELOC_NUMBER (R_QDSP6_11_X,         24)
+  RELOC_NUMBER (R_QDSP6_10_X,         25)
+  RELOC_NUMBER (R_QDSP6_9_X,          26)
+  RELOC_NUMBER (R_QDSP6_8_X,          27)
+  RELOC_NUMBER (R_QDSP6_7_X,          28)
+  RELOC_NUMBER (R_QDSP6_6_X,          29)
 
 END_RELOC_NUMBERS (R_QDSP6_max)
 
@@ -65,7 +85,7 @@ END_RELOC_NUMBERS (R_QDSP6_max)
 #define EF_QDSP6_MACH_V1 0
 #define EF_QDSP6_MACH_V2 1
 #define EF_QDSP6_MACH_V3 2
-#define EF_QDSP6_MACH_V4 4
+#define EF_QDSP6_MACH_V4 3
 
 /* File contains position independent code.  */
 #define EF_QDSP6_PIC 0x00000100

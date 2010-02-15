@@ -29,6 +29,12 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA.  */
 
+/*****************************************************************
+* Copyright (c) $Date$ Qualcomm Innovation Center, Inc.
+* All Rights Reserved.
+* Modified by Qualcomm Innovation Center, Inc. on $Date$
+*****************************************************************/
+
 #ifndef __BFD_H_SEEN__
 #define __BFD_H_SEEN__
 
@@ -1817,7 +1823,7 @@ enum bfd_architecture
 #define bfd_mach_sparc_64bit_p(mach) \
   ((mach) >= bfd_mach_sparc_v9 && (mach) != bfd_mach_sparc_v8plusb)
   bfd_arch_spu,       /* PowerPC SPU */
-#define bfd_mach_spu           256 
+#define bfd_mach_spu           256
   bfd_arch_mips,      /* MIPS Rxxxx */
 #define bfd_mach_mips3000              3000
 #define bfd_mach_mips3900              3900
@@ -1902,8 +1908,8 @@ enum bfd_architecture
 #define bfd_mach_ppc_7400      7400
 #define bfd_mach_ppc_e500      500
 #define bfd_mach_ppc_e500mc    5001
-  bfd_arch_qdsp6,    /* Qualcomm QDSP6  */
-#define bfd_mach_qdsp6                1
+  bfd_arch_qdsp6,    /* Qualcomm QDSP6 */
+#define bfd_mach_qdsp6        1
 #define bfd_mach_qdsp6_v2     2
 #define bfd_mach_qdsp6_v3     3
 #define bfd_mach_qdsp6_v4     4
@@ -2060,7 +2066,7 @@ enum bfd_architecture
   bfd_arch_s390,      /* IBM s390 */
 #define bfd_mach_s390_31       31
 #define bfd_mach_s390_64       64
-  bfd_arch_score,     /* Sunplus score */ 
+  bfd_arch_score,     /* Sunplus score */
 #define bfd_mach_score3         3
 #define bfd_mach_score7         7
   bfd_arch_openrisc,  /* OpenRISC */
@@ -3804,7 +3810,7 @@ of 32 bit value) into 8 bit immediate value of LDI insn.  */
 command address) into 8 bit immediate value of LDI insn.  */
   BFD_RELOC_AVR_LO8_LDI_PM,
 
-/* This is a 16 bit reloc for the AVR that stores 8 bit value 
+/* This is a 16 bit reloc for the AVR that stores 8 bit value
 (command address) into 8 bit immediate value of LDI insn. If the address
 is beyond the 128k boundary, the linker inserts a jump stub for this reloc
 in the lower 128k.  */
@@ -4543,52 +4549,52 @@ BFD_RELOC_MACH_O_PAIR.  */
 /* Mach-O generic relocations.  */
   BFD_RELOC_MACH_O_PAIR,
 
-/* This is a 32 bit reloc for the microblaze that stores the 
+/* This is a 32 bit reloc for the microblaze that stores the
 low 16 bits of a value  */
   BFD_RELOC_MICROBLAZE_32_LO,
 
-/* This is a 32 bit pc-relative reloc for the microblaze that 
+/* This is a 32 bit pc-relative reloc for the microblaze that
 stores the low 16 bits of a value  */
   BFD_RELOC_MICROBLAZE_32_LO_PCREL,
 
-/* This is a 32 bit reloc for the microblaze that stores a 
+/* This is a 32 bit reloc for the microblaze that stores a
 value relative to the read-only small data area anchor  */
   BFD_RELOC_MICROBLAZE_32_ROSDA,
 
-/* This is a 32 bit reloc for the microblaze that stores a 
+/* This is a 32 bit reloc for the microblaze that stores a
 value relative to the read-write small data area anchor  */
   BFD_RELOC_MICROBLAZE_32_RWSDA,
 
-/* This is a 32 bit reloc for the microblaze to handle 
+/* This is a 32 bit reloc for the microblaze to handle
 expressions of the form "Symbol Op Symbol"  */
   BFD_RELOC_MICROBLAZE_32_SYM_OP_SYM,
 
-/* This is a 64 bit reloc that stores the 32 bit pc relative 
-value in two words (with an imm instruction).  No relocation is 
+/* This is a 64 bit reloc that stores the 32 bit pc relative
+value in two words (with an imm instruction).  No relocation is
 done here - only used for relaxing  */
   BFD_RELOC_MICROBLAZE_64_NONE,
 
-/* This is a 64 bit reloc that stores the 32 bit pc relative 
+/* This is a 64 bit reloc that stores the 32 bit pc relative
 value in two words (with an imm instruction).  The relocation is
 PC-relative GOT offset  */
   BFD_RELOC_MICROBLAZE_64_GOTPC,
 
-/* This is a 64 bit reloc that stores the 32 bit pc relative 
+/* This is a 64 bit reloc that stores the 32 bit pc relative
 value in two words (with an imm instruction).  The relocation is
 GOT offset  */
   BFD_RELOC_MICROBLAZE_64_GOT,
 
-/* This is a 64 bit reloc that stores the 32 bit pc relative 
+/* This is a 64 bit reloc that stores the 32 bit pc relative
 value in two words (with an imm instruction).  The relocation is
 PC-relative offset into PLT  */
   BFD_RELOC_MICROBLAZE_64_PLT,
 
-/* This is a 64 bit reloc that stores the 32 bit GOT relative 
+/* This is a 64 bit reloc that stores the 32 bit GOT relative
 value in two words (with an imm instruction).  The relocation is
 relative offset from _GLOBAL_OFFSET_TABLE_  */
   BFD_RELOC_MICROBLAZE_64_GOTOFF,
 
-/* This is a 32 bit reloc that stores the 32 bit GOT relative 
+/* This is a 32 bit reloc that stores the 32 bit GOT relative
 value in a word.  The relocation is relative offset from  */
   BFD_RELOC_MICROBLAZE_32_GOTOFF,
 
@@ -4596,12 +4602,42 @@ value in a word.  The relocation is relative offset from  */
 the dynamic object into the runtime process image.  */
   BFD_RELOC_MICROBLAZE_COPY,
 
-/* QDSP6 relocations relative to the PC with 23, 16, 14 or 8-bit signed offset
-shifted right by 1 bit.  */
+/* QDSP6 basic unsigned relocations.  */
+  BFD_RELOC_QDSP6_32,
+  BFD_RELOC_QDSP6_16,
+  BFD_RELOC_QDSP6_8,
+
+/* QDSP6 relocation with 32 bits shifted right by 6.  */
+  BFD_RELOC_QDSP6_32_6_X,
+
+/* QDSP6 basic signed relocation extended by BFD_RELOC_QDSP6_32_6_X, holding
+the lower 6 bits.  */
+  BFD_RELOC_QDSP6_16_X,
+  BFD_RELOC_QDSP6_12_X,
+  BFD_RELOC_QDSP6_11_X,
+  BFD_RELOC_QDSP6_10_X,
+  BFD_RELOC_QDSP6_9_X,
+  BFD_RELOC_QDSP6_8_X,
+  BFD_RELOC_QDSP6_7_X,
+  BFD_RELOC_QDSP6_6_X,
+
+/* QDSP6 PC-relative relocations with 24, 17, 15, 11 or 9-bit signed offset
+shifted right by 1.  */
   BFD_RELOC_QDSP6_B22_PCREL,
   BFD_RELOC_QDSP6_B15_PCREL,
   BFD_RELOC_QDSP6_B13_PCREL,
+  BFD_RELOC_QDSP6_B9_PCREL,
   BFD_RELOC_QDSP6_B7_PCREL,
+
+/* QDSP6 PC-relative relocations with 32-bit signed offset shifted right by 6.  */
+  BFD_RELOC_QDSP6_B32_PCREL_X,
+
+/* QDSP6 PC-relative relocations extended by BFD_RELOC_QDSP6_B32_PCREL_X,
+holding the lower 6 bits shifted right by 1.  */
+  BFD_RELOC_QDSP6_B22_PCREL_X,
+  BFD_RELOC_QDSP6_B15_PCREL_X,
+  BFD_RELOC_QDSP6_B13_PCREL_X,
+  BFD_RELOC_QDSP6_B9_PCREL_X,
 
 /* QDSP6 relocations for the lower and higher 16 bits of a 32-bit address,
 applied to individual instructions or to a pair of instructions.  */

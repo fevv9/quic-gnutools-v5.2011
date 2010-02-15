@@ -43,11 +43,9 @@
 
 #define QDSP6_TRAMPOLINE_PREFIX     ".PAD"
 #define QDSP6_TRAMPOLINE_PREFIX_LEN (sizeof (QDSP6_TRAMPOLINE_PREFIX))
-#define QDSP6_TRAMPLINE_NEEDED(d, b) \
-  (  abs (d) \
-   > (~(~(bfd_signed_vma) 0 << (b)) & -(MAX_PACKET_INSNS * QDSP6_INSN_LEN)))
-
-
+#define QDSP6_TRAMPLINE_NEEDED(D, B) \
+  (  abs (D) \
+   > (~(~(bfd_signed_vma) 0 << ((B) - 1)) & -(MAX_PACKET_INSNS * QDSP6_INSN_LEN)))
 
 /* The name of the dynamic interpreter.  This is put in the .interp
    section.  */
@@ -89,7 +87,7 @@ static bfd_boolean qdsp6_elf_section_processing
   PARAMS ((bfd *, Elf_Internal_Shdr *));
 static void qdsp6_elf_symbol_processing
   PARAMS ((bfd *, asymbol *));
-static bfd_boolean qdsp6_elf_common_definition 
+static bfd_boolean qdsp6_elf_common_definition
   PARAMS ((Elf_Internal_Sym *));
 static bfd_boolean qdsp6_elf_add_symbol_hook
   PARAMS ((bfd *, struct bfd_link_info *i,
@@ -204,32 +202,20 @@ static const qdsp6_insn qdsp6_trampoline [] =
 static reloc_howto_type elf_qdsp6_howto_table_v2 [] =
 {
   /* This reloc does nothing.  */
-  HOWTO (R_QDSP6_NONE,		/* type  */
-	 0,			/* rightshift  */
-	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
-	 32,			/* bitsize  */
-	 FALSE,			/* pc_relative  */
-	 0,			/* bitpos  */
-	 complain_overflow_bitfield, /* complain_on_overflow  */
-	 bfd_elf_generic_reloc,	/* special_function  */
-	 "R_QDSP6_NONE",		/* name  */
-	 TRUE,			/* partial_inplace  */
-	 0,			/* src_mask  */
-	 0,			/* dst_mask  */
-	 FALSE),		/* pcrel_offset  */
+  EMPTY_HOWTO (R_QDSP6_NONE),
 
   /* A relative 22 bit branch. */
   HOWTO (R_QDSP6_B22_PCREL,	/* type  */
 	 2,			/* rightshift  */
 	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
-	 22,			/* bitsize  */
+	 24,			/* bitsize  */
 	 TRUE,			/* pc_relative  */
 	 0,			/* bitpos  */
 	 complain_overflow_signed, /* complain_on_overflow  */
 	 qdsp6_elf_reloc,	/* special_function  */
 	 "R_QDSP6_B22_PCREL",	/* name  */
 	 FALSE,			/* partial_inplace  */
-	 0,			/* src_mask  */
+	 -1L,			/* src_mask  */
 	 0x01ff3ffe,		/* dst_mask  */
 	 FALSE),		/* pcrel_offset  */
 
@@ -237,14 +223,14 @@ static reloc_howto_type elf_qdsp6_howto_table_v2 [] =
   HOWTO (R_QDSP6_B15_PCREL,	/* type  */
 	 2,			/* rightshift  */
 	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
-	 15,			/* bitsize  */
+	 17,			/* bitsize  */
 	 TRUE,			/* pc_relative  */
 	 0,			/* bitpos  */
 	 complain_overflow_signed, /* complain_on_overflow  */
 	 qdsp6_elf_reloc,	/* special_function  */
 	 "R_QDSP6_B15_PCREL",	/* name  */
 	 FALSE,			/* partial_inplace  */
-	 0,			/* src_mask  */
+	 -1L,			/* src_mask  */
 	 0x00df20fe,		/* dst_mask  */
 	 FALSE),		/* pcrel_offset  */
 
@@ -252,14 +238,14 @@ static reloc_howto_type elf_qdsp6_howto_table_v2 [] =
   HOWTO (R_QDSP6_B7_PCREL,	/* type  */
 	 2,			/* rightshift  */
 	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
-	 7,			/* bitsize  */
+	 9,			/* bitsize  */
 	 TRUE,			/* pc_relative  */
 	 0,			/* bitpos  */
 	 complain_overflow_signed, /* complain_on_overflow  */
 	 qdsp6_elf_reloc,	/* special_function  */
 	 "R_QDSP6_B7_PCREL",	/* name  */
 	 FALSE,			/* partial_inplace  */
-	 0,			/* src_mask  */
+	 -1L,			/* src_mask  */
 	 0x00001f18,		/* dst_mask  */
 	 FALSE),		/* pcrel_offset  */
 
@@ -274,7 +260,7 @@ static reloc_howto_type elf_qdsp6_howto_table_v2 [] =
 	 qdsp6_elf_reloc,	/* special_function  */
 	 "R_QDSP6_LO16",	/* name  */
 	 FALSE,			/* partial_inplace  */
-	 0,			/* src_mask  */
+	 -1L,			/* src_mask  */
 	 0x00c03fff,		/* dst_mask  */
 	 FALSE),		/* pcrel_offset  */
 
@@ -282,14 +268,14 @@ static reloc_howto_type elf_qdsp6_howto_table_v2 [] =
   HOWTO (R_QDSP6_HI16,		/* type  */
 	 0,			/* rightshift  */
 	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
-	 16,			/* bitsize  */
+	 32,			/* bitsize  */
 	 FALSE,			/* pc_relative  */
 	 0,			/* bitpos  */
 	 complain_overflow_dont, /* complain_on_overflow  */
 	 qdsp6_elf_reloc,	/* special_function  */
 	 "R_QDSP6_HI16",	/* name  */
 	 FALSE,			/* partial_inplace  */
-	 0,			/* src_mask  */
+	 -1L,			/* src_mask  */
 	 0x00c03fff,		/* dst_mask  */
 	 FALSE),		/* pcrel_offset  */
 
@@ -349,7 +335,7 @@ static reloc_howto_type elf_qdsp6_howto_table_v2 [] =
 	 qdsp6_elf_reloc,	/* special_function  */
 	 "R_QDSP6_GPREL16_0",	/* name  */
 	 FALSE,			/* partial_inplace  */
-	 0,			/* src_mask  */
+	 -1L,			/* src_mask  */
 	 0x061f2ff,		/* dst_mask  */
 	 FALSE),		/* pcrel_offset  */
 
@@ -357,14 +343,14 @@ static reloc_howto_type elf_qdsp6_howto_table_v2 [] =
   HOWTO (R_QDSP6_GPREL16_1,	/* type  */
 	 1,			/* rightshift  */
 	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
-	 16,			/* bitsize  */
+	 17,			/* bitsize  */
 	 FALSE,			/* pc_relative  */
 	 0,			/* bitpos  */
 	 complain_overflow_bitfield, /* complain_on_overflow  */
 	 qdsp6_elf_reloc,	/* special_function  */
 	 "R_QDSP6_GPREL16_1",	/* name  */
 	 FALSE,			/* partial_inplace  */
-	 0,			/* src_mask  */
+	 -1L,			/* src_mask  */
 	 0x061f2ff,		/* dst_mask  */
 	 FALSE),		/* pcrel_offset  */
 
@@ -372,14 +358,14 @@ static reloc_howto_type elf_qdsp6_howto_table_v2 [] =
   HOWTO (R_QDSP6_GPREL16_2,	/* type  */
 	 2,			/* rightshift  */
 	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
-	 16,			/* bitsize  */
+	 18,			/* bitsize  */
 	 FALSE,			/* pc_relative  */
-	 0,			/* bitpos  */
+	 -1L,			/* bitpos  */
 	 complain_overflow_bitfield, /* complain_on_overflow  */
 	 qdsp6_elf_reloc,	/* special_function  */
 	 "R_QDSP6_GPREL16_2",	/* name  */
 	 FALSE,			/* partial_inplace  */
-	 0,			/* src_mask  */
+	 -1L,			/* src_mask  */
 	 0x061f2ff,		/* dst_mask  */
 	 FALSE),		/* pcrel_offset  */
 
@@ -387,14 +373,14 @@ static reloc_howto_type elf_qdsp6_howto_table_v2 [] =
   HOWTO (R_QDSP6_GPREL16_3,	/* type  */
 	 3,			/* rightshift  */
 	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
-	 16,			/* bitsize  */
+	 19,			/* bitsize  */
 	 FALSE,			/* pc_relative  */
 	 0,			/* bitpos  */
 	 complain_overflow_bitfield, /* complain_on_overflow  */
 	 qdsp6_elf_reloc,	/* special_function  */
 	 "R_QDSP6_GPREL16_3",	/* name  */
 	 FALSE,			/* partial_inplace  */
-	 0,			/* src_mask  */
+	 -1L,			/* src_mask  */
 	 0x061f2ff,		/* dst_mask  */
 	 FALSE),		/* pcrel_offset  */
 
@@ -402,14 +388,14 @@ static reloc_howto_type elf_qdsp6_howto_table_v2 [] =
   HOWTO (R_QDSP6_HL16,		/* type  */
 	 0,			/* rightshift  */
 	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
-	 16,			/* bitsize  */
+	 32,			/* bitsize  */
 	 FALSE,			/* pc_relative  */
 	 0,			/* bitpos  */
 	 complain_overflow_dont, /* complain_on_overflow  */
 	 qdsp6_elf_reloc,	/* special_function  */
 	 "R_QDSP6_HL16",	/* name  */
 	 FALSE,			/* partial_inplace  */
-	 0,			/* src_mask  */
+	 -1L,			/* src_mask  */
 	 0x00c03fff,		/* dst_mask  */
 	 FALSE),		/* pcrel_offset  */
 
@@ -417,15 +403,240 @@ static reloc_howto_type elf_qdsp6_howto_table_v2 [] =
   HOWTO (R_QDSP6_B13_PCREL,	/* type  */
 	 2,			/* rightshift  */
 	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
-	 13,			/* bitsize  */
+	 15,			/* bitsize  */
 	 TRUE,			/* pc_relative  */
 	 0,			/* bitpos  */
 	 complain_overflow_signed, /* complain_on_overflow  */
 	 qdsp6_elf_reloc,	/* special_function  */
 	 "R_QDSP6_B13_PCREL",	/* name  */
 	 FALSE,			/* partial_inplace  */
-	 0,			/* src_mask  */
+	 -1L,			/* src_mask  */
 	 0x00202ffe,		/* dst_mask  */
+	 FALSE),		/* pcrel_offset  */
+
+  /* A relative 9 bit branch. */
+  HOWTO (R_QDSP6_B9_PCREL,	/* type  */
+	 2,			/* rightshift  */
+	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
+	 11,			/* bitsize  */
+	 TRUE,			/* pc_relative  */
+	 0,			/* bitpos  */
+	 complain_overflow_signed, /* complain_on_overflow  */
+	 qdsp6_elf_reloc,	/* special_function  */
+	 "R_QDSP6_B9_PCREL",	/* name  */
+	 FALSE,			/* partial_inplace  */
+	 -1L,			/* src_mask  */
+	 0x00c000ff,		/* dst_mask  */
+	 FALSE),		/* pcrel_offset  */
+
+  /* A relative 32 bit extended branch. */
+  HOWTO (R_QDSP6_B32_PCREL_X,	/* type  */
+	 6,			/* rightshift  */
+	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
+	 32,			/* bitsize  */
+	 TRUE,			/* pc_relative  */
+	 0,			/* bitpos  */
+	 complain_overflow_signed, /* complain_on_overflow  */
+	 qdsp6_elf_reloc,	/* special_function  */
+	 "R_QDSP6_B32_PCREL_X",	/* name  */
+	 FALSE,			/* partial_inplace  */
+	 ~0x3f,			/* src_mask  */
+	 0x0fff3fff,		/* dst_mask  */
+	 FALSE),		/* pcrel_offset  */
+
+  /* An extended 32 bit number. */
+  HOWTO (R_QDSP6_32_6_X,	/* type  */
+	 6,			/* rightshift  */
+	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
+	 32,			/* bitsize  */
+	 FALSE,			/* pc_relative  */
+	 0,			/* bitpos  */
+	 complain_overflow_bitfield, /* complain_on_overflow  */
+	 qdsp6_elf_reloc,	/* special_function  */
+	 "R_QDSP6_32_6_X",	/* name  */
+	 FALSE,			/* partial_inplace  */
+	 ~0x3f,			/* src_mask  */
+	 0x0fff3fff,		/* dst_mask  */
+	 FALSE),		/* pcrel_offset  */
+
+  /* An extended relative 22 bit branch. */
+  HOWTO (R_QDSP6_B22_PCREL_X,	/* type  */
+	 2,			/* rightshift  */
+	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
+	 6,			/* bitsize  */
+	 TRUE,			/* pc_relative  */
+	 0,			/* bitpos  */
+	 complain_overflow_signed, /* complain_on_overflow  */
+	 qdsp6_elf_reloc,	/* special_function  */
+	 "R_QDSP6_B22_PCREL_X",	/* name  */
+	 FALSE,			/* partial_inplace  */
+	 0x3f,			/* src_mask  */
+	 0x01ff3ffe,		/* dst_mask  */
+	 FALSE),		/* pcrel_offset  */
+
+  /* An extended relative 15 bit branch. */
+  HOWTO (R_QDSP6_B15_PCREL_X,	/* type  */
+	 2,			/* rightshift  */
+	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
+	 6,			/* bitsize  */
+	 TRUE,			/* pc_relative  */
+	 0,			/* bitpos  */
+	 complain_overflow_signed, /* complain_on_overflow  */
+	 qdsp6_elf_reloc,	/* special_function  */
+	 "R_QDSP6_B15_PCREL_X",	/* name  */
+	 FALSE,			/* partial_inplace  */
+	 0x3f,			/* src_mask  */
+	 0x00df20fe,		/* dst_mask  */
+	 FALSE),		/* pcrel_offset  */
+
+  /* An extended relative 13 bit branch. */
+  HOWTO (R_QDSP6_B13_PCREL_X,	/* type  */
+	 2,			/* rightshift  */
+	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
+	 6,			/* bitsize  */
+	 TRUE,			/* pc_relative  */
+	 0,			/* bitpos  */
+	 complain_overflow_signed, /* complain_on_overflow  */
+	 qdsp6_elf_reloc,	/* special_function  */
+	 "R_QDSP6_B13_PCREL_X",	/* name  */
+	 FALSE,			/* partial_inplace  */
+	 0x3f,			/* src_mask  */
+	 0x00202ffe,		/* dst_mask  */
+	 FALSE),		/* pcrel_offset  */
+
+  /* An extended relative 9 bit branch. */
+  HOWTO (R_QDSP6_B9_PCREL_X,	/* type  */
+	 2,			/* rightshift  */
+	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
+	 6,			/* bitsize  */
+	 TRUE,			/* pc_relative  */
+	 0,			/* bitpos  */
+	 complain_overflow_signed, /* complain_on_overflow  */
+	 qdsp6_elf_reloc,	/* special_function  */
+	 "R_QDSP6_B9_PCREL_X",	/* name  */
+	 FALSE,			/* partial_inplace  */
+	 0x3f,			/* src_mask  */
+	 0x00c000ff,		/* dst_mask  */
+	 FALSE),		/* pcrel_offset  */
+
+  /* An extended signed 16 bit number. */
+  HOWTO (R_QDSP6_16_X,		/* type  */
+	 0,			/* rightshift  */
+	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
+	 6,			/* bitsize  */
+	 FALSE,			/* pc_relative  */
+	 0,			/* bitpos  */
+	 complain_overflow_signed, /* complain_on_overflow  */
+	 qdsp6_elf_reloc,	/* special_function  */
+	 "R_QDSP6_16_X",	/* name  */
+	 FALSE,			/* partial_inplace  */
+	 0x3f,			/* src_mask  */
+	 0,			/* dst_mask  */
+	 FALSE),		/* pcrel_offset  */
+
+  /* An extended signed 12 bit number. */
+  HOWTO (R_QDSP6_12_X,		/* type  */
+	 0,			/* rightshift  */
+	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
+	 6,			/* bitsize  */
+	 FALSE,			/* pc_relative  */
+	 0,			/* bitpos  */
+	 complain_overflow_signed, /* complain_on_overflow  */
+	 qdsp6_elf_reloc,	/* special_function  */
+	 "R_QDSP6_12_X",	/* name  */
+	 FALSE,			/* partial_inplace  */
+	 0,			/* src_mask  */
+	 0,			/* dst_mask  */
+	 FALSE),		/* pcrel_offset  */
+
+  /* An extended 11 bit number for bytes. */
+  HOWTO (R_QDSP6_11_X,		/* type  */
+	 0,			/* rightshift  */
+	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
+	 6,			/* bitsize  */
+	 FALSE,			/* pc_relative  */
+	 0,			/* bitpos  */
+	 complain_overflow_bitfield, /* complain_on_overflow  */
+	 qdsp6_elf_reloc,	/* special_function  */
+	 "R_QDSP6_11_X",	/* name  */
+	 FALSE,			/* partial_inplace  */
+	 0x3f,			/* src_mask  */
+	 0,			/* dst_mask  */
+	 FALSE),		/* pcrel_offset  */
+
+  /* An extended signed 16 bit number. */
+  HOWTO (R_QDSP6_10_X,		/* type  */
+	 0,			/* rightshift  */
+	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
+	 6,			/* bitsize  */
+	 FALSE,			/* pc_relative  */
+	 0,			/* bitpos  */
+	 complain_overflow_signed, /* complain_on_overflow  */
+	 qdsp6_elf_reloc,	/* special_function  */
+	 "R_QDSP6_10_X",	/* name  */
+	 FALSE,			/* partial_inplace  */
+	 0x3f,			/* src_mask  */
+	 0,			/* dst_mask  */
+	 FALSE),		/* pcrel_offset  */
+
+  /* An extended signed 9 bit number. */
+  HOWTO (R_QDSP6_9_X,		/* type  */
+	 0,			/* rightshift  */
+	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
+	 6,			/* bitsize  */
+	 FALSE,			/* pc_relative  */
+	 0,			/* bitpos  */
+	 complain_overflow_signed, /* complain_on_overflow  */
+	 qdsp6_elf_reloc,	/* special_function  */
+	 "R_QDSP6_9_X",		/* name  */
+	 FALSE,			/* partial_inplace  */
+	 0x3f,			/* src_mask  */
+	 0,			/* dst_mask  */
+	 FALSE),		/* pcrel_offset  */
+
+  /* An extended signed 8 bit number. */
+  HOWTO (R_QDSP6_8_X,		/* type  */
+	 0,			/* rightshift  */
+	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
+	 6,			/* bitsize  */
+	 FALSE,			/* pc_relative  */
+	 0,			/* bitpos  */
+	 complain_overflow_signed, /* complain_on_overflow  */
+	 qdsp6_elf_reloc,	/* special_function  */
+	 "R_QDSP6_8_X",		/* name  */
+	 FALSE,			/* partial_inplace  */
+	 0x3f,			/* src_mask  */
+	 0,			/* dst_mask  */
+	 FALSE),		/* pcrel_offset  */
+
+  /* An extended signed 7 bit number. */
+  HOWTO (R_QDSP6_7_X,		/* type  */
+	 0,			/* rightshift  */
+	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
+	 6,			/* bitsize  */
+	 FALSE,			/* pc_relative  */
+	 0,			/* bitpos  */
+	 complain_overflow_signed, /* complain_on_overflow  */
+	 qdsp6_elf_reloc,	/* special_function  */
+	 "R_QDSP6_7_X",		/* name  */
+	 FALSE,			/* partial_inplace  */
+	 0x3f,			/* src_mask  */
+	 0,			/* dst_mask  */
+	 FALSE),		/* pcrel_offset  */
+
+  /* An extended signed 6 bit number. */
+  HOWTO (R_QDSP6_6_X,		/* type  */
+	 0,			/* rightshift  */
+	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
+	 6,			/* bitsize  */
+	 FALSE,			/* pc_relative  */
+	 0,			/* bitpos  */
+	 complain_overflow_signed, /* complain_on_overflow  */
+	 qdsp6_elf_reloc,	/* special_function  */
+	 "R_QDSP6_6_X",		/* name  */
+	 FALSE,			/* partial_inplace  */
+	 0x3f,			/* src_mask  */
+	 0,			/* dst_mask  */
 	 FALSE),		/* pcrel_offset  */
 
 };
@@ -447,26 +658,42 @@ static const char *qdsp6_scom_name    [SHN_QDSP6_SCOMMON_8 - SHN_QDSP6_SCOMMON +
 struct qdsp6_reloc_map
 {
   bfd_reloc_code_real_type bfd_reloc_val;
-  unsigned char elf_reloc_val;
+  unsigned char            elf_reloc_val;
+  int                      operand_flag;
 };
 
 static const struct qdsp6_reloc_map qdsp6_reloc_map [] =
- {
-   { BFD_RELOC_NONE,                  R_QDSP6_NONE },
-   { BFD_RELOC_QDSP6_B22_PCREL,       R_QDSP6_B22_PCREL },
-   { BFD_RELOC_QDSP6_B15_PCREL,       R_QDSP6_B15_PCREL },
-   { BFD_RELOC_QDSP6_B13_PCREL,       R_QDSP6_B13_PCREL },
-   { BFD_RELOC_QDSP6_B7_PCREL,        R_QDSP6_B7_PCREL },
-   { BFD_RELOC_QDSP6_LO16,            R_QDSP6_LO16 },
-   { BFD_RELOC_QDSP6_HI16,            R_QDSP6_HI16 },
-   { BFD_RELOC_QDSP6_HL16,            R_QDSP6_HL16 },
-   { BFD_RELOC_32,                    R_QDSP6_32 },
-   { BFD_RELOC_16,                    R_QDSP6_16 },
-   { BFD_RELOC_8,                     R_QDSP6_8 },
-   { BFD_RELOC_QDSP6_GPREL16_0,       R_QDSP6_GPREL16_0 },
-   { BFD_RELOC_QDSP6_GPREL16_1,       R_QDSP6_GPREL16_1 },
-   { BFD_RELOC_QDSP6_GPREL16_2,       R_QDSP6_GPREL16_2 },
-   { BFD_RELOC_QDSP6_GPREL16_3,       R_QDSP6_GPREL16_3 },
+{
+  { BFD_RELOC_NONE,              R_QDSP6_NONE,        0 },
+  { BFD_RELOC_QDSP6_B32_PCREL_X, R_QDSP6_B32_PCREL_X, 0 }, /* K-ext */
+  { BFD_RELOC_QDSP6_B22_PCREL,   R_QDSP6_B22_PCREL,   0 },
+  { BFD_RELOC_QDSP6_B22_PCREL_X, R_QDSP6_B22_PCREL_X, QDSP6_OPERAND_IS_KXED },
+  { BFD_RELOC_QDSP6_B15_PCREL,   R_QDSP6_B15_PCREL,   0 },
+  { BFD_RELOC_QDSP6_B15_PCREL_X, R_QDSP6_B15_PCREL_X, QDSP6_OPERAND_IS_KXED },
+  { BFD_RELOC_QDSP6_B13_PCREL,   R_QDSP6_B13_PCREL,   0 },
+  { BFD_RELOC_QDSP6_B13_PCREL_X, R_QDSP6_B13_PCREL_X, QDSP6_OPERAND_IS_KXED },
+  { BFD_RELOC_QDSP6_B9_PCREL,    R_QDSP6_B9_PCREL,    0 },
+  { BFD_RELOC_QDSP6_B9_PCREL_X,  R_QDSP6_B9_PCREL_X,  QDSP6_OPERAND_IS_KXED },
+  { BFD_RELOC_QDSP6_B7_PCREL,    R_QDSP6_B7_PCREL,    0 },
+  { BFD_RELOC_QDSP6_LO16,        R_QDSP6_LO16,        0 },
+  { BFD_RELOC_QDSP6_HI16,        R_QDSP6_HI16,        0 },
+  { BFD_RELOC_QDSP6_HL16,        R_QDSP6_HL16,        0 },
+  { BFD_RELOC_QDSP6_32_6_X,      R_QDSP6_32_6_X,      0 }, /* K-ext */
+  { BFD_RELOC_32,                R_QDSP6_32,          0 },
+  { BFD_RELOC_16,                R_QDSP6_16,          0 },
+  { BFD_RELOC_8,                 R_QDSP6_8,           0 },
+  { BFD_RELOC_QDSP6_16_X,        R_QDSP6_16_X,        QDSP6_OPERAND_IS_KXED },
+  { BFD_RELOC_QDSP6_12_X,        R_QDSP6_12_X,        QDSP6_OPERAND_IS_KXED },
+  { BFD_RELOC_QDSP6_11_X,        R_QDSP6_11_X,        QDSP6_OPERAND_IS_KXED },
+  { BFD_RELOC_QDSP6_10_X,        R_QDSP6_10_X,        QDSP6_OPERAND_IS_KXED },
+  { BFD_RELOC_QDSP6_9_X,         R_QDSP6_9_X,         QDSP6_OPERAND_IS_KXED },
+  { BFD_RELOC_QDSP6_8_X,         R_QDSP6_8_X,         QDSP6_OPERAND_IS_KXED },
+  { BFD_RELOC_QDSP6_7_X,         R_QDSP6_7_X,         QDSP6_OPERAND_IS_KXED },
+  { BFD_RELOC_QDSP6_6_X,         R_QDSP6_6_X,         QDSP6_OPERAND_IS_KXED },
+  { BFD_RELOC_QDSP6_GPREL16_0,   R_QDSP6_GPREL16_0,   0 },
+  { BFD_RELOC_QDSP6_GPREL16_1,   R_QDSP6_GPREL16_1,   0 },
+  { BFD_RELOC_QDSP6_GPREL16_2,   R_QDSP6_GPREL16_2,   0 },
+  { BFD_RELOC_QDSP6_GPREL16_3,   R_QDSP6_GPREL16_3,   0 },
 };
 
 static void
@@ -491,26 +718,37 @@ qdsp6_elf_reloc_type_lookup
 
 static bfd_reloc_code_real_type
 qdsp6_elf_reloc_val_lookup
-(unsigned char elf_reloc_val)
+(unsigned char elf_reloc_val, int *flag)
 {
   unsigned int i;
 
   for (i = ARRAY_SIZE (qdsp6_reloc_map); i--;)
-    if (qdsp6_reloc_map[i].elf_reloc_val == elf_reloc_val)
-      return qdsp6_reloc_map[i].bfd_reloc_val;
+    if (qdsp6_reloc_map [i].elf_reloc_val == elf_reloc_val)
+      {
+        if (flag)
+          *flag = qdsp6_reloc_map [i].operand_flag;
 
-  return BFD_RELOC_NONE;
+        return (qdsp6_reloc_map [i].bfd_reloc_val);
+      }
+
+  if (flag)
+    *flag = 0;
+
+  return (BFD_RELOC_NONE);
 }
+
 static reloc_howto_type *
-qdsp6_elf_reloc_name_lookup (bfd *abfd ATTRIBUTE_UNUSED,
-                             const char *r_name)
+qdsp6_elf_reloc_name_lookup
+(bfd *abfd ATTRIBUTE_UNUSED, const char *r_name)
 {
   unsigned int i;
 
-  for (i = 0; i < sizeof (elf_qdsp6_howto_table_v2) / sizeof (elf_qdsp6_howto_table[0]); i++)
-    if (elf_qdsp6_howto_table[i].name != NULL
-	&& strcasecmp (elf_qdsp6_howto_table[i].name, r_name) == 0)
-      return &elf_qdsp6_howto_table[i];
+  for (i = 0;
+       i < sizeof (elf_qdsp6_howto_table_v2) /  sizeof (elf_qdsp6_howto_table [0]);
+       i++)
+    if (elf_qdsp6_howto_table [i].name
+        && !strcasecmp (elf_qdsp6_howto_table [i].name, r_name))
+    return (elf_qdsp6_howto_table + i);
 
   return NULL;
 }
@@ -551,6 +789,10 @@ qdsp6_elf_object_p
             mach = bfd_mach_qdsp6_v3;
             break;
 
+          case EF_QDSP6_MACH_V4:
+            mach = bfd_mach_qdsp6_v4;
+            break;
+
           default:
             if (elf_elfheader (abfd)->e_type != ET_QDSP6_IR)
               {
@@ -581,6 +823,10 @@ qdsp6_elf_final_write_processing
 
       case bfd_mach_qdsp6_v3:
         val = EF_QDSP6_MACH_V3;
+        break;
+
+      case bfd_mach_qdsp6_v4:
+        val = EF_QDSP6_MACH_V4;
         break;
 
       default:
@@ -673,46 +919,38 @@ static int
 qdsp6_reloc_operand
 (reloc_howto_type *howto, qdsp6_insn *insn, bfd_vma offset, char **errmsg)
 {
-  bfd_reloc_code_real_type type = qdsp6_elf_reloc_val_lookup (howto->type);
-  const qdsp6_opcode *opcode = qdsp6_lookup_insn (*insn);
-  const qdsp6_operand *operand = qdsp6_lookup_reloc (type);
-  int value;
+  bfd_reloc_code_real_type type;
+  const qdsp6_opcode *opcode;
+  const qdsp6_operand *operand;
+  int flag, is_x;
+  long value, xvalue;
 
-#if 0
-  /* This code was necessary when we were using REL relocations. Now
-     that we are using RELA we don't -update- the value in the
-     location being relocated, we -overwrite- it. */
-  if (!qdsp6_extract_operand (operand, *insn, 0, opcode->enc, &value, errmsg))
-    {
-      return 0;
-    }
+  opcode  = qdsp6_lookup_insn (*insn);
+  type    = qdsp6_elf_reloc_val_lookup (howto->type, &flag);
+  operand = qdsp6_lookup_reloc (type, flag, opcode? opcode->attributes: 0);
 
-  value += offset;
-#else
+  is_x = (flag & QDSP6_OPERAND_IS_KXED);
+
   value = offset;
-#endif
 
   if ((opcode) && (operand))
-  {
-    if (!qdsp6_encode_operand (operand, insn,
-			       opcode->enc, value, errmsg))
     {
-      /*
-      if (errmsg && *errmsg)
+      if (!qdsp6_encode_operand
+            (operand, insn, opcode, value, &xvalue, flag & QDSP6_OPERAND_IS_KXED,
+             operand->flags & QDSP6_OPERAND_PC_RELATIVE, errmsg))
         {
-	  fprintf (stderr, "Error when encoding operand of \"%s\"\n",
-	                   opcode->syntax);
-	}
-      */
-      return 0;
-    }
-  }
-  else
-  {
-    return 0;
-  }
+          /*
+          fprintf (stderr, "Error when encoding operand `%s' of `%s'.\n",
+                   operand->fmt, opcode->syntax);
+          */
 
-  return 1;
+          return FALSE;
+        }
+    }
+  else
+    return FALSE;
+
+  return TRUE;
 }
 
 static bfd_reloc_status_type
@@ -753,7 +991,7 @@ qdsp6_elf_reloc
   if (status != bfd_reloc_continue)
     return status;
 
-  // RK: Handle PC relative relocatable output
+  /* Handle PC relative relocatable output. */
   if (output_bfd != (bfd *) NULL
       && reloc_entry->howto->pc_relative
       && (   !reloc_entry->howto->partial_inplace
@@ -781,7 +1019,6 @@ qdsp6_elf_reloc
     relocation = 0;
   else
     relocation = symbol->value;
-  //printf("%d: bfd_is_com_section: %s relocation: 0x%x\n",__LINE__,(bfd_is_com_section(symbol->section)) ? "YES":"NO",relocation);
 
   reloc_target_output_section = symbol->section->output_section;
 
@@ -791,14 +1028,11 @@ qdsp6_elf_reloc
     output_base = 0;
   else
     output_base = reloc_target_output_section->vma;
-  //printf("%d: relocation: 0x%x output_base: 0x%x\n",__LINE__,relocation,output_base);
 
   relocation += output_base + symbol->section->output_offset;
-  //printf("%d: relocation: 0x%x symbol->section->output_offset: 0x%x\n",__LINE__,relocation,symbol->section->output_offset);
 
   /* Add in supplied addend.  */
   relocation += reloc_entry->addend;
-  //printf("%d: relocation: 0x%x Reloc address: 0x%x\n",__LINE__,relocation,reloc_entry->address);
 
   /* Here the variable relocation holds the final address of the
      symbol we are relocating against, plus any addend.  */
@@ -811,10 +1045,9 @@ qdsp6_elf_reloc
     {
       bfd_vma sda_base;
 
-      if ((strcmp(symbol->section->name, ".sdata") != 0) &&
-           (strcmp(symbol->section->name, ".sbss") != 0))
+      if ((strcmp (symbol->section->name, ".sdata"))
+          && (strcmp (symbol->section->name, ".sbss")))
 	{
-	  //fprintf(stderr,"GP relative reloc for non-GP section (%s) var `%s'\n",symbol->section->name,symbol->name);
         }
 
       status = qdsp6_elf_final_sda_base (output_bfd, error_message, &sda_base);
@@ -871,7 +1104,6 @@ qdsp6_elf_reloc
 	     inplace to reflect what we now know.  */
 	  reloc_entry->addend = relocation;
 	  reloc_entry->address += input_section->output_offset;
-	  //printf("%d: relocation: 0x%x Reloc address: 0x%x\n",__LINE__,relocation,reloc_entry->address);
 	  return flag;
 	}
       else
@@ -890,7 +1122,6 @@ qdsp6_elf_reloc
   else
     {
       reloc_entry->addend = 0;
-      //printf("%d: relocation: 0x%x Reloc address: 0x%x addend=0\n",__LINE__,relocation,reloc_entry->address);
     }
 
   /* If we have a PC-relative reference to an undefined weak symbol,
@@ -954,7 +1185,6 @@ qdsp6_elf_reloc
       case 1:
         {
 	  qdsp6_insn insn = bfd_get_16 (abfd, (bfd_byte *) data + octets);
-//        printf("16-bit instruction: 0x%x\n", insn);
 
 	  if (!qdsp6_reloc_operand (howto, &insn, relocation, error_message))
 	    {
@@ -974,7 +1204,6 @@ qdsp6_elf_reloc
       case 2:
         {
 	  qdsp6_insn insn = bfd_get_32 (abfd, (bfd_byte *) data + octets);
-//        printf("32-bit instruction: 0x%x\n", insn);
 
 	  if (!qdsp6_reloc_operand (howto, &insn, relocation, error_message))
 	    {
@@ -989,8 +1218,6 @@ qdsp6_elf_reloc
 	     }
 
 	  bfd_put_32 (abfd, (bfd_vma) insn, (bfd_byte *) data + octets);
-//	  insn = bfd_get_32 (abfd, (bfd_byte *) data + octets);
-//        printf("  after relocation: 0x%x\n", insn);
         }
       break;
 
@@ -1177,7 +1404,7 @@ qdsp6_elf_symbol_processing
 static bfd_boolean
 qdsp6_elf_common_definition (Elf_Internal_Sym *sym)
 {
-  return (sym->st_shndx == SHN_COMMON || 
+  return (sym->st_shndx == SHN_COMMON ||
 	  sym->st_shndx == SHN_QDSP6_SCOMMON ||
 	  sym->st_shndx == SHN_QDSP6_SCOMMON_1 ||
 	  sym->st_shndx == SHN_QDSP6_SCOMMON_2 ||
@@ -1454,6 +1681,8 @@ qdsp6_elf_relocate_section
       asection *sreloc;
       const char *name = NULL;
       int r_type;
+      qdsp6_insn insn;
+      bfd_vma ioffset, lmask, rmask;
 
       /* This is a final link.  */
       r_type = ELF32_R_TYPE (rel->r_info);
@@ -1549,16 +1778,30 @@ qdsp6_elf_relocate_section
 	    }
 	}
 
+      lmask = rmask = (bfd_vma) -1;
+
       switch (r_type)
 	{
-	  qdsp6_insn insn;
-	  bfd_vma ioffset;
+        case R_QDSP6_32_6_X:
+          rmask = howto->src_mask;
+          /* Fall through. */
+
+        case R_QDSP6_6_X:
+        case R_QDSP6_7_X:
+        case R_QDSP6_8_X:
+        case R_QDSP6_9_X:
+        case R_QDSP6_10_X:
+        case R_QDSP6_11_X:
+        case R_QDSP6_12_X:
+        case R_QDSP6_16_X:
+          lmask = ~((bfd_vma) -1 << howto->bitsize);
+          /* Fall through. */
 
 	case R_QDSP6_LO16:
 	case R_QDSP6_HI16:
           is_abs = TRUE;
 
-	  ioffset = relocation + rel->r_addend;
+          ioffset = (relocation + rel->r_addend) & lmask & rmask;
 
 	  insn = qdsp6_get_insn (input_bfd, howto, contents + rel->r_offset);
 
@@ -1569,7 +1812,6 @@ qdsp6_elf_relocate_section
                     (h ? &h->root : NULL),
                    name, howto->name, (bfd_vma) 0,
                    input_bfd, input_section, rel->r_offset);
-
 	  else
             qdsp6_put_insn (input_bfd, howto, contents + rel->r_offset, insn);
 
@@ -1654,11 +1896,10 @@ qdsp6_elf_relocate_section
 
 	    ioffset = relocation + rel->r_addend;
 
-	    if ((! qdsp6_reloc_operand (howto, &insn,
-				      relocation + rel->r_addend, NULL))
+	    if ((! qdsp6_reloc_operand (howto, &insn, ioffset, NULL))
                  && h->root.type != bfd_link_hash_undefined)
 	    {
-	      qdsp6_reloc_operand (howto, &insn, relocation + rel->r_addend, NULL);
+	      qdsp6_reloc_operand (howto, &insn, ioffset, NULL);
               r = info->callbacks->reloc_overflow
                     (info, (h ? &h->root : NULL), name,
                     howto->name, (bfd_vma) 0,
@@ -1670,22 +1911,33 @@ qdsp6_elf_relocate_section
             break;
 	  }
 
+        case R_QDSP6_B9_PCREL_X:
+        case R_QDSP6_B13_PCREL_X:
+        case R_QDSP6_B15_PCREL_X:
+        case R_QDSP6_B22_PCREL_X:
+        case R_QDSP6_B32_PCREL_X:
+          if (r_type == R_QDSP6_B32_PCREL_X)
+            rmask = ~(bfd_vma) 0 << howto->rightshift;
+          else
+            lmask = ~(~(bfd_vma) 0 << howto->bitsize);
+          /* Fall through. */
+
+        case R_QDSP6_B7_PCREL:
+        case R_QDSP6_B9_PCREL:
 	case R_QDSP6_B13_PCREL:
 	case R_QDSP6_B15_PCREL:
 	case R_QDSP6_B22_PCREL:
           /* These relocations may be used to refer to dynamic symbols, though
              the smaller ones should probably require a trampoline to be safe. */
           is_rel = TRUE;
-          /* Fall-through. */
 
-	case R_QDSP6_B7_PCREL:
 	  insn = qdsp6_get_insn (input_bfd, howto, contents + rel->r_offset);
 
-/* relocation is in absolute terms, so we convert to abs terms */
-
-	  ioffset =   (relocation + rel->r_addend)
-                    - (input_section->output_section->vma
-                       + input_section->output_offset + rel->r_offset);
+          /* Relocation is in absolute terms. */
+          ioffset =   (  (relocation + rel->r_addend)
+                       - (  input_section->output_section->vma
+                          + input_section->output_offset + rel->r_offset))
+                    & lmask & rmask;
 
 	  if ((!  qdsp6_reloc_operand (howto, &insn, ioffset, NULL))
                && h->root.type != bfd_link_hash_undefined)
@@ -1836,7 +2088,6 @@ qdsp6_elf_relocate_section
 
                 loc =   sreloc->contents
                       + sreloc->reloc_count++ * sizeof (Elf32_External_Rela);
-
                 bfd_elf32_swap_reloca_out (output_bfd, &outrel, loc);
               }
         }
@@ -1899,13 +2150,11 @@ qdsp6_elf_relax_section (bfd *input_bfd,
 
   for (ireloc = 0; ireloc < isec->reloc_count; ireloc++)
     {
-      bfd_vma t, t_base; 
-      bfd_vma at, at_base;
-      bfd_vma to, to_base;
-      bfd_vma from;
+      bfd_vma at_base, to_base, t_base;
+      bfd_vma at, t_at, from, to;
       bfd_signed_vma ioffset;
-      bfd_vma r_type; 
-      bfd_boolean is_def; 
+      bfd_vma r_type;
+      bfd_boolean is_def;
 
       irel = irelbuf + ireloc;
 
@@ -1914,7 +2163,8 @@ qdsp6_elf_relax_section (bfd *input_bfd,
       if (   link_info->qdsp6_trampolines
           && (   r_type == R_QDSP6_B22_PCREL
               || r_type == R_QDSP6_B15_PCREL
-              || r_type == R_QDSP6_B13_PCREL))
+              || r_type == R_QDSP6_B13_PCREL
+              || r_type == R_QDSP6_B9_PCREL))
         {
           isec_size = bfd_section_size (input_bfd, isec);
 
@@ -2014,11 +2264,13 @@ qdsp6_elf_relax_section (bfd *input_bfd,
           /* Check if the target is beyond reach. */
           ioffset = abs ((to + to_base) - (from + at_base));
           if (   (is_def && (   (   (r_type == R_QDSP6_B22_PCREL)
-                                 && QDSP6_TRAMPLINE_NEEDED (ioffset, 23))
+                                 && QDSP6_TRAMPLINE_NEEDED (ioffset, 24))
                              || (   (r_type == R_QDSP6_B15_PCREL)
-                                 && QDSP6_TRAMPLINE_NEEDED (ioffset, 16))
+                                 && QDSP6_TRAMPLINE_NEEDED (ioffset, 17))
                              || (   (r_type == R_QDSP6_B13_PCREL)
-                                 && QDSP6_TRAMPLINE_NEEDED (ioffset, 14))))
+                                 && QDSP6_TRAMPLINE_NEEDED (ioffset, 15))
+                             || (   (r_type == R_QDSP6_B9_PCREL)
+                                 && QDSP6_TRAMPLINE_NEEDED (ioffset, 11))))
               || !is_def)
 	    {
               /* Try to add a trampoline. */
@@ -2053,7 +2305,8 @@ qdsp6_elf_relax_section (bfd *input_bfd,
 
                 insn = qdsp6_get_insn (input_bfd, elf_qdsp6_howto_table + r_type,
                                        contents + from - QDSP6_INSN_LEN);
-                if (QDSP6_PACKET_BIT_GET (insn) == QDSP6_END_PACKET)
+                if (QDSP6_END_PACKET_GET (insn) == QDSP6_END_PACKET
+                    || QDSP6_END_PACKET_GET (insn) == QDSP6_END_PAIR)
                   break;
               }
 
@@ -2066,14 +2319,16 @@ qdsp6_elf_relax_section (bfd *input_bfd,
               t_h = bfd_link_hash_lookup (&t_hash, t_name, FALSE, FALSE, FALSE);
               if (!t_h)
                 {
-                  t = isec_size;
+                  t_at = isec_size;
 
                   if (   (   (r_type == R_QDSP6_B22_PCREL)
-                          && QDSP6_TRAMPLINE_NEEDED (t - from, 23))
+                          && QDSP6_TRAMPLINE_NEEDED (t_at - from, 23))
                       || (   (r_type == R_QDSP6_B15_PCREL)
-                          && QDSP6_TRAMPLINE_NEEDED (t - from, 16))
+                          && QDSP6_TRAMPLINE_NEEDED (t_at - from, 16))
                       || (   (r_type == R_QDSP6_B13_PCREL)
-                          && QDSP6_TRAMPLINE_NEEDED (t - from, 14)))
+                          && QDSP6_TRAMPLINE_NEEDED (t_at - from, 14))
+                      || (   (r_type == R_QDSP6_B9_PCREL)
+                          && QDSP6_TRAMPLINE_NEEDED (t_at - from, 10)))
                     /* No room for a trampoline. */
                     goto error_return;
 
@@ -2092,7 +2347,7 @@ qdsp6_elf_relax_section (bfd *input_bfd,
                   /* Create the trampoline symbol. */
                   BFD_ASSERT
                     (t_h = bfd_link_hash_lookup (&t_hash, t_name, TRUE, TRUE, FALSE));
-                  t_h->u.def.value   = t;
+                  t_h->u.def.value   = t_at;
                   t_h->u.def.section = isec;
 
                   /* Add trampoline at the end of the section. */
@@ -2100,7 +2355,7 @@ qdsp6_elf_relax_section (bfd *input_bfd,
                        i < sizeof (qdsp6_trampoline);
                        i += sizeof (*qdsp6_trampoline), j++)
                     bfd_put_32 (input_bfd, qdsp6_trampoline [j],
-                                contents + t + i);
+                                contents + t_at + i);
 
                   /* Add relocations for the trampoline. */
                   creloc =   sizeof (qdsp6_trampoline_rels)
@@ -2128,7 +2383,7 @@ qdsp6_elf_relax_section (bfd *input_bfd,
               free (t_name);
 
               /* Get the effective address of the trampoline. */
-              t   = t_h->u.def.value;
+              t_at   = t_h->u.def.value;
               t_base =   t_h->u.def.section->vma +
                        + t_h->u.def.section->output_offset;
 
@@ -2137,7 +2392,7 @@ qdsp6_elf_relax_section (bfd *input_bfd,
                                      elf_qdsp6_howto_table + r_type,
                                      contents + at);
               if (qdsp6_reloc_operand (elf_qdsp6_howto_table + r_type, &insn,
-                                       t - from, NULL))
+                                       t_at - from, NULL))
                 qdsp6_put_insn (input_bfd, elf_qdsp6_howto_table + r_type,
                                 contents + at, insn);
 
@@ -2227,6 +2482,7 @@ qdsp6_elf_check_relocs
 
       switch (ELF32_R_TYPE (rel->r_info))
 	{
+	case R_QDSP6_B9_PCREL:
 	case R_QDSP6_B13_PCREL:
 	case R_QDSP6_B15_PCREL:
 	case R_QDSP6_B22_PCREL:
@@ -2644,7 +2900,7 @@ qdsp6_alloc_dynrel
     {
       asection *sreloc = elf_section_data (p->sec)->sreloc;
 
-      sreloc->size += p->count * sizeof (Elf32_External_Rela);
+      sreloc->size += p->count * sizeof (Elf32_External_Rela); /* !!! _raw_size perhaps? */
     }
 
   return TRUE;
@@ -2829,21 +3085,18 @@ qdsp6_elf_size_dynamic_sections
 	 the .dynamic section.  The DT_DEBUG entry is filled in by the
 	 dynamic linker and used by the debugger.  */
 
-#define add_dynamic_entry(TAG, VAL) \
-  _bfd_elf_add_dynamic_entry (info, TAG, VAL)
-
       if (!info->shared)
 	{
-	  if (!add_dynamic_entry (DT_DEBUG, 0))
+	  if (!_bfd_elf_add_dynamic_entry (info, DT_DEBUG, 0))
 	    return FALSE;
 	}
 
       if (relocs)
 	{
-	  if (   !add_dynamic_entry (DT_RELA, 0)
-	      || !add_dynamic_entry (DT_RELASZ, 0)
-	      || !add_dynamic_entry (DT_RELAENT,
-                                     sizeof (Elf32_External_Rela)))
+	  if (   !_bfd_elf_add_dynamic_entry (info, DT_RELA, 0)
+	      || !_bfd_elf_add_dynamic_entry (info, DT_RELASZ, 0)
+	      || !_bfd_elf_add_dynamic_entry
+                    (info, DT_RELAENT, sizeof (Elf32_External_Rela)))
 	    return FALSE;
 	}
 
@@ -2854,13 +3107,13 @@ qdsp6_elf_size_dynamic_sections
 
       if ((info->flags & DF_TEXTREL) != 0)
 	{
-	  if (!add_dynamic_entry (DT_TEXTREL, 0))
+	  if (!_bfd_elf_add_dynamic_entry (info, DT_TEXTREL, 0))
 	    return FALSE;
 	}
 
       if (TRUE)
         {
-          if (!add_dynamic_entry (DT_QDSP6_SYMSZ, 0))
+          if (!_bfd_elf_add_dynamic_entry (info, DT_QDSP6_SYMSZ, 0))
             return FALSE;
         }
     }

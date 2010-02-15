@@ -30,32 +30,33 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.  */
 static const bfd_arch_info_type *qdsp6_bfd_compatible
   (const bfd_arch_info_type *a, const bfd_arch_info_type *b);
 
-#define QDSP6(mach, print_name, default_p, next) \
+#define QDSP6(MACH, NAME, DEFAULT, NEXT) \
   {					 \
     32,	/* 32 bits in a word  */	 \
     32,	/* 32 bits in an address  */	 \
     8,	/* 8 bits in a byte  */		 \
     bfd_arch_qdsp6,			 \
-    mach,				 \
+    MACH,				 \
     "qdsp6",				 \
-    print_name,				 \
+    NAME,				 \
     4, /* section alignment power  */	 \
-    default_p,				 \
+    DEFAULT,				 \
     qdsp6_bfd_compatible,		 \
     bfd_default_scan,			 \
-    next,				 \
+    NEXT,				 \
   }
 
 static const bfd_arch_info_type qdsp6_arch_info [] =
 {
-  QDSP6 (bfd_mach_qdsp6_v3, "qdsp6v3", FALSE, qdsp6_arch_info+1 ),
-  QDSP6 (bfd_mach_qdsp6_v4, "qdsp6v4", FALSE, qdsp6_arch_info+2 ),
+  /* These are the other supported ISAs. */
+  QDSP6 (bfd_mach_qdsp6_v3, "qdsp6v3", FALSE, qdsp6_arch_info + 1),
+  QDSP6 (bfd_mach_qdsp6_v4, "qdsp6v4", FALSE, qdsp6_arch_info + 2),
   QDSP6 (bfd_mach_qdsp6,    "qdsp6",   FALSE, NULL)
 };
 
 /* This is the default ISA. */
 const bfd_arch_info_type bfd_qdsp6_arch =
-  QDSP6 (bfd_mach_qdsp6_v2, "qdsp6v2", TRUE, qdsp6_arch_info+0 );
+  QDSP6 (bfd_mach_qdsp6_v2, "qdsp6v2", TRUE, qdsp6_arch_info + 0);
 
 /* Utility routines.  */
 int qdsp6_get_mach PARAMS ((char *));
@@ -90,7 +91,7 @@ qdsp6_bfd_compatible
       && a->mach != b->mach)
     return NULL;
 
-  /* V3 uses a new ABI that is not compatible with the V2 ABI. */
+  /* The V2 ABI was superseded by the V3 ABI. */
   if (   (a->mach == bfd_mach_qdsp6_v2 || b->mach == bfd_mach_qdsp6_v2)
       && a->mach != b->mach)
     return NULL;
