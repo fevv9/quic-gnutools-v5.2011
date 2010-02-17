@@ -504,7 +504,7 @@ typedef enum _qdsp6_relax_state
 #define QDSP6_RELAXED(R) ((R) + 1)
 
 #define QDSP6_RANGE(B) (~(~0L << ((B) - 1)) \
-                        & -(MAX_PACKET_INSNS * QDSP6_INSN_LEN))
+                        & -(2 * MAX_PACKET_INSNS * QDSP6_INSN_LEN))
 
 /* State table for relaxing branches.
    Note that since an extender is used, the insn is moved up,
@@ -2408,9 +2408,8 @@ qdsp6_packet_write
   first = frag_more (req_insns * QDSP6_INSN_LEN);
   if (!frag_now->tc_frag_data)
     {
-      frag_now->fr_type = rs_machine_dependent;
       frag_now->tc_frag_data = xmalloc (sizeof (*frag_now->tc_frag_data));
-      frag_now->tc_frag_data->previous = previous;
+      frag_now->tc_frag_data->previous = previous != frag_now? previous: NULL;
     }
 
   /* Initialize scratch packet. */
@@ -3934,7 +3933,7 @@ qdsp6_discard_dcfetch
                   found++;
 
                   if (found > MAX_DCFETCH)
-                    as_warn (_("too many `dcfetch' in packet."));
+                    as_warn (_("more than one `dcfetch' instruction in packet."));
 
                   if (found > 1)
                     /* Delete extra DCFETCH. */
