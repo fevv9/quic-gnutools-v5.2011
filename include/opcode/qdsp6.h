@@ -296,6 +296,9 @@ typedef struct qdsp6_reg_score
 #define QDSP6_PRED_YES (0x01)
 #define QDSP6_PRED_NOT (0x02)
 #define QDSP6_PRED_NEW (0x04)
+#define QDSP6_PRED_GET(P, I) (((P) >> ((I) * QDSP6_PRED_LEN)) & QDSP6_PRED_MSK)
+#define QDSP6_PRED_SET(P, I, N) \
+  ((QDSP6_PRED_GET (P, I) | ((N) & QDSP6_PRED_MSK)) << ((I) * QDSP6_PRED_LEN))
   long pred: (QDSP6_NUM_PREDICATE_REGS * QDSP6_PRED_LEN);
   size_t ndx;
 } qdsp6_reg_score;
@@ -343,13 +346,14 @@ extern qdsp6_insn qdsp6_nop, qdsp6_kext;
                          QDSP6_END_PACKET_GET (insn) == QDSP6_END_PAIR \
                          ? QDSP6_END_PAIR: QDSP6_END_NOT)) /** < Reset */
 
-/* We don't put the packet header in the opcode table */
-extern const qdsp6_opcode qdsp6_packet_header_opcode;
+/** Test for arch version.
+*/
+#define qdsp6_if_arch_v1() (FALSE)                         /** < V1 (Obsolete) */
+#define qdsp6_if_arch_v2() (qdsp6_if_arch (QDSP6_MACH_V2)) /** < V2 */
+#define qdsp6_if_arch_v3() (qdsp6_if_arch (QDSP6_MACH_V3)) /** < V3 */
+#define qdsp6_if_arch_v4() (qdsp6_if_arch (QDSP6_MACH_V4)) /** < V4 */
 
-extern int qdsp6_if_arch_v1 (void);
-extern int qdsp6_if_arch_v2 (void);
-extern int qdsp6_if_arch_v3 (void);
-extern int qdsp6_if_arch_v4 (void);
+extern int qdsp6_if_arch (int);
 extern int qdsp6_if_arch_kext (void);
 extern int qdsp6_if_arch_pairs (void);
 extern int qdsp6_if_arch_autoand (void);
@@ -383,5 +387,8 @@ extern int qdsp6_dis_opcode
   (char *, qdsp6_insn, bfd_vma, const qdsp6_opcode *, char **);
 extern const qdsp6_operand *qdsp6_operand_find_lo16 (const qdsp6_operand *);
 extern const qdsp6_operand *qdsp6_operand_find_hi16 (const qdsp6_operand *);
+
+/* We don't put the packet header in the opcode table */
+extern const qdsp6_opcode qdsp6_packet_header_opcode;
 
 #endif /* OPCODES_QDSP6_H */

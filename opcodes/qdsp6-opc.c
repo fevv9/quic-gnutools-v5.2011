@@ -1070,7 +1070,7 @@ qdsp6_hash_opcode
   int is_if;
   char ch;
 
-  if (   !strcmp (syntax, "Rd8 = #s6 ; Re8 = #S6")
+  if ( !strcmp (syntax, "Rd8 = #s6 ; Re8 = #S6")
       || !strcmp (syntax, "Rd8 = #s6 ; Re8 = aslh ( Rs8 )"))
     {
       p1 = NULL;
@@ -1102,9 +1102,9 @@ qdsp6_hash_opcode
       while (ISSPACE (*p1))
         p1++;
 
-      if (   !strncmp (p1, "jump", 4) || !strncmp (syntax, "jump", 4)
+      if ( !strncmp (p1, "jump", 4) || !strncmp (syntax, "jump", 4)
           || !strncmp (p1, "call", 4) || !strncmp (syntax, "call", 4)
-          || (   qdsp6_if_arch_v4 ()
+          || ( qdsp6_if_arch_v4 ()
               && (!strncmp (p1, "return", token) || !strncmp (syntax, "return", token))))
         /* Conditional and unconditioonal branches. */
         return (is_if? QDSP6_HASH_G: QDSP6_HASH_H);
@@ -1113,9 +1113,9 @@ qdsp6_hash_opcode
     {
       p1 = syntax;
 
-      if (   !strncmp (p1, "jump", 4)
+      if ( !strncmp (p1, "jump", 4)
           || !strncmp (p1, "call", 4)
-          || (   qdsp6_if_arch_v4 ()
+          || ( qdsp6_if_arch_v4 ()
               && (!strncmp (p1, "return", token))))
         /* Conditional and unconditioonal branches. */
         return (is_if? QDSP6_HASH_I: QDSP6_HASH_J);
@@ -1141,12 +1141,12 @@ qdsp6_hash_opcode
                   /* Vector insns use the operation initial instead of the prefix. */
                   ch = TOLOWER (p1 [1]);
 
-                  return (  pair
+                  return (pair
                           ? (QDSP6_HASH_2 + ch - 'a' + (is_if? QDSP6_HASH_1: 0)) /* Paired insns. */
                           : (QDSP6_HASH_4 + ch - 'a' + (is_if? QDSP6_HASH_1: 0)) /* Vector insns. */ );
                 }
               else
-                return (  pair
+                return (pair
                         ? (QDSP6_HASH_2 + ch - 'a' + (is_if? QDSP6_HASH_1: 0)) /* Paired insns. */
                         : (QDSP6_HASH_0 + ch - 'a' + (is_if? QDSP6_HASH_1: 0)) /* Single insns. */ );
             }
@@ -1158,7 +1158,7 @@ qdsp6_hash_opcode
                 : is_if? QDSP6_HASH_M: QDSP6_HASH_N);
     }
 
-  if (   !strncmp (syntax, "allocframe", 10)
+  if ( !strncmp (syntax, "allocframe", 10)
       || !strncmp (syntax, "deallocframe", token)
       || !strncmp (syntax, "nop", token))
     return (pair? QDSP6_HASH_O: QDSP6_HASH_P);
@@ -1212,7 +1212,7 @@ qdsp6_hash_icode
         ? QDSP6_END_PAIR >> QDSP6_END_PACKET_POS
         : QDSP6_END_NOT  >> QDSP6_END_PACKET_POS;
 
-  hash = insn >> (  (QDSP6_INSN_LEN * 8 )
+  hash = insn >> ((QDSP6_INSN_LEN * 8 )
                   - (qdsp6_icode_hash_bits - xtra));
   hash = hash + (end << (qdsp6_icode_hash_bits - xtra));
 
@@ -1228,34 +1228,10 @@ static int cpu_flag;
 
 /* Return nonzero if we are assembling for V1 */
 int
-qdsp6_if_arch_v1
-(void)
+qdsp6_if_arch
+(int arch)
 {
-  return (cpu_type < QDSP6_MACH_V2);
-}
-
-/* Return nonzero if we are assembling for V2 */
-int
-qdsp6_if_arch_v2
-(void)
-{
-  return (cpu_type == QDSP6_MACH_V2);
-}
-
-/* Return nonzero if we are assembling for V3 */
-int
-qdsp6_if_arch_v3
-(void)
-{
-  return (cpu_type == QDSP6_MACH_V3);
-}
-
-/* Return nonzero if we are assembling for V4 */
-int
-qdsp6_if_arch_v4
-(void)
-{
-  return (cpu_type == QDSP6_MACH_V4);
+  return (cpu_type == arch);
 }
 
 /** Query support for immediate extender by the current architecture.
@@ -1309,7 +1285,7 @@ qdsp6_get_opcode_mach
   if (bfd_mach < bfd_mach_qdsp6_v2 || bfd_mach > bfd_mach_qdsp6_v4)
     return Q6_CPU_TYPE_UNINIT;
 
-  return (  mach_type_map [bfd_mach - bfd_mach_qdsp6_v2]
+  return (mach_type_map [bfd_mach - bfd_mach_qdsp6_v2]
           | (big_p? QDSP6_MACH_BIG: 0));
 }
 
@@ -1342,10 +1318,10 @@ qdsp6_opcode_init_tables
      once though.  */
 
   /* Based on cpu type, set: operand, operand_array_size */
-  qdsp6_opcodes               =   qdsp6_if_arch_v2 ()? qdsp6_opcodes_v2
+  qdsp6_opcodes               = qdsp6_if_arch_v2 ()? qdsp6_opcodes_v2
                                 : qdsp6_if_arch_v3 ()? qdsp6_opcodes_v3
                                                      : qdsp6_opcodes_v4;
-  qdsp6_opcodes_count         =   qdsp6_if_arch_v2 ()? qdsp6_opcodes_count_v2
+  qdsp6_opcodes_count         = qdsp6_if_arch_v2 ()? qdsp6_opcodes_count_v2
                                 : qdsp6_if_arch_v3 ()? qdsp6_opcodes_count_v3
                                                      : qdsp6_opcodes_count_v4;
 
@@ -1390,7 +1366,7 @@ qdsp6_opcode_init_tables
       qdsp6_opcodes [i - 1].next_dis = icode_map [icode];
       icode_map [icode] = qdsp6_opcodes + i - 1;
 
-      if (   (qdsp6_opcodes [i - 1].attributes & A_IT_NOP)
+      if ( (qdsp6_opcodes [i - 1].attributes & A_IT_NOP)
           || !strcmp (qdsp6_opcodes [i - 1].syntax, "nop"))
         {
           qdsp6_opcodes [i - 1].attributes |= A_IT_NOP;
@@ -1528,7 +1504,7 @@ qdsp6_encode_operand
 
   /* TODO: there are issues with this... */
   if (FALSE && is_rel)
-    switch (  opcode->attributes
+    switch (opcode->attributes
             & (EXTENDABLE_LOWER_CASE_IMMEDIATE | EXTENDABLE_UPPER_CASE_IMMEDIATE))
       {
       case EXTENDABLE_LOWER_CASE_IMMEDIATE:
@@ -1749,7 +1725,7 @@ qdsp6_reg_num
 
           len = strlen (alias [i].name);
 
-          if (   !strncasecmp (regs, alias [i].name, len)
+          if ( !strncasecmp (regs, alias [i].name, len)
               || !strncasecmp (name, alias [i].name, len))
             {
               regn = alias [i].reg_num;
@@ -1879,8 +1855,8 @@ qdsp6_parse_dreg16
       return (NULL);
     }
 
-  if (   (   (reg_odd  < 1 || reg_odd  > 31))
-      || (   (reg_even < 0 || reg_even > 30)))
+  if ( ( (reg_odd  < 1 || reg_odd  > 31))
+      || ( (reg_even < 0 || reg_even > 30)))
     return (NULL);
 
   if (qdsp6_encode_operand
@@ -1946,9 +1922,9 @@ qdsp6_parse_dreg8
       return (NULL);
     }
 
-  if (   (   (reg_odd <  1 || reg_odd > 7)
+  if ( ( (reg_odd <  1 || reg_odd > 7)
           && (reg_odd < 17 || reg_odd > 23))
-      || (   (reg_even > 6)
+      || ( (reg_even > 6)
           && (reg_even < 16 || reg_even > 22)))
     return (NULL);
 
@@ -2129,7 +2105,7 @@ qdsp6_parse_creg
     return (NULL);
 
   if (!qdsp6_verify_hw)
-    if (   (operand->flags & QDSP6_OPERAND_IS_WRITE)
+    if ( (operand->flags & QDSP6_OPERAND_IS_WRITE)
         && (qdsp6_control_regs [regn].flags & QDSP6_REG_IS_READONLY))
       {
         sprintf (buf, "Can not write to read-only register `%s'.",
@@ -2201,8 +2177,8 @@ qdsp6_parse_dcreg
     }
 
   if (!qdsp6_verify_hw)
-    if (   (operand->flags & QDSP6_OPERAND_IS_WRITE)
-        && (   (qdsp6_control_regs [rege].flags & QDSP6_REG_IS_READONLY)
+    if ( (operand->flags & QDSP6_OPERAND_IS_WRITE)
+        && ( (qdsp6_control_regs [rege].flags & QDSP6_REG_IS_READONLY)
             || (qdsp6_control_regs [rego].flags & QDSP6_REG_IS_READONLY)))
       {
         sprintf (buf, "Can not write to read-only register `%s:%s'.",
@@ -2239,7 +2215,7 @@ qdsp6_parse_greg
     return (NULL);
 
   if (!qdsp6_verify_hw)
-    if (   (operand->flags & QDSP6_OPERAND_IS_WRITE)
+    if ( (operand->flags & QDSP6_OPERAND_IS_WRITE)
         && (qdsp6_guest_regs [regn].flags & QDSP6_REG_IS_READONLY))
       {
         sprintf (buf, "Can not write to read-only register `%s'.",
@@ -2311,8 +2287,8 @@ qdsp6_parse_dgreg
     }
 
   if (!qdsp6_verify_hw)
-    if (   (operand->flags & QDSP6_OPERAND_IS_WRITE)
-        && (   (qdsp6_guest_regs [rege].flags & QDSP6_REG_IS_READONLY)
+    if ( (operand->flags & QDSP6_OPERAND_IS_WRITE)
+        && ( (qdsp6_guest_regs [rege].flags & QDSP6_REG_IS_READONLY)
             || (qdsp6_guest_regs [rego].flags & QDSP6_REG_IS_READONLY)))
       {
         sprintf (buf, "Can not write to read-only register `%s:%s'.",
@@ -2349,7 +2325,7 @@ qdsp6_parse_sreg
     return (NULL);
 
   if (!qdsp6_verify_hw)
-    if (   (operand->flags & QDSP6_OPERAND_IS_WRITE)
+    if ( (operand->flags & QDSP6_OPERAND_IS_WRITE)
         && (qdsp6_supervisor_regs [regn].flags & QDSP6_REG_IS_READONLY))
       {
         sprintf (buf, "Can not write to read-only register `%s'.",
@@ -2421,8 +2397,8 @@ qdsp6_parse_dsreg
     }
 
   if (!qdsp6_verify_hw)
-    if (   (operand->flags & QDSP6_OPERAND_IS_WRITE)
-        && (   (qdsp6_supervisor_regs [rege].flags & QDSP6_REG_IS_READONLY)
+    if ( (operand->flags & QDSP6_OPERAND_IS_WRITE)
+        && ( (qdsp6_supervisor_regs [rege].flags & QDSP6_REG_IS_READONLY)
             || (qdsp6_supervisor_regs [rego].flags & QDSP6_REG_IS_READONLY)))
       {
         sprintf (buf, "Can not write to read-only register `%s:%s'.",
@@ -2512,18 +2488,18 @@ qdsp6_lookup_reloc
       if (flags & QDSP6_OPERAND_IS_KXED)
         {
           if (qdsp6_operands [i].flags & QDSP6_OPERAND_IS_IMMEDIATE)
-            switch (  attributes
+            switch (attributes
                     & (EXTENDABLE_LOWER_CASE_IMMEDIATE | EXTENDABLE_UPPER_CASE_IMMEDIATE))
               {
               case EXTENDABLE_LOWER_CASE_IMMEDIATE:
-                if (   qdsp6_operands [i].enc_letter
+                if ( qdsp6_operands [i].enc_letter
                     != TOLOWER (qdsp6_operands [i].enc_letter))
                   continue;
 
                 break;
 
               case EXTENDABLE_UPPER_CASE_IMMEDIATE:
-                if (   qdsp6_operands [i].enc_letter
+                if ( qdsp6_operands [i].enc_letter
                     != TOUPPER (qdsp6_operands [i].enc_letter))
                   continue;
 

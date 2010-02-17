@@ -4431,8 +4431,7 @@ qdsp6_check_implicit_predicate
   if (opcode->implicit_reg_def & implicit)
     {
       is_used = !qdsp6_autoand || (opcode->attributes & A_RESTRICT_LATEPRED)
-                ? TRUE
-                : MAYBE;
+                ? TRUE: MAYBE;
 
       if (pArray [reg].used == TRUE || (pArray [reg].used == MAYBE && is_used == TRUE))
         as_bad (_("register `p%d' modified more than once."), reg);
@@ -4486,13 +4485,8 @@ qdsp6_check_register
           // Or same non-zero mask for same predicate
           for (i = 0; i < QDSP6_NUM_PREDICATE_REGS; i++)
             {
-              int p_shift;
-
-              p_shift = i * QDSP6_PRED_LEN;
-              a_pred_mask =
-                (pred_reg_rd_mask >> p_shift) & QDSP6_PRED_MSK;
-              prev_a_pred_mask =
-                (prev_pred_reg_rd_mask >> p_shift) & QDSP6_PRED_MSK;
+              a_pred_mask = QDSP6_PRED_GET (pred_reg_rd_mask, i);
+              prev_a_pred_mask = QDSP6_PRED_GET (prev_pred_reg_rd_mask, i);
               if (a_pred_mask && a_pred_mask == prev_a_pred_mask)
                 {
                   mult_wr_err = TRUE;
@@ -4514,10 +4508,10 @@ qdsp6_check_register
         }
       else
         {
-          array [reg_num].used   = TRUE;
-          array [reg_num].letter = operand->enc_letter;
-          array [reg_num].pred   = pred_reg_rd_mask;
-          array [reg_num].ndx    = n;
+          array [reg_num].used    = TRUE;
+          array [reg_num].letter  = operand->enc_letter;
+          array [reg_num].pred   |= pred_reg_rd_mask;
+          array [reg_num].ndx     = n;
         }
     }
   else
@@ -4550,7 +4544,6 @@ qdsp6_check_insn
   qdsp6_reg_score *arrayPtr;
   char *cp;
   int pred_reg_rd_mask = 0;
-  int pred_reg_offset;
 
   // Check whether the instruction is legal inside the packet
   // But allow single instruction in packet
@@ -4658,15 +4651,14 @@ qdsp6_check_insn
                   break;
                 }
 
-              pred_reg_offset = (reg_num * QDSP6_PRED_LEN);
-              pred_reg_rd_mask = QDSP6_PRED_YES << pred_reg_offset;
-
+              pred_reg_rd_mask = QDSP6_PRED_SET (0, reg_num, QDSP6_PRED_YES);
               if (apacket->insns [n].opcode->attributes & CONDITION_SENSE_INVERTED)
-                pred_reg_rd_mask |= QDSP6_PRED_NOT << pred_reg_offset;
-
+                pred_reg_rd_mask
+                = QDSP6_PRED_SET (pred_reg_rd_mask, reg_num, QDSP6_PRED_NOT);
               if (apacket->insns [n].opcode->attributes & CONDITION_DOTNEW)
                 {
-                  pred_reg_rd_mask |= QDSP6_PRED_NEW << pred_reg_offset;
+                  pred_reg_rd_mask
+                  = QDSP6_PRED_SET (pred_reg_rd_mask, reg_num, QDSP6_PRED_NEW);
                   pNewArray [reg_num].used = TRUE;
                 }
             }
