@@ -97,8 +97,5 @@ qdsp6_bfd_compatible
     return NULL;
 
   /* Return the most recent one. */
-  if (a->mach > b->mach)
-    return a;
-  else
-    return b;
+  return (a->mach > b->mach? a: b);
 }
