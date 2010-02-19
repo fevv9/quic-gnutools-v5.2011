@@ -20,20 +20,21 @@ static void qdsp6_after_parse PARAMS ((void));
 static char* qdsp6_arch_name;
 static int qdsp6_cmdline_set_arch;
 
-struct ld_mach_arch_option
+struct qdsp6_march
 {
   char *march_name_fe, *march_short_fe;
   char *march_name_be;
 };
 
-static const struct ld_mach_arch_option ld_mach_arch_options [] =
+static const struct qdsp6_march qdsp6_marchs [] =
 {
   {"qdsp6v2", "v2", "qdsp6v2"},
   {"qdsp6v3", "v3", "qdsp6v3"},
+  {"qdsp6v4", "v4", "qdsp6v4"},
 };
 
-static size_t ld_mach_arch_options_size =
-  sizeof (ld_mach_arch_options) / sizeof (ld_mach_arch_options [0]);
+static size_t qdsp6_marchs_size =
+  sizeof (qdsp6_marchs) / sizeof (qdsp6_marchs [0]);
 
 static void
 qdsp6_after_parse (void)
@@ -63,10 +64,11 @@ PARSE_AND_LIST_PROLOGUE=$'
 #define OPTION_MQDSP6V1    (301)
 #define OPTION_MQDSP6V2    (302)
 #define OPTION_MQDSP6V3    (303)
-#define OPTION_MARCH       (304)
-#define OPTION_MCPU        (305)
-#define OPTION_TCM         (306)
-#define OPTION_TRAMPOLINES (307)
+#define OPTION_MQDSP6V4    (304)
+#define OPTION_MARCH       (305)
+#define OPTION_MCPU        (306)
+#define OPTION_TCM         (307)
+#define OPTION_TRAMPOLINES (308)
 '
 
 # QDSP6 options.
@@ -74,6 +76,7 @@ PARSE_AND_LIST_PROLOGUE=$'
 PARSE_AND_LIST_LONGOPTS=$'
     {"mv2",         no_argument,       NULL, OPTION_MQDSP6V2},
     {"mv3",         no_argument,       NULL, OPTION_MQDSP6V3},
+    {"mv4",         no_argument,       NULL, OPTION_MQDSP6V4},
     {"march",       required_argument, NULL, OPTION_MARCH},
     {"mcpu",        required_argument, NULL, OPTION_MCPU},
     {"tcm",         no_argument,       NULL, OPTION_TCM},
@@ -84,8 +87,9 @@ PARSE_AND_LIST_LONGOPTS=$'
 PARSE_AND_LIST_OPTIONS=$'
   fprintf (file, _("  -mv2                        Link for the QDSP6 V2 architecture (default)\\n"));
   fprintf (file, _("  -mv3                        Link for the QDSP6 V3 architecture\\n"));
-  fprintf (file, _("  --march={qdsp6v2|qdsp6v3}   Link for the specified QDSP6 architecture\\n"));
-  fprintf (file, _("  --mcpu={qdsp6v2|qdsp6v3}    Equivalent to `--march\'\\n"));
+  fprintf (file, _("  -mv4                        Link for the QDSP6 V4 architecture\\n"));
+  fprintf (file, _("  --march={v2|v3|v4}          Link for the specified QDSP6 architecture\\n"));
+  fprintf (file, _("  --mcpu={v2|v3|v4}           Equivalent to `--march\'\\n"));
   fprintf (file, _("  --tcm                       Use the TCM\\n"));
   fprintf (file, _("  --trampolines[={yes|no}]    Add trampolines when necessary (default)\\n"));
 '
@@ -129,11 +133,11 @@ PARSE_AND_LIST_ARGS_CASES=$'
                   ldfile_output_machine_name = arch_info->printable_name;
                 }
 
-              for (i = 0; i < ld_mach_arch_options_size; i++)
-                if (!strcmp (in_bfd_name, ld_mach_arch_options [i].march_name_be))
+              for (i = 0; i < qdsp6_marchs_size; i++)
+                if (!strcmp (in_bfd_name, qdsp6_marchs [i].march_name_be))
                   {
                     /* Only set if the cmdline has not set the type yet. */
-                    ldfile_set_output_arch (ld_mach_arch_options [i].march_name_be, bfd_arch_qdsp6);
+                    ldfile_set_output_arch (qdsp6_marchs [i].march_name_be, bfd_arch_qdsp6);
 
                     break;
                   }
@@ -156,33 +160,35 @@ PARSE_AND_LIST_ARGS_CASES=$'
     case OPTION_MQDSP6V1:
     case OPTION_MQDSP6V2:
     case OPTION_MQDSP6V3:
+    case OPTION_MQDSP6V4:
     case OPTION_MARCH:
     case OPTION_MCPU:
       /* The output architecture is specified. */
         {
-          char *temp_qdsp6_arch_name = (char *)0;
+          char *temp_qdsp6_arch_name = NULL;
           size_t i;
 
           switch (optc)
             {
               case OPTION_MQDSP6V2:
               case OPTION_MQDSP6V3:
+              case OPTION_MQDSP6V4:
                 /* -mv* options. */
                 temp_qdsp6_arch_name
-                  = ld_mach_arch_options [optc - OPTION_MQDSP6V2].march_name_be;
+                  = qdsp6_marchs [optc - OPTION_MQDSP6V2].march_name_be;
                 break;
 
               default:
                 /* -march and- mcpu options. */
-                for (i = 0; i < ld_mach_arch_options_size; i++)
-                  if (   !strcmp (optarg, ld_mach_arch_options [i].march_name_fe)
-                      || !strcmp (optarg, ld_mach_arch_options [i].march_short_fe))
+                for (i = 0; i < qdsp6_marchs_size; i++)
+                  if (   !strcmp (optarg, qdsp6_marchs [i].march_name_fe)
+                      || !strcmp (optarg, qdsp6_marchs [i].march_short_fe))
                     {
-                      temp_qdsp6_arch_name = ld_mach_arch_options [i].march_name_be;
+                      temp_qdsp6_arch_name = qdsp6_marchs [i].march_name_be;
                       break;
                     }
 
-                if (i == ld_mach_arch_options_size)
+                if (i == qdsp6_marchs_size)
                   {
                     einfo (_("invalid architecture `%s\'.\\n"));
                     xexit (1);
