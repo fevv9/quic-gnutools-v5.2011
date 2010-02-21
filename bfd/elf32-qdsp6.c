@@ -44,7 +44,7 @@
 #define QDSP6_TRAMPOLINE_PREFIX     ".PAD"
 #define QDSP6_TRAMPOLINE_PREFIX_LEN (sizeof (QDSP6_TRAMPOLINE_PREFIX))
 #define QDSP6_TRAMPLINE_NEEDED(D, B) \
-  (  abs (D) \
+  (abs (D) \
    > (~(~(bfd_signed_vma) 0 << ((B) - 1)) & -(MAX_PACKET_INSNS * QDSP6_INSN_LEN)))
 
 /* The name of the dynamic interpreter.  This is put in the .interp
@@ -927,7 +927,7 @@ qdsp6_reloc_operand
 
   opcode  = qdsp6_lookup_insn (*insn);
   type    = qdsp6_elf_reloc_val_lookup (howto->type, &flag);
-  operand = qdsp6_lookup_reloc (type, flag, opcode? opcode->attributes: 0);
+  operand = qdsp6_lookup_reloc (type, flag, opcode);
 
   is_x = (flag & QDSP6_OPERAND_IS_KXED);
 
@@ -994,7 +994,7 @@ qdsp6_elf_reloc
   /* Handle PC relative relocatable output. */
   if (output_bfd != (bfd *) NULL
       && reloc_entry->howto->pc_relative
-      && (   !reloc_entry->howto->partial_inplace
+      && (!reloc_entry->howto->partial_inplace
           || !reloc_entry->addend))
     {
       reloc_entry->address += input_section->output_offset;
@@ -1023,7 +1023,7 @@ qdsp6_elf_reloc
   reloc_target_output_section = symbol->section->output_section;
 
   /* Convert input-section-relative symbol value to absolute.  */
-  if ((output_bfd && ! howto->partial_inplace)
+  if ((output_bfd && !howto->partial_inplace)
       || reloc_target_output_section == NULL)
     output_base = 0;
   else
@@ -1097,7 +1097,7 @@ qdsp6_elf_reloc
 
   if (output_bfd != (bfd *) NULL)
     {
-      if (! howto->partial_inplace)
+      if (!howto->partial_inplace)
 	{
 	  /* This is a partial relocation, and we want to apply the relocation
 	     to the reloc entry rather than the raw data. Modify the reloc
@@ -1376,22 +1376,22 @@ qdsp6_elf_symbol_processing
 
         if (!scom_section->name)
           {
-              const char *scom_name =
-                qdsp6_scom_name [elfsym->internal_elf_sym.st_shndx - SHN_QDSP6_SCOMMON];
+            const char *scom_name =
+              qdsp6_scom_name [elfsym->internal_elf_sym.st_shndx - SHN_QDSP6_SCOMMON];
 
             /* Initialize the small common section.  */
-              scom_section->name           = scom_name;
-              scom_section->flags          = SEC_IS_COMMON | SEC_SMALL_DATA
-                                          | (  elfsym->internal_elf_sym.st_shndx
+            scom_section->name           = scom_name;
+            scom_section->flags          = SEC_IS_COMMON | SEC_SMALL_DATA
+                                           | (elfsym->internal_elf_sym.st_shndx
                                               > SHN_QDSP6_SCOMMON
                                               ? SEC_LOAD | SEC_DATA: 0);
-              scom_section->output_section = scom_section;
-              scom_section->symbol         = scom_symbol;
-              scom_section->symbol_ptr_ptr = &scom_section->symbol;
+            scom_section->output_section = scom_section;
+            scom_section->symbol         = scom_symbol;
+            scom_section->symbol_ptr_ptr = &scom_section->symbol;
 
-              scom_symbol->name    = scom_name;
-              scom_symbol->flags   = BSF_SECTION_SYM;
-              scom_symbol->section = scom_section;
+            scom_symbol->name    = scom_name;
+            scom_symbol->flags   = BSF_SECTION_SYM;
+            scom_symbol->section = scom_section;
           }
 
         asym->section = scom_section;
@@ -1404,12 +1404,12 @@ qdsp6_elf_symbol_processing
 static bfd_boolean
 qdsp6_elf_common_definition (Elf_Internal_Sym *sym)
 {
-  return (sym->st_shndx == SHN_COMMON ||
-	  sym->st_shndx == SHN_QDSP6_SCOMMON ||
-	  sym->st_shndx == SHN_QDSP6_SCOMMON_1 ||
-	  sym->st_shndx == SHN_QDSP6_SCOMMON_2 ||
-	  sym->st_shndx == SHN_QDSP6_SCOMMON_4 ||
-	  sym->st_shndx == SHN_QDSP6_SCOMMON_8);
+  return (sym->st_shndx == SHN_COMMON
+          || sym->st_shndx == SHN_QDSP6_SCOMMON
+          || sym->st_shndx == SHN_QDSP6_SCOMMON_1
+          || sym->st_shndx == SHN_QDSP6_SCOMMON_2
+          || sym->st_shndx == SHN_QDSP6_SCOMMON_4
+          || sym->st_shndx == SHN_QDSP6_SCOMMON_8);
 }
 
 
@@ -1480,7 +1480,7 @@ qdsp6_elf_link_output_symbol_hook (struct bfd_link_info *info
   /* If we see a common symbol, which implies a relocatable link, then
      if a symbol was small common in an input file, mark it as small
      common in the output file.  */
-  if (   sym->st_shndx == SHN_COMMON
+  if (sym->st_shndx == SHN_COMMON
       && !strncmp (input_sec->name, qdsp6_scom_name [0], sizeof (qdsp6_scom_name [0]) - 1))
     {
       if      (!strcmp (name, qdsp6_scom_name [SHN_QDSP6_SCOMMON_8 - SHN_QDSP6_SCOMMON]))
@@ -1553,53 +1553,6 @@ qdsp6_elf_gc_sweep_hook (
   return TRUE;
 }
 
-/*
-static bfd_boolean
-qdsp6_hash_lookup_defined
-(struct elf_link_hash_entry *h, void **io)
-{
-  char *string = *io;
-
-  if (   (   h->root.type == bfd_link_hash_defined
-          || h->root.type == bfd_link_hash_defweak)
-      && !(elf_discarded_section (h->root.u.def.section))
-      && !(strcmp (string, h->root.root.string)))
-    {
-      *io = h;
-      return FALSE;
-    }
-  else
-    return TRUE;
-}
-*/
-
-/* Since elf_link_hash_lookup () may return a symbol in a discarded section,
-   this function keeps on searching until an undiscarded symbol is found. */
-
-/*
-static struct bfd_link_hash_entry *
-qdsp6_link_hash_lookup
-(struct bfd_link_info *info, const char *string, bfd_boolean follow)
-{
-  struct elf_link_hash_entry *h;
-  void *io;
-
-  io = &string;
-  elf_link_hash_traverse (elf_hash_table (info), qdsp6_hash_lookup_defined, &io);
-
-  h = (io != &string? io: NULL);
-
-  if (follow && h)
-    {
-      while (   h->type == bfd_link_hash_indirect
-	     || h->type == bfd_link_hash_warning)
-	h = (struct elf_link_hash_entry *) h->root.u.i.link;
-    }
-
-  return ((struct bfd_link_hash_entry *) h);
-}
-*/
-
 static bfd_boolean
 qdsp6_kept_hash_lookup
 (bfd *obfd ATTRIBUTE_UNUSED, struct bfd_link_info *info,
@@ -1609,7 +1562,7 @@ qdsp6_kept_hash_lookup
   bfd *b;
 
   /* Check for a relocation that is actually dangling. */
-  if (   (   h->root.type != bfd_link_hash_defined
+  if ((h->root.type != bfd_link_hash_defined
           && h->root.type != bfd_link_hash_defweak)
       || !(elf_discarded_section (h->root.u.def.section)))
     return TRUE;
@@ -1626,25 +1579,6 @@ qdsp6_kept_hash_lookup
           }
     }
 
-/*
-  s_new = bfd_get_section_by_name (obfd, h->root.u.def.section->name);
-  if (s_new)
-    if (!(elf_discarded_section (s_new)))
-      {
-        h->root.u.def.section = s_new;
-
-        return TRUE;
-      }
-*/
-/*
-  h_new = qdsp6_link_hash_lookup (info, h->root.root.string, TRUE);
-  if (h_new)
-    {
-      *h = *h_new;
-
-      return TRUE;
-    }
-*/
   return FALSE;
 }
 
@@ -1692,6 +1626,7 @@ qdsp6_elf_relocate_section
       if (r_symndx < symtab_hdr->sh_info)
 	{
           /* This is a local symbol. */
+          h = NULL;
           is_loc = TRUE;
 
 	  sym = local_syms + r_symndx;
@@ -1718,13 +1653,13 @@ qdsp6_elf_relocate_section
 	{
           /* This is a global symbol. */
 	  h = sym_hashes [r_symndx - symtab_hdr->sh_info];
-	  while (   h->root.type == bfd_link_hash_indirect
+	  while (h->root.type == bfd_link_hash_indirect
 		 || h->root.type == bfd_link_hash_warning)
 	    h = (struct elf_link_hash_entry *) h->root.u.i.link;
 
 	  name = h->root.root.string;
 
-	  if (   h->root.type == bfd_link_hash_defined
+	  if (h->root.type == bfd_link_hash_defined
 	      || h->root.type == bfd_link_hash_defweak)
 	    {
               if (elf_discarded_section (h->root.u.def.section))
@@ -1747,7 +1682,7 @@ qdsp6_elf_relocate_section
                       }
                   }
 
-	      relocation =   h->root.u.def.value
+	      relocation = h->root.u.def.value
 			   + h->root.u.def.section->output_section->vma
                            + h->root.u.def.section->output_offset;
 	    }
@@ -1757,13 +1692,13 @@ qdsp6_elf_relocate_section
 
 	      relocation = 0;
 	    }
-	  else if (   h->root.type == bfd_link_hash_undefined
+	  else if (h->root.type == bfd_link_hash_undefined
                    && info->shared
 		   && ELF_ST_VISIBILITY (h->other) == STV_DEFAULT)
             {
               is_und = TRUE;
 
-	      relocation =   input_section->output_section->vma
+	      relocation = input_section->output_section->vma
                            + input_section->output_offset;
             }
 	  else
@@ -1771,7 +1706,7 @@ qdsp6_elf_relocate_section
 	      if (!((*info->callbacks->undefined_symbol)
 		    (info, h->root.root.string, input_bfd,
 		     input_section, rel->r_offset,
-                     (   !info->shared
+                     (!info->shared
                       || ELF_ST_VISIBILITY (h->other)))))
 		return FALSE;
 	      relocation = 0;
@@ -1805,12 +1740,10 @@ qdsp6_elf_relocate_section
 
 	  insn = qdsp6_get_insn (input_bfd, howto, contents + rel->r_offset);
 
-	  if ((! qdsp6_reloc_operand (howto, &insn, ioffset, NULL))
-              && h->root.type != bfd_link_hash_undefined)
+	  if (!qdsp6_reloc_operand (howto, &insn, ioffset, NULL)
+              && (!h || h->root.type != bfd_link_hash_undefined))
             r = info->callbacks->reloc_overflow
-                  (info,
-                    (h ? &h->root : NULL),
-                   name, howto->name, (bfd_vma) 0,
+                  (info, h? &h->root: NULL, name, howto->name, 0,
                    input_bfd, input_section, rel->r_offset);
 	  else
             qdsp6_put_insn (input_bfd, howto, contents + rel->r_offset, insn);
@@ -1826,9 +1759,9 @@ qdsp6_elf_relocate_section
 	  insn = qdsp6_get_insn (input_bfd, elf_qdsp6_howto_table + R_QDSP6_HI16,
                                  contents + rel->r_offset + 0);
 
-	  if ((!  qdsp6_reloc_operand (elf_qdsp6_howto_table + R_QDSP6_HI16, &insn,
-                                    ioffset, NULL))
-               && h->root.type != bfd_link_hash_undefined)
+	  if (!qdsp6_reloc_operand (elf_qdsp6_howto_table + R_QDSP6_HI16, &insn,
+                                    ioffset, NULL)
+               && (!h || h->root.type != bfd_link_hash_undefined))
             r = info->callbacks->reloc_overflow
                   (info, (h ? &h->root : NULL), name,
                    elf_qdsp6_howto_table [R_QDSP6_HI16].name, 0,
@@ -1841,9 +1774,9 @@ qdsp6_elf_relocate_section
 	  insn = qdsp6_get_insn (input_bfd, elf_qdsp6_howto_table + R_QDSP6_LO16,
                                  contents + rel->r_offset + sizeof (insn));
 
-	  if ((!  qdsp6_reloc_operand (elf_qdsp6_howto_table + R_QDSP6_LO16, &insn,
-                                    ioffset, NULL))
-               && h->root.type != bfd_link_hash_undefined)
+	  if (!qdsp6_reloc_operand (elf_qdsp6_howto_table + R_QDSP6_LO16, &insn,
+                                    ioffset, NULL)
+               && (!h || h->root.type != bfd_link_hash_undefined))
             r = info->callbacks->reloc_overflow
                   (info, (h ? &h->root : NULL), name,
                    elf_qdsp6_howto_table [R_QDSP6_LO16].name, 0,
@@ -1871,16 +1804,16 @@ qdsp6_elf_relocate_section
 
 	    insn = qdsp6_get_insn (input_bfd, howto, contents + rel->r_offset);
 
-	    bfdhash = bfd_link_hash_lookup (info->hash, SDA_BASE, FALSE, FALSE, TRUE);
+	    bfdhash = bfd_link_hash_lookup
+                        (info->hash, SDA_BASE, FALSE, FALSE, TRUE);
 	    if (!bfdhash)
-              bfdhash = bfd_link_hash_lookup (info->hash,
-                                        DEFAULT_SDA_BASE,
-                                        FALSE, FALSE, TRUE);
+              bfdhash = bfd_link_hash_lookup
+                          (info->hash, DEFAULT_SDA_BASE, FALSE, FALSE, TRUE);
 
-	    if (   bfdhash
+	    if (bfdhash
 		&& bfdhash->type == bfd_link_hash_defined)
 	      {
-                base = (  bfdhash->u.def.value
+                base = (bfdhash->u.def.value
                         + bfdhash->u.def.section->output_section->vma
                         + bfdhash->u.def.section->output_offset);
                 elf_gp (output_bfd) = base;
@@ -1896,15 +1829,14 @@ qdsp6_elf_relocate_section
 
 	    ioffset = relocation + rel->r_addend;
 
-	    if ((! qdsp6_reloc_operand (howto, &insn, ioffset, NULL))
-                 && h->root.type != bfd_link_hash_undefined)
-	    {
-	      qdsp6_reloc_operand (howto, &insn, ioffset, NULL);
-              r = info->callbacks->reloc_overflow
-                    (info, (h ? &h->root : NULL), name,
-                    howto->name, (bfd_vma) 0,
-                    input_bfd, input_section, rel->r_offset);
-	    }
+	    if (!qdsp6_reloc_operand (howto, &insn, ioffset, NULL)
+                && (!h || h->root.type != bfd_link_hash_undefined))
+              {
+                qdsp6_reloc_operand (howto, &insn, ioffset, NULL);
+                r = info->callbacks->reloc_overflow
+                      (info, (h? &h->root: NULL), name, howto->name, 0,
+                       input_bfd, input_section, rel->r_offset);
+              }
 	    else
               qdsp6_put_insn (input_bfd, howto, contents + rel->r_offset, insn);
 
@@ -1934,13 +1866,13 @@ qdsp6_elf_relocate_section
 	  insn = qdsp6_get_insn (input_bfd, howto, contents + rel->r_offset);
 
           /* Relocation is in absolute terms. */
-          ioffset =   (  (relocation + rel->r_addend)
-                       - (  input_section->output_section->vma
-                          + input_section->output_offset + rel->r_offset))
+          ioffset = ((relocation + rel->r_addend)
+                     - (input_section->output_section->vma
+                        + input_section->output_offset + rel->r_offset))
                     & lmask & rmask;
 
-	  if ((!  qdsp6_reloc_operand (howto, &insn, ioffset, NULL))
-               && h->root.type != bfd_link_hash_undefined)
+	  if (!qdsp6_reloc_operand (howto, &insn, ioffset, NULL)
+               && (!h || h->root.type != bfd_link_hash_undefined))
             r = info->callbacks->reloc_overflow
                 (info, (h ? &h->root : NULL), name,
                  howto->name, (bfd_vma) 0,
@@ -1970,7 +1902,7 @@ qdsp6_elf_relocate_section
                 {
                 case bfd_reloc_overflow:
                   r = info->callbacks->reloc_overflow
-                        (info, (h ? &h->root : NULL), name,
+                        (info, (h? &h->root: NULL), name,
                          howto->name, (bfd_vma) 0,
                          input_bfd, input_section, rel->r_offset);
                   break;
@@ -1978,7 +1910,7 @@ qdsp6_elf_relocate_section
                 case bfd_reloc_undefined:
                   r = info->callbacks->undefined_symbol
                         (info, name, input_bfd, input_section, rel->r_offset,
-                         (   !info->shared
+                         (!info->shared
                           || ELF_ST_VISIBILITY (h->other)));
                   break;
 
@@ -2028,25 +1960,25 @@ qdsp6_elf_relocate_section
             _bfd_elf_section_offset
               (output_bfd, info, input_section, rel->r_offset);
 
-          if (   h
+          if (h
               && h->dynindx != -1
-              && (   h->root.type == bfd_link_hash_defined
+              && (h->root.type == bfd_link_hash_defined
                   || h->root.type == bfd_link_hash_defweak))
             {
               /* This symbol is globally defined. */
               outrel.r_info = ELF32_R_INFO (0, r_type);
-              outrel.r_offset +=   input_section->output_section->vma
+              outrel.r_offset += input_section->output_section->vma
                                  + input_section->output_offset;
               outrel.r_addend = relocation + rel->r_addend;
             }
-          else if (   h
+          else if (h
                    && h->dynindx != -1
-                   && (   h->root.type == bfd_link_hash_undefined
+                   && (h->root.type == bfd_link_hash_undefined
                        || h->root.type == bfd_link_hash_undefweak))
             {
               /* This symbol is undefined. */
               outrel.r_info = ELF32_R_INFO (h->dynindx, r_type);
-              outrel.r_offset +=   input_section->output_section->vma
+              outrel.r_offset += input_section->output_section->vma
                                  + input_section->output_offset;
               outrel.r_addend = rel->r_addend;
             }
@@ -2054,7 +1986,7 @@ qdsp6_elf_relocate_section
             {
               /* This symbol is local, or marked to become local.  */
               outrel.r_info = ELF32_R_INFO (0, r_type);
-              outrel.r_offset +=   input_section->output_section->vma
+              outrel.r_offset += input_section->output_section->vma
                                  + input_section->output_offset;
               outrel.r_addend = relocation + rel->r_addend;
             }
@@ -2071,7 +2003,7 @@ qdsp6_elf_relocate_section
               if (!name)
                 return FALSE;
 
-              BFD_ASSERT (   !strncmp (name, ".rela", 5)
+              BFD_ASSERT (!strncmp (name, ".rela", 5)
                           && !strcmp
                                 (bfd_get_section_name (input_bfd, input_section),
                                  name + 5));
@@ -2086,7 +2018,7 @@ qdsp6_elf_relocate_section
               {
                 bfd_byte *loc;
 
-                loc =   sreloc->contents
+                loc = sreloc->contents
                       + sreloc->reloc_count++ * sizeof (Elf32_External_Rela);
                 bfd_elf32_swap_reloca_out (output_bfd, &outrel, loc);
               }
@@ -2121,7 +2053,7 @@ qdsp6_elf_relax_section (bfd *input_bfd,
 
   *again = FALSE;
 
-  if (   link_info->relocatable
+  if (link_info->relocatable
       || (isec->flags & SEC_RELOC) == 0
       || isec->reloc_count == 0)
     return rc;
@@ -2160,8 +2092,8 @@ qdsp6_elf_relax_section (bfd *input_bfd,
 
       /* Look into relocation overflows at branches and add trampolines if needed. */
       r_type = ELF32_R_TYPE (irel->r_info);
-      if (   link_info->qdsp6_trampolines
-          && (   r_type == R_QDSP6_B22_PCREL
+      if (link_info->qdsp6_trampolines
+          && (r_type == R_QDSP6_B22_PCREL
               || r_type == R_QDSP6_B15_PCREL
               || r_type == R_QDSP6_B13_PCREL
               || r_type == R_QDSP6_B9_PCREL))
@@ -2222,7 +2154,7 @@ qdsp6_elf_relax_section (bfd *input_bfd,
 	    {
               /* A global symbol. */
 	      h = sym_hashes [r_symndx - symtab_hdr->sh_info];
-	      while (h && (   h->root.type == bfd_link_hash_indirect
+	      while (h && (h->root.type == bfd_link_hash_indirect
                            || h->root.type == bfd_link_hash_warning))
 	        h = (struct elf_link_hash_entry *) h->root.u.i.link;
 
@@ -2238,7 +2170,7 @@ qdsp6_elf_relax_section (bfd *input_bfd,
                     is_def = TRUE;
 
                     to      = h->root.u.def.value;
-                    to_base =   h->root.u.def.section->output_section->vma
+                    to_base = h->root.u.def.section->output_section->vma
                               + h->root.u.def.section->output_offset;
                     break;
 
@@ -2263,13 +2195,13 @@ qdsp6_elf_relax_section (bfd *input_bfd,
 
           /* Check if the target is beyond reach. */
           ioffset = abs ((to + to_base) - (from + at_base));
-          if (   (is_def && (   (   (r_type == R_QDSP6_B22_PCREL)
+          if ((is_def && (((r_type == R_QDSP6_B22_PCREL)
                                  && QDSP6_TRAMPLINE_NEEDED (ioffset, 24))
-                             || (   (r_type == R_QDSP6_B15_PCREL)
+                             || ((r_type == R_QDSP6_B15_PCREL)
                                  && QDSP6_TRAMPLINE_NEEDED (ioffset, 17))
-                             || (   (r_type == R_QDSP6_B13_PCREL)
+                             || ((r_type == R_QDSP6_B13_PCREL)
                                  && QDSP6_TRAMPLINE_NEEDED (ioffset, 15))
-                             || (   (r_type == R_QDSP6_B9_PCREL)
+                             || ((r_type == R_QDSP6_B9_PCREL)
                                  && QDSP6_TRAMPLINE_NEEDED (ioffset, 11))))
               || !is_def)
 	    {
@@ -2287,7 +2219,7 @@ qdsp6_elf_relax_section (bfd *input_bfd,
 	          if (contents == NULL)
 		    goto error_return;
 
-	          if (! bfd_get_section_contents (input_bfd, isec, contents,
+	          if (!bfd_get_section_contents (input_bfd, isec, contents,
 					          (file_ptr) 0,
 					          isec_size))
 		    goto error_return;
@@ -2311,7 +2243,7 @@ qdsp6_elf_relax_section (bfd *input_bfd,
               }
 
               /* Create a symbol for the trampoline. */
-              t_name = bfd_malloc (  QDSP6_TRAMPOLINE_PREFIX_LEN + 1
+              t_name = bfd_malloc (QDSP6_TRAMPOLINE_PREFIX_LEN + 1
                                    + strlen (name) + 1);
               sprintf (t_name, "%s_%s", QDSP6_TRAMPOLINE_PREFIX, name);
 
@@ -2321,13 +2253,13 @@ qdsp6_elf_relax_section (bfd *input_bfd,
                 {
                   t_at = isec_size;
 
-                  if (   (   (r_type == R_QDSP6_B22_PCREL)
+                  if (((r_type == R_QDSP6_B22_PCREL)
                           && QDSP6_TRAMPLINE_NEEDED (t_at - from, 23))
-                      || (   (r_type == R_QDSP6_B15_PCREL)
+                      || ((r_type == R_QDSP6_B15_PCREL)
                           && QDSP6_TRAMPLINE_NEEDED (t_at - from, 16))
-                      || (   (r_type == R_QDSP6_B13_PCREL)
+                      || ((r_type == R_QDSP6_B13_PCREL)
                           && QDSP6_TRAMPLINE_NEEDED (t_at - from, 14))
-                      || (   (r_type == R_QDSP6_B9_PCREL)
+                      || ((r_type == R_QDSP6_B9_PCREL)
                           && QDSP6_TRAMPLINE_NEEDED (t_at - from, 10)))
                     /* No room for a trampoline. */
                     goto error_return;
@@ -2358,7 +2290,7 @@ qdsp6_elf_relax_section (bfd *input_bfd,
                                 contents + t_at + i);
 
                   /* Add relocations for the trampoline. */
-                  creloc =   sizeof (qdsp6_trampoline_rels)
+                  creloc = sizeof (qdsp6_trampoline_rels)
                            / sizeof (qdsp6_trampoline_rels [0]);
                   if (creloc > 0)
                     {
@@ -2368,7 +2300,7 @@ qdsp6_elf_relax_section (bfd *input_bfd,
                           irel->r_info
                             = ELF32_R_INFO (ELF32_R_SYM (irel->r_info),
                                             qdsp6_trampoline_rels [creloc].rtype);
-                          irel->r_offset =   t_h->u.def.value
+                          irel->r_offset = t_h->u.def.value
                                            + qdsp6_trampoline_rels [creloc].offset;
                           /* The relocation addendum remains the same. */
                         }
@@ -2376,7 +2308,7 @@ qdsp6_elf_relax_section (bfd *input_bfd,
                 }
               else
                 /* Remove the offending relocation. */
-                /* !!! Could this relocation be zeroed up??? */
+                /* !!!Could this relocation be zeroed up??? */
                 irel->r_info =
                   ELF32_R_INFO (ELF32_R_SYM (irel->r_info), R_QDSP6_NONE);
 
@@ -2384,7 +2316,7 @@ qdsp6_elf_relax_section (bfd *input_bfd,
 
               /* Get the effective address of the trampoline. */
               t_at   = t_h->u.def.value;
-              t_base =   t_h->u.def.section->vma +
+              t_base = t_h->u.def.section->vma +
                        + t_h->u.def.section->output_offset;
 
               /* Fix up the offending branch by pointing it to the trampoline. */
@@ -2472,11 +2404,11 @@ qdsp6_elf_check_relocs
         {
           /* Symbol is global. */
           h = sym_hashes [r_symndx - symtab_hdr->sh_info];
-          while (   h->root.type == bfd_link_hash_indirect
+          while (h->root.type == bfd_link_hash_indirect
                  || h->root.type == bfd_link_hash_warning)
             h = (struct elf_link_hash_entry *) h->root.u.i.link;
 
-          is_und = (   h->root.type == bfd_link_hash_undefweak
+          is_und = (h->root.type == bfd_link_hash_undefweak
                     || h->root.type == bfd_link_hash_undefined);
         }
 
@@ -2527,15 +2459,15 @@ qdsp6_elf_check_relocs
         may need to keep relocations for symbols satisfied by a
         dynamic library if we manage to avoid copy relocs for the
         symbol.  */
-      if (   (   info->shared
-              && (   is_abs
+      if ((info->shared
+              && (is_abs
                   || (is_rel && is_und)))
-          || (   ELIMINATE_COPY_RELOCS
+          || (ELIMINATE_COPY_RELOCS
               && !info->shared
               && htab->elf.dynobj
               && (sec->flags & SEC_ALLOC)
-              && (   h
-                  && (   h->root.type == bfd_link_hash_defweak
+              && (h
+                  && (h->root.type == bfd_link_hash_defweak
                       || !h->def_regular))))
         {
           qdsp6_elf_dyn_reloc *p;
@@ -2553,7 +2485,7 @@ qdsp6_elf_check_relocs
               if (!name)
                 return FALSE;
 
-              BFD_ASSERT (   !strncmp (name, ".rela", 5)
+              BFD_ASSERT (!strncmp (name, ".rela", 5)
                           && !strcmp (bfd_get_section_name (abfd, sec), name + 5));
 
               if (!htab->elf.dynobj)
@@ -2564,12 +2496,12 @@ qdsp6_elf_check_relocs
                 {
                   flagword flags;
 
-                  flags =   (  SEC_HAS_CONTENTS | SEC_READONLY
+                  flags = (SEC_HAS_CONTENTS | SEC_READONLY
                              | SEC_IN_MEMORY | SEC_LINKER_CREATED)
                           | ((sec->flags & SEC_ALLOC)? SEC_ALLOC | SEC_LOAD: 0);
 
                   sreloc = bfd_make_section (htab->elf.dynobj, name);
-                  if (   !sreloc
+                  if (!sreloc
                       || !bfd_set_section_flags (htab->elf.dynobj, sreloc, flags)
                       || !bfd_set_section_alignment (htab->elf.dynobj, sreloc, 2))
                     return FALSE;
@@ -2752,7 +2684,7 @@ qdsp6_elf_adjust_dynamic_symbol
      real definition first, and we can just use the same value.  */
   if (h->u.weakdef)
     {
-      BFD_ASSERT (   h->u.weakdef->root.type == bfd_link_hash_defined
+      BFD_ASSERT (h->u.weakdef->root.type == bfd_link_hash_defined
 		  || h->u.weakdef->root.type == bfd_link_hash_defweak);
 
       h->root.u.def.section = h->u.weakdef->root.u.def.section;
@@ -2814,7 +2746,7 @@ qdsp6_elf_finish_dynamic_symbol
   htab = qdsp6_elf_hash_table (info);
 
   /* Mark _DYNAMIC and _GLOBAL_OFFSET_TABLE_ as absolute.  */
-  if (   !strcmp (h->root.root.string, "_DYNAMIC")
+  if (!strcmp (h->root.root.string, "_DYNAMIC")
       || !strcmp (h->root.root.string, "_GLOBAL_OFFSET_TABLE_"))
     sym->st_shndx = SHN_ABS;
 
@@ -2853,7 +2785,7 @@ qdsp6_alloc_dynrel
      changes.  */
   if (info->shared)
     {
-      if (   (h->def_regular)
+      if ((h->def_regular)
 	  && ((h->forced_local)
 	      || info->symbolic))
 	{
@@ -2876,7 +2808,7 @@ qdsp6_alloc_dynrel
 	 symbols which turn out to need copy relocs or are not
 	 dynamic.  */
 
-      if (   !h->non_got_ref
+      if (!h->non_got_ref
 	  && (h->def_dynamic) /* XXX_SM what about fpic executables */
 	  && !(h->def_regular))
 	{
@@ -2884,7 +2816,7 @@ qdsp6_alloc_dynrel
 	     Undefined weak syms won't yet be marked as dynamic.  */
 	  if ((h->dynindx == -1) && (!h->forced_local))
 	    {
-	      if (! bfd_elf_link_record_dynamic_symbol (info, h))
+	      if (!bfd_elf_link_record_dynamic_symbol (info, h))
 		return FALSE;
 	    }
 	}
@@ -2900,7 +2832,7 @@ qdsp6_alloc_dynrel
     {
       asection *sreloc = elf_section_data (p->sec)->sreloc;
 
-      sreloc->size += p->count * sizeof (Elf32_External_Rela); /* !!! _raw_size perhaps? */
+      sreloc->size += p->count * sizeof (Elf32_External_Rela); /* !!!_raw_size perhaps? */
     }
 
   return TRUE;
@@ -2955,7 +2887,7 @@ qdsp6_elf_create_dynamic_sections
 
   /*
   s = bfd_make_section (abfd, ".rela.sdata");
-  if (   !s
+  if (!s
       || !bfd_set_section_flags (abfd, s, flags)
       || !bfd_set_section_alignment (abfd, s, 2))
     return FALSE;
@@ -3005,7 +2937,7 @@ qdsp6_elf_size_dynamic_sections
 	       p;
 	       p = p->next)
 	    {
-	      if (   !bfd_is_abs_section (p->sec)
+	      if (!bfd_is_abs_section (p->sec)
 		  && bfd_is_abs_section (p->sec->output_section))
 		{
 		  /* Input section has been discarded, either because
@@ -3017,7 +2949,7 @@ qdsp6_elf_size_dynamic_sections
 		{
 		  elf_section_data (p->sec)->sreloc->size
 		    += p->count * sizeof (Elf32_External_Rela);
-		  if (   (  p->sec->output_section->flags & (SEC_READONLY | SEC_ALLOC))
+		  if ((p->sec->output_section->flags & (SEC_READONLY | SEC_ALLOC))
 		      == (SEC_READONLY | SEC_ALLOC))
 		    info->flags |= DF_TEXTREL;
 		}
@@ -3093,7 +3025,7 @@ qdsp6_elf_size_dynamic_sections
 
       if (relocs)
 	{
-	  if (   !_bfd_elf_add_dynamic_entry (info, DT_RELA, 0)
+	  if (!_bfd_elf_add_dynamic_entry (info, DT_RELA, 0)
 	      || !_bfd_elf_add_dynamic_entry (info, DT_RELASZ, 0)
 	      || !_bfd_elf_add_dynamic_entry
                     (info, DT_RELAENT, sizeof (Elf32_External_Rela)))
@@ -3175,7 +3107,7 @@ qdsp6_elf_link_hash_newfunc
 {
   /* Allocate the structure if it has not already been allocated by a
      subclass.  */
-  if (   !entry
+  if (!entry
       && !(entry = bfd_hash_allocate (table, sizeof (*qdsp6_hash_entry (entry)))))
     return entry;
 
