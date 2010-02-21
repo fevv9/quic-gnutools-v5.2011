@@ -568,21 +568,21 @@ static int numOfBranchMax1;
 static int numOfLoopMax1;
 
 // To support --march options
-struct mach_arch_option
+struct qdsp6_march
   {
 	char *march_name_fe, *march_short_fe;
 	unsigned int march_name_be;
   };
 
-static struct mach_arch_option mach_arch_options [] =
+static struct qdsp6_march qdsp6_marchs [] =
   {
     {"qdsp6v2", "v2", bfd_mach_qdsp6_v2},
     {"qdsp6v3", "v3", bfd_mach_qdsp6_v3},
     {"qdsp6v4", "v4", bfd_mach_qdsp6_v4},
   };
 
-static size_t mach_arch_options_size =
-  sizeof (mach_arch_options) / sizeof (struct mach_arch_option);
+static size_t qdsp6_marchs_size =
+  sizeof (qdsp6_marchs) / sizeof (*qdsp6_marchs);
 
 /* Invocation line includes a switch not recognized by the base assembler.
    See if it's a processor-specific option.  */
@@ -629,20 +629,20 @@ md_parse_option
           case OPTION_QDSP6_MQDSP6V4:
             /* -mv* options. */
             temp_qdsp6_mach_type
-              = mach_arch_options [c - OPTION_QDSP6_MQDSP6V2].march_name_be;
+              = qdsp6_marchs [c - OPTION_QDSP6_MQDSP6V2].march_name_be;
             break;
 
           default:
             /* -march and- mcpu options. */
-            for (i = 0; i < mach_arch_options_size; i++)
-              if (!strcmp (arg, mach_arch_options [i].march_name_fe)
-                  || !strcmp (arg, mach_arch_options [i].march_short_fe))
+            for (i = 0; i < qdsp6_marchs_size; i++)
+              if (!strcmp (arg, qdsp6_marchs [i].march_name_fe)
+                  || !strcmp (arg, qdsp6_marchs [i].march_short_fe))
                 {
-                  temp_qdsp6_mach_type = mach_arch_options [i].march_name_be;
+                  temp_qdsp6_mach_type = qdsp6_marchs [i].march_name_be;
                   break;
                 }
 
-            if (i == mach_arch_options_size)
+            if (i == qdsp6_marchs_size)
               as_fatal (_("invalid architecture specified."));
             break;
         }
@@ -719,19 +719,19 @@ QDSP6 Options:\n\
   -EB                      select big-endian output\n\
   -EL                      select little-endian ouptut (default)\n\
   -G SIZE                  small-data size limit (default is %d)\n\
+  -mfalign-info            report \".falign\" statistics\n\
   -mno-extender            disable the use of constant extenders\n\
+  -mno-jumps               disable automatic extension of branch instructions\n\
   -mno-pairing             disable pairing of packet instructions\n\
   -mno-pairing-duplex      disable pairing to duplex instructions\n\
   -mno-pairing-branch      disable pairing of branch instructions\n\
-  -mno-jumps               disable automatic extension of branch instructions\n\
-  -msort-sda               enable sorting the small-data area (default)\n\
-  -mfalign-info            report \".falign\" statistics\n\
   -mpairing-info           report instruction pairing statistics\n\
-  -mv2                     assemble code for the QDSP6 V2 architecture\n\
+  -msort-sda               enable sorting the small-data area (default)\n\
+  -mv2                     assemble code for the QDSP6 V2 architecture (default)\n\
   -mv3                     assemble code for the QDSP6 V3 architecture\n\
-  -mv4                     assemble code for the QDSP6 V4 architecture (default)\n\
-  -march=qdsp6v{2|3|4}     assemble code for the specified QDSP6 architecture\n\
-  -mcpu=qdsp6v{2|3|4}      equivalent to \"-march\"\n",
+  -mv4                     assemble code for the QDSP6 V4 architecture\n\
+  -march={v2|v3|v4}        assemble code for the specified QDSP6 architecture\n\
+  -mcpu={v2|v3|v4}         equivalent to \"-march\"\n",
            QDSP6_SMALL_GPSIZE);
 }
 
@@ -872,7 +872,7 @@ qdsp6_relax_branch
   /* Create extender. */
   apacket->insns [i] = qdsp6_kext_insn;
   apacket->insns [i].operand
-    = *(qdsp6_operand *) qdsp6_lookup_reloc (operand->reloc_kxer, 0, 0);
+    = *(qdsp6_operand *) qdsp6_lookup_reloc (operand->reloc_kxer, 0, apacket->insns [i].opcode);
   apacket->insns [i].fc++;
   apacket->insns [i].fix
     = fix_new (fragP, fxup.fx_where, QDSP6_INSN_LEN,
@@ -1636,7 +1636,7 @@ qdsp6_parse_immediate
         {
           assert ((is_x = qdsp6_prefix_kext (prefix, 0)));
 
-          operandx = qdsp6_lookup_reloc (operand->reloc_kxer, 0, 0);
+          operandx = qdsp6_lookup_reloc (operand->reloc_kxer, 0, prefix->opcode);
           if (operandx)
             {
               prefix->exp                = exp;
@@ -1687,7 +1687,7 @@ void
 qdsp6_insn_init
 (qdsp6_packet_insn *ainsn)
 {
-  bzero (ainsn, sizeof (*ainsn));
+  memset (ainsn, 0, sizeof (*ainsn));
   *ainsn = qdsp6_nop_insn;
   ainsn->padded = TRUE;
 }
@@ -2196,7 +2196,7 @@ qdsp6_packet_init
 {
   size_t i;
 
-  bzero (apacket, sizeof (*apacket));
+  memset (apacket, 0, sizeof (*apacket));
 
   for (i = 0; i < MAX_PACKET_INSNS; i++)
     {
@@ -4382,7 +4382,7 @@ qdsp6_find_kext
     }
   else
     {
-      bzero (&qdsp6_kext_insn, sizeof (qdsp6_kext_insn));
+      memset (&qdsp6_kext_insn, 0, sizeof (qdsp6_kext_insn));
       return FALSE;
     }
 }
@@ -4528,7 +4528,7 @@ qdsp6_check_predicate
 (int reg_num, const qdsp6_opcode *opcode)
 {
   if (pArray [reg_num].used == TRUE)
-    as_bad (_("register `p%d' modified multiple times."), reg_num);
+    as_bad (_("register `p%d' modified more than once."), reg_num);
   else
     pArray [reg_num].used =
       (!qdsp6_autoand || (opcode->attributes & A_RESTRICT_LATEPRED))
