@@ -374,7 +374,7 @@ extern int qdsp6_encode_operand
    long, long *, int, int, char **);
 extern const qdsp6_operand *qdsp6_lookup_operand (const char *);
 extern const qdsp6_operand *qdsp6_lookup_reloc
-  (bfd_reloc_code_real_type, int, int);
+  (bfd_reloc_code_real_type, int, const qdsp6_opcode *);
 extern int qdsp6_extract_operand
   (const qdsp6_operand *, qdsp6_insn, bfd_vma, char *, int *, char **);
 extern int qdsp6_extract_predicate_operand
