@@ -978,10 +978,10 @@ qdsp6_relax_falign
   if (!apacket->dpad && !apacket->dpkt)
     return FALSE;
 
-  /* Sanity check. */
+  /* Sanity checks. */
   assert (apacket->dpad + qdsp6_packet_size (apacket) - apacket->relax
           <= MAX_PACKET_INSNS);
-  /* assert (!apacket->ddpad && !apacket->ddpkt); */
+  assert (apacket->dpkt <= MAX_PACKET_INSNS);
 
   packet = *apacket;
   packet.relax = FALSE; /* At this point, it won't be extended. */
@@ -1158,7 +1158,7 @@ qdsp6_relax_falign_try
                 break;
             }
 
-          if (left)
+          if (left && bpacket)
             /* Force fetch-alignment by inserting a NOP-packet. */
             bpacket->ddpkt += left;
         }
