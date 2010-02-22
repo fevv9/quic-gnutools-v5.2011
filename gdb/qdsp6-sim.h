@@ -39,3 +39,8 @@ hex2bin (const char *hex, char *bin, int count)
 
 
 extern char *q6targetargsInfo[256];
+
+#ifdef WIN32
+#define strdupa strdup
+#define sleep(n) Sleep(n*1000)
+#endif

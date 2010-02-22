@@ -14,12 +14,19 @@
 #include <unistd.h>
 #include <time.h>
 #include <string.h>
+
+#ifdef USE_WIN32API
+#include "../libiberty/pex-common.h"
+#include <windows.h>
+#else
 #include <netdb.h>
-#include <signal.h>
-#include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/socket.h>
 #include <netinet/tcp.h>
+#endif
+
+#include <signal.h>
+#include <sys/types.h>
 
 static int qsim_debug = 1;
 static struct serial scb;
@@ -146,12 +153,22 @@ qdsp6sim_exec_simulation(char *sim_name, char *exec_name,
 {
     char port[11];
     int index = 0;
+#ifdef USE_WIN32API
+    struct pex_obj *p = pex_init(PEX_RECORD_TIMES,"qdsp6 sim process",NULL);
+    const char *errmsg;
+    int err;
+#endif
 
+
+#ifdef USE_WIN32API
+    qdsp6_sim_pid = 0;
+#else
     if ((qdsp6_sim_pid = fork()) == -1)
     {
         printf_filtered("failed fork for simulator, exiting.\n");
         exit (errno);
     }
+#endif
     if (qdsp6_sim_pid == 0) /* we are the child so exec the sim */
     {
         char *sim_args[256];
@@ -193,11 +210,22 @@ qdsp6sim_exec_simulation(char *sim_name, char *exec_name,
 		printf_filtered ("%s ", sim_args[i++]);
 	    printf_filtered ("\n");
         }
+#ifdef USE_WIN32API
+/*
+ * Windows does the fork and exec in one step.
+ */
+	qdsp6_sim_pid = (p->funcs->exec_child)(p, PEX_SEARCH,
+			 current_q6_target, sim_args, NULL, 
+			 0, 1, 2, 0, &errmsg, &err);
+	if (-1 == qdsp6_sim_pid) 
+	    error ("qdsp6sim_exec_simulation: Unable to execute qdsp6-sim!");
 
+#else
         execvp(sim_args[0], sim_args); 
         printf_filtered ("bailing from child.\n");
         perror ("execvp");
         exit(errno); /* execlp failed so bail */
+#endif
     }
 
 /*
@@ -215,6 +243,7 @@ qdsp6_catch_alarm (int sig)
 {
     alarmed = 1;
 }
+#if 0
 void
 qdsp6_catch_sigchld (int signum)
 {
@@ -225,6 +254,7 @@ qdsp6_catch_sigchld (int signum)
 
     sim_died = 1;
 }
+#endif
 
 /*
  * function: qdsp6_create_inferior
@@ -246,7 +276,7 @@ static void qdsp6_create_inferior (char *exec_file, char *args, char **env)
     int reuse = 1;
 
     if (!THIS_TARGET())
-	return 0;
+	return;
 
     qdsp6sim_exec_simulation("qdsp6-sim", exec_file, portid, args, env);
     sprintf (target_port, ":%d", portid);

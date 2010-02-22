@@ -19,6 +19,7 @@
 #include "defs.h"
 #include "symtab.h"
 #include <ctype.h>
+#include "tcl.h"
 #include "gdb_regex.h"
 #include "gdb_string.h"
 #include "completer.h"
