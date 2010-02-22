@@ -1,9 +1,4 @@
-/*****************************************************************
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-*****************************************************************/
-/*
+/* 
  * tclTimer.c --
  *
  *	This file provides timer event management facilities for Tcl,
@@ -156,7 +151,7 @@ static void		TimerSetupProc _ANSI_ARGS_((ClientData clientData,
 static ThreadSpecificData *
 InitTimer()
 {
-    ThreadSpecificData *tsdPtr =
+    ThreadSpecificData *tsdPtr = 
 	(ThreadSpecificData *) TclThreadDataKeyGet(&dataKey);
 
     if (tsdPtr == NULL) {
@@ -385,7 +380,7 @@ TimerSetupProc(data, flags)
     } else {
 	return;
     }
-
+	
     Tcl_SetMaxBlockTime(&blockTime);
 }
 
@@ -527,7 +522,7 @@ TimerHandlerEventProc(evPtr, flags)
 	if (timerHandlerPtr == NULL) {
 	    break;
 	}
-
+	    
 	if ((timerHandlerPtr->time.sec > time.sec)
 		|| ((timerHandlerPtr->time.sec == time.sec)
 			&& (timerHandlerPtr->time.usec > time.usec))) {
@@ -765,7 +760,7 @@ Tcl_AfterObjCmd(clientData, interp, objc, objv)
 
     /*
      * Create the "after" information associated for this interpreter,
-     * if it doesn't already exist.
+     * if it doesn't already exist.  
      */
 
     assocPtr = Tcl_GetAssocData( interp, "tclAfter", NULL );
@@ -1049,7 +1044,7 @@ AfterProc(clientData)
 	Tcl_BackgroundError(interp);
     }
     Tcl_Release((ClientData) interp);
-
+    
     /*
      * Free the memory for the callback.
      */

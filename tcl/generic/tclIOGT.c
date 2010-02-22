@@ -1,8 +1,3 @@
-/*****************************************************************
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-*****************************************************************/
 /*
  * tclIOGT.c --
  *
@@ -445,7 +440,7 @@ ExecuteCallback (dataPtr, interp, op, buf, bufLen, transmit, preserve)
      * message into current interpreter. Don't copy if in preservation mode.
      */
 
-    res = Tcl_GlobalEvalObj (dataPtr->interp, command);
+    res = Tcl_EvalObjEx(dataPtr->interp, command, TCL_EVAL_GLOBAL);
     Tcl_DecrRefCount (command);
     command = (Tcl_Obj*) NULL;
 
@@ -723,7 +718,7 @@ TransformInputProc (instanceData, buf, toRead, errorCodePtr)
 	    }
 
 	    *errorCodePtr = Tcl_GetErrno();
-	    return -1;
+	    return -1;      
 	}
 
 	if (read == 0) {
@@ -1163,7 +1158,7 @@ TransformWatchProc (instanceData, mask)
  *
  *	Result:
  *		The appropriate Tcl_File or NULL if not
- *		present.
+ *		present. 
  *
  *------------------------------------------------------*
  */

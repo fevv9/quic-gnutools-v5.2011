@@ -1,8 +1,3 @@
-##################################################################
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-##################################################################
 #
 # This file is a Makefile for Tcl.  If it has the name "Makefile.in"
 # then it is a template for a Makefile;  to generate the actual Makefile,
@@ -145,7 +140,8 @@ GENERIC_FLAGS =
 #GENERIC_FLAGS = -DTCL_GENERIC_ONLY
 UNIX_OBJS = tclUnixChan.o tclUnixEvent.o tclUnixFCmd.o \
 	tclUnixFile.o tclUnixPipe.o tclUnixSock.o \
-	tclUnixTime.o tclUnixInit.o tclUnixThrd.o
+	tclUnixTime.o tclUnixInit.o tclUnixThrd.o \
+	tclUnixCompat.o
 #UNIX_OBJS =
 NOTIFY_OBJS = tclUnixNotfy.o
 #NOTIFY_OBJS =
@@ -255,9 +251,10 @@ DYLIB_INSTALL_DIR	= ${LIB_RUNTIME_DIR}
 
 COMPAT_OBJS		= @LIBOBJS@
 
-AC_FLAGS		= @DEFS@ -DHAVETCL
+AC_FLAGS		= @DEFS@
 AR			= @AR@
 RANLIB			= @RANLIB@
+DTRACE			= @DTRACE@
 SRC_DIR			= @srcdir@
 TOP_DIR			= $(SRC_DIR)/..
 GENERIC_DIR		= $(TOP_DIR)/generic
@@ -265,7 +262,6 @@ COMPAT_DIR		= $(TOP_DIR)/compat
 TOOL_DIR		= $(TOP_DIR)/tools
 UNIX_DIR		= $(SRC_DIR)
 MAC_OSX_DIR		= $(TOP_DIR)/macosx
-GDB_INC_DIR		= $(TOP_DIR)/../include
 # Must be absolute because of the cd dltest $(DLTEST_DIR)/configure below.
 DLTEST_DIR		= @TCL_SRC_DIR@/unix/dltest
 # Must be absolute to so the corresponding tcltest's tcl_library is absolute.
@@ -293,17 +289,14 @@ DDD			= ddd
 # either.
 #----------------------------------------------------------------
 
-
-CC_SWITCHES = ${CFLAGS} ${CFLAGS_WARNING} ${SHLIB_CFLAGS} \
--I${GENERIC_DIR} -I${SRC_DIR} -I${GDB_INC_DIR} -I${TOP_DIR}/../../include/arch \
-${AC_FLAGS} ${MATH_FLAGS} ${GENERIC_FLAGS} ${PROTO_FLAGS} ${MEM_DEBUG_FLAGS} \
-${COMPILE_DEBUG_FLAGS} ${NO_DEPRECATED_FLAGS} ${ENV_FLAGS} \
+STUB_CC_SWITCHES = ${CFLAGS} ${CFLAGS_WARNING} ${SHLIB_CFLAGS} -I. \
+-I${GENERIC_DIR} -I${SRC_DIR} ${AC_FLAGS} ${MATH_FLAGS} ${GENERIC_FLAGS} \
+${PROTO_FLAGS} ${MEM_DEBUG_FLAGS} ${COMPILE_DEBUG_FLAGS} ${ENV_FLAGS} \
 -DTCL_SHLIB_EXT=\"${SHLIB_SUFFIX}\" @EXTRA_CC_SWITCHES@
 
-STUB_CC_SWITCHES = ${CFLAGS} ${CFLAGS_WARNING} ${SHLIB_CFLAGS} \
--I${GENERIC_DIR} -I${SRC_DIR} \
-${AC_FLAGS} ${MATH_FLAGS} ${GENERIC_FLAGS} ${PROTO_FLAGS} ${MEM_DEBUG_FLAGS} \
-${COMPILE_DEBUG_FLAGS} ${ENV_FLAGS} -DTCL_SHLIB_EXT=\"${SHLIB_SUFFIX}\" @EXTRA_CC_SWITCHES@
+CC_SWITCHES =  $(STUB_CC_SWITCHES) ${NO_DEPRECATED_FLAGS}
+
+APP_CC_SWITCHES = $(CC_SWITCHES) @EXTRA_APP_CC_SWITCHES@
 
 LIBS		= @DL_LIBS@ @LIBS@ $(MATH_LIBS)
 
@@ -318,7 +311,7 @@ TCLTEST_OBJS = tclTestInit.o tclTest.o tclTestObj.o tclTestProcBodyObj.o \
 	tclThreadTest.o	tclUnixTest.o
 
 XTTEST_OBJS = xtTestInit.o tclTest.o tclTestObj.o tclTestProcBodyObj.o \
-	tclThreadTest.o	tclUnixTest.o tclXtNotify.o tclXtTest.o
+	tclThreadTest.o	tclUnixTest.o tclXtNotify.o tclXtTest.o 
 
 GENERIC_OBJS = regcomp.o regexec.o regfree.o regerror.o tclAlloc.o \
 	tclAsync.o tclBasic.o tclBinary.o \
@@ -338,8 +331,12 @@ STUB_LIB_OBJS = tclStubLib.o ${COMPAT_OBJS}
 
 MAC_OSX_OBJS = tclMacOSXBundle.o tclMacOSXNotify.o
 
-OBJS = ${GENERIC_OBJS} ${UNIX_OBJS} ${NOTIFY_OBJS} ${COMPAT_OBJS} \
+DTRACE_OBJ = tclDTrace.o
+
+TCL_OBJS = ${GENERIC_OBJS} ${UNIX_OBJS} ${NOTIFY_OBJS} ${COMPAT_OBJS} \
         @DL_OBJS@ @PLAT_OBJS@
+
+OBJS = ${TCL_OBJS} @DTRACE_OBJ@
 
 TCL_DECLS = \
 	$(GENERIC_DIR)/tcl.decls \
@@ -348,7 +345,6 @@ TCL_DECLS = \
 GENERIC_HDRS = \
 	$(GENERIC_DIR)/tcl.h \
 	$(GENERIC_DIR)/tclDecls.h \
-    $(GENERIC_DIR)/tclGdb.h \
 	$(GENERIC_DIR)/tclInt.h \
 	$(GENERIC_DIR)/tclIntDecls.h \
 	$(GENERIC_DIR)/tclIntPlatDecls.h \
@@ -381,7 +377,7 @@ GENERIC_SRCS = \
 	$(GENERIC_DIR)/tclExecute.c \
 	$(GENERIC_DIR)/tclFCmd.c \
 	$(GENERIC_DIR)/tclFileName.c \
-	$(GENERIC_DIR)/tclGdb.o \
+	$(GENERIC_DIR)/tclGdb.c \
 	$(GENERIC_DIR)/tclGet.c \
 	$(GENERIC_DIR)/tclHash.c \
 	$(GENERIC_DIR)/tclHistory.c \
@@ -441,7 +437,8 @@ UNIX_SRCS = \
 	$(UNIX_DIR)/tclUnixTest.c \
 	$(UNIX_DIR)/tclUnixThrd.c \
 	$(UNIX_DIR)/tclUnixTime.c \
-	$(UNIX_DIR)/tclUnixInit.c
+	$(UNIX_DIR)/tclUnixInit.c \
+	$(UNIX_DIR)/tclUnixCompat.c
 
 NOTIFY_SRCS = \
 	$(UNIX_DIR)/tclUnixNotfy.c
@@ -460,6 +457,10 @@ DL_SRCS = \
 MAC_OSX_SRCS = \
 	$(MAC_OSX_DIR)/tclMacOSXBundle.c \
 	$(MAC_OSX_DIR)/tclMacOSXNotify.c
+
+DTRACE_HDR = tclDTrace.h
+
+DTRACE_SRC = $(GENERIC_DIR)/tclDTrace.d
 
 # Note: don't include DL_SRCS or MAC_OSX_SRCS in SRCS: most of those
 # files won't compile on the current machine, and they will cause
@@ -498,7 +499,7 @@ objs: ${OBJS}
 
 
 tclsh: ${TCLSH_OBJS} ${TCL_LIB_FILE}
-	${CC} ${CFLAGS} ${LDFLAGS} ${TCLSH_OBJS} @TCL_BUILD_LIB_SPEC@ ${LIBS} \
+	${CC} ${CFLAGS} ${LDFLAGS} ${TCLSH_OBJS} @TCL_BUILD_LIB_SPEC@ ${LIBS} @EXTRA_TCLSH_LIBS@ \
 		${CC_SEARCH_FLAGS} -o tclsh
 
 # Resetting the LIB_RUNTIME_DIR below is required so that
@@ -510,7 +511,7 @@ tcltest: ${TCLTEST_OBJS} ${TCL_LIB_FILE} ${BUILD_DLTEST}
 	$(MAKE) tcltest-real LIB_RUNTIME_DIR=`pwd`
 
 tcltest-real:
-	${CC} ${CFLAGS} ${LDFLAGS} ${TCLTEST_OBJS} @TCL_BUILD_LIB_SPEC@ ${LIBS} \
+	${CC} ${CFLAGS} ${LDFLAGS} ${TCLTEST_OBJS} @TCL_BUILD_LIB_SPEC@ ${LIBS} @EXTRA_TCLSH_LIBS@ \
 		${CC_SEARCH_FLAGS} -o tcltest
 
 # Note, in the target below TCL_LIBRARY needs to be set or else
@@ -559,10 +560,17 @@ ddd: tclsh
 	$(DDD) -command=gdb.run ./tclsh
 	rm gdb.run
 
+VALGRINDARGS=--tool=memcheck --num-callers=8 --leak-resolution=high --leak-check=yes --show-reachable=yes -v
+
 valgrind: tclsh tcltest
 	@LD_LIBRARY_PATH_VAR@=`pwd`:$${@LD_LIBRARY_PATH_VAR@}; export @LD_LIBRARY_PATH_VAR@; \
 	TCL_LIBRARY="${TCL_BUILDTIME_LIBRARY}"; export TCL_LIBRARY; \
-	valgrind --num-callers=8 --leak-resolution=high -v --leak-check=yes --show-reachable=yes $(VALGRINDARGS) ./tcltest $(TOP_DIR)/tests/all.tcl -singleproc 1 $(TESTFLAGS) $(TCLTESTARGS)
+	valgrind $(VALGRINDARGS) ./tcltest $(TOP_DIR)/tests/all.tcl -singleproc 1 $(TESTFLAGS) $(TCLTESTARGS)
+
+valgrindshell: tclsh
+	@LD_LIBRARY_PATH_VAR@=`pwd`:$${@LD_LIBRARY_PATH_VAR@}; export @LD_LIBRARY_PATH_VAR@; \
+	TCL_LIBRARY="${TCL_BUILDTIME_LIBRARY}"; export TCL_LIBRARY; \
+	valgrind $(VALGRINDARGS) ./tclsh $(SCRIPT)
 
 # The following target outputs the name of the top-level source directory
 # for Tcl (it is used by Tk's configure script, for example).  The
@@ -574,7 +582,7 @@ valgrind: tclsh tcltest
 topDirName:
 	@cd $(TOP_DIR); pwd
 
-# The following target generates the file generic/tclDate.c
+# The following target generates the file generic/tclDate.c 
 # from the yacc grammar found in generic/tclGetDate.y.  This is
 # only run by hand as yacc is not available in all environments.
 # The name of the .c file is different than the name of the .y file
@@ -599,9 +607,7 @@ gendate:
 dltest.marker:
 	cd dltest ; $(MAKE)
 
-
-#INSTALL_TARGETS = install-binaries install-libraries install-doc @EXTRA_INSTALL@
-INSTALL_TARGETS =  install-libraries  @EXTRA_INSTALL@
+INSTALL_TARGETS = install-binaries install-libraries install-doc @EXTRA_INSTALL@
 
 install: $(INSTALL_TARGETS)
 
@@ -646,8 +652,7 @@ install-binaries: binaries
 	@EXTRA_INSTALL_BINARIES@
 
 install-libraries: libraries
-#	@for i in $(INCLUDE_INSTALL_DIR) $(SCRIPT_INSTALL_DIR);
-	@for i in $(SCRIPT_INSTALL_DIR); \
+	@for i in $(INCLUDE_INSTALL_DIR) $(SCRIPT_INSTALL_DIR); \
 	    do \
 	    if [ ! -d $$i ] ; then \
 		echo "Making directory $$i"; \
@@ -668,14 +673,15 @@ install-libraries: libraries
 	@if test ! -x $(SRC_DIR)/install-sh; then \
 	    chmod +x $(SRC_DIR)/install-sh; \
 	    fi
-#	@echo "Installing header files";
-#	@for i in $(GENERIC_DIR)/tcl.h $(GENERIC_DIR)/tclDecls.h \
-#		$(GENERIC_DIR)/tclPlatDecls.h; \
-#	    do \
-#	    $(INSTALL_DATA) $$i $(INCLUDE_INSTALL_DIR); \
-#	    done;
+	@echo "Installing header files";
+	@for i in $(GENERIC_DIR)/tcl.h $(GENERIC_DIR)/tclDecls.h \
+		$(GENERIC_DIR)/tclPlatDecls.h; \
+	    do \
+	    $(INSTALL_DATA) $$i $(INCLUDE_INSTALL_DIR); \
+	    done;
 	@echo "Installing library files to $(SCRIPT_INSTALL_DIR)";
-	@for i in $(TOP_DIR)/library/*.tcl $(TOP_DIR)/library/tclIndex $(UNIX_DIR)/tclAppInit.c $(UNIX_DIR)/ldAix; \
+	@for i in $(TOP_DIR)/library/*.tcl $(TOP_DIR)/library/tclIndex \
+		$(UNIX_DIR)/tclAppInit.c $(UNIX_DIR)/ldAix @DTRACE_SRC@; \
 	    do \
 	    $(INSTALL_DATA) $$i $(SCRIPT_INSTALL_DIR); \
 	    done;
@@ -792,7 +798,7 @@ tclTestInit.o: $(UNIX_DIR)/tclAppInit.c tclsh
 	    rm -f tclAppInit.sav; \
 	    mv tclAppInit.o tclAppInit.sav; \
 	fi;
-	$(CC) -c $(CC_SWITCHES) \
+	$(CC) -c $(APP_CC_SWITCHES) \
 		-DTCL_BUILDTIME_LIBRARY="\"${TCL_BUILDTIME_LIBRARY}\"" \
 		-DTCL_TEST $(UNIX_DIR)/tclAppInit.c
 	rm -f tclTestInit.o
@@ -806,7 +812,7 @@ xtTestInit.o: $(UNIX_DIR)/tclAppInit.c tclsh
 	    rm -f tclAppInit.sav; \
 	    mv tclAppInit.o tclAppInit.sav; \
 	fi;
-	$(CC) -c $(CC_SWITCHES) \
+	$(CC) -c $(APP_CC_SWITCHES) \
 		-DTCL_BUILDTIME_LIBRARY="\"${TCL_BUILDTIME_LIBRARY}\"" \
 		-DTCL_TEST -DTCL_XT_TEST $(UNIX_DIR)/tclAppInit.c
 	rm -f xtTestInit.o
@@ -817,7 +823,7 @@ xtTestInit.o: $(UNIX_DIR)/tclAppInit.c tclsh
 
 # Object files used on all Unix systems:
 
-REGHDRS=$(GENERIC_DIR)/tregex.h $(GENERIC_DIR)/regguts.h \
+REGHDRS=$(GENERIC_DIR)/tclRegEx.h $(GENERIC_DIR)/regguts.h \
 		$(GENERIC_DIR)/regcustom.h
 regcomp.o: $(REGHDRS) $(GENERIC_DIR)/regcomp.c $(GENERIC_DIR)/regc_lex.c \
 		$(GENERIC_DIR)/regc_color.c $(GENERIC_DIR)/regc_locale.c \
@@ -834,7 +840,7 @@ regerror.o: $(REGHDRS) $(GENERIC_DIR)/regerrs.h $(GENERIC_DIR)/regerror.c
 	$(CC) -c $(CC_SWITCHES) $(GENERIC_DIR)/regerror.c
 
 tclAppInit.o: $(UNIX_DIR)/tclAppInit.c
-	$(CC) -c $(CC_SWITCHES) $(UNIX_DIR)/tclAppInit.c
+	$(CC) -c $(APP_CC_SWITCHES) $(UNIX_DIR)/tclAppInit.c
 
 # On unix we want to use the normal malloc/free implementation, so we
 # specifically set the USE_TCLALLOC flag.
@@ -1032,13 +1038,13 @@ tclVar.o: $(GENERIC_DIR)/tclVar.c
 	$(CC) -c $(CC_SWITCHES) $(GENERIC_DIR)/tclVar.c
 
 tclTest.o: $(GENERIC_DIR)/tclTest.c
-	$(CC) -c $(CC_SWITCHES) $(GENERIC_DIR)/tclTest.c
+	$(CC) -c $(APP_CC_SWITCHES) $(GENERIC_DIR)/tclTest.c
 
 tclTestObj.o: $(GENERIC_DIR)/tclTestObj.c
-	$(CC) -c $(CC_SWITCHES) $(GENERIC_DIR)/tclTestObj.c
+	$(CC) -c $(APP_CC_SWITCHES) $(GENERIC_DIR)/tclTestObj.c
 
 tclTestProcBodyObj.o: $(GENERIC_DIR)/tclTestProcBodyObj.c
-	$(CC) -c $(CC_SWITCHES) $(GENERIC_DIR)/tclTestProcBodyObj.c
+	$(CC) -c $(APP_CC_SWITCHES) $(GENERIC_DIR)/tclTestProcBodyObj.c
 
 tclTimer.o: $(GENERIC_DIR)/tclTimer.c
 	$(CC) -c $(CC_SWITCHES) $(GENERIC_DIR)/tclTimer.c
@@ -1053,7 +1059,7 @@ tclThreadJoin.o: $(GENERIC_DIR)/tclThreadJoin.c
 	$(CC) -c $(CC_SWITCHES) $(GENERIC_DIR)/tclThreadJoin.c
 
 tclThreadTest.o: $(GENERIC_DIR)/tclThreadTest.c
-	$(CC) -c $(CC_SWITCHES) $(GENERIC_DIR)/tclThreadTest.c
+	$(CC) -c $(APP_CC_SWITCHES) $(GENERIC_DIR)/tclThreadTest.c
 
 tclUnixChan.o: $(UNIX_DIR)/tclUnixChan.c
 	$(CC) -c $(CC_SWITCHES) $(UNIX_DIR)/tclUnixChan.c
@@ -1077,7 +1083,7 @@ tclUnixSock.o: $(UNIX_DIR)/tclUnixSock.c
 	$(CC) -c $(CC_SWITCHES) $(UNIX_DIR)/tclUnixSock.c
 
 tclUnixTest.o: $(UNIX_DIR)/tclUnixTest.c
-	$(CC) -c $(CC_SWITCHES) $(UNIX_DIR)/tclUnixTest.c
+	$(CC) -c $(APP_CC_SWITCHES) $(UNIX_DIR)/tclUnixTest.c
 
 tclUnixThrd.o: $(UNIX_DIR)/tclUnixThrd.c
 	$(CC) -c $(CC_SWITCHES) $(UNIX_DIR)/tclUnixThrd.c
@@ -1090,12 +1096,25 @@ tclUnixInit.o: $(UNIX_DIR)/tclUnixInit.c $(GENERIC_DIR)/tclInitScript.h tclConfi
 		-DTCL_PACKAGE_PATH="\"${TCL_PACKAGE_PATH}\"" \
 		$(UNIX_DIR)/tclUnixInit.c
 
+tclUnixCompat.o: $(UNIX_DIR)/tclUnixCompat.c
+	$(CC) -c $(CC_SWITCHES) $(UNIX_DIR)/tclUnixCompat.c
+
 # The following are Mac OS X only sources:
 tclMacOSXBundle.o: $(MAC_OSX_DIR)/tclMacOSXBundle.c
 	$(CC) -c $(CC_SWITCHES) $(MAC_OSX_DIR)/tclMacOSXBundle.c
 
 tclMacOSXNotify.o: $(MAC_OSX_DIR)/tclMacOSXNotify.c
 	$(CC) -c $(CC_SWITCHES) $(MAC_OSX_DIR)/tclMacOSXNotify.c
+
+# DTrace support
+
+$(TCL_OBJS): @DTRACE_HDR@
+
+$(DTRACE_HDR): $(DTRACE_SRC)
+	$(DTRACE) -h $(DTRACE_SWITCHES) -o $@ -s $(DTRACE_SRC)
+
+$(DTRACE_OBJ): $(DTRACE_SRC) $(TCL_OBJS)
+	$(DTRACE) -G $(DTRACE_SWITCHES) -o $@ -s $(DTRACE_SRC) $(TCL_OBJS)
 
 # The following targets are not completely general.  They are provide
 # purely for documentation purposes so people who are interested in
@@ -1108,11 +1127,11 @@ xttest:  ${XTTEST_OBJS} ${GENERIC_OBJS} ${UNIX_OBJS} ${COMPAT_OBJS} \
 		${CC_SEARCH_FLAGS} -L/usr/openwin/lib -lXt -o xttest
 
 tclXtNotify.o: $(UNIX_DIR)/tclXtNotify.c
-	$(CC) -c $(CC_SWITCHES) -I/usr/openwin/include \
+	$(CC) -c $(APP_CC_SWITCHES) -I/usr/openwin/include \
 		$(UNIX_DIR)/tclXtNotify.c
 
 tclXtTest.o: $(UNIX_DIR)/tclXtTest.c
-	$(CC) -c $(CC_SWITCHES) -I/usr/openwin/include \
+	$(CC) -c $(APP_CC_SWITCHES) -I/usr/openwin/include \
 		$(UNIX_DIR)/tclXtTest.c
 
 # compat binaries, these must be compiled for use in a shared library
@@ -1274,7 +1293,7 @@ dist:
 	chmod 775 $(DISTDIR)/unix/ldAix
 	chmod +x $(DISTDIR)/unix/install-sh
 	mkdir $(DISTDIR)/generic
-	cp -p $(GENERIC_DIR)/*.c $(GENERIC_DIR)/*.h $(DISTDIR)/generic
+	cp -p $(GENERIC_DIR)/*.[cdh] $(DISTDIR)/generic
 	cp -p $(GENERIC_DIR)/*.decls $(DISTDIR)/generic
 	cp -p $(GENERIC_DIR)/README $(DISTDIR)/generic
 	cp -p $(GENERIC_DIR)/tclGetDate.y $(DISTDIR)/generic
@@ -1295,8 +1314,8 @@ dist:
 	cp -p $(TOP_DIR)/license.terms $(TOP_DIR)/doc/*.[13n] \
 		$(TOP_DIR)/doc/man.macros $(DISTDIR)/doc
 	mkdir $(DISTDIR)/compat
-	cp -p $(TOP_DIR)/license.terms $(TOP_DIR)/compat/*.c \
-		$(TOP_DIR)/compat/*.h $(TOP_DIR)/compat/README \
+	cp -p $(TOP_DIR)/license.terms $(COMPAT_DIR)/*.c \
+		$(COMPAT_DIR)/*.h $(COMPAT_DIR)/README \
 		$(DISTDIR)/compat
 	mkdir $(DISTDIR)/tests
 	cp -p $(TOP_DIR)/license.terms $(DISTDIR)/tests
@@ -1335,21 +1354,22 @@ dist:
 	cp -p $(TOP_DIR)/mac/*.doc $(TOP_DIR)/mac/*.html $(DISTDIR)/mac
 	cp -p $(TOP_DIR)/license.terms $(DISTDIR)/mac
 	mkdir $(DISTDIR)/macosx
-	cp -p $(TOP_DIR)/macosx/Makefile $(TOP_DIR)/macosx/README \
-		$(TOP_DIR)/macosx/*.c $(TOP_DIR)/macosx/*.in \
+	cp -p $(MAC_OSX_DIR)/Makefile $(MAC_OSX_DIR)/README \
+		$(MAC_OSX_DIR)/*.c $(MAC_OSX_DIR)/*.in \
 		$(DISTDIR)/macosx
+	cp -p $(TOP_DIR)/license.terms $(DISTDIR)/macosx
 	mkdir $(DISTDIR)/macosx/Tcl.pbproj
-	cp -p $(TOP_DIR)/macosx/Tcl.pbproj/*.pbx* $(DISTDIR)/macosx/Tcl.pbproj
+	cp -p $(MAC_OSX_DIR)/Tcl.pbproj/*.pbx* $(DISTDIR)/macosx/Tcl.pbproj
 	mkdir $(DISTDIR)/unix/dltest
 	cp -p $(UNIX_DIR)/dltest/*.c $(UNIX_DIR)/dltest/Makefile.in \
 		$(UNIX_DIR)/dltest/README \
 		$(DISTDIR)/unix/dltest
 	mkdir $(DISTDIR)/tools
-	cp -p $(TOP_DIR)/tools/Makefile.in $(TOP_DIR)/tools/README \
-		$(TOP_DIR)/tools/configure $(TOP_DIR)/tools/configure.in \
-		$(TOP_DIR)/tools/*.tcl $(TOP_DIR)/tools/man2tcl.c \
-		$(TOP_DIR)/tools/tcl.wse.in $(TOP_DIR)/tools/*.bmp \
-		$(TOP_DIR)/tools/tcl.hpj.in \
+	cp -p $(TOOL_DIR)/Makefile.in $(TOOL_DIR)/README \
+		$(TOOL_DIR)/configure $(TOOL_DIR)/configure.in \
+		$(TOOL_DIR)/*.tcl $(TOOL_DIR)/man2tcl.c \
+		$(TOOL_DIR)/tcl.wse.in $(TOOL_DIR)/*.bmp \
+		$(TOOL_DIR)/tcl.hpj.in \
 		$(DISTDIR)/tools
 	$(TCL_EXE) $(TOOL_DIR)/eolFix.tcl -crlf $(DISTDIR)/tools/tcl.hpj.in \
 		$(DISTDIR)/tools/tcl.wse.in
@@ -1389,13 +1409,13 @@ allpatch: dist
 # TOOL_DIR.
 #
 
-html:
+html: tclsh
 	$(BUILD_HTML)
 	@EXTRA_BUILD_HTML@
-html-tcl:
+html-tcl: tclsh
 	$(BUILD_HTML) --tcl
 	@EXTRA_BUILD_HTML@
-html-tk:
+html-tk: tclsh
 	$(BUILD_HTML) --tk
 	@EXTRA_BUILD_HTML@
 
@@ -1422,7 +1442,7 @@ machtml:
 #
 # Targets to build Solaris package of the distribution for the current
 # architecture.  To build stream packages for both sun4 and i86pc
-# architectures:
+# architectures: 
 #
 #   On the sun4 machine, execute the following:
 #     make distclean; ./configure
@@ -1476,7 +1496,7 @@ package-common:
 # Build and install the architecture specific files in the dist directory.
 #
 
-package-binaries:
+package-binaries: 
 	cd $(DISTDIR)/unix/`arch`; \
 	$(MAKE); \
 	$(MAKE) install-binaries prefix=$(DISTDIR)/$(PACKAGE)/$(VERSION) \

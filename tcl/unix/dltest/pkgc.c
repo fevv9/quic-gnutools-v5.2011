@@ -1,9 +1,4 @@
-/*****************************************************************
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-*****************************************************************/
-/*
+/* 
  * pkgc.c --
  *
  *	This file contains a simple Tcl package "pkgc" that is intended

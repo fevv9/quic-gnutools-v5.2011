@@ -1,8 +1,3 @@
-##################################################################
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-##################################################################
 # Commands covered:  foreach, continue, break
 #
 # This file contains a collection of tests for one or more of the Tcl
@@ -168,7 +163,7 @@ test foreach-3.1 {compiled foreach backward jump works correctly} {
 test foreach-4.1 {noncompiled foreach and shared variable or value list objects that are converted to another type} {
     catch {unset x}
     foreach {12.0} {a b c} {
-        set x 12.0
+        set x 12.0  
         set x [expr $x + 1]
     }
     set x
@@ -215,7 +210,7 @@ test foreach-6.4 {break tests} {
     catch {break foo} msg
     set msg
 } {wrong # args: should be "break"}
-# Check for bug #406709
+# Check for bug #406709 
 test foreach-6.5 {break tests} {
     proc a {} {
 	set a 1
@@ -237,6 +232,28 @@ test foreach-7.1 {delayed substitution of body} {
     }
     foo
 } {0}
+
+# [Bug 1671138]; infinite loop with empty var list in bytecompiled version
+test foreach-9.1 {compiled empty var list} {
+    proc foo {} {
+	foreach {} x {
+	    error "reached body"
+	}
+    }
+    list [catch { foo } msg] $msg
+} {1 {foreach varlist is empty}}
+
+test foreach-10.1 {foreach: [Bug 1671087]} -setup {
+    proc demo {} {
+        set vals {1 2 3 4}
+        trace add variable x write {string length $vals ;# }
+        foreach {x y} $vals {format $y}
+    }
+} -body {
+    demo
+} -cleanup {
+    rename demo {}
+} -result {}
 
 # cleanup
 catch {unset a}

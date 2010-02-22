@@ -1,9 +1,4 @@
-/*****************************************************************
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-*****************************************************************/
-/*
+/* 
  * tclUnixEvent.c --
  *
  *	This file implements Unix specific event related routines.

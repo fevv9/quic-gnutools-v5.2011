@@ -1,8 +1,3 @@
-##################################################################
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-##################################################################
 # http.tcl
 # Client-side HTTP for GET, POST, and HEAD commands.
 # These routines can be used in untrusted code that uses the Safesock
@@ -346,12 +341,12 @@ proc http_formatQuery {args} {
 # 2 Convert every other character to an array lookup
 # 3 Escape constructs that are "special" to the tcl parser
 # 4 "subst" the result, doing all the array substitutions
-
+ 
  proc httpMapReply {string} {
     global httpFormMap
     set alphanumeric	a-zA-Z0-9
     if {![info exists httpFormMap]} {
-
+	 
 	for {set i 1} {$i <= 256} {incr i} {
 	    set c [format %c $i]
 	    if {![string match \[$alphanumeric\] $c]} {
@@ -370,7 +365,7 @@ proc http_formatQuery {args} {
     return [subst $string]
 }
 
-# Default proxy filter.
+# Default proxy filter. 
  proc httpProxyRequired {host} {
     global http
     if {[info exists http(-proxyhost)] && [string length $http(-proxyhost)]} {

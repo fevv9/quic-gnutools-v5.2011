@@ -1,8 +1,3 @@
-/*****************************************************************
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-*****************************************************************/
 /*
  * tclUnixNotify.c --
  *
@@ -23,13 +18,13 @@
 #include "tclPort.h"
 #ifndef HAVE_COREFOUNDATION /* Darwin/Mac OS X CoreFoundation notifier
                              * is in tclMacOSXNotify.c */
-#include <signal.h>
+#include <signal.h> 
 
 extern TclStubs tclStubs;
 extern Tcl_NotifierProcs tclOriginalNotifier;
 
 /*
- * This structure is used to keep track of the notifier info for a
+ * This structure is used to keep track of the notifier info for a 
  * a registered file.
  */
 
@@ -76,13 +71,13 @@ typedef struct SelectMasks {
 /*
  * The following static structure contains the state information for the
  * select based implementation of the Tcl notifier.  One of these structures
- * is created for each thread that is using the notifier.
+ * is created for each thread that is using the notifier.  
  */
 
 typedef struct ThreadSpecificData {
     FileHandler *firstFileHandlerPtr;
 				/* Pointer to head of file handler list. */
-
+    
     SelectMasks checkMasks;	/* This structure is used to build up the masks
 				 * to be used in the next call to select.
 				 * Bits are set in response to calls to
@@ -95,11 +90,11 @@ typedef struct ThreadSpecificData {
 				 * Tcl_WatchFile has been called). */
 #ifdef TCL_THREADS
     int onList;			/* True if it is in this list */
-    unsigned int pollState;	/* pollState is used to implement a polling
+    unsigned int pollState;	/* pollState is used to implement a polling 
 				 * handshake between each thread and the
 				 * notifier thread. Bits defined below. */
     struct ThreadSpecificData *nextPtr, *prevPtr;
-                                /* All threads that are currently waiting on
+                                /* All threads that are currently waiting on 
                                  * an event have their ThreadSpecificData
                                  * structure on a doubly-linked listed formed
                                  * from these pointers.  You must hold the
@@ -127,7 +122,7 @@ static Tcl_ThreadDataKey dataKey;
 static int notifierCount = 0;
 
 /*
- * The following variable points to the head of a doubly-linked list of
+ * The following variable points to the head of a doubly-linked list of 
  * of ThreadSpecificData structures for all threads that are currently
  * waiting on an event.
  *
@@ -154,7 +149,7 @@ static ThreadSpecificData *waitingListPtr = NULL;
 static int triggerPipe = -1;
 
 /*
- * The notifierMutex locks access to all of the global notifier state.
+ * The notifierMutex locks access to all of the global notifier state. 
  */
 
 TCL_DECLARE_MUTEX(notifierMutex)
@@ -719,7 +714,17 @@ Tcl_WaitForEvent(timePtr)
     Tcl_MutexLock(&notifierMutex);
 
     waitForFiles = (tsdPtr->numFdBits > 0);
-    if (timePtr != NULL && timePtr->sec == 0 && timePtr->usec == 0) {
+    if (timePtr != NULL && timePtr->sec == 0 && (timePtr->usec == 0
+#if defined(__APPLE__) && defined(__LP64__)
+	    /*
+	     * On 64-bit Darwin, pthread_cond_timedwait() appears to have a bug
+	     * that causes it to wait forever when passed an absolute time which
+	     * has already been exceeded by the system time; as a workaround,
+	     * when given a very brief timeout, just do a poll. [Bug 1457797]
+	     */
+	    || timePtr->usec < 10
+#endif
+	    )) {
 	/*
 	 * Cannot emulate a polling select with a polling condition variable.
 	 * Instead, pretend to wait for files and tell the notifier
@@ -750,7 +755,7 @@ Tcl_WaitForEvent(timePtr)
         tsdPtr->prevPtr = 0;
         waitingListPtr = tsdPtr;
 	tsdPtr->onList = 1;
-
+	
 	write(triggerPipe, "", 1);
     }
 
@@ -784,7 +789,7 @@ Tcl_WaitForEvent(timePtr)
 	write(triggerPipe, "", 1);
     }
 
-
+    
 #else
     tsdPtr->readyMasks = tsdPtr->checkMasks;
     numFound = select( tsdPtr->numFdBits,

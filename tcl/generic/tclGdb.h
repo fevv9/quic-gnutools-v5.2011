@@ -3,9 +3,9 @@
 # All Rights Reserved.
 # Modified by QUALCOMM INCORPORATED on $Date$
 *****************************************************************/
-#define HASH_TABLE_SIZE 256
+#define HASH_TABLE_SIZE 256      
 
-// To enable printing of register names
+// To enable printing of register names 
 typedef struct
 {
   char* sName; // reg name
@@ -20,14 +20,14 @@ typedef struct
 
 // To automatically get all thread registers from arch
 static gdbregtype_t threadRegs[]={
-#include "v2/thread_regs.h"
-#include "v3/thread_regs.h"
+#include "../../../../tools/include/arch/v2/thread_regs.h"    
+#include "../../../../tools/include/arch/v3/thread_regs.h"    
 {"", 0xFFFFFFFF}
 };
 
 
 typedef struct GDBDollarVar {
-  char*          Name;
+  char*          Name;  
   int            HashIndex;           // Index into hash table
   struct GDBDollarVar*  HashNext;     // Next element in hash table
 } GDBDollarVar;

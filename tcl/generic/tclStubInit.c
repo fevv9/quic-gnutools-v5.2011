@@ -1,9 +1,4 @@
-/*****************************************************************
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-*****************************************************************/
-/*
+/* 
  * tclStubInit.c --
  *
  *	This file contains the initializers for the Tcl stub vectors.
@@ -1019,6 +1014,25 @@ TclStubs tclStubs = {
     NULL, /* 552 */
     NULL, /* 553 */
     Tcl_ChannelThreadActionProc, /* 554 */
+    NULL, /* 555 */
+    NULL, /* 556 */
+    NULL, /* 557 */
+    NULL, /* 558 */
+    NULL, /* 559 */
+    NULL, /* 560 */
+    NULL, /* 561 */
+    NULL, /* 562 */
+    NULL, /* 563 */
+    NULL, /* 564 */
+    NULL, /* 565 */
+    NULL, /* 566 */
+    NULL, /* 567 */
+    NULL, /* 568 */
+    NULL, /* 569 */
+    NULL, /* 570 */
+    NULL, /* 571 */
+    NULL, /* 572 */
+    Tcl_PkgRequireProc, /* 573 */
 };
 
 /* !END!: Do not edit above this line. */

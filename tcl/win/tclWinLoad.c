@@ -1,9 +1,4 @@
-/*****************************************************************
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-*****************************************************************/
-/*
+/* 
  * tclWinLoad.c --
  *
  *	This procedure provides a version of the TclLoadFile that
@@ -45,9 +40,9 @@ TclpDlopen(interp, pathPtr, loadHandle, unloadProcPtr)
     Tcl_Obj *pathPtr;		/* Name of the file containing the desired
 				 * code (UTF-8). */
     Tcl_LoadHandle *loadHandle;	/* Filled with token for dynamically loaded
-				 * file which will be passed back to
+				 * file which will be passed back to 
 				 * (*unloadProcPtr)() to unload the file. */
-    Tcl_FSUnloadFileProc **unloadProcPtr;
+    Tcl_FSUnloadFileProc **unloadProcPtr;	
 				/* Filled with address of Tcl_FSUnloadFileProc
 				 * function which should be used for
 				 * this file. */
@@ -55,7 +50,7 @@ TclpDlopen(interp, pathPtr, loadHandle, unloadProcPtr)
     HINSTANCE handle;
     CONST TCHAR *nativeName;
 
-    /*
+    /* 
      * First try the full path the user gave us.  This is particularly
      * important if the cwd is inside a vfs, and we are trying to load
      * using a relative path.
@@ -63,7 +58,7 @@ TclpDlopen(interp, pathPtr, loadHandle, unloadProcPtr)
     nativeName = Tcl_FSGetNativePath(pathPtr);
     handle = (*tclWinProcs->loadLibraryProc)(nativeName);
     if (handle == NULL) {
-	/*
+	/* 
 	 * Let the OS loader examine the binary search path for
 	 * whatever string the user gave us which hopefully refers
 	 * to a file on the binary path
@@ -76,7 +71,7 @@ TclpDlopen(interp, pathPtr, loadHandle, unloadProcPtr)
     }
 
     *loadHandle = (Tcl_LoadHandle) handle;
-
+    
     if (handle == NULL) {
 	DWORD lastError = GetLastError();
 #if 0
@@ -148,7 +143,7 @@ TclpDlopen(interp, pathPtr, loadHandle, unloadProcPtr)
  *----------------------------------------------------------------------
  */
 Tcl_PackageInitProc*
-TclpFindSymbol(interp, loadHandle, symbol)
+TclpFindSymbol(interp, loadHandle, symbol) 
     Tcl_Interp *interp;
     Tcl_LoadHandle loadHandle;
     CONST char *symbol;
@@ -194,8 +189,8 @@ TclpFindSymbol(interp, loadHandle, symbol)
 void
 TclpUnloadFile(loadHandle)
     Tcl_LoadHandle loadHandle;	/* loadHandle returned by a previous call
-				 * to TclpDlopen().  The loadHandle is
-				 * a token that represents the loaded
+				 * to TclpDlopen().  The loadHandle is 
+				 * a token that represents the loaded 
 				 * file. */
 {
     HINSTANCE handle;

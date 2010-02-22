@@ -1,8 +1,3 @@
-##################################################################
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-##################################################################
 // !$*UTF8*$!
 {
 	archiveVersion = 1;
@@ -1185,8 +1180,8 @@
 			fileEncoding = 5;
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.c.h;
-			name = regex.h;
-			path = ../generic/regex.h;
+			name = tclRegEx.h;
+			path = ../generic/tclRegEx.h;
 			refType = 2;
 			sourceTree = SOURCE_ROOT;
 		};

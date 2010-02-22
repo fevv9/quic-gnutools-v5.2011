@@ -1,8 +1,3 @@
-##################################################################
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-##################################################################
 # Functionality covered: this file contains slightly modified versions of
 # the original tests written by Mike McLennan of Lucent Technologies for
 # the procedures in tclNamesp.c that implement Tcl's basic support for

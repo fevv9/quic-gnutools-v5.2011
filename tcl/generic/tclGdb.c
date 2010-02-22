@@ -27,7 +27,7 @@ static char *gdbKeyWords[MAXGDBKEYWORDS] = {
 };
 
 
-
+                            
 // ###########################################################################
 // GetHashKey
 // This function returns the hash key given the name of a resource
@@ -62,7 +62,7 @@ int GetHashKey(char *Name)
 void ResetHashTable()
 {
   int i;
-
+    
   // Initialize Hash Table
   for (i = 0; i < HASH_TABLE_SIZE; i++)
     HashTable[i] = NULL;
@@ -78,7 +78,7 @@ void AddToHashTable(GDBDollarVar *NewValue)
 {
   // Calculate the hash key
   int HashKey = GetHashKey(NewValue->Name);
-
+  
   NewValue->HashIndex = HashKey;
 
   if (HashTable[HashKey] == NULL)
@@ -90,9 +90,9 @@ void AddToHashTable(GDBDollarVar *NewValue)
   else
     // Otherwise, insert at end of list
     {
-       // Pointer to current dollar var
-       GDBDollarVar *CurrentPtr;
-
+       // Pointer to current dollar var 
+       GDBDollarVar *CurrentPtr;       
+           
       // Find end of list
       CurrentPtr = HashTable[HashKey];
       while (CurrentPtr->HashNext != NULL)
@@ -115,8 +115,8 @@ void AddToHashTable(GDBDollarVar *NewValue)
 
 GDBDollarVar * LookUPGDBDollarVar(char *namePtr)
 {
-  // Pointer to current dollar var
-  GDBDollarVar *CurrentPtr;
+  // Pointer to current dollar var 
+  GDBDollarVar *CurrentPtr;              
   /* Snip out the $ from the var name */
   //char         *Name  = namePtr+1;
   char         *Name  = namePtr;
@@ -156,7 +156,7 @@ static GDBDollarVar* SetUpGDBRegHashData(int regPos)
   tmpPtr->HashNext  = NULL;
 
   if((tmpPtr != NULL) && (tmpPtr->Name != NULL))
-  {
+  {  
       if(regPos < 10)
          sprintf (tmpPtr->Name , "r%d", regPos);
       else
@@ -194,23 +194,23 @@ void AddGdbDollarVarsToHash()
 {
     GDBDollarVar *gdbPtr = NULL;
     int i;
-
+    
     ResetHashTable();
-
+        
     for (i=0; i<(sizeof(threadRegs)/sizeof(gdbregtype_t));
          i++)
     {
        gdbPtr = SetUpGDBRegHashData(i);
        if(gdbPtr != NULL)
         AddToHashTable(gdbPtr);
-
+        
     }
     for (i=0; i<MAXGDBKEYWORDS; i++)
     {
        gdbPtr = SetUpGDBVarHashData(i);
        if(gdbPtr != NULL)
         AddToHashTable(gdbPtr);
-
+        
     }
 }
 
@@ -224,7 +224,7 @@ int ExtractGdbVarName (char* srcPtr, int nBytes)
     char c;
     char *src    = srcPtr+1; /* skip the $ */
     char *start  = src;
-    int numBytes = nBytes-1; /* account for $ */
+    int numBytes = nBytes-1; /* account for $ */ 
     int offset, strSize;
     Tcl_UniChar ch;
 
@@ -245,7 +245,7 @@ int ExtractGdbVarName (char* srcPtr, int nBytes)
 	    if ((c == ':') && (numBytes != 1) && (src[1] == ':')) {
 		src += 2; numBytes -= 2;
 		while (numBytes && (*src == ':')) {
-		    src++; numBytes--;
+		    src++; numBytes--; 
 		}
 		continue;
 	    }

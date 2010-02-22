@@ -1,9 +1,4 @@
-##################################################################
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-##################################################################
-/*
+/* 
  * tclMacResource.r --
  *
  *	This file creates resources for use in a simple shell.
@@ -31,7 +26,7 @@
 #define RC_INVOKED
 #include "tcl.h"
 
-/*
+/* 
  * The mechanisim below loads Tcl source into the resource fork of the
  * application.  The example below creates a TEXT resource named
  * "Init" from the file "init.tcl".  This allows applications to use

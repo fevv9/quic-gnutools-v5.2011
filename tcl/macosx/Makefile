@@ -1,13 +1,13 @@
-##################################################################
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-##################################################################
 ########################################################################################################
 #
 # Makefile wrapper to build tcl on Mac OS X in a way compatible with the tk/macosx Xcode buildsystem
 #	uses the standard unix build system in tcl/unix (which can be used directly instead of this
 #	if you are not using the tk/macosx projects).
+#
+# Copyright (c) 2002-2007 Daniel A. Steffen <das@users.sourceforge.net>
+#
+# See the file "license.terms" for information on usage and redistribution of
+# this file, and for a DISCLAIMER OF ALL WARRANTIES.
 #
 # RCS: @(#) $Id$
 #
@@ -23,7 +23,7 @@ BUILD_DIR		?= ${CURDIR}/../../build
 SYMROOT			?= ${BUILD_DIR}/${PROJECT}
 OBJROOT			?= ${SYMROOT}
 
-EXTRA_CONFIGURE_ARGS 	?=
+EXTRA_CONFIGURE_ARGS	?=
 EXTRA_MAKE_ARGS		?=
 
 INSTALL_PATH		?= /Library/Frameworks
@@ -33,12 +33,12 @@ LIBDIR			?= ${INSTALL_PATH}
 MANDIR			?= ${PREFIX}/man
 
 # set to non-empty value to install manpages in addition to html help:
-INSTALL_MANPAGES 	?=
+INSTALL_MANPAGES	?=
 
 #-------------------------------------------------------------------------------------------------------
 # meta targets
 
-meta 			:= all install embedded install-embedded clean distclean test
+meta			:= all install embedded install-embedded clean distclean test
 
 styles			:= develop deploy
 
@@ -127,11 +127,11 @@ ${PROJECT}:
 	${MAKE} install-${PROJECT} INSTALL_ROOT=${OBJ_DIR}/
 
 ${OBJ_DIR}/Makefile: ${UNIX_DIR}/Makefile.in ${UNIX_DIR}/configure \
-                     ${UNIX_DIR}/tclConfig.sh.in Tcl-Info.plist.in
+		     ${UNIX_DIR}/tclConfig.sh.in Tcl-Info.plist.in
 	mkdir -p ${OBJ_DIR} && cd ${OBJ_DIR} && \
 	if [ ${UNIX_DIR}/configure -nt config.status ]; then ${UNIX_DIR}/configure \
 	--prefix=${PREFIX} --bindir=${BINDIR} --libdir=${LIBDIR} \
-	--mandir=${MANDIR} --enable-threads --enable-framework \
+	--mandir=${MANDIR} --enable-threads --enable-framework --enable-dtrace \
 	${CONFIGURE_ARGS} ${EXTRA_CONFIGURE_ARGS}; else ./config.status; fi
 
 build-${PROJECT}: ${OBJ_DIR}/Makefile
@@ -159,14 +159,17 @@ ifeq (${EMBEDDED_BUILD},1)
 	@rm -f "${INSTALL_ROOT}${BINDIR}/${TCLSH}" && \
 	rmdir -p "${INSTALL_ROOT}${BINDIR}" 2>&- || true
 else
-# redo prebinding
-	@cd ${INSTALL_ROOT}/ && \
+# redo prebinding (when not building for Mac OS X 10.4 or later only)
+	@if [ "`echo "$${MACOSX_DEPLOYMENT_TARGET}" | \
+	awk -F '10\\.' '{print int($$2)}'`" -lt 4 -a "`echo "$${CFLAGS}" | \
+	awk -F '-mmacosx-version-min=10\\.' '{print int($$2)}'`" -lt 4 ]; \
+	then cd ${INSTALL_ROOT}/; \
 	if [ ! -d usr/lib ]; then mkdir -p usr && ln -fs /usr/lib usr/ && RM_USRLIB=1; fi; \
 	if [ ! -d System ]; then ln -fs /System . && RM_SYSTEM=1; fi; \
 	redo_prebinding -r . "./${LIBDIR}/${PRODUCT_NAME}.framework/Versions/${VERSION}/${PRODUCT_NAME}"; \
 	redo_prebinding -r . "./${BINDIR}/${TCLSH}"; \
 	if [ -n "$${RM_USRLIB:-}" ]; then rm -f usr/lib; rmdir -p usr 2>&-; fi; \
-	if [ -n "$${RM_SYSTEM:-}" ]; then rm -f System; fi
+	if [ -n "$${RM_SYSTEM:-}" ]; then rm -f System; fi; fi
 # install tclsh symbolic link
 	@ln -fs ${TCLSH} ${INSTALL_ROOT}${BINDIR}/tclsh
 endif

@@ -1,9 +1,4 @@
-/*****************************************************************
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-*****************************************************************/
-/*
+/* 
  * tclUnixThrd.c --
  *
  *	This file implements the UNIX-specific thread support.
@@ -25,7 +20,7 @@
 #include "pthread.h"
 
 typedef struct ThreadSpecificData {
-    char	    	nabuf[16];
+    char nabuf[16];
 } ThreadSpecificData;
 
 static Tcl_ThreadDataKey dataKey;
@@ -170,8 +165,12 @@ Tcl_JoinThread(threadId, state)
 {
 #ifdef TCL_THREADS
     int result;
+    unsigned long retcode;
 
-    result = pthread_join ((pthread_t) threadId, (VOID**) state);
+    result = pthread_join((pthread_t) threadId, (void**) &retcode);
+    if (state) {
+	*state = (int) retcode;
+    }
     return (result == 0) ? TCL_OK : TCL_ERROR;
 #else
     return TCL_ERROR;
@@ -430,10 +429,10 @@ Tcl_MutexLock(mutexPtr)
     if (*mutexPtr == NULL) {
 	MASTER_LOCK;
 	if (*mutexPtr == NULL) {
-	    /*
+	    /* 
 	     * Double inside master lock check to avoid a race condition.
 	     */
-
+    
 	    pmutexPtr = (pthread_mutex_t *)ckalloc(sizeof(pthread_mutex_t));
 	    pthread_mutex_init(pmutexPtr, NULL);
 	    *mutexPtr = (Tcl_Mutex)pmutexPtr;
@@ -707,7 +706,7 @@ Tcl_ConditionWait(condPtr, mutexPtr, timePtr)
     if (*condPtr == NULL) {
 	MASTER_LOCK;
 
-	/*
+	/* 
 	 * Double check inside mutex to avoid race,
 	 * then initialize condition variable if necessary.
 	 */
@@ -837,13 +836,9 @@ TclpInetNtoa(struct in_addr addr)
 {
 #ifdef TCL_THREADS
     ThreadSpecificData *tsdPtr = TCL_TSD_INIT(&dataKey);
-    union {
-    	unsigned long l;
-    	unsigned char b[4];
-    } u;
+    unsigned char *b = (unsigned char*) &addr.s_addr;
 
-    u.l = (unsigned long) addr.s_addr;
-    sprintf(tsdPtr->nabuf, "%u.%u.%u.%u", u.b[0], u.b[1], u.b[2], u.b[3]);
+    sprintf(tsdPtr->nabuf, "%u.%u.%u.%u", b[0], b[1], b[2], b[3]);
     return tsdPtr->nabuf;
 #else
     return inet_ntoa(addr);

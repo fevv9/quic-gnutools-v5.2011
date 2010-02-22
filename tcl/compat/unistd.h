@@ -1,8 +1,3 @@
-/*****************************************************************
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-*****************************************************************/
 /*
  * unistd.h --
  *
@@ -32,8 +27,8 @@
 #define NULL    0
 #endif
 
-/*
- * Strict POSIX stuff goes here.  Extensions go down below, in the
+/* 
+ * Strict POSIX stuff goes here.  Extensions go down below, in the 
  * ifndef _POSIX_SOURCE section.
  */
 

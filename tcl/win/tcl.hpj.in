@@ -1,8 +1,3 @@
-##################################################################
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-##################################################################
 ; This file is maintained by HCW. Do not modify this file directly.
 
 [OPTIONS]
@@ -11,7 +6,7 @@ LCID=0x409 0x0 0x0 ;English (United States)
 REPORT=Yes
 TITLE=Tcl/Tk Reference Manual
 CNT=tcl84.cnt
-COPYRIGHT=Copyright © 2000 Ajuba Solutions
+COPYRIGHT=Copyright Â© 2000 Ajuba Solutions
 HLP=tcl84.hlp
 
 [FILES]

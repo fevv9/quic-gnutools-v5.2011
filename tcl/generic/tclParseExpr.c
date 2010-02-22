@@ -1,9 +1,4 @@
-/*****************************************************************
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-*****************************************************************/
-/*
+/* 
  * tclParseExpr.c --
  *
  *	This file contains procedures that parse Tcl expressions. They
@@ -205,7 +200,7 @@ static void		PrependSubExprTokens _ANSI_ARGS_((CONST char *op,
  *	The return value is TCL_OK if the command was parsed successfully
  *	and TCL_ERROR otherwise. If an error occurs and interp isn't NULL
  *	then an error message is left in its result. On a successful return,
- *	parsePtr is filled in with information about the expression that
+ *	parsePtr is filled in with information about the expression that 
  *	was parsed.
  *
  * Side effects:
@@ -242,7 +237,7 @@ Tcl_ParseExpr(interp, string, numBytes, parsePtr)
 	        numBytes, string);
     }
 #endif /* TCL_COMPILE_DEBUG */
-
+    
     parsePtr->commentStart = NULL;
     parsePtr->commentSize = 0;
     parsePtr->commandStart = NULL;
@@ -288,7 +283,7 @@ Tcl_ParseExpr(interp, string, numBytes, parsePtr)
 	goto error;
     }
     return TCL_OK;
-
+    
     error:
     if (parsePtr->tokenPtr != parsePtr->staticTokens) {
 	ckfree((char *) parsePtr->tokenPtr);
@@ -332,20 +327,20 @@ ParseCondExpr(infoPtr)
     Tcl_Token *tokenPtr, *firstTokenPtr, *condTokenPtr;
     int firstIndex, numToMove, code;
     CONST char *srcStart;
-
+    
     HERE("condExpr", 1);
     srcStart = infoPtr->start;
     firstIndex = parsePtr->numTokens;
-
+    
     code = ParseLorExpr(infoPtr);
     if (code != TCL_OK) {
 	return code;
     }
-
+    
     if (infoPtr->lexeme == QUESTY) {
 	/*
 	 * Emit two tokens: one TCL_TOKEN_SUB_EXPR token for the entire
-	 * conditional expression, and a TCL_TOKEN_OPERATOR token for
+	 * conditional expression, and a TCL_TOKEN_OPERATOR token for 
 	 * the "?" operator. Note that these two tokens must be inserted
 	 * before the LOR operand tokens generated above.
 	 */
@@ -359,22 +354,22 @@ ParseCondExpr(infoPtr)
 	memmove((VOID *) tokenPtr, (VOID *) firstTokenPtr,
 	        (size_t) (numToMove * sizeof(Tcl_Token)));
 	parsePtr->numTokens += 2;
-
+	
 	tokenPtr = firstTokenPtr;
 	tokenPtr->type = TCL_TOKEN_SUB_EXPR;
 	tokenPtr->start = srcStart;
-
+	
 	tokenPtr++;
 	tokenPtr->type = TCL_TOKEN_OPERATOR;
 	tokenPtr->start = infoPtr->start;
 	tokenPtr->size = 1;
 	tokenPtr->numComponents = 0;
-
+    
 	/*
 	 * Skip over the '?'.
 	 */
-
-	code = GetLexeme(infoPtr);
+	
+	code = GetLexeme(infoPtr); 
 	if (code != TCL_OK) {
 	    return code;
 	}
@@ -445,11 +440,11 @@ ParseLorExpr(infoPtr)
     Tcl_Parse *parsePtr = infoPtr->parsePtr;
     int firstIndex, code;
     CONST char *srcStart, *operator;
-
+    
     HERE("lorExpr", 2);
     srcStart = infoPtr->start;
     firstIndex = parsePtr->numTokens;
-
+    
     code = ParseLandExpr(infoPtr);
     if (code != TCL_OK) {
 	return code;
@@ -509,7 +504,7 @@ ParseLandExpr(infoPtr)
     HERE("landExpr", 3);
     srcStart = infoPtr->start;
     firstIndex = parsePtr->numTokens;
-
+    
     code = ParseBitOrExpr(infoPtr);
     if (code != TCL_OK) {
 	return code;
@@ -569,12 +564,12 @@ ParseBitOrExpr(infoPtr)
     HERE("bitOrExpr", 4);
     srcStart = infoPtr->start;
     firstIndex = parsePtr->numTokens;
-
+    
     code = ParseBitXorExpr(infoPtr);
     if (code != TCL_OK) {
 	return code;
     }
-
+    
     while (infoPtr->lexeme == BIT_OR) {
 	operator = infoPtr->start;
 	code = GetLexeme(infoPtr); /* skip over the '|' */
@@ -586,7 +581,7 @@ ParseBitOrExpr(infoPtr)
 	if (code != TCL_OK) {
 	    return code;
 	}
-
+	
 	/*
 	 * Generate tokens for the BITOR subexpression and the '|' operator.
 	 */
@@ -630,12 +625,12 @@ ParseBitXorExpr(infoPtr)
     HERE("bitXorExpr", 5);
     srcStart = infoPtr->start;
     firstIndex = parsePtr->numTokens;
-
+    
     code = ParseBitAndExpr(infoPtr);
     if (code != TCL_OK) {
 	return code;
     }
-
+    
     while (infoPtr->lexeme == BIT_XOR) {
 	operator = infoPtr->start;
 	code = GetLexeme(infoPtr); /* skip over the '^' */
@@ -647,7 +642,7 @@ ParseBitXorExpr(infoPtr)
 	if (code != TCL_OK) {
 	    return code;
 	}
-
+	
 	/*
 	 * Generate tokens for the XOR subexpression and the '^' operator.
 	 */
@@ -691,12 +686,12 @@ ParseBitAndExpr(infoPtr)
     HERE("bitAndExpr", 6);
     srcStart = infoPtr->start;
     firstIndex = parsePtr->numTokens;
-
+    
     code = ParseEqualityExpr(infoPtr);
     if (code != TCL_OK) {
 	return code;
     }
-
+    
     while (infoPtr->lexeme == BIT_AND) {
 	operator = infoPtr->start;
 	code = GetLexeme(infoPtr); /* skip over the '&' */
@@ -707,7 +702,7 @@ ParseBitAndExpr(infoPtr)
 	if (code != TCL_OK) {
 	    return code;
 	}
-
+	
 	/*
 	 * Generate tokens for the BITAND subexpression and '&' operator.
 	 */
@@ -752,7 +747,7 @@ ParseEqualityExpr(infoPtr)
     HERE("equalityExpr", 7);
     srcStart = infoPtr->start;
     firstIndex = parsePtr->numTokens;
-
+    
     code = ParseRelationalExpr(infoPtr);
     if (code != TCL_OK) {
 	return code;
@@ -816,7 +811,7 @@ ParseRelationalExpr(infoPtr)
     HERE("relationalExpr", 8);
     srcStart = infoPtr->start;
     firstIndex = parsePtr->numTokens;
-
+    
     code = ParseShiftExpr(infoPtr);
     if (code != TCL_OK) {
 	return code;
@@ -884,7 +879,7 @@ ParseShiftExpr(infoPtr)
     HERE("shiftExpr", 9);
     srcStart = infoPtr->start;
     firstIndex = parsePtr->numTokens;
-
+    
     code = ParseAddExpr(infoPtr);
     if (code != TCL_OK) {
 	return code;
@@ -946,7 +941,7 @@ ParseAddExpr(infoPtr)
     HERE("addExpr", 10);
     srcStart = infoPtr->start;
     firstIndex = parsePtr->numTokens;
-
+    
     code = ParseMultiplyExpr(infoPtr);
     if (code != TCL_OK) {
 	return code;
@@ -1008,7 +1003,7 @@ ParseMultiplyExpr(infoPtr)
     HERE("multiplyExpr", 11);
     srcStart = infoPtr->start;
     firstIndex = parsePtr->numTokens;
-
+    
     code = ParseUnaryExpr(infoPtr);
     if (code != TCL_OK) {
 	return code;
@@ -1070,7 +1065,7 @@ ParseUnaryExpr(infoPtr)
     HERE("unaryExpr", 12);
     srcStart = infoPtr->start;
     firstIndex = parsePtr->numTokens;
-
+    
     lexeme = infoPtr->lexeme;
     if ((lexeme == PLUS) || (lexeme == MINUS) || (lexeme == BIT_NOT)
             || (lexeme == NOT)) {
@@ -1185,7 +1180,7 @@ ParsePrimaryExpr(infoPtr)
 	/*
 	 * Int or double number.
 	 */
-
+	
 	tokenizeLiteral:
 	if (parsePtr->numTokens == parsePtr->tokensAvailable) {
 	    TclExpandTokenArray(parsePtr);
@@ -1206,7 +1201,7 @@ ParsePrimaryExpr(infoPtr)
 	/*
 	 * $var variable reference.
 	 */
-
+	
 	dollarPtr = (infoPtr->next - 1);
 	code = Tcl_ParseVarName(interp, dollarPtr,
 	        (infoPtr->lastChar - dollarPtr), parsePtr, 1);
@@ -1220,12 +1215,12 @@ ParsePrimaryExpr(infoPtr)
 	exprTokenPtr->numComponents =
 	        (parsePtr->tokenPtr[firstIndex].numComponents + 1);
 	break;
-
+	
     case QUOTE:
 	/*
 	 * '"' string '"'
 	 */
-
+	
 	stringStart = infoPtr->next;
 	code = Tcl_ParseQuotedString(interp, infoPtr->start,
 	        (infoPtr->lastChar - stringStart), parsePtr, 1, &termPtr);
@@ -1263,7 +1258,7 @@ ParsePrimaryExpr(infoPtr)
 	    tokenPtr->numComponents = (exprTokenPtr->numComponents - 1);
 	}
 	break;
-
+	
     case OPEN_BRACKET:
 	/*
 	 * '[' command {command} ']'
@@ -1282,7 +1277,7 @@ ParsePrimaryExpr(infoPtr)
 	 * Call Tcl_ParseCommand repeatedly to parse the nested command(s)
 	 * to find their end, then throw away that parse information.
 	 */
-
+	
 	src = infoPtr->next;
 	while (1) {
 	    if (Tcl_ParseCommand(interp, src, (parsePtr->end - src), 1,
@@ -1308,7 +1303,7 @@ ParsePrimaryExpr(infoPtr)
 	     * It must have been the last character of the parsed command.
 	     */
 
-	    if ((nested.term < parsePtr->end) && (*nested.term == ']')
+	    if ((nested.term < parsePtr->end) && (*nested.term == ']') 
 		    && !nested.incomplete) {
 		break;
 	    }
@@ -1366,14 +1361,14 @@ ParsePrimaryExpr(infoPtr)
 
 	    exprTokenPtr = &parsePtr->tokenPtr[exprIndex];
 	    exprTokenPtr->numComponents++;
-
+	    
 	    tokenPtr->type = TCL_TOKEN_WORD;
 	    tokenPtr->start = exprTokenPtr->start;
 	    tokenPtr->size = exprTokenPtr->size;
 	    tokenPtr->numComponents = exprTokenPtr->numComponents-1;
 	}
 	break;
-
+	
     case STREQ:
     case STRNEQ:
     case FUNC_NAME: {
@@ -1382,7 +1377,7 @@ ParsePrimaryExpr(infoPtr)
 	 */
 
 	ParseInfo savedInfo = *infoPtr;
-
+	
 	code = GetLexeme(infoPtr); /* skip over function name */
 	if (code != TCL_OK) {
 	    return code;
@@ -1419,7 +1414,7 @@ ParsePrimaryExpr(infoPtr)
 	     * NULL-terminated string keys.
 	     */
 	    Tcl_DStringInit(&functionName);
-	    hPtr = Tcl_FindHashEntry(&iPtr->mathFuncTable,
+	    hPtr = Tcl_FindHashEntry(&iPtr->mathFuncTable, 
 	    	Tcl_DStringAppend(&functionName,
 			savedInfo.start, savedInfo.size));
 	    Tcl_DStringFree(&functionName);
@@ -1448,7 +1443,7 @@ ParsePrimaryExpr(infoPtr)
 	tokenPtr->size = savedInfo.size;
 	tokenPtr->numComponents = 0;
 	parsePtr->numTokens++;
-
+	
 	code = GetLexeme(infoPtr); /* skip over '(' */
 	if (code != TCL_OK) {
 	    return code;
@@ -1459,7 +1454,7 @@ ParsePrimaryExpr(infoPtr)
 	    if (code != TCL_OK) {
 		return code;
 	    }
-
+	    
 	    if (infoPtr->lexeme == COMMA) {
 		code = GetLexeme(infoPtr); /* skip over , */
 		if (code != TCL_OK) {
@@ -1513,7 +1508,7 @@ ParsePrimaryExpr(infoPtr)
     /*
      * Advance to the next lexeme before returning.
      */
-
+    
     code = GetLexeme(infoPtr);
     if (code != TCL_OK) {
 	return code;
@@ -1571,7 +1566,7 @@ GetLexeme(infoPtr)
     infoPtr->prevEnd = infoPtr->next;
 
     /*
-     * Scan over leading white space at the start of a lexeme.
+     * Scan over leading white space at the start of a lexeme. 
      */
 
     src = infoPtr->next;
@@ -1644,12 +1639,12 @@ GetLexeme(infoPtr)
 		    parsePtr->errorType = TCL_PARSE_BAD_NUMBER;
 		    return TCL_ERROR;
 		}
-
+		
 		/*
                  * startPtr was the start of a valid double, copied
 		 * from src.
                  */
-
+		
 		infoPtr->lexeme = LITERAL;
 		infoPtr->start = src;
 		if ((termPtr - startPtr) > length) {
@@ -1673,7 +1668,7 @@ GetLexeme(infoPtr)
     infoPtr->size = 1;
     infoPtr->next = src+1;
     parsePtr->term = infoPtr->next;
-
+    
     switch (*src) {
 	case '[':
 	    infoPtr->lexeme = OPEN_BRACKET;
@@ -1941,7 +1936,7 @@ TclParseInteger(string, numBytes)
  *	of a double.  Only character identity is used, no actual
  *	parsing is done.
  *
- *	The legal bytes are '0' - '9', 'A' - 'F', 'a' - 'f',
+ *	The legal bytes are '0' - '9', 'A' - 'F', 'a' - 'f', 
  *	'.', '+', '-', 'i', 'I', 'n', 'N', 'p', 'P', 'x',  and 'X'.
  *	This covers the values "Inf" and "Nan" as well as the
  *	decimal and hexadecimal representations recognized by a
@@ -2025,13 +2020,13 @@ PrependSubExprTokens(op, opBytes, src, srcBytes, firstIndex, infoPtr)
     memmove((VOID *) tokenPtr, (VOID *) firstTokenPtr,
             (size_t) (numToMove * sizeof(Tcl_Token)));
     parsePtr->numTokens += 2;
-
+    
     tokenPtr = firstTokenPtr;
     tokenPtr->type = TCL_TOKEN_SUB_EXPR;
     tokenPtr->start = src;
     tokenPtr->size = srcBytes;
     tokenPtr->numComponents = parsePtr->numTokens - (firstIndex + 1);
-
+    
     tokenPtr++;
     tokenPtr->type = TCL_TOKEN_OPERATOR;
     tokenPtr->start = op;

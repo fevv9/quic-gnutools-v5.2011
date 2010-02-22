@@ -1,9 +1,4 @@
-/*****************************************************************
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-*****************************************************************/
-/*
+/* 
  * tclIO.h --
  *
  *	This file provides the generic portions (those that are the same on
@@ -83,9 +78,9 @@ typedef struct ChannelBuffer {
  * buffer (when converting to UTF-8) or to hold bytes that will go to
  * next buffer (when converting from UTF-8).
  */
-
+ 
 #define BUFFER_PADDING	    16
-
+ 
 /*
  * The following defines the *default* buffer size for channels.
  */
@@ -189,7 +184,7 @@ typedef struct ChannelState {
 				 * TCL_ENCODING_END when EOF is seen. */
     TclEolTranslation inputTranslation;
 				/* What translation to apply for end of line
-				 * sequences on input? */
+				 * sequences on input? */    
     TclEolTranslation outputTranslation;
 				/* What translation to use for generating
 				 * end of line sequences in output? */
@@ -241,7 +236,7 @@ typedef struct ChannelState {
     Tcl_ThreadId managingThread; /* TIP #10: Id of the thread managing
 				  * this stack of channels. */
 } ChannelState;
-
+    
 /*
  * Values for the flags field in Channel. Any ORed combination of the
  * following flags can be stored in the field. These flags record various
@@ -395,7 +390,7 @@ typedef struct ChannelHandlerEvent {
  * The following structure is used by Tcl_GetsObj() to encapsulates the
  * state for a "gets" operation.
  */
-
+ 
 typedef struct GetsState {
     Tcl_Obj *objPtr;		/* The object to which UTF-8 characters
 				 * will be appended. */
@@ -420,8 +415,3 @@ typedef struct GetsState {
 				 * appended to objPtr so far, just before the
 				 * last call to FilterInputBytes(). */
 } GetsState;
-
-EXTERN int WriteChars _ANSI_ARGS_ ((Channel *chanPtr,
-                                    CONST char *src,
-                                    int srcLen));
-

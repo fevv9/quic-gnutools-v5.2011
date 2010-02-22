@@ -1,9 +1,4 @@
-/*****************************************************************
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-*****************************************************************/
-/*
+/* 
  * tclWinThread.c --
  *
  *	This file implements the Windows-specific thread operations.
@@ -30,8 +25,8 @@
 
 static CRITICAL_SECTION masterLock;
 static int init = 0;
-#define MASTER_LOCK TclpMasterLock()
-#define MASTER_UNLOCK TclpMasterUnlock()
+#define MASTER_LOCK TclpMasterLock() 
+#define MASTER_UNLOCK TclpMasterUnlock() 
 
 
 /*
@@ -64,12 +59,12 @@ static int allocOnce = 0;
 static CRITICAL_SECTION joinLock;
 
 /*
- * Condition variables are implemented with a combination of a
+ * Condition variables are implemented with a combination of a 
  * per-thread Windows Event and a per-condition waiting queue.
  * The idea is that each thread has its own Event that it waits
  * on when it is doing a ConditionWait; it uses the same event for
  * all condition variables because it only waits on one at a time.
- * Each condition variable has a queue of waiting threads, and a
+ * Each condition variable has a queue of waiting threads, and a 
  * mutex used to serialize access to this queue.
  *
  * Special thanks to David Nichols and
@@ -112,13 +107,11 @@ typedef struct allocMutex {
  *				of the way ThreadSpecificData is created.
  * WIN_THREAD_RUNNING		Running, not waiting.
  * WIN_THREAD_BLOCKED		Waiting, or trying to wait.
- * WIN_THREAD_DEAD		Dying - no per-thread event anymore.
- */
+ */ 
 
 #define WIN_THREAD_UNINIT	0x0
 #define WIN_THREAD_RUNNING	0x1
 #define WIN_THREAD_BLOCKED	0x2
-#define WIN_THREAD_DEAD		0x4
 
 /*
  * The per condition queue pointers and the
@@ -469,7 +462,7 @@ static void FinalizeConditionEvent(ClientData data);
  *
  * Tcl_MutexLock --
  *
- *	This procedure is invoked to lock a mutex.  This is a self
+ *	This procedure is invoked to lock a mutex.  This is a self 
  *	initializing mutex that is automatically finalized during
  *	Tcl_Finalize.
  *
@@ -491,7 +484,7 @@ Tcl_MutexLock(mutexPtr)
     if (*mutexPtr == NULL) {
 	MASTER_LOCK;
 
-	/*
+	/* 
 	 * Double inside master lock check to avoid a race.
 	 */
 
@@ -794,14 +787,6 @@ Tcl_ConditionWait(condPtr, mutexPtr, timePtr)
     int doExit = 0;		/* True if we need to do exit setup */
     ThreadSpecificData *tsdPtr = TCL_TSD_INIT(&dataKey);
 
-    if (tsdPtr->flags & WIN_THREAD_DEAD) {
-	/*
-	 * No more per-thread event on which to wait.
-	 */
-
-	return;
-    }
-
     /*
      * Self initialize the two parts of the condition.
      * The per-condition and per-thread parts need to be
@@ -811,7 +796,7 @@ Tcl_ConditionWait(condPtr, mutexPtr, timePtr)
     if (tsdPtr->flags == WIN_THREAD_UNINIT) {
 	MASTER_LOCK;
 
-	/*
+	/* 
 	 * Create the per-thread event and queue pointers.
 	 */
 
@@ -833,7 +818,7 @@ Tcl_ConditionWait(condPtr, mutexPtr, timePtr)
 	     * ThreadSpecificData, and initializing that may drop
 	     * back into the Master Lock.
 	     */
-
+	    
 	    Tcl_CreateThreadExitHandler(FinalizeConditionEvent,
 		    (ClientData) tsdPtr);
 	}
@@ -890,7 +875,7 @@ Tcl_ConditionWait(condPtr, mutexPtr, timePtr)
      * the locking protocol wrong and are masking a deadlock,
      * or you are using conditions to pause your thread.
      */
-
+    
     LeaveCriticalSection(csPtr);
     timeout = 0;
     while (!timeout && (tsdPtr->flags & WIN_THREAD_BLOCKED)) {
@@ -906,7 +891,7 @@ Tcl_ConditionWait(condPtr, mutexPtr, timePtr)
      * Be careful on timeouts because the signal might arrive right around
      * the time limit and someone else could have taken us off the queue.
      */
-
+    
     if (timeout) {
 	if (tsdPtr->flags & WIN_THREAD_RUNNING) {
 	    timeout = 0;
@@ -961,8 +946,13 @@ Tcl_ConditionNotify(condPtr)
 {
     WinCondition *winCondPtr;
     ThreadSpecificData *tsdPtr;
+
     if (condPtr != NULL) {
 	winCondPtr = *((WinCondition **)condPtr);
+
+	if (winCondPtr == NULL) {
+	    return;
+	}
 
 	/*
 	 * Loop through all the threads waiting on the condition
@@ -1013,7 +1003,7 @@ FinalizeConditionEvent(data)
     ClientData data;
 {
     ThreadSpecificData *tsdPtr = (ThreadSpecificData *)data;
-    tsdPtr->flags = WIN_THREAD_DEAD;
+    tsdPtr->flags = WIN_THREAD_UNINIT;
     CloseHandle(tsdPtr->condEvent);
 }
 
@@ -1134,7 +1124,7 @@ TclpFreeAllocCache(void *ptr)
         if (!success) {
             panic("TlsSetValue failed from TclpFreeAllocCache!");
         }
-    } else if (once) {
+    } else if (once) { 
         /*
          * Called by us in TclFinalizeThreadAlloc() during
          * the library finalization initiated from Tcl_Finalize()

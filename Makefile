@@ -70,6 +70,7 @@ build_win:
 	CC_FOR_BUILD=gcc \
 	MAKEINFO=$(MAKEINFO) \
 	../configure \
+		 --x-includes=../win \
   		--host=i386-pc-mingw32 \
   		--build=i686-linux \
 		$(CONFIGURE_OPTIONS)  && \

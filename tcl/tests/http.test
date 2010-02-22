@@ -1,8 +1,3 @@
-##################################################################
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-##################################################################
 # Commands covered:  http::config, http::geturl, http::wait, http::reset
 #
 # This file contains a collection of tests for the http script library.
@@ -142,6 +137,8 @@ set fullurl http://user:pass@[info hostname]:$port/a/b/c
 set binurl //[info hostname]:$port/binary
 set posturl //[info hostname]:$port/post
 set badposturl //[info hostname]:$port/droppost
+set badcharurl //%user@[info hostname]:$port/a/^b/c
+
 test http-3.4 {http::geturl} {
     set token [http::geturl $url]
     http::data $token
@@ -318,23 +315,34 @@ test http-3.18 {http::geturl parse failures} -body {
     http::geturl http://somewhere:123456789/
 } -returnCodes error -result {Invalid port number: 123456789}
 test http-3.19 {http::geturl parse failures} -body {
+    set ::http::strict 1
     http::geturl http://{user}@somewhere
 } -returnCodes error -result {Illegal characters in URL user}
 test http-3.20 {http::geturl parse failures} -body {
+    set ::http::strict 1
     http::geturl http://%user@somewhere
 } -returnCodes error -result {Illegal encoding character usage "%us" in URL user}
 test http-3.21 {http::geturl parse failures} -body {
+    set ::http::strict 1
     http::geturl http://somewhere/{path}
 } -returnCodes error -result {Illegal characters in URL path}
 test http-3.22 {http::geturl parse failures} -body {
+    set ::http::strict 1
     http::geturl http://somewhere/%path
 } -returnCodes error -result {Illegal encoding character usage "%pa" in URL path}
 test http-3.23 {http::geturl parse failures} -body {
+    set ::http::strict 1
     http::geturl http://somewhere/path?{query}
 } -returnCodes error -result {Illegal characters in URL path}
 test http-3.24 {http::geturl parse failures} -body {
+    set ::http::strict 1
     http::geturl http://somewhere/path?%query
 } -returnCodes error -result {Illegal encoding character usage "%qu" in URL path}
+test http-3.25 {http::geturl parse failures} -body {
+    set ::http::strict 0
+    set token [http::geturl $badcharurl]
+    http::cleanup $token
+} -returnCodes ok -result {}
 
 test http-4.1 {http::Event} {
     set token [http::geturl $url]
@@ -468,7 +476,7 @@ test http-4.15 {http::Event} {
 
 test http-5.1 {http::formatQuery} {
     http::formatQuery name1 value1 name2 "value two"
-} {name1=value1&name2=value+two}
+} {name1=value1&name2=value%20two}
 # test http-5.2 obsoleted by 5.4 and 5.5 with http 2.5
 test http-5.3 {http::formatQuery} {
     http::formatQuery lines "line1\nline2\nline3"

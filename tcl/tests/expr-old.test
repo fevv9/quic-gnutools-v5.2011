@@ -1,8 +1,3 @@
-##################################################################
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-##################################################################
 # Commands covered: expr
 #
 # This file contains the original set of tests for Tcl's expr command.
@@ -369,13 +364,13 @@ test expr-old-21.3 {parenthesization} {expr +(3-4)} -1
 
 # Embedded commands and variable names.
 
-set a 16
-test expr-old-22.1 {embedded variables} {expr {2*$a}} 32
+set a 16 
+test expr-old-22.1 {embedded variables} {expr {2*$a}} 32 
 test expr-old-22.2 {embedded variables} {
     set x -5
     set y 10
     expr {$x + $y}
-} {5}
+} {5} 
 test expr-old-22.3 {embedded variables} {
     set x "  -5"
     set y "  +10"
@@ -816,7 +811,7 @@ test expr-old-32.47 {math functions in expressions} {
 } {1 {too few arguments for math function}}
 test expr-old-32.48 {math functions in expressions} {
     list [catch {expr srand(3.79)} msg] $msg
-} {1 {can't use floating-point value as argument to srand}}
+} {1 {expected integer but got "3.79"}}
 test expr-old-32.49 {math functions in expressions} {
     list [catch {expr srand("")} msg] $msg
 } {1 {argument to math function didn't have numeric value}}

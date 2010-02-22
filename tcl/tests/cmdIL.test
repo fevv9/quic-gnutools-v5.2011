@@ -1,8 +1,3 @@
-##################################################################
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-##################################################################
 # This file contains a collection of tests for the procedures in the
 # file tclCmdIL.c.  Sourcing this file into Tcl runs the tests and
 # generates output for errors.  No output means no errors were found.
@@ -109,6 +104,11 @@ test cmdIL-1.25 {Tcl_LsortObjCmd procedure, order of -index and -command} {
 test cmdIL-1.26 {Tcl_LsortObjCmd procedure, offset indexing from end} {
     lsort -index end-1 {{a 1 e i} {b 2 3 f g} {c 4 5 6 d h}}
 } {{c 4 5 6 d h} {a 1 e i} {b 2 3 f g}}
+test cmdIL-1.29 {Tcl_LsortObjCmd procedure, loss of list rep during sorting} {
+    set l {1 2 3}
+    proc testcmp args {string length $::l}
+    string length [lsort -command testcmp $l]
+} 5
 
 # Can't think of any good tests for the MergeSort and MergeLists
 # procedures, except a bunch of random lists to sort.

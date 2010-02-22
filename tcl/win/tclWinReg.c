@@ -1,8 +1,3 @@
-/*****************************************************************
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-*****************************************************************/
 /*
  * tclWinReg.c --
  *
@@ -87,7 +82,7 @@ typedef struct RegWinProcs {
 
     LONG (WINAPI *regConnectRegistryProc)(CONST TCHAR *, HKEY, PHKEY);
     LONG (WINAPI *regCreateKeyExProc)(HKEY, CONST TCHAR *, DWORD, TCHAR *,
-	    DWORD, REGSAM, SECURITY_ATTRIBUTES *, HKEY *, DWORD *);
+	    DWORD, REGSAM, SECURITY_ATTRIBUTES *, HKEY *, DWORD *); 
     LONG (WINAPI *regDeleteKeyProc)(HKEY, CONST TCHAR *);
     LONG (WINAPI *regDeleteValueProc)(HKEY, CONST TCHAR *);
     LONG (WINAPI *regEnumKeyProc)(HKEY, DWORD, TCHAR *, DWORD);
@@ -114,7 +109,7 @@ static RegWinProcs asciiProcs = {
     (LONG (WINAPI *)(CONST TCHAR *, HKEY, PHKEY)) RegConnectRegistryA,
     (LONG (WINAPI *)(HKEY, CONST TCHAR *, DWORD, TCHAR *,
 	    DWORD, REGSAM, SECURITY_ATTRIBUTES *, HKEY *,
-	    DWORD *)) RegCreateKeyExA,
+	    DWORD *)) RegCreateKeyExA, 
     (LONG (WINAPI *)(HKEY, CONST TCHAR *)) RegDeleteKeyA,
     (LONG (WINAPI *)(HKEY, CONST TCHAR *)) RegDeleteValueA,
     (LONG (WINAPI *)(HKEY, DWORD, TCHAR *, DWORD)) RegEnumKeyA,
@@ -139,7 +134,7 @@ static RegWinProcs unicodeProcs = {
     (LONG (WINAPI *)(CONST TCHAR *, HKEY, PHKEY)) RegConnectRegistryW,
     (LONG (WINAPI *)(HKEY, CONST TCHAR *, DWORD, TCHAR *,
 	    DWORD, REGSAM, SECURITY_ATTRIBUTES *, HKEY *,
-	    DWORD *)) RegCreateKeyExW,
+	    DWORD *)) RegCreateKeyExW, 
     (LONG (WINAPI *)(HKEY, CONST TCHAR *)) RegDeleteKeyW,
     (LONG (WINAPI *)(HKEY, CONST TCHAR *)) RegDeleteValueW,
     (LONG (WINAPI *)(HKEY, DWORD, TCHAR *, DWORD)) RegEnumKeyW,
@@ -233,7 +228,7 @@ Registry_Init(
     }
 
     Tcl_CreateObjCommand(interp, "registry", RegistryObjCmd, NULL, NULL);
-    return Tcl_PkgProvide(interp, "registry", "1.1.4");
+    return Tcl_PkgProvide(interp, "registry", "1.1.5");
 }
 
 /*
@@ -518,21 +513,17 @@ GetKeyNames(
     Tcl_Obj *keyNameObj,	/* Key to enumerate. */
     Tcl_Obj *patternObj)	/* Optional match pattern. */
 {
-    HKEY key;
-    DWORD index;
-    char buffer[MAX_PATH+1], *pattern, *name;
-    Tcl_Obj *resultPtr;
-    int result = TCL_OK;
-    Tcl_DString ds;
-
-    /*
-     * Attempt to open the key for enumeration.
-     */
-
-    if (OpenKey(interp, keyNameObj, KEY_ENUMERATE_SUB_KEYS, 0, &key)
-	    != TCL_OK) {
-	return TCL_ERROR;
-    }
+    char *pattern;		/* Pattern being matched against subkeys */
+    HKEY key;			/* Handle to the key being examined */
+    DWORD subKeyCount;		/* Number of subkeys to list */
+    DWORD maxSubKeyLen;		/* Maximum string length of any subkey */
+    char *buffer;		/* Buffer to hold the subkey name */
+    DWORD bufSize;		/* Size of the buffer */
+    DWORD index;		/* Position of the current subkey */
+    char *name;			/* Subkey name */
+    Tcl_Obj *resultPtr;		/* List of subkeys being accumulated */
+    int result = TCL_OK;	/* Return value from this command */
+    Tcl_DString ds;		/* Buffer to translate subkey name to UTF-8 */
 
     if (patternObj) {
 	pattern = Tcl_GetString(patternObj);
@@ -540,15 +531,58 @@ GetKeyNames(
 	pattern = NULL;
     }
 
-    /*
-     * Enumerate over the subkeys until we get an error, indicating the
-     * end of the list.
+    /* Attempt to open the key for enumeration. */
+
+    if (OpenKey(interp, keyNameObj,
+		KEY_QUERY_VALUE | KEY_ENUMERATE_SUB_KEYS,
+		0, &key) != TCL_OK) {
+	return TCL_ERROR;
+    }
+
+    /* 
+     * Determine how big a buffer is needed for enumerating subkeys, and
+     * how many subkeys there are
      */
 
-    resultPtr = Tcl_GetObjResult(interp);
-    for (index = 0; (*regWinProcs->regEnumKeyProc)(key, index, buffer,
-	    MAX_PATH+1) == ERROR_SUCCESS; index++) {
-	Tcl_WinTCharToUtf((TCHAR *) buffer, -1, &ds);
+    result = (*regWinProcs->regQueryInfoKeyProc)
+	(key, NULL, NULL, NULL, &subKeyCount, &maxSubKeyLen, NULL, NULL, 
+	 NULL, NULL, NULL, NULL);
+    if (result != ERROR_SUCCESS) {
+	Tcl_SetObjResult(interp, Tcl_NewObj());
+	Tcl_AppendResult(interp, "unable to query key \"", 
+			 Tcl_GetString(keyNameObj), "\": ", NULL);
+	AppendSystemError(interp, result);
+	RegCloseKey(key);
+	return TCL_ERROR;
+    }
+    if (regWinProcs->useWide) {
+	buffer = ckalloc((maxSubKeyLen+1) * sizeof(WCHAR));
+    } else {
+	buffer = ckalloc(maxSubKeyLen+1);
+    }
+
+    /* Enumerate the subkeys */
+
+    resultPtr = Tcl_NewObj();
+    for (index = 0; index < subKeyCount; ++index) {
+	bufSize = maxSubKeyLen+1;
+	result = (*regWinProcs->regEnumKeyExProc)
+	    (key, index, buffer, &bufSize, NULL, NULL, NULL, NULL);
+	if (result != ERROR_SUCCESS) {
+	    Tcl_SetObjResult(interp, Tcl_NewObj());
+	    Tcl_AppendResult(interp,
+			     "unable to enumerate subkeys of \"",
+			     Tcl_GetString(keyNameObj),
+			     "\": ", NULL);
+	    AppendSystemError(interp, result);
+	    result = TCL_ERROR;
+	    break;
+	}
+	if (regWinProcs->useWide) {
+	    Tcl_WinTCharToUtf((TCHAR *) buffer, bufSize * sizeof(WCHAR), &ds);
+	} else {
+	    Tcl_WinTCharToUtf((TCHAR *) buffer, bufSize, &ds);
+	}
 	name = Tcl_DStringValue(&ds);
 	if (pattern && !Tcl_StringMatch(name, pattern)) {
 	    Tcl_DStringFree(&ds);
@@ -561,7 +595,11 @@ GetKeyNames(
 	    break;
 	}
     }
+    if (result == TCL_OK) {
+	Tcl_SetObjResult(interp, resultPtr);
+    }
 
+    ckfree(buffer);
     RegCloseKey(key);
     return result;
 }
@@ -744,8 +782,8 @@ GetValue(
 	 * terminated by two null characters.  Also do a bounds check in
 	 * case we get bogus data.
 	 */
-
-	while (p < end 	&& ((regWinProcs->useWide)
+ 
+	while (p < end 	&& ((regWinProcs->useWide) 
 		? *((Tcl_UniChar *)p) : *p) != 0) {
 	    Tcl_WinTCharToUtf((TCHAR *) p, -1, &buf);
 	    Tcl_ListObjAppendElement(interp, resultPtr,

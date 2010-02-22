@@ -1,8 +1,3 @@
-##################################################################
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-##################################################################
 # man2help2.tcl --
 #
 # This file defines procedures that are used during the second pass of
@@ -13,14 +8,14 @@
 #
 # See the file "license.terms" for information on usage and redistribution
 # of this file, and for a DISCLAIMER OF ALL WARRANTIES.
-#
+# 
 # RCS: @(#) $Id$
-#
+# 
 
 # Global variables used by these scripts:
 #
 # state -	state variable that controls action of text proc.
-#
+#				
 # topics -	array indexed by (package,section,topic) with value
 # 		of topic ID.
 #
@@ -183,12 +178,12 @@ proc text {string} {
     }
 
     switch $state(textState) {
-	REF {
+	REF { 
 	    if {$state(inTP) == 0} {
 		set string [insertRef $string]
 	    }
 	}
-	SEE {
+	SEE { 
 	    global topics curPkg curSect
 	    foreach i [split $string] {
 		if {![regexp -nocase {^[a-z_0-9]+} [string trim $i] i ]} {
@@ -280,7 +275,7 @@ proc macro {name args} {
 	    # next page and previous page
 	}
 	br {
-	    lineBreak
+	    lineBreak	
 	}
 	BS {}
 	BE {}
@@ -721,7 +716,7 @@ proc SHmacro {argList} {
     }
 
     # control what the text proc does with text
-
+    
     switch $args {
 	NAME {set state(textState) NAME}
 	DESCRIPTION {set state(textState) INSERT}
@@ -847,7 +842,7 @@ proc THmacro {argList} {
     set curVer	[lindex $argList 2]		;# 7.4
     set curPkg	[lindex $argList 3]		;# Tcl
     set curSect	[lindex $argList 4]		;# {Tcl Library Procedures}
-
+    
     regsub -all {\\ } $curSect { } curSect	;# Clean up for [incr\ Tcl]
 
     puts $file "#{\\footnote $curID}"		;# Context string
@@ -978,7 +973,7 @@ proc incrNestingLevel {} {
 
 proc decrNestingLevel {} {
     global state
-
+    
     if {$state(nestingLevel) == 0} {
 	puts stderr "Nesting level decremented below 0"
     } else {

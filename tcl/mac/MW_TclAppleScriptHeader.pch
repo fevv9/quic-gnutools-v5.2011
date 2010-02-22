@@ -1,15 +1,10 @@
-##################################################################
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-##################################################################
 /*
  * MW_TclAppleScriptHeader.pch --
  *
  *  This file is the source for a pre-compilied header that gets used
  *  for TclAppleScript.  This make compilies go a bit
  *  faster.  This file is only intended to be used in the MetroWerks
- *  CodeWarrior environment.  It essentially acts as a place to set
+ *  CodeWarrior environment.  It essentially acts as a place to set 
  *  compiler flags.  See MetroWerks documention for more details.
  *
  * Copyright (c) 1995-1997 Sun Microsystems, Inc.

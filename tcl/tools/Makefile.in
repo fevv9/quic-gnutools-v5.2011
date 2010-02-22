@@ -1,8 +1,3 @@
-##################################################################
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-##################################################################
 # This makefile is used to convert Tcl manual pages into various
 # alternate formats:
 #
@@ -39,9 +34,9 @@ ITCL_DOCS	= \
 
 #	$(ITCL_SOURCE)/iwidgets3.0.0/doc/*.[13n]
 
-COREDOCS	= $(TCL_DOCS) $(TK_DOCS)
+COREDOCS	= $(TCL_DOCS) $(TK_DOCS) 
 #PRODOCS	= $(COREDOCS) $(PRO_DOCS) $(ITCL_DOCS)
-PRODOCS		= $(COREDOCS) $(PRO_DOCS)
+PRODOCS		= $(COREDOCS) $(PRO_DOCS) 
 TCLSH		= $(TCL_BIN_DIR)/tclsh
 CC		= @CC@
 

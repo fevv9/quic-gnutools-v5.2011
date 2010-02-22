@@ -1,9 +1,4 @@
-/*****************************************************************
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-*****************************************************************/
-/*
+/* 
  * tclStubLib.c --
  *
  *	Stub object that will be statically linked into extensions that wish
@@ -117,6 +112,6 @@ Tcl_InitStubs (interp, version, exact)
 	tclIntStubsPtr = NULL;
 	tclIntPlatStubsPtr = NULL;
     }
-
+    
     return actualVersion;
 }

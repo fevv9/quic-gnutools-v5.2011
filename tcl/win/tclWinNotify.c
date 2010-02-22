@@ -1,9 +1,4 @@
-/*****************************************************************
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-*****************************************************************/
-/*
+/* 
  * tclWinNotify.c --
  *
  *	This file contains Windows-specific procedures for the notifier,
@@ -31,7 +26,7 @@
 /*
  * The following static structure contains the state information for the
  * Windows implementation of the Tcl notifier.  One of these structures
- * is created for each thread that is using the notifier.
+ * is created for each thread that is using the notifier.  
  */
 
 typedef struct ThreadSpecificData {
@@ -397,7 +392,7 @@ NotifierProc(
     } else if (message != WM_TIMER) {
 	return DefWindowProc(hwnd, message, wParam, lParam);
     }
-
+	
     /*
      * Process all of the runnable events.
      */
@@ -549,7 +544,7 @@ Tcl_Sleep(ms)
 	++desired.sec;
 	desired.usec -= 1000000;
     }
-
+	
     for ( ; ; ) {
 	Sleep( sleepTime );
 	Tcl_GetTime( &now );

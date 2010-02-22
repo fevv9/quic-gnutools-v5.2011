@@ -1,8 +1,3 @@
-##################################################################
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-##################################################################
 Tcl 8.4 for Windows
 
 RCS: @(#) $Id$
@@ -80,7 +75,7 @@ find them.  Tcl looks in one of following places for the library files:
 	   directory containing the currently running .exe.
 
 Note that in order to run tclsh84.exe, you must ensure that tcl84.dll
-and tclpip84.dll are on your path, in the system directory, or in the
+and tclpip84.dll are on your path, in the system directory, or in the 
 directory containing tclsh84.exe.
 
 Note: Tcl no longer provides support for Win32s.

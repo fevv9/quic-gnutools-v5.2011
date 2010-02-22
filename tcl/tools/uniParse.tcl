@@ -1,8 +1,3 @@
-##################################################################
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-##################################################################
 # uniParse.tcl --
 #
 #	This program parses the UnicodeData file and generates the
@@ -13,7 +8,7 @@
 #
 # Copyright (c) 1998-1999 by Scriptics Corporation.
 # All rights reserved.
-#
+# 
 # RCS: @(#) $Id$
 
 
@@ -92,7 +87,7 @@ proc uni::getGroup {value} {
 proc uni::addPage {info} {
     variable pMap
     variable pages
-
+    
     set pIndex [lsearch -exact $pages $info]
     if {$pIndex == -1} {
 	set pIndex [llength $pages]
@@ -101,7 +96,7 @@ proc uni::addPage {info} {
     lappend pMap $pIndex
     return
 }
-
+    
 proc uni::buildTables {data} {
     variable shift
 
@@ -109,7 +104,7 @@ proc uni::buildTables {data} {
     variable pages {}
     variable groups {{0,,,}}
     set info {}			;# temporary page info
-
+    
     set mask [expr {(1 << $shift) - 1}]
 
     set next 0
@@ -123,7 +118,7 @@ proc uni::buildTables {data} {
 
 	scan [lindex $items 0] %4x index
 	set index [format 0x%0.4x $index]
-
+	
 	set gIndex [getGroup [getValue $items $index]]
 
 	# Since the input table omits unassigned characters, these will
@@ -280,7 +275,7 @@ static int groups\[\] = {"
     set last [expr {[llength $groups] - 1}]
     for {set i 0} {$i <= $last} {incr i} {
 	foreach {type toupper tolower totitle} [split [lindex $groups $i] ,] {}
-
+	
 	# Compute the case conversion type and delta
 
 	if {$totitle != ""} {

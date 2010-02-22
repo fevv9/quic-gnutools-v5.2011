@@ -1,8 +1,3 @@
-##################################################################
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-##################################################################
 # man2html1.tcl --
 #
 # This file defines procedures that are used during the first pass of the
@@ -16,7 +11,7 @@
 # Global variables used by these scripts:
 #
 # state -	state variable that controls action of text proc.
-#
+#				
 # curFile -	tail of current man page.
 #
 # file -	file pointer; for both xref.tcl and contents.html
@@ -29,7 +24,7 @@
 #
 # lib -		contains package name. Used to label section in contents.html
 #
-# inDT -	in dictionary term.
+# inDT -	in dictionary term. 
 
 
 
@@ -39,7 +34,7 @@
 # and KEY_file.
 #
 # DT: might do this: if first word of $dt matches $name and [llength $name==1]
-# 	and [llength $dt > 1], then add to NAME_file.
+# 	and [llength $dt > 1], then add to NAME_file. 
 #
 # Arguments:
 # string -		Text to index.
@@ -94,7 +89,7 @@ proc macro {name args} {
 		KEYWORDS {set state KEY}
 		default {set state OFF}
 	    }
-
+		
 	}
 	TP {
 	    global inDT
@@ -150,7 +145,7 @@ proc newline {} {
 
 # initGlobals, tab, font, char, macro2 --
 #
-# These procedures do nothing during the first pass.
+# These procedures do nothing during the first pass. 
 #
 # Arguments:
 # None.
@@ -225,9 +220,9 @@ proc doListing {file pattern} {
 
 proc doContents {file packageName} {
     global footer
-
+    
     set file [open $file w]
-
+    
     puts $file "<HTML><HEAD><TITLE>$packageName Manual</TITLE></HEAD><BODY>"
     puts $file "<H3>$packageName</H3>"
     doListing $file "*.1"
@@ -250,8 +245,8 @@ proc doContents {file packageName} {
 #
 # This is the toplevel procedure that searches a man page
 # for hypertext links.  It builds a data base consisting of
-# two arrays: NAME_file and KEY file. It runs the man2tcl
-# program to turn the man page into a script, then it evals
+# two arrays: NAME_file and KEY file. It runs the man2tcl 
+# program to turn the man page into a script, then it evals 
 # that script.
 #
 # Arguments:

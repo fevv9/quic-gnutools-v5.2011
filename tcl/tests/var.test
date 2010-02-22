@@ -1,8 +1,3 @@
-##################################################################
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-##################################################################
 # This file contains tests for the tclVar.c source file. Tests appear in
 # the same order as the C code that they test. The set of tests is
 # currently incomplete since it currently includes only new tests for
@@ -38,7 +33,7 @@ catch {unset arr}
 
 test var-1.1 {TclLookupVar, Array handling} {
     catch {unset a}
-    set x "incr"  ;# force no compilation and runtime call to Tcl_IncrCmd
+    set x "incr"  ;# force no compilation and runtime call to Tcl_IncrCmd 
     set i 10
     set arr(foo) 37
     list [$x i] $i [$x arr(foo)] $arr(foo)
@@ -213,7 +208,7 @@ if {[info commands testupvar] != {}} {
         set a 123321
         proc p {} {
             # create global xx linked to global a
-	    testupvar 1 a {} xx global
+	    testupvar 1 a {} xx global 
 	}
         list [p] $xx [set xx 789] $a
     } {{} 123321 789 789}
@@ -224,7 +219,7 @@ if {[info commands testupvar] != {}} {
             catch {unset ::test_ns_var::vv}
             proc p {} {
                 # create namespace var vv linked to global a
-	        testupvar 1 a {} vv namespace
+	        testupvar 1 a {} vv namespace 
 	    }
             p
         }
@@ -493,11 +488,11 @@ test var-7.14 {Tcl_VariableObjCmd, array element parameter} {
 } "can't define \"arrayvar(1)\": name refers to an element in an array"
 test var-7.15 {Tcl_VariableObjCmd, array element parameter} {
     catch {
-	namespace eval test_ns_var {
+	namespace eval test_ns_var { 
 	    variable arrayvar
 	    set arrayvar(1) x
 	    variable arrayvar(1) y
-	}
+	}   
     } res
     set res
 } "can't define \"arrayvar(1)\": name refers to an element in an array"
@@ -691,7 +686,7 @@ test var-15.1 {segfault in [unset], [Bug 735335]} {
 	set var $name
     }
     #
-    # Note that the variable name has to be
+    # Note that the variable name has to be 
     # unused previously for the segfault to
     # be triggered.
     #
@@ -705,6 +700,18 @@ test var-16.1 {CallVarTraces: save/restore interp error state: 1038021} {
     trace remove variable errorCode write { ;#}
     set errorInfo
 } bar
+
+test var-17.1 {TclArraySet [Bug 1669489]} -setup {
+    unset -nocomplain ::a
+} -body {
+    namespace eval :: {
+        set elements {1 2 3 4}
+        trace add variable a write {string length $elements ;#}
+        array set a $elements
+    }
+} -cleanup {
+    unset -nocomplain ::a ::elements
+} -result {}
 
 catch {namespace delete ns}
 catch {unset arr}

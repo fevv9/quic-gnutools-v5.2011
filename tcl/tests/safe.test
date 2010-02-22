@@ -1,8 +1,3 @@
-##################################################################
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-##################################################################
 # safe.test --
 #
 # This file contains a collection of tests for safe Tcl, packages loading,
@@ -29,7 +24,7 @@ foreach i [interp slaves] {
 set saveAutoPath $::auto_path
 set ::auto_path [info library]
 
-# Force actual loading of the safe package
+# Force actual loading of the safe package 
 # because we use un exported (and thus un-autoindexed) APIs
 # in this test result arguments:
 catch {safe::interpConfigure}
@@ -81,7 +76,7 @@ test safe-2.3 {creating safe interpreters, should have no aliases} {
 
 test safe-3.1 {calling safe::interpInit is safe} {
     catch {safe::interpDelete a}
-    interp create a -safe
+    interp create a -safe 
     safe::interpInit a
     catch {interp eval a exec ls} msg
     safe::interpDelete a
@@ -191,6 +186,14 @@ test safe-6.3 {test safe interpreters knowledge of the world} {
     set threaded [lsearch $r "threaded"]
     if {$threaded != -1} {
 	set r [lreplace $r $threaded $threaded]
+    }
+    set tip [lsearch $r "tip,268"]
+    if {$tip != -1} {
+	set r [lreplace $r $tip $tip]
+    }
+    set tip [lsearch $r "tip,280"]
+    if {$tip != -1} {
+	set r [lreplace $r $tip $tip]
     }
     set r
 } {byteOrder platform wordSize}

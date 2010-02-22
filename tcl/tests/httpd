@@ -1,8 +1,3 @@
-##################################################################
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-##################################################################
 #
 # The httpd_ procedures implement a stub http server.
 #
@@ -101,7 +96,7 @@ proc httpdRead { sock } {
 	}
 	0,mime,HEAD	-
 	0,mime,GET	-
-	0,query,POST	{
+	0,query,POST	{ 
 	    # Empty line at end of headers,
 	    # or eof after query data
 	    httpdRespond $sock
@@ -197,7 +192,7 @@ proc httpdRespond { sock } {
 	    append html </body></html>
 	}
     }
-
+    
     # Catch errors from premature client closes
 
     catch {

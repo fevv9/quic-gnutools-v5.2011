@@ -1,8 +1,3 @@
-##################################################################
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-##################################################################
 # tclInt.decls --
 #
 #	This file contains the declarations for all unsupported
@@ -16,7 +11,7 @@
 #
 # See the file "license.terms" for information on usage and redistribution
 # of this file, and for a DISCLAIMER OF ALL WARRANTIES.
-#
+# 
 # RCS: @(#) $Id$
 
 library tcl
@@ -44,7 +39,7 @@ declare 3 generic {
     void TclAllocateFreeObjects(void)
 }
 # Replaced by TclpChdir in 8.1:
-#  declare 4 generic {
+#  declare 4 generic {   
 #      int TclChdir(Tcl_Interp *interp, char *dirName)
 #  }
 declare 5 {unix win} {
@@ -70,7 +65,7 @@ declare 9 {unix win} {
 	    TclFile *errFilePtr)
 }
 declare 10 generic {
-    int TclCreateProc(Tcl_Interp *interp, Namespace *nsPtr,
+    int TclCreateProc(Tcl_Interp *interp, Namespace *nsPtr, 
 	    CONST char *procName,
 	    Tcl_Obj *argsPtr, Tcl_Obj *bodyPtr, Proc **procPtrPtr)
 }
@@ -125,7 +120,7 @@ declare 25 generic {
     void TclFreePackageInfo(Interp *iPtr)
 }
 # Removed in 8.1:
-#  declare 26 generic {
+#  declare 26 generic {	
 #      char * TclGetCwd(Tcl_Interp *interp)
 #  }
 declare 27 generic {
@@ -512,7 +507,7 @@ declare 128 generic {
 declare 129 generic {
     int Tcl_PushCallFrame(Tcl_Interp* interp, Tcl_CallFrame *framePtr,
 	    Tcl_Namespace *nsPtr, int isProcCallFrame)
-}
+} 
 declare 130 generic {
     int Tcl_RemoveInterpResolvers(Tcl_Interp *interp, CONST char *name)
 }
@@ -665,7 +660,7 @@ declare 165 generic {
 
 # New function due to TIP #33
 declare 166 generic {
-    int TclListObjSetElement(Tcl_Interp *interp, Tcl_Obj *listPtr,
+    int TclListObjSetElement(Tcl_Interp *interp, Tcl_Obj *listPtr, 
 	    int index, Tcl_Obj *valuePtr)
 }
 
@@ -705,10 +700,10 @@ declare 173 generic {
 # TclpGmtime and TclpLocaltime promoted to the generic interface from unix
 
 declare 182 generic {
-     struct tm *TclpLocaltime(CONST TclpTime_t clock)
+     struct tm *TclpLocaltime(TclpTime_t_CONST clock)
 }
 declare 183 generic {
-     struct tm *TclpGmtime(CONST TclpTime_t clock)
+     struct tm *TclpGmtime(TclpTime_t_CONST clock)
 }
 
 declare 199 generic {
@@ -808,10 +803,10 @@ declare 19 mac {
 declare 20 mac {
     int TclMacRegisterResourceFork(short fileRef, Tcl_Obj *tokenPtr,
 	    int insert)
-}
+}	
 declare 21 mac {
     short TclMacUnRegisterResourceFork(char *tokenPtr, Tcl_Obj *resultPtr)
-}
+}	
 declare 22 mac {
     int TclMacCreateEnv(void)
 }
@@ -1003,11 +998,11 @@ declare 10 unix {
 # generic Stubs
 
 declare 11 unix {
-    struct tm * TclpLocaltime_unix(CONST TclpTime_t clock)
+    struct tm * TclpLocaltime_unix(TclpTime_t_CONST clock)
 }
 
 declare 12 unix {
-    struct tm * TclpGmtime_unix(CONST TclpTime_t clock)
+    struct tm * TclpGmtime_unix(TclpTime_t_CONST clock)
 }
 
 declare 13 unix {

@@ -1,12 +1,7 @@
-##################################################################
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-##################################################################
 # $Id$
 # This file is the basis for a binary Tcl RPM for Linux.
 
-%define version 8.4.13
+%define version 8.4.16
 %define directory /usr/local
 
 Summary: Tcl scripting language development environment

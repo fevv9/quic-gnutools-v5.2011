@@ -1,9 +1,4 @@
-/*****************************************************************
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-*****************************************************************/
-/*
+/* 
  * tclClock.c --
  *
  *	Contains the time and date related commands.  This code
@@ -22,12 +17,6 @@
 #include "tcl.h"
 #include "tclInt.h"
 #include "tclPort.h"
-
-#ifdef __CYGWIN__
-#ifndef timezone
-#define TIMEZONE_GLOBAL ((int)_timezone)
-#endif
-#endif /* __CYGWIN__ */
 
 /*
  * The date parsing stuff uses lexx and has tons o statics.
@@ -78,7 +67,7 @@ Tcl_ClockObjCmd (client, interp, objc, objv)
     Tcl_Obj *baseObjPtr = NULL;
     char *scanStr;
     int n;
-
+    
     static CONST char *switches[] =
 	{"clicks", "format", "scan", "seconds", (char *) NULL};
     enum command { COMMAND_CLICKS, COMMAND_FORMAT, COMMAND_SCAN,
@@ -103,7 +92,7 @@ Tcl_ClockObjCmd (client, interp, objc, objv)
 
 	    if (objc == 3) {
 		format = Tcl_GetStringFromObj(objv[2], &n);
-		if ( ( n >= 2 )
+		if ( ( n >= 2 ) 
 		     && ( strncmp( format, "-milliseconds",
 				   (unsigned int) n) == 0 ) ) {
 		    forceMilli = 1;
@@ -143,7 +132,7 @@ Tcl_ClockObjCmd (client, interp, objc, objv)
 		    != TCL_OK) {
 		return TCL_ERROR;
 	    }
-
+    
 	    objPtr = objv+3;
 	    objc -= 3;
 	    while (objc > 1) {
@@ -277,8 +266,8 @@ FormatClock(interp, clockVal, useGMT, format)
     int result;
     time_t tclockVal;
 #if !defined(HAVE_TM_ZONE) && !defined(WIN32)
-    int savedTimeZone = 0;	/* lint. */
-    char *savedTZEnv = NULL;	/* lint. */
+    TIMEZONE_t savedTimeZone = 0;	/* lint. */
+    char *savedTZEnv = NULL;		/* lint. */
 #endif
 
 #ifdef HAVE_TZSET
@@ -322,20 +311,15 @@ FormatClock(interp, clockVal, useGMT, format)
             savedTZEnv = NULL;
 	}
         Tcl_SetVar2(interp, "env", "TZ", "GMT0", TCL_GLOBAL_ONLY);
-#ifdef __CYGWIN__
-        savedTimeZone = _timezone;
-	_timezone =0;
-#else
         savedTimeZone = timezone;
         timezone = 0;
-#endif
         tzset();
     }
 #endif
 
     tclockVal = (time_t) clockVal;
     timeDataPtr = TclpGetDate((TclpTime_t) &tclockVal, useGMT);
-
+    
     /*
      * Make a guess at the upper limit on the substituted string size
      * based on the number of percents in the string.
@@ -344,6 +328,9 @@ FormatClock(interp, clockVal, useGMT, format)
     for (bufSize = 1, p = format; *p != '\0'; p++) {
 	if (*p == '%') {
 	    bufSize += 40;
+	    if (p[1] == 'c') {
+		bufSize += 226;
+	    }
 	} else {
 	    bufSize++;
 	}
@@ -373,12 +360,7 @@ FormatClock(interp, clockVal, useGMT, format)
         } else {
             Tcl_UnsetVar2(interp, "env", "TZ", TCL_GLOBAL_ONLY);
         }
-
-#ifdef __CYGWIN__
-         _timezone = savedTimeZone;
-#else
-         timezone = savedTimeZone;
-#endif
+        timezone = savedTimeZone;
         tzset();
     }
     Tcl_MutexUnlock( &clockMutex );

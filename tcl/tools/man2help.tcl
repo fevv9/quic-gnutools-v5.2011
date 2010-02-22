@@ -1,8 +1,3 @@
-##################################################################
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-##################################################################
 # man2help.tcl --
 #
 # This file defines procedures that work in conjunction with the
@@ -12,7 +7,7 @@
 # Copyright (c) 1996 by Sun Microsystems, Inc.
 #
 # RCS: @(#) $Id$
-#
+# 
 
 #
 # PASS 1
@@ -43,7 +38,7 @@ proc generateContents {basename version files} {
 	    set lastTopic {}
 	    foreach topic [getTopics $package $section] {
 		if {[string compare $lastTopic $topic]} {
-		    set id $topics($package,$section,$topic)
+		    set id $topics($package,$section,$topic) 
 		    puts $fd "2 $topic=$id"
 		    set lastTopic $topic
 		}

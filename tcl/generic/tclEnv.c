@@ -1,9 +1,4 @@
-/*****************************************************************
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-*****************************************************************/
-/*
+/* 
  * tclEnv.c --
  *
  *	Tcl support for environment variables, including a setenv
@@ -44,19 +39,11 @@ static int environSize = 0;	/* Non-zero means that the environ array was
 #endif
 
 /*
- * For MacOS X
- */
-#if defined(__APPLE__) && defined(__DYNAMIC__)
-#include <crt_externs.h>
-char **environ = NULL;
-#endif
-
-/*
  * Declarations for local procedures defined in this file:
  */
 
 static char *		EnvTraceProc _ANSI_ARGS_((ClientData clientData,
-			    Tcl_Interp *interp, CONST char *name1,
+			    Tcl_Interp *interp, CONST char *name1, 
 			    CONST char *name2, int flags));
 static void		ReplaceString _ANSI_ARGS_((CONST char *oldStr,
 			    char *newStr));
@@ -101,13 +88,6 @@ TclSetupEnv(interp)
     int i;
 
     /*
-     * For MacOS X
-     */
-#if defined(__APPLE__) && defined(__DYNAMIC__)
-    environ = *_NSGetEnviron();
-#endif
-
-    /*
      * Synchronize the values in the environ array with the contents
      * of the Tcl "env" variable.  To do this:
      *    1) Remove the trace that fires when the "env" var is unset.
@@ -116,20 +96,20 @@ TclSetupEnv(interp)
      *       array.  Otherwise populate the array with current values.
      *    4) Add a trace that synchronizes the "env" array.
      */
-
+    
     Tcl_UntraceVar2(interp, "env", (char *) NULL,
 	    TCL_GLOBAL_ONLY | TCL_TRACE_WRITES | TCL_TRACE_UNSETS |
 	    TCL_TRACE_READS | TCL_TRACE_ARRAY,  EnvTraceProc,
 	    (ClientData) NULL);
-
-    Tcl_UnsetVar2(interp, "env", (char *) NULL, TCL_GLOBAL_ONLY);
-
+    
+    Tcl_UnsetVar2(interp, "env", (char *) NULL, TCL_GLOBAL_ONLY); 
+    
     if (environ[0] == NULL) {
 	Tcl_Obj *varNamePtr;
-
+	
 	varNamePtr = Tcl_NewStringObj("env", -1);
 	Tcl_IncrRefCount(varNamePtr);
-	TclArraySet(interp, varNamePtr, NULL);
+	TclArraySet(interp, varNamePtr, NULL);	
 	Tcl_DecrRefCount(varNamePtr);
     } else {
 	Tcl_MutexLock(&envMutex);
@@ -141,12 +121,12 @@ TclSetupEnv(interp)
 		 * This condition seem to happen occasionally under some
 		 * versions of Solaris; ignore the entry.
 		 */
-
+		
 		continue;
 	    }
 	    p2++;
 	    p2[-1] = '\0';
-	    Tcl_SetVar2(interp, "env", p1, p2, TCL_GLOBAL_ONLY);
+	    Tcl_SetVar2(interp, "env", p1, p2, TCL_GLOBAL_ONLY);	
 	    Tcl_DStringFree(&envString);
 	}
 	Tcl_MutexUnlock(&envMutex);
@@ -218,12 +198,6 @@ TclSetEnv(name, value)
 	    }
 	    environ = ourEnviron = newEnviron;
 	    environSize = length + 5;
-#if defined(__APPLE__) && defined(__DYNAMIC__)
-	    {
-	    char ***e = _NSGetEnviron();
-	    *e = environ;
-	    }
-#endif
 	}
 	index = length;
 	environ[index + 1] = NULL;
@@ -268,7 +242,7 @@ TclSetEnv(name, value)
     /*
      * Copy the native string to heap memory.
      */
-
+    
     p = (char *) ckrealloc(p, (unsigned) (strlen(p2) + 1));
     strcpy(p, p2);
     Tcl_DStringFree(&envString);
@@ -300,9 +274,9 @@ TclSetEnv(name, value)
     }
 
     Tcl_MutexUnlock(&envMutex);
-
+    
     if (!strcmp(name, "HOME")) {
-	/*
+	/* 
 	 * If the user's home directory has changed, we must invalidate
 	 * the filesystem cache, because '~' expansions will now be
 	 * incorrect.
@@ -339,7 +313,7 @@ Tcl_PutEnv(string)
     CONST char *string;		/* Info about environment variable in the
 				 * form NAME=value. (native) */
 {
-    Tcl_DString nameString;
+    Tcl_DString nameString;   
     CONST char *name;
     char *value;
 
@@ -418,7 +392,7 @@ TclUnsetEnv(name)
     oldValue = environ[index];
 
     /*
-     * Update the system environment.  This must be done before we
+     * Update the system environment.  This must be done before we 
      * update the interpreters or we will recurse.
      */
 
@@ -508,7 +482,7 @@ TclGetEnv(name, valuePtr)
     result = NULL;
     if (index != -1) {
 	Tcl_DString envStr;
-
+	
 	result = Tcl_ExternalToUtfDString(NULL, environ[index], -1, &envStr);
 	result += length;
 	if (*result == '=') {
@@ -569,7 +543,7 @@ EnvTraceProc(clientData, interp, name1, name2, flags)
     /*
      * If name2 is NULL, then return and do nothing.
      */
-
+     
     if (name2 == NULL) {
 	return NULL;
     }
@@ -580,7 +554,7 @@ EnvTraceProc(clientData, interp, name1, name2, flags)
 
     if (flags & TCL_TRACE_WRITES) {
 	CONST char *value;
-
+	
 	value = Tcl_GetVar2(interp, "env", name2, TCL_GLOBAL_ONLY);
 	TclSetEnv(name2, value);
     }

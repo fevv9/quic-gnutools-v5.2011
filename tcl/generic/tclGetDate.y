@@ -1,9 +1,4 @@
-/*****************************************************************
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-*****************************************************************/
-/*
+/* 
  * tclGetDate.y --
  *
  *	Contains yacc grammar for parsing date and time strings.
@@ -20,7 +15,7 @@
  */
 
 %{
-/*
+/* 
  * tclDate.c --
  *
  *	This file is generated from a yacc grammar defined in
@@ -762,7 +757,7 @@ NamedMonth(Start, MonthOrdinal, MonthNumber)
     struct tm *tm;
     time_t now;
     int result;
-
+    
     now = Start;
     tm = TclpGetDate((TclpTime_t)&now, 0);
     /* To compute the next n'th month, we use this alg:
@@ -808,7 +803,7 @@ RelativeMonth(Start, RelMonth, TimePtr)
 	    MER24, DSTmaybe, &Julian);
 
     /*
-     * The Julian time returned above is behind by one day, if "month"
+     * The Julian time returned above is behind by one day, if "month" 
      * or "year" is used to specify relative time and the GMT flag is true.
      * This problem occurs only when the current time is closer to
      * midnight, the difference being not more than its time difference
@@ -990,7 +985,7 @@ LookupWord(buff)
             }
 	}
     }
-
+    
     return tID;
 }
 
@@ -1104,7 +1099,7 @@ TclGetDate(p, now, zone, timePtr)
 	    yyHaveDay > 1 || yyHaveOrdinalMonth > 1) {
         return -1;
     }
-
+    
     if (yyHaveDate || yyHaveTime || yyHaveDay) {
 	if (TclDateYear < 0) {
 	    TclDateYear = -TclDateYear;
@@ -1148,7 +1143,7 @@ TclGetDate(p, now, zone, timePtr)
 	return -1;
     }
     Start += Time;
-
+    
     if (yyHaveDay && !yyHaveDate) {
         tod = NamedDay(Start, yyDayOrdinal, yyDayNumber);
         Start += tod;
@@ -1158,7 +1153,7 @@ TclGetDate(p, now, zone, timePtr)
 	tod = NamedMonth(Start, yyMonthOrdinal, yyMonth);
 	Start += tod;
     }
-
+    
     *timePtr = Start;
     return 0;
 }

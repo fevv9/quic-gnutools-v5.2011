@@ -1,9 +1,4 @@
-/*****************************************************************
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-*****************************************************************/
-/*
+/* 
  * tclUnixTime.c --
  *
  *	Contains Unix specific versions of Tcl functions that
@@ -147,7 +142,7 @@ TclpGetTimeZone (currentTime)
      * time zone.  In all cases, we need to undo any Daylight Saving Time
      * adjustment.
      */
-
+    
 #if defined(HAVE_TM_TZADJ)
 #   define TCL_GOT_TIMEZONE
 
@@ -161,7 +156,7 @@ TclpGetTimeZone (currentTime)
     if (timeDataPtr->tm_isdst) {
         timeZone += 60;
     }
-
+    
     return timeZone;
 
 #endif
@@ -179,7 +174,7 @@ TclpGetTimeZone (currentTime)
     if (timeDataPtr->tm_isdst) {
         timeZone += 60;
     }
-
+    
     return timeZone;
 
 #endif
@@ -203,7 +198,7 @@ TclpGetTimeZone (currentTime)
 
 #endif
 
-#if !defined(TCL_GOT_TIMEZONE)
+#if !defined(TCL_GOT_TIMEZONE) 
 #define TCL_GOT_TIMEZONE 1
     /*
      * Fallback - determine time zone with a known reference time.
@@ -227,7 +222,7 @@ TclpGetTimeZone (currentTime)
      * Cause compile error, we don't know how to get timezone.
      */
 
-#error autoconf did not figure out how to determine the timezone.
+#error autoconf did not figure out how to determine the timezone. 
 
 #endif
 
@@ -256,7 +251,7 @@ Tcl_GetTime(timePtr)
 {
     struct timeval tv;
     struct timezone tz;
-
+    
     (void) gettimeofday(&tv, &tz);
     timePtr->sec = tv.tv_sec;
     timePtr->usec = tv.tv_usec;
@@ -349,7 +344,7 @@ TclpStrftime(s, maxsize, format, t, useGMT)
 
 struct tm *
 TclpGmtime( tt )
-    CONST TclpTime_t tt;
+    TclpTime_t_CONST tt;
 {
     CONST time_t *timePtr = (CONST time_t *) tt;
 				/* Pointer to the number of seconds
@@ -368,7 +363,7 @@ TclpGmtime( tt )
 	    (VOID *) gmtime( timePtr ),
 	    sizeof( struct tm ) );
     Tcl_MutexUnlock( &tmMutex );
-#endif
+#endif    
     return &( tsdPtr->gmtime_buf );
 }
 /*
@@ -376,7 +371,7 @@ TclpGmtime( tt )
  */
 struct tm*
 TclpGmtime_unix( timePtr )
-    CONST TclpTime_t timePtr;
+    TclpTime_t_CONST timePtr;
 {
     return TclpGmtime( timePtr );
 }
@@ -400,7 +395,7 @@ TclpGmtime_unix( timePtr )
 
 struct tm *
 TclpLocaltime( tt )
-    CONST TclpTime_t tt;
+    TclpTime_t_CONST tt;
 {
     CONST time_t *timePtr = (CONST time_t *) tt;
 				/* Pointer to the number of seconds
@@ -419,7 +414,7 @@ TclpLocaltime( tt )
 	    (VOID *) localtime( timePtr ),
 	    sizeof( struct tm ) );
     Tcl_MutexUnlock( &tmMutex );
-#endif
+#endif    
     return &( tsdPtr->localtime_buf );
 }
 /*
@@ -427,7 +422,7 @@ TclpLocaltime( tt )
  */
 struct tm*
 TclpLocaltime_unix( timePtr )
-    CONST TclpTime_t timePtr;
+    TclpTime_t_CONST timePtr;
 {
     return TclpLocaltime( timePtr );
 }
@@ -466,7 +461,7 @@ SetTZIfNecessary() {
 	} else {
 	    Tcl_Free( lastTZ );
 	}
-	lastTZ = Tcl_Alloc( strlen( newTZ ) + 1 );
+	lastTZ = ckalloc( strlen( newTZ ) + 1 );
 	strcpy( lastTZ, newTZ );
     }
     Tcl_MutexUnlock(&tmMutex);
@@ -493,5 +488,5 @@ SetTZIfNecessary() {
 static void
 CleanupMemory( ClientData ignored )
 {
-    Tcl_Free( lastTZ );
+    ckfree( lastTZ );
 }

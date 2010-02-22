@@ -1,9 +1,4 @@
-/*****************************************************************
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-*****************************************************************/
-/*
+/* 
  * tclRegexp.h --
  *
  * 	This file contains definitions used internally by Henry
@@ -21,7 +16,7 @@
 #ifndef _TCLREGEXP
 #define _TCLREGEXP
 
-#include "tregex.h"
+#include "tclRegEx.h"
 
 #ifdef BUILD_tcl
 # undef TCL_STORAGE_CLASS

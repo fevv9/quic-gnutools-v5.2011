@@ -1,27 +1,22 @@
-/*****************************************************************
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-*****************************************************************/
 /*
  * NFA utilities.
  * This file is #included by regcomp.c.
  *
  * Copyright (c) 1998, 1999 Henry Spencer.  All rights reserved.
- *
+ * 
  * Development of this software was funded, in part, by Cray Research Inc.,
  * UUNET Communications Services Inc., Sun Microsystems Inc., and Scriptics
  * Corporation, none of whom are responsible for the results.  The author
- * thanks all of them.
- *
+ * thanks all of them. 
+ * 
  * Redistribution and use in source and binary forms -- with or without
  * modification -- are permitted for any purpose, provided that
  * redistributions in source form retain this entire copyright notice and
  * indicate the origin and nature of any modifications.
- *
+ * 
  * I'd appreciate being given credit for this package in the documentation
  * of software which uses it, but that is not a requirement.
- *
+ * 
  * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES,
  * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
  * AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL
@@ -253,7 +248,7 @@ struct state *s;
 
 /*
  - newarc - set up a new arc within an NFA
- ^ static VOID newarc(struct nfa *, int, pcolor, struct state *,
+ ^ static VOID newarc(struct nfa *, int, pcolor, struct state *, 
  ^	struct state *);
  */
 static VOID
@@ -285,7 +280,7 @@ struct state *to;
 
 	/*
 	 * Put the new arc on the beginning, not the end, of the chains.
-	 * Not only is this easier, it has the very useful side effect that
+	 * Not only is this easier, it has the very useful side effect that 
 	 * deleting the most-recently-added arc is the cheapest case rather
 	 * than the most expensive one.
 	 */
@@ -425,7 +420,7 @@ pcolor co;
 
 /*
  - cparc - allocate a new arc within an NFA, copying details from old one
- ^ static VOID cparc(struct nfa *, struct arc *, struct state *,
+ ^ static VOID cparc(struct nfa *, struct arc *, struct state *, 
  ^ 	struct state *);
  */
 static VOID
@@ -609,7 +604,7 @@ struct state *s;
  * Another recursive traversal, this time using tmp to point to duplicates
  * as well as mark already-seen states.  (You knew there was a reason why
  * it's a state pointer, didn't you? :-))
- ^ static VOID dupnfa(struct nfa *, struct state *, struct state *,
+ ^ static VOID dupnfa(struct nfa *, struct state *, struct state *, 
  ^ 	struct state *, struct state *);
  */
 static VOID
@@ -1092,7 +1087,7 @@ struct arc *a;
 		if (from->nins > to->nouts)
 			usefrom = 0;
 	}
-
+		
 	freearc(nfa, a);
 	if (usefrom) {
 		if (from->nouts == 0) {

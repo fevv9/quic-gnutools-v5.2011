@@ -1,9 +1,4 @@
-/*****************************************************************
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-*****************************************************************/
-/*
+/* 
  * tclUnixSock.c --
  *
  *	This file contains Unix-specific socket related code.
@@ -58,7 +53,7 @@ TCL_DECLARE_MUTEX(hostMutex)
  *
  * Results:
  *	A string containing the network name for this machine, or
- *	an empty string if we can't figure out the name.  The caller
+ *	an empty string if we can't figure out the name.  The caller 
  *	must not modify or free this string.
  *
  * Side effects:
@@ -88,7 +83,7 @@ Tcl_GetHostName()
 #ifndef NO_UNAME
     (VOID *) memset((VOID *) &u, (int) 0, sizeof(struct utsname));
     if (uname(&u) > -1) {				/* INTL: Native. */
-        hp = gethostbyname(u.nodename);			/* INTL: Native. */
+        hp = TclpGetHostByName(u.nodename);			/* INTL: Native. */
 	if (hp == NULL) {
 	    /*
 	     * Sometimes the nodename is fully qualified, but gets truncated
@@ -100,7 +95,7 @@ Tcl_GetHostName()
 		char *node = ckalloc((unsigned) (dot - u.nodename + 1));
 		memcpy(node, u.nodename, (size_t) (dot - u.nodename));
 		node[dot - u.nodename] = '\0';
-		hp = gethostbyname(node);
+		hp = TclpGetHostByName(node);
 		ckfree(node);
 	    }
 	}

@@ -1,9 +1,4 @@
-/*****************************************************************
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-*****************************************************************/
-/*
+/* 
  * strtod.c --
  *
  *	Source code for the "strtod" library procedure.
@@ -146,7 +141,7 @@ strtod(string, endPtr)
      * If the mantissa has more than 18 digits, ignore the extras, since
      * they can't affect the value anyway.
      */
-
+    
     pExp  = p;
     p -= mantSize;
     if (decPt < 0) {
@@ -228,7 +223,7 @@ strtod(string, endPtr)
      * many powers of 2 of 10. Then combine the exponent with the
      * fraction.
      */
-
+    
     if (exp < 0) {
 	expSign = TRUE;
 	exp = -exp;

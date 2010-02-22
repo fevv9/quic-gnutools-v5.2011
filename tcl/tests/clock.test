@@ -1,8 +1,3 @@
-##################################################################
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-##################################################################
 # Commands covered:  clock
 #
 # This file contains a collection of tests for one or more of the Tcl
@@ -68,37 +63,43 @@ test clock-3.1 {clock format tests} {unixOnly} {
     set clockval 657687766
     clock format $clockval -format {%a %b %d %I:%M:%S %p %Y} -gmt true
 } {Sun Nov 04 03:02:46 AM 1990}
-test clock-3.2 {clock format tests} {
-    # TCL_USE_TIMEZONE_VAR
-
-    catch {set oldtz $env(TZ)}
-    set env(TZ) PST
-    set x {}
-    append x [clock format 863800000 -format %Z -gmt 1]
-    append x [set env(TZ)]
-    catch {unset env(TZ); set env(TZ) $oldtz}
-    set x
-} {GMTPST}
+test clock-3.2 {clock format tests} \
+    -body {	
+	# TCL_USE_TIMEZONE_VAR
+	
+	catch {set oldtz $env(TZ)}
+	set env(TZ) PST
+	set x {}
+	append x [clock format 863800000 -format %Z -gmt 1]
+	append x [set env(TZ)]
+	catch {unset env(TZ); set env(TZ) $oldtz}
+	set x
+    } \
+    -match regexp \
+    -result {(?:GMT|UTC)PST}
 test clock-3.3 {clock format tests} {
-    # tzset() under Borland doesn't seem to set up tzname[] for local
+    # tzset() under Borland doesn't seem to set up tzname[] for local 
     # timezone, which caused "clock format" to think that %Z was an invalid
     # string.  Don't care about answer, just that test runs w/o error.
 
     clock format 863800000 -format %Z
     set x {}
 } {}
-test clock-3.4 {clock format tests} {
-    # tzset() under Borland doesn't seem to set up tzname[] for gmt timezone.
-    # tzset() under MSVC has the following weird observed behavior:
-    #	 First time we call "clock format [clock seconds] -format %Z -gmt 1"
-    #	 we get "GMT", but on all subsequent calls we get the current time
-    #	 zone string, even though env(TZ) is GMT and the variable _timezone
-    #    is 0.
-
-    set x {}
-    append x [clock format 863800000 -format %Z -gmt 1]
-    append x [clock format 863800000 -format %Z -gmt 1]
-} {GMTGMT}
+test clock-3.4 {clock format tests} \
+    -body {
+	# tzset() under Borland doesn't seem to set up tzname[] for gmt 
+	# timezone. tzset() under MSVC has the following weird observed
+	# behavior:
+	#   First time we call "clock format [clock seconds] -format %Z -gmt 1"
+	#   we get "GMT", but on all subsequent calls we get the current time 
+	#   zone string, even though env(TZ) is GMT and the variable _timezone 
+	#   is 0.
+	set x {}
+	append x [clock format 863800000 -format %Z -gmt 1]
+	append x [clock format 863800000 -format %Z -gmt 1]
+    } \
+    -match regexp \
+    -result {GMTGMT|UTCUTC}
 test clock-3.5 {clock format tests} {
     list [catch {clock format} msg] $msg
 } {1 {wrong # args: should be "clock format clockval ?-format string? ?-gmt boolean?"}}
@@ -126,7 +127,7 @@ test clock-3.12 {clock format tests} {
     clock format 123 -format ""
 } ""
 test clock-3.13 {clock format with non-ASCII character in the format string} {
-    set oldenc [encoding system]
+    set oldenc [encoding system] 
     encoding system iso8859-1
     set res [clock format 0 -format \u00c4]
     encoding system $oldenc
@@ -154,7 +155,7 @@ test clock-3.14 {change of time zone} -setup {
 	unset env(TZ)
     }
 } -result {1600-0000}
-
+    
 
 # clock scan
 test clock-4.1 {clock scan tests} {

@@ -1,8 +1,3 @@
-##################################################################
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-##################################################################
 # This file contains tests for the ::package::* commands.
 # Note that the tests are limited to Tcl scripts only, there are no shared
 # libraries against which to test.
