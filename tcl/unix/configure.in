@@ -12,7 +12,7 @@ TCL_VERSION=8.4
 TCL_MAJOR_VERSION=8
 TCL_MINOR_VERSION=4
 TCL_PATCH_LEVEL=".16"
-VERSION=${TCL_VERSION}
+VERSION=${TCL_MAJOR_VERSION}${TCL_MINOR_VERSION}
 
 #------------------------------------------------------------------------
 # Handle the --prefix=... option

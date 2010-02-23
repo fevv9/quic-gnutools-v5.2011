@@ -7,9 +7,9 @@
 #
 # RCS: @(#) $Id$
 
-VERSION 		= @TCL_VERSION@
 MAJOR_VERSION		= @TCL_MAJOR_VERSION@
 MINOR_VERSION		= @TCL_MINOR_VERSION@
+VERSION 		= @TCL_MAJOR_VERSION@@TCL_MINOR_VERSION@
 PATCH_LEVEL		= @TCL_PATCH_LEVEL@
 
 #----------------------------------------------------------------

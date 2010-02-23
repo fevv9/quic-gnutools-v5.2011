@@ -294,7 +294,7 @@ SUBDIR_PYTHON_CFLAGS=
 
 # Where is the TCL library?  Typically in ../tcl.
 TCL_DIR = ../tcl
-TCL_LIB = $(TCL_DIR)/libtcl8.4.a
+TCL_LIB = $(TCL_DIR)/libtcl84.a
 TCL_SRC_DIR = $(srcdir)/../tcl
 TCL_INCLUDE =  -I$(TCL_SRC_DIR)/unix -I$(TCL_SRC_DIR)/generic
 
