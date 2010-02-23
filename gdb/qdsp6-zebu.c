@@ -130,7 +130,11 @@ qdsp6zebu_can_run(void)
 		sizeof (struct in_addr));
 
 	portvalid = bind (scb.fd, (struct sockaddr *) &sockaddr, sizeof (sockaddr)); 
-	close (scb.fd);	/* Will always reopen below */
+#if USE_WIN32API
+	closesocket (scb.fd);
+#else
+	close (scb.fd);		/* Will always reopen below */
+#endif
 
     } while ((portvalid != 0) && (ntries-- > 0));
 
