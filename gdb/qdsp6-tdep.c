@@ -134,6 +134,18 @@ static regtype_t globalRegSetInfo_v3[]={
   {"", END_OFFSET}
 };
 
+// To automatically get all thread registers from arch
+static regtype_t threadRegSetInfo_v4[]={
+#include "v4/thread_regs.h"
+  {"", END_OFFSET}
+};
+
+// To automatically get all thread registers from arch
+static regtype_t globalRegSetInfo_v4[]={
+#include "v4/global_regs.h"
+  {"", END_OFFSET}
+};
+
 /* static pointer which points to the v1/v2 thread registers */
 static regtype_t * threadRegSetInfo;
 /* static pointer which points to the v1/v2 thread registers */
@@ -170,7 +182,6 @@ struct qdsp6_unwind_cache		/* was struct frame_extra_info */
     /* The previous frame's inner-most stack address.  Used as this
        frame ID's stack_addr.  */
     CORE_ADDR prev_sp;
-    CORE_ADDR reg_lr;
     
     /* The frame's base, optionally used by the high-level debug info.  */
     CORE_ADDR base;
@@ -347,7 +358,8 @@ qdsp6_breakpoint_from_pc (struct gdbarch *gdbarch, CORE_ADDR *pcptr, int *lenp)
   static unsigned char breakpoint_insn[] = {0x0c, 0xdb, 0x00, 0x54};
   static unsigned char *breakpoint;
 
-  if ((q6Version == Q6_V3) || 
+  if ((q6Version == Q6_V4) || 
+      (q6Version == Q6_V3) ||
       (q6Version == Q6_V2))
   {
     breakpoint=breakpoint_insn;
@@ -455,49 +467,9 @@ is_argument_reg (int reg)
    arguments in any frame but the top, you'll need to do this serious
    prologue analysis.  */
 
-        /* for ignoring 11 immediate bits */
-static ULONGEST ALLOCFRAME_OPCODE_MASK;
-        /* allocframe opcode ignoring immediate bits */
-static ULONGEST ALLOCFRAME_OPCODE_BITS;
-static ULONGEST ALLOCFRAME_SIZE_BITS;
-static ULONGEST ALLOCFRAME_SIZE_SHIFT;
-#define ALLOCFRAME_SIZE(opcode) (((opcode) & ALLOCFRAME_SIZE_BITS) << ALLOCFRAME_SIZE_SHIFT)
-        /* for ignoring immediate bits */
-static ULONGEST MORE_SP_UPDATE_OPCODE_MASK;
-        /* sp update opcode ignoring immediate bits 
-          (uses Rd=add(Rs,#s16) where Rd and Rs = r29 */
-static ULONGEST MORE_SP_UPDATE_OPCODE_BITS;
-        /* for ignoring immediate and Rt bits for 
-            byte/half/single/double word */
-static ULONGEST CALLEE_SAVE_OPCODE_MASK;
-        /* callee save opcode ignoring immediate and Rt
-           bits (uses memb(Rs+#11:0)=Rt where Rs = r29
-           and Rt = callee save register */
-static ULONGEST CALLEE_SAVE_OPCODE_BITS_B;
-        /* callee save opcode ignoring immediate and Rt
-           bits (uses memh(Rs+#11:1)=Rt where Rs = r29
-           and Rt = callee save register */
-static ULONGEST CALLEE_SAVE_OPCODE_BITS_H;
-        /* callee save opcode ignoring immediate and Rt
-           bits (uses memw(Rs+#11:2)=Rt where Rs = r29
-           and Rt = callee save register */
-static ULONGEST CALLEE_SAVE_OPCODE_BITS_W;
-        /* callee save opcode ignoring immediate and Rt
-           bits (uses memd(Rs+#11:3)=Rt where Rs = r29
-           and Rt = callee save register */
-static ULONGEST CALLEE_SAVE_OPCODE_BITS_D;
-        /* for ignoring immediate and Rt bits */
-static ULONGEST FUNC_ARG_SAVE_OPCODE_MASK;
-        /* callee save opcode ignoring immediate and Rt
-           bits (uses memw(Rs+#s11:2)=Rt where Rs = r30
-           and Rt = callee save register */
-static ULONGEST FUNC_ARG_SAVE_OPCODE_BITS;
-static ULONGEST FUNC_ARG_SAVE_REG_SHIFT;
-static ULONGEST FUNC_ARG_SAVE_REG_BITS;
-#define FUNC_ARG_SAVE_REG(opcode) (((opcode) >> FUNC_ARG_SAVE_REG_SHIFT) & FUNC_ARG_SAVE_REG_BITS)
-
 static CORE_ADDR
-qdsp6_analyze_prologue (struct gdbarch *gdbarch,  CORE_ADDR pc,
+qdsp6_analyze_prologue (struct gdbarch *gdbarch,
+			CORE_ADDR pc, CORE_ADDR end_pc,
 		        struct frame_info *next_frame,
                         struct qdsp6_unwind_cache *info)
 {
@@ -546,7 +518,7 @@ qdsp6_analyze_prologue (struct gdbarch *gdbarch,  CORE_ADDR pc,
 
   if (qdsp6_debug == 1)
   {
-      printf_filtered ("QDSP6_DEB: %s\n",__func__);
+      printf_filtered ("QDSP6_DEB: %s, pc = 0x%x\n",__func__, pc);
   }
 
 
@@ -576,112 +548,12 @@ qdsp6_analyze_prologue (struct gdbarch *gdbarch,  CORE_ADDR pc,
 
 //printf("  *** HERE\n");
 
-        /* Scan the prologue.  */
-    /* for ignoring 11 immediate bits */
-    ALLOCFRAME_OPCODE_MASK = 0xFFFFF800UL;
-    /* allocframe opcode ignoring immediate bits */
-    ALLOCFRAME_OPCODE_BITS = 0xA09DC000UL;
-    ALLOCFRAME_SIZE_BITS = 0x000007FFUL;
-    ALLOCFRAME_SIZE_SHIFT = 3UL;
-    /* for ignoring immediate bits */
-    MORE_SP_UPDATE_OPCODE_MASK = 0xF01FC01FUL;
-    /* sp update opcode ignoring immediate bits 
-      (uses Rd=add(Rs,#s16) where Rd and Rs = r29 */
-    MORE_SP_UPDATE_OPCODE_BITS = 0xB01DC01DUL;
-    /* for ignoring immediate and Rt bits for 
-        byte/half/single/double word */
-    CALLEE_SAVE_OPCODE_MASK = 0xF1DFC000UL;
-    /* callee save opcode ignoring immediate and Rt
-       bits (uses memb(Rs+#11:0)=Rt where Rs = r29
-       and Rt = callee save register */
-    CALLEE_SAVE_OPCODE_BITS_B = 0xA11DC000UL;
-    /* callee save opcode ignoring immediate and Rt
-       bits (uses memh(Rs+#11:1)=Rt where Rs = r29
-       and Rt = callee save register */
-    CALLEE_SAVE_OPCODE_BITS_H = 0xA15DC000UL;
-    /* callee save opcode ignoring immediate and Rt
-       bits (uses memw(Rs+#11:2)=Rt where Rs = r29
-       and Rt = callee save register */
-    CALLEE_SAVE_OPCODE_BITS_W = 0xA19DC000UL;
-    /* callee save opcode ignoring immediate and Rt
-       bits (uses memd(Rs+#11:3)=Rt where Rs = r29
-       and Rt = callee save register */
-    CALLEE_SAVE_OPCODE_BITS_D = 0xA1DDC000UL;
-    /* for ignoring immediate and Rt bits */
-    FUNC_ARG_SAVE_OPCODE_MASK = 0xA19FC000L;
-    /* callee save opcode ignoring immediate and Rt
-       bits (uses memw(Rs+#s11:2)=Rt where Rs = r30
-       and Rt = callee save register */
-    FUNC_ARG_SAVE_OPCODE_BITS = 0xA19EC000UL;
-    FUNC_ARG_SAVE_REG_BITS = 0x1FUL;
-    FUNC_ARG_SAVE_REG_SHIFT = 8UL;
-    
 
-
-#define ALLOCFRAME_MATCH(opcode) \
-        (ALLOCFRAME_OPCODE_BITS == (ALLOCFRAME_OPCODE_MASK & (opcode)))
-#define MORE_SP_UPDATE_MATCH(opcode) \
-        (MORE_SP_UPDATE_OPCODE_BITS == (MORE_SP_UPDATE_OPCODE_MASK & (opcode)))
-#define MORE_SP_UPDATE_SIZE(opcode) \
-        ((signed short) ((((unsigned short) ((op >> 21) & 0x7F)) << 9) | \
-                          ((unsigned short) ((op >> 5) & 0x1FF))))
-// for byte accesses - check if it is a store byte insn 
-#define CALLEE_SAVE_MATCH_B(opcode) \
-        (CALLEE_SAVE_OPCODE_BITS_B == (CALLEE_SAVE_OPCODE_MASK & (opcode)) && \
-             is_callee_saves_reg(CALLEE_SAVE_REG(opcode))) 
-// get if Rt if a calle saved register             
-#define CALLEE_SAVE_REG(opcode) (((opcode) >> 8) & 0x1F)
-
-
-// for byte accesses  - skip ignore bits
-#define CALLEE_SAVE_OFFSET_B(opcode) \
-        ((signed short) (((unsigned short) ((((opcode) >> 25) & 0x3) <<  11)) | \
-                         ((unsigned short) ((((opcode) >> 13) & 0x01) << 10)) | \
-                         ((unsigned short) (( (opcode)        & 0xFF) <<  0))))
-
-
-// for half word  accesses - check if it is a store hword insn 
-#define CALLEE_SAVE_MATCH_H(opcode) \
-        (CALLEE_SAVE_OPCODE_BITS_H == (CALLEE_SAVE_OPCODE_MASK & (opcode)) && \
-             is_callee_saves_reg(CALLEE_SAVE_REG(opcode))) 
-
-// for half wordaccesses  - skip ignore bits
-#define CALLEE_SAVE_OFFSET_H(opcode) \
-        ((signed short) (((unsigned short) ((((opcode) >> 25) & 0x3) <<  11)) | \
-                         ((unsigned short) ((((opcode) >> 13) & 0x01) << 10)) | \
-                         ((unsigned short) (( (opcode)        & 0xFF) <<  1))))
-
-
-// for single word accesses
-#define CALLEE_SAVE_MATCH_W(opcode) \
-        (CALLEE_SAVE_OPCODE_BITS_W == (CALLEE_SAVE_OPCODE_MASK & (opcode)) && \
-             is_callee_saves_reg(CALLEE_SAVE_REG(opcode))) 
-
-// for single word accesses
-#define CALLEE_SAVE_OFFSET_W(opcode) \
-        ((signed short) (((unsigned short) ((((opcode) >> 25) & 0x3) <<  11)) | \
-                         ((unsigned short) ((((opcode) >> 13) & 0x01) << 10)) | \
-                         ((unsigned short) (( (opcode)        & 0xFF) <<  2))))
-
-
-
-
-// for double word accesses
-#define CALLEE_SAVE_MATCH_D(opcode) \
-        (CALLEE_SAVE_OPCODE_BITS_D == (CALLEE_SAVE_OPCODE_MASK & (opcode)) && \
-             is_callee_saves_reg(CALLEE_SAVE_REG(opcode))) 
-
-
-// for double word accesses
-#define CALLEE_SAVE_OFFSET_D(opcode) \
-        ((signed short) (((unsigned short) ((((opcode) >> 25) & 0x3) <<  11)) | \
-                         ((unsigned short) ((((opcode) >> 13) & 0x01) << 10)) | \
-                         ((unsigned short) (( (opcode)        & 0xFF) <<  3))))
-
-
-#define FUNC_ARG_SAVE_MATCH(opcode) \
-        (FUNC_ARG_SAVE_OPCODE_BITS == (FUNC_ARG_SAVE_OPCODE_MASK & (opcode)) && \
-             is_argument_reg(FUNC_ARG_SAVE_REG(opcode)))
+/* XXX_SM -- */
+      target_read_memory (end_pc, op_addr, 4);
+      if (ALLOCFRAME_MATCH(op)) 
+	fp_set = 1;
+/* XXX_SM -- */
 
       target_read_memory (pc, op_addr, 4);
       if (ALLOCFRAME_MATCH(op)) 
@@ -788,23 +660,40 @@ qdsp6_analyze_prologue (struct gdbarch *gdbarch,  CORE_ADDR pc,
       ULONGEST this_sp;
       ULONGEST this_pc;
       ULONGEST this_lr;
+      ULONGEST this_fp;
+      gdb_byte buf[4];
 
-      this_base = get_frame_register_unsigned (next_frame, REG_FP);
       this_sp = get_frame_register_unsigned (next_frame, REG_SP);
       this_pc = get_frame_register_unsigned (next_frame, REG_PC);
       this_lr = get_frame_register_unsigned (next_frame, REG_LR);
+
+      if (fp_set)
+      {
+          this_base = get_frame_register_unsigned (next_frame, REG_SP);
+	  this_base -= 8;
+/*
+ * Store the back chain
+ */
+          this_fp = get_frame_register_unsigned (next_frame, REG_FP);
+	  target_write_memory (this_base, &this_fp, 4);
+	  target_write_memory (this_base+4, &this_lr, 4);
+      }
+      else
+          this_base = get_frame_register_unsigned (next_frame, REG_FP);
+
 
       for (i = 0; i < 64; i++)
 	if (gr_saved[i])
 	  info->saved_regs[i].addr = this_base + sp_mod_val + gr_sp_offset[i];
 
       info->saved_regs[REG_FP].addr = this_base;
-      info->saved_regs[REG_LR].addr = this_base + 4;
+      //if (!fp_set)
+          info->saved_regs[REG_LR].addr = this_base + 4;
+
+//      info->saved_regs[REG_PC].addr = this_pc;
       info->saved_regs[REG_PC] = info->saved_regs[REG_LR];
-      //info->saved_regs[REG_PC].addr = this_pc;
 
       info->prev_sp = this_base + 8; /* +4 for saved R30, +4 for saved R31 */
-      info->reg_lr = this_lr;
       info->base = this_base;
       trad_frame_set_value (info->saved_regs, REG_SP, info->prev_sp);
 
@@ -813,7 +702,7 @@ qdsp6_analyze_prologue (struct gdbarch *gdbarch,  CORE_ADDR pc,
 	printf_filtered ("\t QDSP6_DEB: allocframe = %d\n", allocframe);
 	printf_filtered ("\t QDSP6_DEB: info.base = 0x%p\n", info->base);
 	printf_filtered ("\t QDSP6_DEB: reg_sp = 0x%p\n", this_sp);
-	printf_filtered ("\t QDSP6_DEB: reg_lr = 0x%p\n", this_lr);
+	printf_filtered ("\t QDSP6_DEB: this_lr = 0x%p\n", this_lr);
 	printf_filtered ("\t QDSP6_DEB: info.REG_FP  = 0x%x\n", info->saved_regs[REG_FP].addr);
 	printf_filtered ("\t QDSP6_DEB: info.REG_LR  = 0x%x\n", info->saved_regs[REG_LR].addr);
 	printf_filtered ("\t QDSP6_DEB: info.REG_PC  = 0x%x\n", info->saved_regs[REG_PC].addr);
@@ -860,7 +749,7 @@ qdsp6_skip_prologue (struct gdbarch *gdbarch, CORE_ADDR pc)
 
   /* qdsp6 prologue is at least 4 bytes (allocframe) */
   if (new_pc < pc + 4) 
-    new_pc = qdsp6_analyze_prologue (gdbarch, pc, 0, 0);
+    new_pc = qdsp6_analyze_prologue (gdbarch, pc, pc, 0, 0);
 
   if (qdsp6_debug == 1)
   {
@@ -895,12 +784,15 @@ qdsp6_frame_unwind_cache (struct frame_info *this_frame,
   info->saved_regs = trad_frame_alloc_saved_regs (this_frame);
 
   /* Prologue analysis does the rest...  */
+  pc = get_frame_pc(this_frame);
+  if (qdsp6_debug == 1)
+      printf_filtered("\tpre ana: QDSP6_DEB: pc = 0x%x\n",pc);
   pc = qdsp6_analyze_prologue (gdbarch,
-			get_frame_func (this_frame), this_frame, info);
+			get_frame_func (this_frame), get_frame_pc(this_frame),
+			this_frame, info);
 
   if (qdsp6_debug == 1)
   {
-      printf_filtered("\tQDSP6_DEB: %s\n",__func__);
       printf_filtered("\tQDSP6_DEB: pc = 0x%lx\n", pc);
   }
   
@@ -1228,20 +1120,9 @@ qdsp6_frame_this_id (struct frame_info *this_frame,
   if (base == 0)
     return;
 
-  id = frame_id_build_special (base, func, info->reg_lr);
-
-#if 0
-  /* Check that we're not going round in circles with the same frame
-     ID (but avoid applying the test to sentinel frames which do go
-     round in circles).  Can't use frame_id_eq() as that doesn't yet
-     compare the frame's PC value.  */
-  if (frame_relative_level (this_frame) >= 0
-      && get_frame_type (this_frame) != DUMMY_FRAME
-      && frame_id_eq (get_frame_id (this_frame), id))
-    return;
-#endif
-
+  id = frame_id_build (base, func);
   (*this_id) = id;
+
 }
 
 static struct value *
@@ -1311,8 +1192,9 @@ qdsp6_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
   if (arches)
     return arches->gdbarch;
  
- /* V1/V2 registers set by new_variant, hence move v1/v2 specific info
-  * out of the switch stmt to here before call to new_variant */
+ /* V2/V3/V4 registers set by new_variant
+    Note: ABI says registers r0-r5 can be used as arguments to
+          a function */
   switch (info.bfd_arch_info->mach)
     {
     case bfd_mach_qdsp6_v2:
@@ -1328,6 +1210,13 @@ qdsp6_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
       threadRegSetInfo = &threadRegSetInfo_v3[0];
       globalRegSetInfo = &globalRegSetInfo_v3[0];
     break;
+
+    case bfd_mach_qdsp6_v4:
+      q6Version = Q6_V4;
+      q6ArgRegMax = 6;
+      threadRegSetInfo = &threadRegSetInfo_v4[0];
+      globalRegSetInfo = &globalRegSetInfo_v4[0];
+    break;
     
     default:
       /* Never heard of this variant.  */
@@ -1341,6 +1230,7 @@ qdsp6_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
     case bfd_mach_qdsp6:
     case bfd_mach_qdsp6_v2:
     case bfd_mach_qdsp6_v3:
+    case bfd_mach_qdsp6_v4:
       set_variant_num_gprs (var, 32);
       set_variant_num_fprs (var, 0);
       break;
@@ -1432,10 +1322,25 @@ qdsp6_global_regnum_from_name(char *regname, int *index)
   if(regname == NULL)
     return -1;
 
-  if (q6Version == Q6_V3)
-    numGblRegs = sizeof(globalRegSetInfo_v3)/sizeof(regtype_t);
-  else
-    numGblRegs = sizeof(globalRegSetInfo_v2)/sizeof(regtype_t);
+  switch (q6Version)
+  {
+    case Q6_V4:
+	numGblRegs = sizeof(globalRegSetInfo_v4)/sizeof(regtype_t);
+	break;
+    
+    case Q6_V3:
+	numGblRegs = sizeof(globalRegSetInfo_v3)/sizeof(regtype_t);
+	break;
+
+    case Q6_V2:
+	numGblRegs = sizeof(globalRegSetInfo_v2)/sizeof(regtype_t);
+	break;
+
+    default:
+	printf_filtered ("%s, invalid setting for arch level %d\n",__func__, q6Version);
+	gdb_assert(0);
+	break;
+  }
 
   for (i = 0; i < numGblRegs; i++)
   {

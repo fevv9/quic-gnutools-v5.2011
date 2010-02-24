@@ -1664,7 +1664,15 @@ start_remote (int from_tty)
   init_wait_for_inferior ();
 
   inferior = current_inferior ();
-  inferior->stop_soon = STOP_QUIETLY_REMOTE;
+#ifdef QDSP6
+  extern char *current_q6_target;
+  if (current_q6_target) /* QUALCOMM: otherwise first breakpoints are
+                            quiet and that bothers the testsuite */
+    inferior->stop_soon = NO_STOP_QUIETLY;
+  else
+#else
+    inferior->stop_soon = STOP_QUIETLY_REMOTE;
+#endif
 
   /* Always go on waiting for the target, regardless of the mode. */
   /* FIXME: cagney/1999-09-23: At present it isn't possible to
