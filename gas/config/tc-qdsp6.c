@@ -224,7 +224,7 @@ typedef struct
     qdsp6_packet_insn prefixes [MAX_PACKET_INSNS]; /* k-extender insns. */
     qdsp6_packet_insn insns [MAX_PACKET_INSNS]; /* Insns. */
     qdsp6_packet_insn2 pairs [MAX_PACKET_INSNS][2]; /* Original paired prefix+insn. */
-    int reason; /* Reason for last history flush. */
+    int stats; /* Packet statistics. */
   } qdsp6_packet;
 
 typedef struct qdsp6_frag_data
@@ -233,21 +233,21 @@ typedef struct qdsp6_frag_data
     fragS *previous;
   } qdsp6_frag_data;
 
-/** Reason for flushing the packet history. */
-enum _qdsp6_flush_reason
+/** Packet events tracked for statistics. */
+enum _qdsp6_packet_stats
   {
-    QDSP6_FLUSH_INIT   = 0x00, /* Initilization. */
-    QDSP6_FLUSH_LABEL  = 0x01, /* A label was defined. */
-    QDSP6_FLUSH_ALIGN  = 0x02, /* An alignment was performed. */
-    QDSP6_FLUSH_NOP    = 0x04,  /* A NOP packet was added. */
+    QDSP6_STATS_FALIGN = 0x01, /* Caused adjustments due to .falign. */
+    QDSP6_STATS_PAD    = 0x02, /* Caused NOP padding inserted due to .falign. */
+    QDSP6_STATS_PACK   = 0x04, /* Caused NOP packet inserted due to .falign. */
   };
 
 /** .falign counter types. */
 enum _qdsp6_falign_counters
   {
     QDSP6_FALIGN_TOTAL,   /* # of .falign directives. */
-    QDSP6_FALIGN_INC,     /* ... which incorporated into previous packets. */
-    QDSP6_FALIGN_INS,     /* ... which inserted new NOP packets. */
+    QDSP6_FALIGN_NEED,    /* ... which needed adjustments. */
+    QDSP6_FALIGN_PAD,     /* ... which padded previous packets. */
+    QDSP6_FALIGN_PACK,    /* ... which inserted new NOP packets. */
     QDSP6_FALIGN_FALIGN,  /* # of times that the history stopped due to a fetch-alignment. */
     QDSP6_FALIGN_FALIGN1, /* ... due to a single-insn fetch-alignment. */
     QDSP6_FALIGN_SECTION, /* ... due to a section change. */
@@ -356,6 +356,8 @@ int qdsp6_relax_falign (fragS *);
 long qdsp6_relax_branch_try (fragS *, segT, long);
 long qdsp6_relax_falign_try (fragS *, segT, long);
 long qdsp6_relax_frag (segT, fragS *, long);
+int qdsp6_relax_on (void);
+void qdsp6_statistics (void);
 
 static segT qdsp6_sdata_section, qdsp6_sbss_section;
 static asection qdsp6_scom_section;
@@ -474,6 +476,8 @@ struct option md_longopts [] =
     { "mno-pairing-duplex", no_argument, NULL, OPTION_QDSP6_MNO_PAIRING_2 },
 #define OPTION_QDSP6_MNO_JUMPS (OPTION_MD_BASE + 17)
     { "mno-jumps", no_argument, NULL, OPTION_QDSP6_MNO_JUMPS },
+#define OPTION_QDSP6_MNO_FALIGN (OPTION_MD_BASE + 18)
+    { "mno-falign", no_argument, NULL, OPTION_QDSP6_MNO_FALIGN },
   };
 size_t md_longopts_size = sizeof (md_longopts);
 
@@ -590,6 +594,7 @@ int
 md_parse_option
 (int c, char *arg)
 {
+  static int post_stats;
   unsigned int i;
   int temp_qdsp6_mach_type = 0;
 
@@ -607,6 +612,11 @@ md_parse_option
 
     case OPTION_QDSP6_PAIR_INFO:
       qdsp6_pairs_info = TRUE;
+      if (!post_stats)
+        {
+          post_stats = TRUE;
+          xatexit (qdsp6_statistics);
+        }
       break;
 
     case OPTION_QDSP6_FALIGN_MORE_INFO:
@@ -615,6 +625,11 @@ md_parse_option
 
     case OPTION_QDSP6_FALIGN_INFO_NEW:
       qdsp6_falign_info = TRUE;
+      if (!post_stats)
+        {
+          post_stats = TRUE;
+          xatexit (qdsp6_statistics);
+        }
       break;
 
     case OPTION_QDSP6_MQDSP6V2:
@@ -701,6 +716,10 @@ md_parse_option
 
     case OPTION_QDSP6_MNO_JUMPS:
       qdsp6_relax = FALSE;
+      break;
+
+    case OPTION_QDSP6_MNO_FALIGN:
+      qdsp6_fetch_align = FALSE;
       break;
 
     default:
@@ -971,8 +990,9 @@ int
 qdsp6_relax_falign
 (fragS *fragP)
 {
-  qdsp6_packet *apacket, packet;
-  size_t after, i;
+  qdsp6_packet *apacket, *fpacket, packet;
+  fragS *previous;
+  size_t after, pad, pkt, i;
 
   apacket = &fragP->tc_frag_data->packet;
   if (!apacket->dpad && !apacket->dpkt)
@@ -985,8 +1005,8 @@ qdsp6_relax_falign
 
   packet = *apacket;
   packet.relax = FALSE; /* At this point, it won't be extended. */
-  packet.dpad = apacket->dpad;
-  packet.dpkt = apacket->dpkt;
+  packet.dpad = pad = apacket->dpad;
+  packet.dpkt = pkt = apacket->dpkt;
 
   if (packet.dpad)
     {
@@ -1031,7 +1051,7 @@ qdsp6_relax_falign
           qdsp6_packet_fold (&packet);
           after = apacket->size;
 
-          packet.dpkt = apacket->dpkt + apacket->dpad;
+          packet.dpkt = pkt = apacket->dpkt + apacket->dpad;
         }
     }
   else
@@ -1048,6 +1068,23 @@ qdsp6_relax_falign
                             QDSP6_END_PACKET_SET (qdsp6_nop_insn.insn, QDSP6_END_PACKET),
                             QDSP6_INSN_LEN);
       packet.dpkt--;
+    }
+
+  /* Find packet requestin .falign. */
+  for (previous = fragP, fpacket = NULL;
+       previous && (fpacket = &previous->tc_frag_data->packet) && !fpacket->faligned;
+       previous = previous->tc_frag_data->previous)
+    ;
+
+   if (fpacket)
+    {
+      /* Collect stats. */
+      (pad || pkt) && !(fpacket->stats & QDSP6_STATS_FALIGN)
+      && (fpacket->stats |= QDSP6_STATS_FALIGN) && n_falign [QDSP6_FALIGN_NEED]++;
+      pad && !(fpacket->stats & QDSP6_STATS_PAD)
+      && (fpacket->stats |= QDSP6_STATS_PAD) && n_falign [QDSP6_FALIGN_PAD]++;
+      pkt && !(fpacket->stats & QDSP6_STATS_PACK)
+      && (fpacket->stats |= QDSP6_STATS_PACK) && n_falign [QDSP6_FALIGN_PACK]++;
     }
 
   fragP->fr_fix += (apacket->dpad + apacket->dpkt) * QDSP6_INSN_LEN;
@@ -1109,10 +1146,11 @@ qdsp6_relax_falign_try
       /* Check if still not fetch-aligned. */
       if (over)
         {
-          left = MAX_PACKET_INSNS - first;
-          for (previous = fragP->tc_frag_data->previous;
+          for (previous = fragP->tc_frag_data->previous,
+               left = MAX_PACKET_INSNS - first;
                previous && left;
-               previous = previous->tc_frag_data->previous)
+               previous = previous->tc_frag_data
+                          ? previous->tc_frag_data->previous: NULL)
             {
               zpacket = &previous->tc_frag_data->packet;
 
@@ -1245,7 +1283,7 @@ qdsp6_estimate_size_before_relax
     /* !!! */
     apacket->faligned = apacket->faligned;
 
-  return (delta);
+  return (delta + qdsp6_relax_on ());
 }
 
 long
@@ -1287,6 +1325,33 @@ qdsp6_convert_frag
     qdsp6_relax_branch (fragP);
   if (apacket->dpad || apacket->dpkt)
     qdsp6_relax_falign (fragP);
+}
+
+/** Jump-start relaxation.
+*/
+int
+qdsp6_relax_on
+(void)
+{
+  static enum qdsp6_relax_engine {QDSP6_OFF, QDSP6_TURN, QDSP6_ON} key = QDSP6_OFF;
+
+  switch (key)
+    {
+      case QDSP6_OFF:
+        key++;
+        return (QDSP6_INSN_LEN);
+
+      case QDSP6_TURN:
+        key++;
+        return (-QDSP6_INSN_LEN);
+
+      case QDSP6_ON:
+        /* Fall-through. */
+
+      default:
+        key = QDSP6_ON;
+        return (0);
+    }
 }
 
 /* We need to distinguish a register pair name (e.g., r1:0 or p3:0)
@@ -1930,11 +1995,11 @@ qdsp6_has_duplex_hits
   /* Count number of memory ops in this packet. */
   for (i = 0; i < qdsp6_packet_count (apacket); i++)
     if (((apacket->insns [i].opcode->attributes & DUPLEX)
-         && (ainsn->opcode->slot_mask & QDSP6_DUPLEX_SLOTS)
-         && !(ainsn->opcode->slot_mask & ~QDSP6_DUPLEX_SLOTS))
+         && (ainsn->opcode->slot_mask & QDSP6_SLOTS_DUPLEX)
+         && !(ainsn->opcode->slot_mask & ~QDSP6_SLOTS_DUPLEX))
         || ((ainsn->opcode->attributes & DUPLEX)
-            && (apacket->insns [i].opcode->slot_mask & QDSP6_DUPLEX_SLOTS)
-            && !(apacket->insns [i].opcode->slot_mask & ~QDSP6_DUPLEX_SLOTS)))
+            && (apacket->insns [i].opcode->slot_mask & QDSP6_SLOTS_DUPLEX)
+            && !(apacket->insns [i].opcode->slot_mask & ~QDSP6_SLOTS_DUPLEX)))
       {
         if (which)
           *which = i;
@@ -3624,49 +3689,11 @@ qdsp6_option
   return;
 }
 
-/* Turn a string in input_line_pointer into a floating point constant
-   of type TYPE, and store the appropriate bytes in *LITP.  The number
-   of LITTLENUMS emitted is stored in *SIZEP.  An error message is
-   returned, or NULL on OK.  */
-
 char *
 md_atof
 (int type, char *litP, int *sizeP)
 {
-  int prec;
-  LITTLENUM_TYPE words[MAX_LITTLENUMS];
-  LITTLENUM_TYPE *wordP;
-  char *t;
-  char * atof_ieee PARAMS ((char *, int, LITTLENUM_TYPE *));
-
-  switch (type)
-    {
-    case 'f':
-    case 'F':
-      prec = 2;
-      break;
-
-    case 'd':
-    case 'D':
-      prec = 4;
-      break;
-
-    default:
-      *sizeP = 0;
-      return "bad call to md_atof";
-    }
-
-  t = atof_ieee (input_line_pointer, type, words);
-  if (t)
-    input_line_pointer = t;
-  *sizeP = prec * sizeof (LITTLENUM_TYPE);
-  for (wordP = words; prec--;)
-    {
-      md_number_to_chars (litP, (valueT) (*wordP++), sizeof (LITTLENUM_TYPE));
-      litP += sizeof (LITTLENUM_TYPE);
-    }
-
-  return NULL;
+  return (ieee_md_atof (type, litP, sizeP, target_big_endian));
 }
 
 /* Round up a section size to the appropriate boundary.  */
@@ -4070,7 +4097,7 @@ qdsp6_shuffle_helper
       fromto = aux;
     }
 
-  store_mask = 2;
+  store_mask = QDSP6_SLOTS_STORES;
   for (i = 0, changed = FALSE;
        i < qdsp6_packet_count (packet) && !changed;
        i++)
@@ -4080,13 +4107,13 @@ qdsp6_shuffle_helper
       /* If there is only one memory insn, it requires ndx #0. */
       if (single
 	  && (packet->insns [i].opcode->attributes & A_RESTRICT_SINGLE_MEM_FIRST))
-	temp_mask &= 1;
+	temp_mask &= QDSP6_SLOTS_MEM1;
 
       /* If there is a store restriction, make sure that none makes into slot #1. */
       if (nostore
           && !(packet->insns [i].opcode->attributes & A_RESTRICT_NOSLOT1_STORE)
           && (packet->insns [i].opcode->attributes & A_STORE))
-        temp_mask &= ~2;
+        temp_mask &= ~QDSP6_SLOTS_STORES;
 
       /* Make sure that several stores follow source order. */
       if ((packet->insns [i].opcode->attributes & A_STORE))
@@ -4097,15 +4124,8 @@ qdsp6_shuffle_helper
               store_mask >>= 1;
             }
           else
-            temp_mask &= 1;
+            temp_mask &= QDSP6_SLOTS_MEM1;
         }
-
-      /* If there is a R.NEW insn, then the insn whose output GPR is the same
-         requires ndx #1. */
-      if (rnew
-          && (packet->insns [i].flags & QDSP6_INSN_OUT_RNEW)
-          && (packet->insns [i].oreg == inew->ireg))
-	temp_mask &= QDSP6_RNEW_SLOTS;
 
       if (!packet->insns [i].used && (temp_mask & slot_mask))
 	{
@@ -5128,8 +5148,6 @@ void
 qdsp6_cleanup
 (void)
 {
-  size_t n_faligned;
-
   if (qdsp6_in_packet)
     {
       as_warn (_("reached end of file before closing a packet."));
@@ -5137,60 +5155,58 @@ qdsp6_cleanup
       qdsp6_packet_close (qdsp6_packets + 0);
       qdsp6_packet_write (qdsp6_packets + 0);
     }
+}
 
-  /* Add up effective instances of .falign. */
-  n_faligned = n_falign [QDSP6_FALIGN_INS] + n_falign [QDSP6_FALIGN_INC];
-
+void
+qdsp6_statistics
+(void)
+{
   if (qdsp6_falign_info && n_falign [QDSP6_FALIGN_TOTAL])
     {
-      as_warn (_("%lu of %lu `.falign' (%lu%%) inserted new `nop' instructions."),
-                n_faligned, n_falign [QDSP6_FALIGN_TOTAL],
-                n_faligned * 100 / n_falign [QDSP6_FALIGN_TOTAL]);
+      as_warn (_("%lu of %lu \".falign\" (%lu%%) inserted new `nop' instructions."),
+                n_falign [QDSP6_FALIGN_NEED], n_falign [QDSP6_FALIGN_TOTAL],
+                n_falign [QDSP6_FALIGN_NEED] * 100 / n_falign [QDSP6_FALIGN_TOTAL]);
 
-      if (n_faligned)
-        as_warn (_("%lu of %lu `.falign' (%lu%%) inserted new `nop' packets."),
-                n_falign [QDSP6_FALIGN_INS], n_faligned,
-                n_falign [QDSP6_FALIGN_INS] * 100 / n_faligned);
+      if (n_falign [QDSP6_FALIGN_NEED])
+        as_warn (_("%lu of %lu \".falign\" (%lu%%) inserted new `nop' packets."),
+                n_falign [QDSP6_FALIGN_PACK], n_falign [QDSP6_FALIGN_NEED],
+                n_falign [QDSP6_FALIGN_PACK] * 100 / n_falign [QDSP6_FALIGN_NEED]);
     }
 
-  if (qdsp6_falign_more && n_falign [QDSP6_FALIGN_INS])
+  if (qdsp6_falign_more && n_falign [QDSP6_FALIGN_PACK])
     {
       as_warn (_("reasons for \".falign\" inserting new `nop' packets:"));
       as_warn (_("  %lu of %lu (%lu%%) reached a packet \".falign\"."),
-               n_falign [QDSP6_FALIGN_FALIGN], n_falign [QDSP6_FALIGN_INS],
-               n_falign [QDSP6_FALIGN_FALIGN] * 100 / n_falign [QDSP6_FALIGN_INS]);
+               n_falign [QDSP6_FALIGN_FALIGN], n_falign [QDSP6_FALIGN_PACK],
+               n_falign [QDSP6_FALIGN_FALIGN] * 100 / n_falign [QDSP6_FALIGN_PACK]);
       as_warn (_("  %lu of %lu (%lu%%) reached a single-instruction \".falign\"."),
-               n_falign [QDSP6_FALIGN_FALIGN1], n_falign [QDSP6_FALIGN_INS],
-               n_falign [QDSP6_FALIGN_FALIGN1] * 100 / n_falign [QDSP6_FALIGN_INS]);
+               n_falign [QDSP6_FALIGN_FALIGN1], n_falign [QDSP6_FALIGN_PACK],
+               n_falign [QDSP6_FALIGN_FALIGN1] * 100 / n_falign [QDSP6_FALIGN_PACK]);
       as_warn (_("  %lu of %lu (%lu%%) in different sections."),
-               n_falign [QDSP6_FALIGN_SECTION], n_falign [QDSP6_FALIGN_INS],
-               n_falign [QDSP6_FALIGN_SECTION] * 100 / n_falign [QDSP6_FALIGN_INS]);
+               n_falign [QDSP6_FALIGN_SECTION], n_falign [QDSP6_FALIGN_PACK],
+               n_falign [QDSP6_FALIGN_SECTION] * 100 / n_falign [QDSP6_FALIGN_PACK]);
       as_warn (_("  %lu of %lu (%lu%%) reached end of history."),
-               n_falign [QDSP6_FALIGN_END], n_falign [QDSP6_FALIGN_INS],
-               n_falign [QDSP6_FALIGN_END] * 100 / n_falign [QDSP6_FALIGN_INS]);
+               n_falign [QDSP6_FALIGN_END], n_falign [QDSP6_FALIGN_PACK],
+               n_falign [QDSP6_FALIGN_END] * 100 / n_falign [QDSP6_FALIGN_PACK]);
       as_warn (_("  %lu of %lu (%lu%%) exhausted history."),
-               n_falign [QDSP6_FALIGN_TOP], n_falign [QDSP6_FALIGN_INS],
-               n_falign [QDSP6_FALIGN_TOP] * 100 / n_falign [QDSP6_FALIGN_INS]);
+               n_falign [QDSP6_FALIGN_TOP], n_falign [QDSP6_FALIGN_PACK],
+               n_falign [QDSP6_FALIGN_TOP] * 100 / n_falign [QDSP6_FALIGN_PACK]);
       as_warn (_("  %lu of %lu (%lu%%) reached a label."),
-               n_falign [QDSP6_FALIGN_LABEL], n_falign [QDSP6_FALIGN_INS],
-               n_falign [QDSP6_FALIGN_LABEL] * 100 / n_falign [QDSP6_FALIGN_INS]);
+               n_falign [QDSP6_FALIGN_LABEL], n_falign [QDSP6_FALIGN_PACK],
+               n_falign [QDSP6_FALIGN_LABEL] * 100 / n_falign [QDSP6_FALIGN_PACK]);
       as_warn (_("  %lu of %lu (%lu%%) reached a \".align\"."),
-               n_falign [QDSP6_FALIGN_ALIGN], n_falign [QDSP6_FALIGN_INS],
-               n_falign [QDSP6_FALIGN_ALIGN] * 100 / n_falign [QDSP6_FALIGN_INS]);
+               n_falign [QDSP6_FALIGN_ALIGN], n_falign [QDSP6_FALIGN_PACK],
+               n_falign [QDSP6_FALIGN_ALIGN] * 100 / n_falign [QDSP6_FALIGN_PACK]);
       as_warn (_("  %lu of %lu (%lu%%) reached another `nop' packet."),
-               n_falign [QDSP6_FALIGN_NOP], n_falign [QDSP6_FALIGN_INS],
-               n_falign [QDSP6_FALIGN_NOP] * 100 / n_falign [QDSP6_FALIGN_INS]);
+               n_falign [QDSP6_FALIGN_NOP], n_falign [QDSP6_FALIGN_PACK],
+               n_falign [QDSP6_FALIGN_NOP] * 100 / n_falign [QDSP6_FALIGN_PACK]);
       as_warn (_("  %lu of %lu (%lu%%) failed inserting new `nop' instruction."),
-               n_falign [QDSP6_FALIGN_SHUF], n_falign [QDSP6_FALIGN_INS],
-               n_falign [QDSP6_FALIGN_SHUF] * 100 / n_falign [QDSP6_FALIGN_INS]);
+               n_falign [QDSP6_FALIGN_SHUF], n_falign [QDSP6_FALIGN_PACK],
+               n_falign [QDSP6_FALIGN_SHUF] * 100 / n_falign [QDSP6_FALIGN_PACK]);
     }
-
-  memset (n_falign, 0, sizeof (n_falign));
 
   if (qdsp6_pairs_info && n_pairs [QDSP6_PAIRS_TOTAL])
     {
       as_warn (_("%lu instruction pairings."), n_pairs [QDSP6_PAIRS_TOTAL]);
     }
-
-  memset (n_pairs, 0, sizeof (n_pairs));
 }
