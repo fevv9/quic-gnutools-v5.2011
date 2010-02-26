@@ -28,6 +28,12 @@ ifndef PREFIX
 PREFIX = $(DESTDIR)
 endif
 
+ifndef ISS_DIR
+$(warning Missing environment variable ISS_DIR)
+$(warning ISS_DIR points to the top of the simulator source directory)
+$(error typically $$TOOLS_SRC/tools/iss)
+endif
+
 ifndef JOBS
 JOBS = 1
 endif
@@ -69,6 +75,7 @@ build_win:
 	CC_FOR_TARGET=i386-pc-mingw32-gcc \
 	CC_FOR_BUILD=gcc \
 	MAKEINFO=$(MAKEINFO) \
+	ISS_DIR=$(ISS_DIR) \
 	../configure \
 		 --x-includes=../win \
   		--host=i386-pc-mingw32 \
@@ -81,6 +88,7 @@ build_lnx:
 	cd $@ && \
 	CFLAGS="$(BUILD_CFLAGS)" \
 	MAKEINFO=$(MAKEINFO) \
+	ISS_DIR=$(ISS_DIR) \
 	../configure \
 		$(CONFIGURE_OPTIONS)  && \
 	$(MAKE) -j $(JOBS) all
