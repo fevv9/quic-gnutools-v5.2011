@@ -364,7 +364,7 @@ static asection qdsp6_scom_section;
 static asymbol  qdsp6_scom_symbol;
 
 static qdsp6_literal *qdsp6_pool;
-static size_t qdsp6_pool_counter;
+static unsigned qdsp6_pool_counter;
 
 /* Special insns created by GAS. */
 static qdsp6_packet_insn qdsp6_nop_insn, qdsp6_kext_insn;
@@ -539,7 +539,7 @@ static int qdsp6_falign_info; /* Report statistics about .falign usage. */
 static int qdsp6_falign_more; /* Report more statistics about .falign. */
 static int qdsp6_pairs_info;   /* Report statistics about pairings. */
 
-static size_t qdsp6_gp_size = QDSP6_SMALL_GPSIZE;
+static unsigned qdsp6_gp_size = QDSP6_SMALL_GPSIZE;
 static int qdsp6_no_dual_memory = FALSE;
 
 static int qdsp6_in_packet;
@@ -552,8 +552,8 @@ static int qdsp6_falign_more; /* report more statistics about .falign. */
 static char *falign_file;
 static unsigned falign_line;
 
-static size_t n_falign [QDSP6_FALIGN_COUNTERS]; /* .falign statistics. */
-static size_t n_pairs  [QDSP6_PAIRS_COUNTERS];   /* Pairing statistics. */
+static unsigned n_falign [QDSP6_FALIGN_COUNTERS]; /* .falign statistics. */
+static unsigned n_pairs  [QDSP6_PAIRS_COUNTERS];   /* Pairing statistics. */
 
 // Arrays to keep track of register writes
 static qdsp6_reg_score gArray [QDSP6_NUM_GENERAL_PURPOSE_REGS],
@@ -2734,7 +2734,7 @@ qdsp6_add_to_lit_pool
       else /* if (literal->e.X_op == O_symbol) */
         /* Create a label symbol (with the literal order as the suffix). */
         {
-          sprintf (literal->name, "%s_%04lx", LITERAL_PREFIX, qdsp6_pool_counter);
+          sprintf (literal->name, "%s_%04x", LITERAL_PREFIX, qdsp6_pool_counter);
           strcpy (literal->secname, LITERAL_SECTION_A);
 
           literal->sec = qdsp6_create_literal_section (literal->secname, 0, bfd_log2 (size));
@@ -3817,6 +3817,15 @@ md_apply_fix
     fixP->fx_done = 1;
   else if (fixP->fx_pcrel)
     {
+      switch (fixP->fx_r_type)
+        {
+        case BFD_RELOC_32:
+          fixP->fx_r_type = BFD_RELOC_32_PCREL;
+          break;
+        default:
+          break;
+        }
+
       /* Hack around bfd_install_relocation brain damage.  */
       if (S_GET_SEGMENT (fixP->fx_addsy) != seg)
         value += md_pcrel_from (fixP);
@@ -4182,7 +4191,7 @@ qdsp6_shuffle_do
   size_t fromto [MAX_PACKET_INSNS];
   char *file;
   char found, has_prefer_slot0;
-  size_t i, j, k;
+  unsigned i, j, k;
 
       /* Initialize shuffle map. */
       for (i = 0; i < MAX_PACKET_INSNS; i++)
@@ -4282,10 +4291,10 @@ qdsp6_shuffle_do
       as_where (&file, NULL);
 
       for (i = 0; i < MAX_PACKET_INSNS - 1; i++)
-	  if ((  apacket->insns [i].opcode->attributes & A_RESTRICT_PREFERSLOT0))
+	  if ((apacket->insns [i].opcode->attributes & A_RESTRICT_PREFERSLOT0))
 	      as_warn_where (file, apacket->insns [i].lineno,
-	                     _("instruction `%s' prefers ndx #0, "
-                               "but has been assigned to ndx #%lu."),
+	                     _("instruction `%s' prefers slot #0, "
+                               "but has been assigned to slot #%u."),
 			     apacket->insns [i].opcode->syntax, i);
     }
 }
@@ -5163,12 +5172,12 @@ qdsp6_statistics
 {
   if (qdsp6_falign_info && n_falign [QDSP6_FALIGN_TOTAL])
     {
-      as_warn (_("%lu of %lu \".falign\" (%lu%%) inserted new `nop' instructions."),
+      as_warn (_("%u of %u \".falign\" (%u%%) inserted new `nop' instructions."),
                 n_falign [QDSP6_FALIGN_NEED], n_falign [QDSP6_FALIGN_TOTAL],
                 n_falign [QDSP6_FALIGN_NEED] * 100 / n_falign [QDSP6_FALIGN_TOTAL]);
 
       if (n_falign [QDSP6_FALIGN_NEED])
-        as_warn (_("%lu of %lu \".falign\" (%lu%%) inserted new `nop' packets."),
+        as_warn (_("%u of %u \".falign\" (%u%%) inserted new `nop' packets."),
                 n_falign [QDSP6_FALIGN_PACK], n_falign [QDSP6_FALIGN_NEED],
                 n_falign [QDSP6_FALIGN_PACK] * 100 / n_falign [QDSP6_FALIGN_NEED]);
     }
@@ -5176,37 +5185,37 @@ qdsp6_statistics
   if (qdsp6_falign_more && n_falign [QDSP6_FALIGN_PACK])
     {
       as_warn (_("reasons for \".falign\" inserting new `nop' packets:"));
-      as_warn (_("  %lu of %lu (%lu%%) reached a packet \".falign\"."),
+      as_warn (_("  %u of %u (%u%%) reached a packet \".falign\"."),
                n_falign [QDSP6_FALIGN_FALIGN], n_falign [QDSP6_FALIGN_PACK],
                n_falign [QDSP6_FALIGN_FALIGN] * 100 / n_falign [QDSP6_FALIGN_PACK]);
-      as_warn (_("  %lu of %lu (%lu%%) reached a single-instruction \".falign\"."),
+      as_warn (_("  %u of %u (%u%%) reached a single-instruction \".falign\"."),
                n_falign [QDSP6_FALIGN_FALIGN1], n_falign [QDSP6_FALIGN_PACK],
                n_falign [QDSP6_FALIGN_FALIGN1] * 100 / n_falign [QDSP6_FALIGN_PACK]);
-      as_warn (_("  %lu of %lu (%lu%%) in different sections."),
+      as_warn (_("  %u of %u (%u%%) in different sections."),
                n_falign [QDSP6_FALIGN_SECTION], n_falign [QDSP6_FALIGN_PACK],
                n_falign [QDSP6_FALIGN_SECTION] * 100 / n_falign [QDSP6_FALIGN_PACK]);
-      as_warn (_("  %lu of %lu (%lu%%) reached end of history."),
+      as_warn (_("  %u of %u (%u%%) reached end of history."),
                n_falign [QDSP6_FALIGN_END], n_falign [QDSP6_FALIGN_PACK],
                n_falign [QDSP6_FALIGN_END] * 100 / n_falign [QDSP6_FALIGN_PACK]);
-      as_warn (_("  %lu of %lu (%lu%%) exhausted history."),
+      as_warn (_("  %u of %u (%u%%) exhausted history."),
                n_falign [QDSP6_FALIGN_TOP], n_falign [QDSP6_FALIGN_PACK],
                n_falign [QDSP6_FALIGN_TOP] * 100 / n_falign [QDSP6_FALIGN_PACK]);
-      as_warn (_("  %lu of %lu (%lu%%) reached a label."),
+      as_warn (_("  %u of %u (%u%%) reached a label."),
                n_falign [QDSP6_FALIGN_LABEL], n_falign [QDSP6_FALIGN_PACK],
                n_falign [QDSP6_FALIGN_LABEL] * 100 / n_falign [QDSP6_FALIGN_PACK]);
-      as_warn (_("  %lu of %lu (%lu%%) reached a \".align\"."),
+      as_warn (_("  %u of %u (%u%%) reached a \".align\"."),
                n_falign [QDSP6_FALIGN_ALIGN], n_falign [QDSP6_FALIGN_PACK],
                n_falign [QDSP6_FALIGN_ALIGN] * 100 / n_falign [QDSP6_FALIGN_PACK]);
-      as_warn (_("  %lu of %lu (%lu%%) reached another `nop' packet."),
+      as_warn (_("  %u of %u (%u%%) reached another `nop' packet."),
                n_falign [QDSP6_FALIGN_NOP], n_falign [QDSP6_FALIGN_PACK],
                n_falign [QDSP6_FALIGN_NOP] * 100 / n_falign [QDSP6_FALIGN_PACK]);
-      as_warn (_("  %lu of %lu (%lu%%) failed inserting new `nop' instruction."),
+      as_warn (_("  %u of %u (%u%%) failed inserting new `nop' instruction."),
                n_falign [QDSP6_FALIGN_SHUF], n_falign [QDSP6_FALIGN_PACK],
                n_falign [QDSP6_FALIGN_SHUF] * 100 / n_falign [QDSP6_FALIGN_PACK]);
     }
 
   if (qdsp6_pairs_info && n_pairs [QDSP6_PAIRS_TOTAL])
     {
-      as_warn (_("%lu instruction pairings."), n_pairs [QDSP6_PAIRS_TOTAL]);
+      as_warn (_("%u instruction pairings."), n_pairs [QDSP6_PAIRS_TOTAL]);
     }
 }
