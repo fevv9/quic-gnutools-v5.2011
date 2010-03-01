@@ -4602,11 +4602,6 @@ value in a word.  The relocation is relative offset from  */
 the dynamic object into the runtime process image.  */
   BFD_RELOC_MICROBLAZE_COPY,
 
-/* QDSP6 basic unsigned relocations.  */
-  BFD_RELOC_QDSP6_32,
-  BFD_RELOC_QDSP6_16,
-  BFD_RELOC_QDSP6_8,
-
 /* QDSP6 relocation with 32 bits shifted right by 6.  */
   BFD_RELOC_QDSP6_32_6_X,
 

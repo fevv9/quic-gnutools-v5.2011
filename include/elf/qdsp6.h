@@ -67,6 +67,8 @@ START_RELOC_NUMBERS (elf_qdsp6_reloc_type)
   RELOC_NUMBER (R_QDSP6_8_X,          27)
   RELOC_NUMBER (R_QDSP6_7_X,          28)
   RELOC_NUMBER (R_QDSP6_6_X,          29)
+  /* PIC */
+  RELOC_NUMBER (R_QDSP6_32_PCREL,     30)
 
 END_RELOC_NUMBERS (R_QDSP6_max)
 

@@ -5261,14 +5261,6 @@ ENUMDOC
   the dynamic object into the runtime process image.
 
 ENUM
-  BFD_RELOC_QDSP6_32
-ENUMX
-  BFD_RELOC_QDSP6_16
-ENUMX
-  BFD_RELOC_QDSP6_8
-ENUMDOC
-  QDSP6 basic unsigned relocations.
-ENUM
   BFD_RELOC_QDSP6_32_6_X
 ENUMDOC
   QDSP6 relocation with 32 bits shifted right by 6.

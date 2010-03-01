@@ -639,6 +639,21 @@ static reloc_howto_type elf_qdsp6_howto_table_v2 [] =
 	 0,			/* dst_mask  */
 	 FALSE),		/* pcrel_offset  */
 
+  /* A 32 bit PC-relative number. */
+  HOWTO (R_QDSP6_32_PCREL,	/* type  */
+	 0,			/* rightshift  */
+	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
+	 32,			/* bitsize  */
+	 TRUE,			/* pc_relative  */
+	 0,			/* bitpos  */
+	 complain_overflow_bitfield, /* complain_on_overflow  */
+	 bfd_elf_generic_reloc,	/* special_function  */
+	 "R_QDSP6_32_PCREL",	/* name  */
+	 FALSE,			/* partial_inplace  */
+	 0,			/* src_mask  */
+	 0xffffffff,		/* dst_mask  */
+	 FALSE),		/* pcrel_offset  */
+
 };
 
 static reloc_howto_type *elf_qdsp6_howto_table;
@@ -679,6 +694,7 @@ static const struct qdsp6_reloc_map qdsp6_reloc_map [] =
   { BFD_RELOC_QDSP6_HI16,        R_QDSP6_HI16,        0 },
   { BFD_RELOC_QDSP6_HL16,        R_QDSP6_HL16,        0 },
   { BFD_RELOC_QDSP6_32_6_X,      R_QDSP6_32_6_X,      0 }, /* K-ext */
+  { BFD_RELOC_32_PCREL,          R_QDSP6_32_PCREL,    0 },
   { BFD_RELOC_32,                R_QDSP6_32,          0 },
   { BFD_RELOC_16,                R_QDSP6_16,          0 },
   { BFD_RELOC_8,                 R_QDSP6_8,           0 },
@@ -1882,10 +1898,14 @@ qdsp6_elf_relocate_section
 
 	  break;
 
+        case R_QDSP6_32_PCREL:
 	case R_QDSP6_32:
 	case R_QDSP6_16:
 	case R_QDSP6_8:
-          is_abs = TRUE;
+          if (r_type == R_QDSP6_32_PCREL)
+            is_rel = TRUE;
+          else
+            is_abs = TRUE;
           /* Fall through. */
 
 	case R_QDSP6_NONE:
@@ -2418,6 +2438,7 @@ qdsp6_elf_check_relocs
 	case R_QDSP6_B13_PCREL:
 	case R_QDSP6_B15_PCREL:
 	case R_QDSP6_B22_PCREL:
+        case R_QDSP6_32_PCREL:
           is_rel = TRUE;
           break;
 
