@@ -1248,7 +1248,10 @@ main (int argc, char ** argv)
     keep_it = 0;
 
   if (!keep_it)
-    unlink_if_ordinary (out_file_name);
+    {
+      close_output_file ();
+      unlink_if_ordinary (out_file_name);
+    }
 
   input_scrub_end ();
 
