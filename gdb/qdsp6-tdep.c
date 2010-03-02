@@ -136,13 +136,13 @@ static regtype_t globalRegSetInfo_v3[]={
 
 // To automatically get all thread registers from arch
 static regtype_t threadRegSetInfo_v4[]={
-#include "gentable/v4/thread_regs.h"
+#include "v4/thread_regs.h"
   {"", END_OFFSET}
 };
 
 // To automatically get all thread registers from arch
 static regtype_t globalRegSetInfo_v4[]={
-#include "gentable/v4/global_regs.h"
+#include "v4/global_regs.h"
   {"", END_OFFSET}
 };
 

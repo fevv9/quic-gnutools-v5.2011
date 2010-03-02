@@ -28,12 +28,6 @@ ifndef PREFIX
 PREFIX = $(DESTDIR)
 endif
 
-ifndef ISS_DIR
-$(warning Missing environment variable ISS_DIR)
-$(warning ISS_DIR points to the top of the simulator source directory)
-$(error typically $$TOOLS_SRC/tools/iss)
-endif
-
 ifndef JOBS
 JOBS = 1
 endif
