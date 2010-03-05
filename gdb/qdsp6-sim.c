@@ -28,7 +28,7 @@
 #include <signal.h>
 #include <sys/types.h>
 
-static int qsim_debug = 1;
+static int qsim_debug = 0;
 static struct serial scb;
 
 static pid_t qdsp6_sim_pid = (pid_t) 0;
