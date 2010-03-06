@@ -586,12 +586,6 @@ const qdsp6_operand qdsp6_operands [] =
     BFD_RELOC_QDSP6_B32_PCREL_X, BFD_RELOC_NONE, BFD_RELOC_NONE,
     QDSP6_OPERAND_IS_IMMEDIATE | QDSP6_OPERAND_PC_RELATIVE | QDSP6_OPERAND_IS_SIGNED,
     "#%u", NULL, NULL },
-/*
-  { "#u26:6",    26, 'i', 6,
-    BFD_RELOC_QDSP6_GPREL26_6_X, BFD_RELOC_NONE, BFD_RELOC_NONE,
-    QDSP6_OPERAND_IS_IMMEDIATE,
-    "#%u", NULL, NULL },
-*/
 
   /* These don't appear in any instructions.  We get these by mapping
      from the previous operands when we see the lo/hi modifier in the

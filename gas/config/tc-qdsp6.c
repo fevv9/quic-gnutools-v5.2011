@@ -2227,8 +2227,8 @@ qdsp6_packet_cram
               packet = *apacket;
               /* Remove all branch relaxations. */
               for (i = 0; i < packet.size; i++)
-                if ((packet.insns [i].flags & ~QDSP6_INSN_IS_RELAX)
-                    || (packet.insns [i].operand.flags & ~QDSP6_OPERAND_IS_RELAX))
+                if ((packet.insns [i].flags & QDSP6_INSN_IS_RELAX)
+                    || (packet.insns [i].operand.flags & QDSP6_OPERAND_IS_RELAX))
                   {
                     packet.insns [i].flags         &= ~QDSP6_INSN_IS_RELAX;
                     packet.insns [i].operand.flags &= ~QDSP6_OPERAND_IS_RELAX;
@@ -3812,6 +3812,19 @@ md_apply_fix
 {
   const qdsp6_operand *operand;
   valueT value = *valP;
+
+  /* On a 64-bit host, silently truncate to 32 bits for
+     consistency with the behaviour on 32-bit hosts.  Remember value
+     for emit_reloc. */
+  value &= 0xffffffff;
+  value ^= 0x80000000;
+  value -= 0x80000000;
+  fixP->fx_addnumber = *valP = value;
+
+  /* Same treatment again. */
+  fixP->fx_offset &= 0xffffffff;
+  fixP->fx_offset ^= 0x80000000;
+  fixP->fx_offset -= 0x80000000;
 
   if (fixP->fx_addsy == (symbolS *) NULL)
     fixP->fx_done = 1;
