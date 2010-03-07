@@ -133,6 +133,9 @@ extern void qdsp6_cleanup (void);
 
 extern void qdsp6_align_code PARAMS ((fragS *, size_t));
 
+/* This avoids the segments from filling up. */
+#define SUB_SEGMENT_ALIGN(S, F) (0)
+
 #define md_do_align(n, fill, len, max, around)	\
 {						\
   if ((n) && !need_pass_2			\

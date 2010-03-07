@@ -2742,11 +2742,9 @@ md_number_to_chars
 /* Round up a section size to the appropriate boundary.  */
 valueT
 md_section_align
-(segT segment, valueT size)
+(segT segment ATTRIBUTE_UNUSED, valueT size)
 {
-  int align = bfd_get_section_alignment (stdoutput, segment);
-
-  return ((size + (1 << align) - 1) & (-1 << align));
+  return (size);
 }
 
 /* We don't have any form of relaxing.  */
