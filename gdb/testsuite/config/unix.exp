@@ -20,7 +20,7 @@
 # accepting whatever default dejagnu gives us (apparently 10 seconds).
 # When running the tests over NFS, under somewhat heavy load, 10 seconds
 # does not seem to be enough.  Try starting with 60.
-set timeout 60
+set timeout 3
 verbose "Timeout is now $timeout seconds" 2
 
-load_lib gdb.exp
+load_lib qdsp6.exp
