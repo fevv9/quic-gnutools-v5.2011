@@ -162,7 +162,7 @@ typedef struct _qdsp6_opcode {
   /* V4 */
 #define IMPLICIT_P1     (1 << 11)
 
-  unsigned int implicit_reg_def;   /* specifies implicit register writes */
+  unsigned int implicit;   /* specifies implicit register writes */
 
   unsigned int attributes;
 

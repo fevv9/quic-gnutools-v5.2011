@@ -566,7 +566,7 @@ static qdsp6_reg_score gArray [QDSP6_NUM_GENERAL_PURPOSE_REGS],
 
 static int implicit_sr_ovf_bit_flag;  /* keeps track of the ovf bit in SR */
 static int numOfBranchAddr;
-static int numOfBranchRelax;
+static int numOfBranchRelax, numOfBranchRelax2nd;
 static int numOfBranchAddrMax1;
 static int numOfBranchMax1;
 static int numOfLoopMax1;
@@ -3242,8 +3242,8 @@ qdsp6_assemble_pair
 
   /* Branches cannot be paired out of source order, so find the last one. */
   for (i = a_branch = qdsp6_packet_count (apacket); i > 0; i--)
-    if ((ainsn->opcode->implicit_reg_def & IMPLICIT_PC)
-        && (apacket->insns [i - 1].opcode->implicit_reg_def & IMPLICIT_PC))
+    if ((ainsn->opcode->implicit & IMPLICIT_PC)
+        && (apacket->insns [i - 1].opcode->implicit & IMPLICIT_PC))
       {
         a_branch = i - 1;
         break;
@@ -3309,8 +3309,8 @@ qdsp6_assemble_pair
 
         /* Skip certain combinations. */
         /*
-        if ((ainsn->opcode->implicit_reg_def & IMPLICIT_PC)
-            && (apacket->insns [i].opcode->implicit_reg_def & IMPLICIT_PC))
+        if ((ainsn->opcode->implicit & IMPLICIT_PC)
+            && (apacket->insns [i].opcode->implicit & IMPLICIT_PC))
           continue;
         */
 
@@ -4470,7 +4470,7 @@ qdsp6_check_implicit_predicate
 {
   int is_used;
 
-  if (opcode->implicit_reg_def & implicit)
+  if (opcode->implicit & implicit)
     {
       is_used = !qdsp6_autoand || (opcode->attributes & A_RESTRICT_LATEPRED)
                 ? TRUE: MAYBE;
@@ -4487,7 +4487,7 @@ qdsp6_check_implicit
 (const qdsp6_opcode *opcode, unsigned int implicit, int reg,
  qdsp6_reg_score *array, const char *name)
 {
-  if (opcode->implicit_reg_def & implicit)
+  if (opcode->implicit & implicit)
     {
       if (array [reg].used)
         as_bad (_("register `%s' modified more than once."), name);
@@ -4608,6 +4608,11 @@ qdsp6_check_insn
   if ((apacket->insns [n].opcode->attributes & A_RESTRICT_COF_MAX1))
     numOfBranchMax1++;
 
+  if (!(apacket->insns [n].opcode->attributes & A_RELAX_COF_1ST)
+      && (apacket->insns [n].opcode->attributes & A_RELAX_COF_2ND)
+      && !numOfBranchRelax)
+    numOfBranchRelax2nd++;
+
   if ((apacket->insns [n].opcode->attributes & A_RELAX_COF_1ST)
       || (apacket->insns [n].opcode->attributes & A_RELAX_COF_2ND))
     numOfBranchRelax++;
@@ -4616,9 +4621,9 @@ qdsp6_check_insn
     numOfLoopMax1++;
 
   // check for implicit register definitions
-  if (apacket->insns [n].opcode->implicit_reg_def)
+  if (apacket->insns [n].opcode->implicit)
     {
-      if (apacket->insns [n].opcode->implicit_reg_def & IMPLICIT_PC)
+      if (apacket->insns [n].opcode->implicit & IMPLICIT_PC)
         {
           /* Look into multiple implicit references to the PC in order to allow
              slots with two branches in V3. */
@@ -4917,7 +4922,7 @@ qdsp6_packet_end
 
   implicit_sr_ovf_bit_flag = 0;
   numOfBranchAddr = 0;
-  numOfBranchRelax = 0;
+  numOfBranchRelax = numOfBranchRelax2nd = 0;
   numOfBranchAddrMax1 = 0;
   numOfBranchMax1 = 0;
   numOfLoopMax1 = 0;
@@ -4955,6 +4960,13 @@ qdsp6_packet_end
       || (numOfBranchAddr > 1 && numOfBranchAddr > numOfBranchRelax))
     {
       as_bad (_("too many branches in packet."));
+      qdsp6_in_packet = FALSE;
+      return;
+    }
+
+  if (numOfBranchRelax2nd && numOfBranchRelax > numOfBranchRelax2nd)
+    {
+      as_bad (_("unconditional branch cannot precede another branch in packet."));
       qdsp6_in_packet = FALSE;
       return;
     }
