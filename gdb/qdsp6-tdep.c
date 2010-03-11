@@ -49,7 +49,7 @@
 #include "remote.h"
 #include "gdbthread.h"
 #include "completer.h"
-#include "reg_offsets.h"
+#include "qdsp6-tdep.h"
 #include "cli/cli-decode.h"
 #include "qdsp6-sim.h"
 
@@ -105,8 +105,8 @@ static struct cmd_list_element *q6cmdlist = NULL;
 // To enable printing of register names 
 typedef struct 
 {
-  char* sName; // reg name
-  int   Index; // Offset in reg file
+  char* reg_name; // reg name
+  int   index; // Offset in reg file
 } regtype_t;
 
 
@@ -150,12 +150,12 @@ static regtype_t globalRegSetInfo_v4[]={
 static regtype_t * threadRegSetInfo;
 /* static pointer which points to the v1/v2 thread registers */
 static regtype_t * globalRegSetInfo;
+static struct qdsp6_system_register_offsets *q6RegOffset = (struct qdsp6_system_register_offsets *)0;
 
 enum 
 {
   first_gpr_regnum          = 0,
   last_gpr_regnum           = NUM_GEN_REGS -1,   // 31
-  qdsp6_num_regs            = REG_TID + 1,    // 70 + 1(32 GPR + 32 CR + 6 SCR) 
   qdsp6_num_pseudo_regs     = 0,                 // Pseudo registers 
   struct_return_regnum      = 0,                 // !!! DRP 
   first_fpr_regnum          = 64,
@@ -175,6 +175,8 @@ typedef enum
 int q6Version = 0;
 int q6ArgRegMax = 0;
 int qdsp6_version = 0;
+int qdsp6_reg_index_max = 0;
+int qdsp6_reg_count = 0;
 
 
 struct qdsp6_unwind_cache		/* was struct frame_extra_info */
@@ -222,6 +224,40 @@ struct gdbarch_tdep
   char **register_names;
 };
 
+/*
+ * function: qdsp6_index_max
+ * description:
+ *	- Traverse the architecture's register file and return
+ *	  the largest index.
+ *      - This could be hard coded if the values didn't change
+ *	- NOTE:
+ *		- This is really geared for the simulator, different
+ *		  layers use different index offsets.  In the ideal
+ *	          world we would just use the indexes found in the
+ *		  spec.
+ *		  
+ */
+static int
+qdsp6_index_max (regtype_t *rt)
+{
+  int max_index = 0;
+  while (rt->index != END_OFFSET)
+    {
+      max_index = max (qdsp6_reg_index_max, rt->index);
+      qdsp6_reg_count++;
+      rt++;
+    }
+
+  if (qdsp6_debug == 1)
+  {
+    printf_filtered ("QDSP6_DEB: q6Version = %d, max reg index = %d, thread reg count = %d\n", q6Version, qdsp6_reg_index_max, qdsp6_reg_count);
+  }
+
+  return max_index;
+
+}
+
+
 
 /* Allocate a new variant structure, and set up default values for all
    the fields.  */
@@ -229,8 +265,10 @@ static struct gdbarch_tdep *
 new_variant (void)
 {
   struct gdbarch_tdep *var;
-  int r;
+  int regnum;
+  int reg_count;
   char buf[20];
+  extern int q6Version;
 
   var = xmalloc (sizeof (*var));
   memset (var, 0, sizeof (*var));
@@ -240,41 +278,61 @@ new_variant (void)
   var->num_hw_watchpoints = 0;
   var->num_hw_breakpoints = 20;
 
+  gdb_assert (qdsp6_reg_index_max != 0);
+
+  reg_count = qdsp6_reg_index_max+1;
+
   /* By default, don't supply any general-purpose or floating-point
      register names.  */
   var->register_names 
-    = (char **) xmalloc ((TOTAL_PER_THREAD_REGS)* sizeof (char *));
+    = (char **) xmalloc ((reg_count)* sizeof (char *));
 
-  for (r = 0; r < TOTAL_PER_THREAD_REGS; r++)
-    var->register_names[r] = "";
+  for (regnum = 0; regnum < reg_count; regnum++)
+    var->register_names[regnum] = "";
 
   /* Do, however, supply default names for the known special-purpose
      registers.  */
+#if 0
+printf ("REG_SA0 = %d\n", REG_SA0);
+printf ("REG_SA1 = %d\n", REG_SA1);
+printf ("REG_M0 = %d\n", REG_M0);
+printf ("REG_M1 = %d\n", REG_M1);
+printf ("REG_TID = %d\n", REG_TID);
+printf ("REG_ELR = %d\n", REG_ELR);
+printf ("REG_HTID = %d\n", REG_HTID);
+printf ("REG_CCR = %d\n", REG_CCR);
+#endif
+
   var->register_names[REG_SA0]     = "sa0";
-  var->register_names[REG_LC0]     = "lc0";
   var->register_names[REG_SA1]     = "sa1";
+  var->register_names[REG_LC0]     = "lc0";
   var->register_names[REG_LC1]     = "lc1";
   var->register_names[REG_P3_0]    = "p3:0";
   var->register_names[REG_M0]      = "m0";
   var->register_names[REG_M1]      = "m1";
-    var->register_names[REG_SR]      = "usr";
-  /* else if(q6Version == Q6_V4)  XXX_SM anything? */
-
-
+  var->register_names[REG_USR]     = "usr";
   var->register_names[REG_PC]      = "pc";
   var->register_names[REG_UGP]     = "ugp";
-  
-    var->register_names[REG_GP]     = "gp";
-  /* else if(q6Version == Q6_V4)  XXX_SM anything? */
-
-
+  var->register_names[REG_GP]      = "gp";
   /* per thread Supervisor Control Registers (SCR )   */
-  var->register_names[REG_SGP]     = "sgp";
   var->register_names[REG_SSR]     = "ssr"  ;
   var->register_names[REG_IMASK]   = "imask";
-  var->register_names[REG_BADVA]   = "badva";
   var->register_names[REG_ELR]     = "elr";
-  var->register_names[REG_TID]     = "tid"; 
+  if(q6Version < Q6_V4)
+  {
+      var->register_names[REG_SGP]     = "sgp";
+      var->register_names[REG_BADVA]   = "badva";
+      var->register_names[REG_TID]     = "tid"; 
+  }
+  else
+  {
+      var->register_names[REG_SGP0]     = "sgp0";
+      var->register_names[REG_BADVA0]   = "badva0";
+      var->register_names[REG_BADVA1]   = "badva1";
+      var->register_names[REG_STID]     = "stid"; 
+      var->register_names[REG_HTID]     = "htid"; 
+      var->register_names[REG_CCR]      = "ccr"; 
+  }
 
   return var;
 }
@@ -323,7 +381,7 @@ qdsp6_register_name (struct gdbarch *gdbarch, int reg)
 
   if (reg < 0)
     return "?toosmall?";
-  if (reg >=  qdsp6_num_regs)
+  if (reg >  qdsp6_reg_index_max)
     return "?toolarge?";
 
   return tdep->register_names[reg];
@@ -1185,9 +1243,12 @@ qdsp6_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
 {
   struct gdbarch *gdbarch;
   struct gdbarch_tdep *var;
+  extern struct qdsp6_system_register_offsets reg_offset_v4;
+  extern struct qdsp6_system_register_offsets reg_offset;
 
   /* Check to see if we've already built an appropriate architecture
      object for this executable.  */
+  bfd_get_flavour(info.abfd);
   arches = gdbarch_list_lookup_by_info (arches, &info);
   if (arches)
     return arches->gdbarch;
@@ -1202,6 +1263,7 @@ qdsp6_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
       q6ArgRegMax = 6;
       threadRegSetInfo = &threadRegSetInfo_v2[0];
       globalRegSetInfo = &globalRegSetInfo_v2[0];
+      q6RegOffset = &reg_offset;      
     break;
     
     case bfd_mach_qdsp6_v3:
@@ -1209,6 +1271,7 @@ qdsp6_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
       q6ArgRegMax = 6;
       threadRegSetInfo = &threadRegSetInfo_v3[0];
       globalRegSetInfo = &globalRegSetInfo_v3[0];
+      q6RegOffset = &reg_offset;      
     break;
 
     case bfd_mach_qdsp6_v4:
@@ -1216,6 +1279,7 @@ qdsp6_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
       q6ArgRegMax = 6;
       threadRegSetInfo = &threadRegSetInfo_v4[0];
       globalRegSetInfo = &globalRegSetInfo_v4[0];
+      q6RegOffset = &reg_offset_v4;      
     break;
     
     default:
@@ -1223,6 +1287,9 @@ qdsp6_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
       return 0;
     }
 
+
+  qdsp6_reg_index_max = qdsp6_index_max (threadRegSetInfo);
+  
   /* Select the right tdep structure for this variant (qdsp6).  */
   var = new_variant ();
   switch (info.bfd_arch_info->mach)
@@ -1242,18 +1309,19 @@ qdsp6_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
   
   gdbarch = gdbarch_alloc (&info, var);
 
+
+  /* Data types */
   set_gdbarch_short_bit (gdbarch, 16);
   set_gdbarch_int_bit (gdbarch, 32);
   set_gdbarch_long_bit (gdbarch, 32);
   set_gdbarch_long_long_bit (gdbarch, 64);
-#if 0
   set_gdbarch_float_bit (gdbarch, 32);
   set_gdbarch_double_bit (gdbarch, 64);
   set_gdbarch_long_double_bit (gdbarch, 64);
-#endif
   set_gdbarch_ptr_bit (gdbarch, 32);
 
-  set_gdbarch_num_regs (gdbarch, qdsp6_num_regs);
+
+  set_gdbarch_num_regs (gdbarch, qdsp6_reg_index_max+1);
   set_gdbarch_num_pseudo_regs (gdbarch, qdsp6_num_pseudo_regs);
 
   set_gdbarch_sp_regnum (gdbarch, REG_SP);
@@ -1345,14 +1413,14 @@ qdsp6_global_regnum_from_name(char *regname, int *index)
   for (i = 0; i < numGblRegs; i++)
   {
 
-    if(globalRegSetInfo[i].sName == NULL)
+    if(globalRegSetInfo[i].reg_name == NULL)
         break;
 
     if ((regname != NULL)                    && 
-	(len == strlen (globalRegSetInfo[i].sName)) && 
-	(strncmp (globalRegSetInfo[i].sName,regname,len) == 0))
+	(len == strlen (globalRegSetInfo[i].reg_name)) && 
+	(strncmp (globalRegSetInfo[i].reg_name,regname,len) == 0))
     {
-        regnum =  globalRegSetInfo[i].Index ;
+        regnum =  globalRegSetInfo[i].index ;
         break;
     }
   }
@@ -1620,7 +1688,7 @@ get_globalregs_buffer (char* args, int printInfo)
        /* passing 0 as 2nd arg will return register offset in arch defn */
        n =  qdsp6_global_regnum_from_name(args, &i);
        if(n != -1)
-         qdsp6_print_reg_info(globalRegSetInfo[i].sName, regValues[n] );
+         qdsp6_print_reg_info(globalRegSetInfo[i].reg_name, regValues[n] );
        else
          qdsp6_print_reg_info("Invalid Register Name", 0);
 
@@ -1633,7 +1701,7 @@ get_globalregs_buffer (char* args, int printInfo)
     {
       /* get the register offset to store the register value */
       n  =  qdsp6_global_regnum_from_name(sRegNames[result], &i);
-      qdsp6_print_reg_info(globalRegSetInfo[i].sName, regValues[n]);
+      qdsp6_print_reg_info(globalRegSetInfo[i].reg_name, regValues[n]);
     }
    }
   }
@@ -1725,7 +1793,7 @@ qdsp6_globalregs_info_command (char *args, int from_tty)
     /* passing 0 as 2nd arg will return register offset in arch defn */
     n =  qdsp6_global_regnum_from_name(args, &i);
     if(n != -1)
-      qdsp6_print_reg_info(globalRegSetInfo[i].sName, regValues[n] );
+      qdsp6_print_reg_info(globalRegSetInfo[i].reg_name, regValues[n] );
     else
       qdsp6_print_reg_info("Invalid Register Name", 0);
   }
@@ -1736,7 +1804,7 @@ qdsp6_globalregs_info_command (char *args, int from_tty)
     {
       /* get the register offset to store the register value */
       n  =  qdsp6_global_regnum_from_name(sRegNames[result], &i);
-      qdsp6_print_reg_info(globalRegSetInfo[i].sName, regValues[n]);
+      qdsp6_print_reg_info(globalRegSetInfo[i].reg_name, regValues[n]);
     }
   }
   

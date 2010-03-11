@@ -81,8 +81,11 @@ qdsp6sim_can_run(void)
 
     if (!exec_bfd)
     {
-        printf_filtered ("No executable file specified.\n");
-        printf_filtered ("Use the \"file\" or \"exec-file\" command.\n");
+	if (qsim_debug == 1)
+	{
+            printf_filtered ("No executable file specified.\n");
+            printf_filtered ("Use the \"file\" or \"exec-file\" command.\n");
+	}
         return 0;
     }
 
