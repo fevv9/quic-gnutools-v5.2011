@@ -1532,9 +1532,9 @@ qdsp6_encode_operand
   /* Make sure the value is within the proper range
      Must include the shift count */
   bits = operand->bits + operand->shift_count;
-  smax = ~(-1L << (bits - 1));
-  smin =  (-1L << (bits - 1)) + ((operand->flags & QDSP6_OPERAND_IS_NEGATIVE)? 1: 0);
-  umax = ~(-1L << bits);
+  smax = ~(~0L << (bits - 1));
+  smin =  (~0L << (bits - 1)) + ((operand->flags & QDSP6_OPERAND_IS_NEGATIVE)? 1: 0);
+  umax = ~(~0L << bits);
   umin = 0L;
 
   xed = value;
@@ -1568,7 +1568,7 @@ qdsp6_encode_operand
       value   = xed;
     }
 
-  if (value < min || value > max)
+  if (value < min || (max > 0 && value > max))
     {
       if (errmsg)
         {

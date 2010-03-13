@@ -1729,7 +1729,7 @@ qdsp6_elf_relocate_section
 	    }
 	}
 
-      lmask = rmask = (bfd_vma) -1;
+      lmask = rmask = (bfd_vma) ~0;
 
       switch (r_type)
 	{
@@ -1745,7 +1745,7 @@ qdsp6_elf_relocate_section
         case R_QDSP6_11_X:
         case R_QDSP6_12_X:
         case R_QDSP6_16_X:
-          lmask = ~((bfd_vma) -1 << howto->bitsize);
+          lmask = ~((bfd_vma) ~0 << howto->bitsize);
           /* Fall through. */
 
 	case R_QDSP6_LO16:
