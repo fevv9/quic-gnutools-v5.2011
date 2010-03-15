@@ -20,6 +20,7 @@
    02110-1301, USA.  */
 
 #include "as.h"
+#include "output-file.h"
 
 static void identify (char *);
 static void as_show_where (void);
@@ -366,7 +367,10 @@ as_fatal (const char *format, ...)
   /* Delete the output file, if it exists.  This will prevent make from
      thinking that a file was created and hence does not need rebuilding.  */
   if (out_file_name != NULL)
-    unlink_if_ordinary (out_file_name);
+    {
+      output_file_close (out_file_name);
+      unlink_if_ordinary (out_file_name);
+    }
   xexit (EXIT_FAILURE);
 }
 #else
