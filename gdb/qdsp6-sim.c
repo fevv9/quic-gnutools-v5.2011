@@ -157,7 +157,7 @@ qdsp6sim_can_run(void)
  */
 static int
 qdsp6sim_exec_simulation(char *sim_name, char *exec_name,
-		      int portid, char *args, char **env)
+		         char *args, char **env, int portid)
 {
     char port[11];
     int index = 0;
@@ -184,10 +184,13 @@ qdsp6sim_exec_simulation(char *sim_name, char *exec_name,
 	sprintf (port, "%d", portid);
         sim_args[index++] = strdupa (sim_name);
 
-/* XXX_SM 7.0: the exec_name NULL upon entry
-               the real name is in the args pointer
-        sim_args[index++] = strdupa (exec_name);
-*/
+/* XXX_SM: When the user passes explicit arguments to the simulator
+           he must include the matching executable name, so we
+           ignore the provided exec_name in favor of the one passed via
+  	   the "set targetargs" command.
+ */
+	if (q6targetargsInfo[0]==(char *)0)
+	    sim_args[index++] = strdupa (exec_name);
 
         sim_args[index++] = strdupa ("--gdbserv");
         sim_args[index++] = strdupa (port);
@@ -270,7 +273,8 @@ qdsp6_catch_sigchld (int signum)
  *        - Primary function of this target.
  *        - Starts the simulator and forms a connection.
  */
-static void qdsp6_create_inferior (char *exec_file, char *args, char **env)
+static void qdsp6_create_inferior (struct target_ops *ops, char *exec_file,
+				   char *args, char **env, int tty)
 {
     extern struct serial *remote_desc;
     extern struct serial_ops *serial_interface_lookup (char *);
@@ -286,7 +290,7 @@ static void qdsp6_create_inferior (char *exec_file, char *args, char **env)
     if (!THIS_TARGET())
 	return;
 
-    qdsp6sim_exec_simulation("qdsp6-sim", exec_file, portid, args, env);
+    qdsp6sim_exec_simulation("qdsp6-sim", exec_file, args, env, portid);
     sprintf (target_port, ":%d", portid);
     push_remote_target(target_port, 1);
 

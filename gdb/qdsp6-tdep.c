@@ -2002,7 +2002,7 @@ setQ6targetargs (char * args, int tty, struct cmd_list_element *c)
 	simargs++;
     }
 
-    targs[argc-1] = '\0'; // terminates the whole list.
+    targs[argc] = '\0'; // terminates the whole list.
 
 }
 
