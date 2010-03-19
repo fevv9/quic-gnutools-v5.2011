@@ -1098,12 +1098,23 @@ grow through padding NOPs, if possible or insert a NOP-packet.
 */
 long
 qdsp6_relax_falign_try
-(fragS *fragP, segT segment ATTRIBUTE_UNUSED, long stretch ATTRIBUTE_UNUSED)
+(fragS *fragP, segT segment, long stretch ATTRIBUTE_UNUSED)
 {
-  qdsp6_packet *apacket, *bpacket, *zpacket;
+  static segT saligning;
+  static fragS *faligning;
   fragS *previous;
+  qdsp6_packet *apacket, *bpacket, *zpacket;
   addressT first, next;
   size_t size, delta, over, left, room;
+
+  if (saligning && saligning == segment
+      && faligning && faligning != fragP)
+    return (0);
+  else
+    {
+      saligning = NULL;
+      faligning = NULL;
+    }
 
   apacket = &fragP->tc_frag_data->packet;
   bpacket = fragP->tc_frag_data->previous
@@ -1119,6 +1130,10 @@ qdsp6_relax_falign_try
   over = next > MAX_PACKET_INSNS? next % MAX_PACKET_INSNS: 0;
   if (over)
     {
+      saligning = segment;
+      faligning = fragP;
+
+#if 0
       /* Check if not fetch-aligned because of padding. */
       size           = MIN (over, apacket->dpad);
       delta         -= size;
@@ -1142,6 +1157,7 @@ qdsp6_relax_falign_try
           over           -= size;
           bpacket->ddpad -= size;
         }
+#endif
 
       /* Check if still not fetch-aligned. */
       if (over)
@@ -1201,12 +1217,14 @@ qdsp6_relax_falign_try
             bpacket->ddpkt += left;
         }
     }
+#if 0
   else if (bpacket && bpacket->dpkt)
     /* Remove excess from NOP-packet if no fetch-window crossing. */
     bpacket->ddpkt -= MIN (bpacket->dpkt, first);
   else if (bpacket && bpacket->dpad)
     /* Remove excess padding if no fetch-window crossing. */
     bpacket->ddpad -= MIN (bpacket->dpad, first);
+#endif
 
   return (QDSP6_INSN_LEN * (int) delta);
 }
@@ -1537,6 +1555,7 @@ qdsp6_prefix_kext
 {
   const qdsp6_operand *operand;
   char *syntax;
+  long mask;
 
   if (!kext)
     return FALSE;
@@ -1562,12 +1581,12 @@ qdsp6_prefix_kext
   assert (operand);
 
   /* Truncate to as many bits as in the extension. */
-  xvalue &= ~(-1L << (operand->bits + operand->shift_count));
+  mask = ~(~0L << (operand->bits + operand->shift_count));
+  xvalue &= mask? mask: ~0L;
   if (qdsp6_encode_operand
         (operand, &kext->insn, kext->opcode, xvalue, NULL, FALSE, FALSE, NULL))
     {
       kext->used = TRUE;
-
       return TRUE;
     }
 
@@ -1692,8 +1711,13 @@ qdsp6_parse_immediate
           return NULL;
 
       if (is_x || xvalue)
-        /* Emit prefix only if requested or needed. */
-        insn->flags |= qdsp6_prefix_kext (prefix, xvalue)? QDSP6_INSN_IS_KXED: 0;
+        {
+          /* Emit prefix only if requested or needed. */
+          if (qdsp6_prefix_kext (prefix, xvalue))
+            insn->flags |= QDSP6_INSN_IS_KXED;
+          else
+            return NULL;
+        }
     }
   else
     {

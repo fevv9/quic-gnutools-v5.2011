@@ -1036,8 +1036,8 @@ qdsp6_extend
   if (qdsp6_if_arch_kext ())
     {
       /* TODO: It would be better to use the insn table to figure out the number of bits. */
-      xvalue = *value &  (-1L << 6);
-      *value = *value & ~(-1L << 6);
+      xvalue = *value &  (~0L << 6);
+      *value = *value & ~(~0L << 6);
 
       if (is_signed && *value > (1L << (bits - 1)))
         *value -= (1L << bits);
@@ -1476,7 +1476,7 @@ qdsp6_lookup_insn
 int
 qdsp6_encode_operand
 (const qdsp6_operand *operand, qdsp6_insn *insn,
- const qdsp6_opcode *opcode, long value, long *xvalue, int is_x, int is_rel,
+ const qdsp6_opcode *opcode, long avalue, long *xvalue, int is_x, int is_rel,
  char **errmsg)
 {
   char enc_letter;
@@ -1484,12 +1484,22 @@ qdsp6_encode_operand
   int num_bits = 0;
   size_t len = strlen (opcode->enc);
   unsigned bits;
-  long min, max, smin, smax, umin, umax;
+  long smin, smax;
+  unsigned long umin, umax;
   long xer, xed;
+  union
+    {
+      long s;
+      unsigned long u;
+    } value;
+  int is_s;
   ptrdiff_t i;
   static char buf [500];
 
+  value.s = avalue;
+
   is_x = is_x && xvalue;
+  is_s = (operand->flags & QDSP6_OPERAND_IS_SIGNED);
 
   enc_letter = operand->enc_letter;
 
@@ -1510,12 +1520,12 @@ qdsp6_encode_operand
   if (operand->shift_count)
     {
       /* Make sure the low bits are zero */
-      if (value & (~(-1L << operand->shift_count)))
+      if (value.s & (~(~0L << operand->shift_count)))
         {
           if (errmsg)
             {
               sprintf (buf, "low %d bits of immediate %ld must be zero",
-                       operand->shift_count, value);
+                       operand->shift_count, value.s);
               *errmsg = buf;
             }
           return FALSE;
@@ -1523,64 +1533,59 @@ qdsp6_encode_operand
     }
 
   if (operand->flags & QDSP6_OPERAND_IS_LO16)
-    value = QDSP6_LO16 (value);
+    value.s = QDSP6_LO16 (value.s);
   else if (operand->flags & QDSP6_OPERAND_IS_HI16)
-    value = QDSP6_HI16 (value);
+    value.s = QDSP6_HI16 (value.s);
   else if (operand->flags & QDSP6_OPERAND_IS_SUBSET)
-    value = QDSP6_SUBREGS_TO (value, operand->flags & QDSP6_OPERAND_IS_PAIR);
+    value.s = QDSP6_SUBREGS_TO (value.s, operand->flags & QDSP6_OPERAND_IS_PAIR);
 
   /* Make sure the value is within the proper range
      Must include the shift count */
   bits = operand->bits + operand->shift_count;
   smax = ~(~0L << (bits - 1));
   smin =  (~0L << (bits - 1)) + ((operand->flags & QDSP6_OPERAND_IS_NEGATIVE)? 1: 0);
-  umax = ~(~0L << bits);
-  umin = 0L;
+  umax = ~(~0UL << bits);
+  umin = 0UL;
 
-  xed = value;
-  xer = qdsp6_extend (&xed, bits, operand->flags & QDSP6_OPERAND_IS_SIGNED);
-
-  if ((operand->flags & QDSP6_OPERAND_IS_SIGNED))
-    {
-      max = smax;
-      min = smin;
-    }
-  else
-    {
-      max = umax;
-      min = umin;
-    }
+  xed = value.s;
+  xer = qdsp6_extend (&xed, bits, is_s);
 
   if (is_x)
     {
-      if (xed < 0)
-        {
-          max = smax;
-          min = smin;
-        }
-      else
-        {
-          max = umax;
-          min = umin;
-        }
+      is_s = (xed < 0);
 
       *xvalue = xer;
-      value   = xed;
+      value.s = xed;
     }
 
-  if (value < min || (max > 0 && value > max))
+  if (is_s)
     {
-      if (errmsg)
+      if (value.s < smin || (smax > 0 && value.s > smax))
         {
-          sprintf (buf, "value %ld out of range: %ld-%ld", value, min, max);
-          *errmsg = buf;
+          if (errmsg)
+            {
+              sprintf (buf, "value %ld out of range: %ld-%ld", value.s, smin, smax);
+              *errmsg = buf;
+            }
+          return FALSE;
         }
-      return FALSE;
+    }
+  else
+    {
+      if (value.u < umin || (umax > 0 && value.u > umax))
+        {
+          if (errmsg)
+            {
+              sprintf (buf, "value %lu out of range: %lu-%lu", value.u, umin, umax);
+              *errmsg = buf;
+            }
+          return FALSE;
+        }
     }
 
   /* In the presence of an extender, the value is not shifted. */
   if (!is_x)
-    value >>= operand->shift_count;
+    value.s >>= operand->shift_count;
 
   /* We'll read the encoding string backwards
      and put the LSB of the value in each time */
@@ -1592,11 +1597,11 @@ qdsp6_encode_operand
             // Clear the bit
             (*insn) &= ~(1 << shift_count);
             // Insert the new bit
-            (*insn) |= (value & 1) << shift_count;
-            value >>= 1;
+            (*insn) |= (value.s & 1) << shift_count;
+            value.s >>= 1;
             num_bits++;
           }
-          shift_count++;
+        shift_count++;
       }
 
   /* Make sure we encode the expected number of bits */
@@ -1614,63 +1619,6 @@ qdsp6_encode_operand
 
   return TRUE;
 }
-
-#if 0
-static char *
-qdsp6_parse_dup(
-    const qdsp6_operand *operand,
-    qdsp6_insn *insn,
-    char *enc,
-    char *input,
-    char **errmsg
-)
-{
-  char letter = TOLOWER(operand->fmt[3]);
-  int regid;
-
-  if (TOLOWER(*input) == letter && ISDIGIT(input[1])) {
-    unsigned int reg_num = 0;
-
-    /* Skip the letter */
-    input++;
-
-    /* Read the register number */
-    while (ISDIGIT(*input)) {
-      char ch = *input++;
-      reg_num = 10*reg_num + (ch - '0');
-    }
-    if (!qdsp6_extract_operand(operand, *insn, 0, enc, &regid, errmsg)) {
-      return NULL;
-    }
-    if (regid == reg_num) {
-      return input;
-    } else {
-      return NULL;
-    }
-  }
-
-  return NULL;
-}
-
-static char *
-qdsp6_throw_litimm(
-    const qdsp6_operand *operand,
-    qdsp6_insn *insn,
-    char *enc,
-    char *input,
-    char **errmsg
-)
-{
-  int i;
-  for (i = 0; operand->fmt[i]; i++) {
-    if (operand->fmt[i] != input[i]) {
-      return NULL;
-    }
-  }
-  input += i;
-  return input;
-}
-#endif
 
 static int
 qdsp6_reg_num
