@@ -58,6 +58,8 @@ extern char *q6targetargsInfo[256];
 #define   ALLOCFRAME_OPCODE_BITS 0xA09DC000UL
 #define   ALLOCFRAME_SIZE_BITS 0x000007FFUL
 #define   ALLOCFRAME_SIZE_SHIFT 3UL
+
+
     /* for ignoring immediate bits */
 #define   MORE_SP_UPDATE_OPCODE_MASK 0xF01FC01FUL
     /* sp update opcode ignoring immediate bits 
@@ -96,6 +98,9 @@ extern char *q6targetargsInfo[256];
 #define ALLOCFRAME_MATCH(opcode) \
         (ALLOCFRAME_OPCODE_BITS == (ALLOCFRAME_OPCODE_MASK & (opcode)))
 #define ALLOCFRAME_SIZE(opcode) (((opcode) & ALLOCFRAME_SIZE_BITS) << ALLOCFRAME_SIZE_SHIFT)
+
+#define IMMEXT_MATCH(opcode) ((opcode & 0xF0000000) == 0x0)
+
 #define MORE_SP_UPDATE_MATCH(opcode) \
         (MORE_SP_UPDATE_OPCODE_BITS == (MORE_SP_UPDATE_OPCODE_MASK & (opcode)))
 #define MORE_SP_UPDATE_SIZE(opcode) \
