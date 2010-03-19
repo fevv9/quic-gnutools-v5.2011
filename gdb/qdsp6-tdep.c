@@ -80,6 +80,7 @@ int qdsp6_debug = 0;
  *******************************************************************/   
 extern void _initialize_qdsp6_tdep (void);
 extern char *current_q6_target;
+extern int frame_debug;
 
 /*******************************************************************
  *   Static Variables                                              *
@@ -293,6 +294,7 @@ new_variant (void)
   /* Do, however, supply default names for the known special-purpose
      registers.  */
 #if 0
+printf ("REG_SSR = %d\n", REG_SSR);
 printf ("REG_SA0 = %d\n", REG_SA0);
 printf ("REG_SA1 = %d\n", REG_SA1);
 printf ("REG_M0 = %d\n", REG_M0);
@@ -511,6 +513,204 @@ is_argument_reg (int reg)
   return (reg < q6ArgRegMax);
 }
 
+/*
+ * macro: is_rs29
+ * description:
+ *	- Checks insn bits, 16:20 to see if the register source
+ *	  is 29 (0x1d).
+ *	- WARNING verify encoding pattern when using!
+ *		- OK with: (add, memb, memh, memw, memd)
+ */
+#define is_rs29(insn) ((insn & 0x001f0000) == 0x1d0000)
+
+/*
+ * macro: is_rd29
+ * description:
+ *	- Checks insn bits, 0:4 to see if the register destination
+ *	  is 29 (0x1d).
+ */
+#define is_rd29(insn) ((insn & 0x1f) == 0x1d)
+
+/*
+ * function: is_allocframe
+ * description:
+ *	- given an instruction determine if it is an allocframe, if so
+ *        return 1.
+ */
+static int
+is_allocframe (unsigned int insn, CORE_ADDR pc, unsigned int *immediate)
+{
+  if (ALLOCFRAME_MATCH (insn))
+    {
+      *immediate = ALLOCFRAME_SIZE (insn);
+      return 1;
+    }
+  else
+    return 0;
+}
+
+/*
+ * function: is_more_stack
+ * description:
+ *	- Are we asking for more stack, r29 = add (r29, ###)?  If so then
+ *        return 1.
+ */
+static int
+is_more_stack (unsigned int insn, CORE_ADDR pc, int *immediate)
+{
+  int rc = 0;
+  unsigned int mask;
+  enum
+  {
+    addi = 0xb0000000,
+  };
+  mask = addi;
+
+  if (((insn & mask) == addi) && is_rs29 (insn) && is_rd29 (insn))
+    {
+      *immediate = (((insn & 0x0fe00000) >> 12) | ((insn & 0x3fe0) >> 5));
+      rc = 1;
+    }
+  if (rc && *immediate & 0x8000)
+    *immediate |= ~0x7fff;	/* Sign extend */
+
+  return rc;
+}
+
+/*
+ * function: is_memX_r29
+ * description:
+ *	- look at an insn and see if it is storing an insn
+ *        onto the stack
+ *	- memd insns will set 2 registers (reg2) otherwise reg2 == -1.
+ */
+static int
+is_memX_r29 (unsigned int insn, CORE_ADDR pc,
+	     int *stack_offset, unsigned int *reg1, unsigned int *reg2)
+{
+  int rc = 0;
+  unsigned int mask;
+  enum
+  {
+    memb = 0xa1000000,
+    memh = 0xa1400000,
+    memw = 0xa1800000,
+    memd = 0xa1c00000
+  };
+  mask = memb | memh | memw | memd;
+  *reg2 = -1;
+
+
+  if (((insn & mask) == memw) && is_rs29 (insn))
+    {
+      *reg1 = (insn & 0x1f00) >> 8;
+      rc = 1;
+    }
+  else if (((insn & mask) == memd) && is_rs29 (insn))
+    {
+      *reg1 = (insn & 0x1f00) >> 8;
+      *reg2 = *reg1 + 1;
+      *stack_offset = CALLEE_SAVE_OFFSET_D (insn);
+      rc = 1;
+    }
+  else if (((insn & mask) == memh) && is_rs29 (insn))
+    {
+      *reg1 = (insn & 0x1f00) >> 8;
+      *stack_offset = CALLEE_SAVE_OFFSET_H (insn);
+      rc = 1;
+    }
+  else if (((insn & mask) == memb) && is_rs29 (insn))
+    {
+      *reg1 = (insn & 0x1f00) >> 8;
+      *stack_offset = CALLEE_SAVE_OFFSET_B (insn);
+      rc = 1;
+    }
+
+  if (rc && (*stack_offset & 0x1000))
+    *stack_offset |= ~0x1fff;	/* Sign extend */
+
+  if (frame_debug && rc == 1)
+    {
+      printf_filtered ("QDSP6:%s: PC:0x%lx saving reg %x:%x, offset = %d\n",
+		       __func__, pc, *reg1, *reg2, *stack_offset);
+    }
+
+  return rc;
+}
+
+/*
+ * function: is_immed
+ * description:
+ * 	- looks for an immext, a payload extender for a large
+ *	  immediate to follow.
+ */
+static int
+is_immed (unsigned int insn, CORE_ADDR pc)
+{
+  int rc = 0;
+  if (IMMEXT_MATCH (insn))
+    rc = 1;
+
+  return rc;
+}
+
+/*
+ * function: is_branch
+ * description:
+ * 	- looks for a call or jump, return 1 if found.
+ *	- All branches are in 1 of 2 classes, class codes reside in bits
+ *	  31:28.
+ */
+static int
+is_branch (unsigned int insn, CORE_ADDR pc)
+{
+  int rc = 0;
+  enum
+  {
+    branch1 = 0x50000000,
+    branch2 = 0x60000000
+  };
+  unsigned int mask = branch1 | branch2;
+
+  if (((insn & mask) == branch1) || ((insn & mask) == branch2))
+    rc = 1;
+
+  return rc;
+}
+
+/*
+ * function: get_packet
+ * description:
+ * 	- fill in the provided buffer with 1-4 insn's that represent the
+ *	  packet at the given pc.
+ *	- return the number of insn's in the packet.
+ *	- a return of 0 signifies failure of some kind
+ */
+static int
+get_packet (CORE_ADDR pc, gdb_byte * buffer, enum bfd_endian byte_order)
+{
+  int i;
+  int packet_cnt = 1;
+  unsigned int insn;
+  enum
+  {
+    endofpacket = 0xc000,
+  };
+  unsigned int mask = endofpacket;
+
+
+  for (i = 0; i < 16; i += 4, pc += 4, packet_cnt++)
+    {
+      if (target_read_memory (pc, &buffer[i], 4))
+	gdb_assert (0);
+
+      insn = extract_unsigned_integer (&buffer[i], 4, byte_order);
+      if ((insn & mask) == endofpacket)
+	break;
+    }
+
+  return packet_cnt;
+}
 
 /* Scan the qdsp6 prologue, starting at PC, until frame->PC.
    If FRAME is non-zero, fill in its saved_regs with appropriate addresses.
@@ -527,12 +727,14 @@ is_argument_reg (int reg)
 
 static CORE_ADDR
 qdsp6_analyze_prologue (struct gdbarch *gdbarch,
-			CORE_ADDR pc, CORE_ADDR end_pc,
+			CORE_ADDR start_pc, CORE_ADDR end_pc,
 		        struct frame_info *next_frame,
                         struct qdsp6_unwind_cache *info)
 {
   ULONGEST op;
   gdb_byte *op_addr=(gdb_byte *)&op;
+  gdb_byte buf[16];
+  enum bfd_endian byte_order = gdbarch_byte_order (gdbarch);
 
   //printf("\n ******* Calling qdsp6_analyze_prologue \n");
   int allocframe = 0;
@@ -565,35 +767,36 @@ qdsp6_analyze_prologue (struct gdbarch *gdbarch,
   /* If gr_saved[i] is non-zero, then we've noticed that general
      register i has been saved at gr_sp_offset[i] from the stack
      pointer.  */
-  char gr_saved[64];
-  int gr_sp_offset[64];
+  char gr_saved[32];
+  int gr_sp_offset[32];
 
   /* The address of the most recently scanned prologue instruction.  */
   CORE_ADDR last_prologue_pc;
 
   /* The upper bound to of the pc values to scan.  */
   CORE_ADDR lim_pc;
+  CORE_ADDR pc;
 
   if (qdsp6_debug == 1)
   {
-      printf_filtered ("QDSP6_DEB: %s, pc = 0x%x\n",__func__, pc);
+      printf_filtered ("QDSP6_DEB: %s, pc = 0x%lx\n",__func__, start_pc);
   }
 
 
   memset (gr_saved, 0, sizeof (gr_saved));
 
-  last_prologue_pc = pc;
+  last_prologue_pc = start_pc;
 
   /* Try to compute an upper limit (on how far to scan) based on the
      line number info.  */
-  lim_pc = skip_prologue_using_sal (gdbarch, pc);
+  lim_pc = skip_prologue_using_sal (gdbarch, start_pc);
   /* If there's no line number info, lim_pc will be 0.  In that case,
      set the limit to be 100 instructions away from pc.  Hopefully, this
      will be far enough away to account for the entire prologue.  Don't
      worry about overshooting the end of the function.  The scan loop
      below contains some checks to avoid scanning unreasonably far.  */
   if (lim_pc == 0)
-    lim_pc = pc + 400;
+    lim_pc = start_pc + 0x64;
 
   /* If we have a frame, we don't want to scan past the frame's pc.  This
      will catch those cases where the pc is in the prologue.  */
@@ -606,8 +809,82 @@ qdsp6_analyze_prologue (struct gdbarch *gdbarch,
 
 //printf("  *** HERE\n");
 
+#if 1
+/*
+ * XXX_SM:
+ * Note: There is something to consider and that is when pc == end_pc but
+ * the current pc is at the start of the packet.  I think we need to
+ * determine if this pc is part of a packet and if it is then examine the
+ * whole packet not just the first insn.
+ *
+ * WHEN end_pc == start_pc WE ARE AT THE BEGINNING OF A FUNCTION.
+ *
+ * A target_read_packet function that will advance the pc by the number of
+ * insn's that are contained in the packet anywhere from 4 to 16 bytes in
+ * 4 byte increments looking for the PP (parse bits) for execute 
+ * 15:14 = 1:1 to signify the end of packet
+ */
+  pc = start_pc;
+  while (pc <= end_pc)
+    {
+      unsigned int insn;
+      unsigned int operand;
+      unsigned int offset;
+      int reg1;
+      int reg2;
+      int packet_total;
+      int pcnt;
+ 
+      packet_total = get_packet (pc, buf, byte_order);
 
-/* XXX_SM -- */
+      for (pcnt = 0; pcnt<packet_total; pcnt++)
+        {
+          insn = extract_unsigned_integer (&buf[pcnt*4], 4, byte_order);
+
+          if (is_allocframe(insn, pc, &operand))
+            {
+	      allocframe = -operand;	/* Stack grows downward */
+
+	      if (start_pc == end_pc)
+	          fp_set = 1;
+            }
+          else if (is_more_stack (insn, pc, &operand))
+	    {
+	      allocframe += operand;
+	    }
+    
+          else if (is_memX_r29 (insn, pc, &offset, &reg1, &reg2))
+            {
+              gr_saved[reg1] = 1;
+              gr_sp_offset[reg1] = offset;
+	      if (reg2 > 0)
+	        {
+                  gr_saved[reg2] = 1;
+                  gr_sp_offset[reg2] = offset+4; /* TODO check this is + not - */
+	        }
+            }
+          else if (is_immed (insn, pc))
+            {
+            }
+          else if (is_branch(insn, pc)) /* no branches in prologue */
+            {
+	        break;
+            }
+          else 
+            {
+            }
+        }
+
+	pc += packet_total * 4;
+    }
+
+#else
+
+
+/* XXX_SM : old */
+  pc = start_pc;
+/* XXX_SM -- We are at the start of a function, this signals that we
+             are on an actual allocframe insn  */
       target_read_memory (end_pc, op_addr, 4);
       if (ALLOCFRAME_MATCH(op)) 
 	fp_set = 1;
@@ -695,7 +972,6 @@ qdsp6_analyze_prologue (struct gdbarch *gdbarch,
       }
 
 
-
       /* record stores of function arguments registers  */
       while ((FUNC_ARG_SAVE_MATCH(op)) &&
 	     (pc < lim_pc))
@@ -705,9 +981,15 @@ qdsp6_analyze_prologue (struct gdbarch *gdbarch,
       }
     }
 
-    //printf("  *** pc = 0x%08x\n", pc);
+    else if (IMMEXT_MATCH(op))
+    {
+        printf("  immed match pc = 0x%08x\n", pc);
+        printf("  *** pc = 0x%08x\n", pc);
+    }
+
 
     last_prologue_pc = pc;
+#endif
 
 
 
@@ -740,7 +1022,7 @@ qdsp6_analyze_prologue (struct gdbarch *gdbarch,
           this_base = get_frame_register_unsigned (next_frame, REG_FP);
 
 
-      for (i = 0; i < 64; i++)
+      for (i = 0; i < 32; i++)
 	if (gr_saved[i])
 	  info->saved_regs[i].addr = this_base + sp_mod_val + gr_sp_offset[i];
 
