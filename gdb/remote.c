@@ -2822,6 +2822,7 @@ remote_open (char *name, int from_tty)
   remote_open_1 (name, from_tty, &remote_ops, 0);
 }
 
+#ifdef QDSP6
 /* XXX_SM Needed for clean startup of simulator */
 /* Some targets are only capable of doing downloads, and afterwards
    they switch to the remote serial protocol.  This function provides
@@ -2840,6 +2841,7 @@ push_remote_target (char *name, int from_tty)
   remote_open (name, from_tty);
 }
 /* XXX_SM Needed for clean startup of simulator */
+#endif
 
 
 
@@ -8864,6 +8866,9 @@ Specify the serial device it is connected to\n\
   remote_ops.to_terminal_ours = remote_terminal_ours;
   remote_ops.to_supports_non_stop = remote_supports_non_stop;
   remote_ops.to_supports_multi_process = remote_supports_multi_process;
+#ifdef QDSP6
+  remote_ops.to_create_inferior = extended_remote_create_inferior;
+#endif
 }
 
 /* Set up the extended remote vector by making a copy of the standard

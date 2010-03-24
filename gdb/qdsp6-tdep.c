@@ -734,32 +734,14 @@ qdsp6_analyze_prologue (struct gdbarch *gdbarch,
   ULONGEST op;
   gdb_byte *op_addr=(gdb_byte *)&op;
   gdb_byte buf[16];
+  int end_of_prologue = 0;
   enum bfd_endian byte_order = gdbarch_byte_order (gdbarch);
 
-  //printf("\n ******* Calling qdsp6_analyze_prologue \n");
   int allocframe = 0;
 
   /* Non-zero iff we've seen the instruction that initializes the
      frame pointer for this function's frame.  */
   int fp_set = 0;
-
-  /* If fp_set is non_zero, then this is the distance from
-     the stack pointer to frame pointer: fp = sp + fp_offset.  */
-  int fp_offset = 0;
-
-  /* Total size of frame prior to any alloca operations. */
-  int framesize = 0;
-
-  /* Flag indicating if lr has been saved on the stack.  */
-  int lr_saved_on_stack = 0;
-
-  /* The number of the general-purpose register we saved the return
-     address ("link register") in, or -1 if we haven't moved it yet.  */
-  int lr_save_reg = -1;
-
-  /* Offset (from sp) at which lr has been saved on the stack.  */
-
-  int lr_sp_offset = 0;
 
   int sp_mod_val = 0; /* allocframe argument value + other sp updates if
                       the change is too big for the allocframe encoding */
@@ -767,25 +749,21 @@ qdsp6_analyze_prologue (struct gdbarch *gdbarch,
   /* If gr_saved[i] is non-zero, then we've noticed that general
      register i has been saved at gr_sp_offset[i] from the stack
      pointer.  */
-  char gr_saved[32];
-  int gr_sp_offset[32];
+  char gr_saved[32] = {0};
+  int  gr_sp_offset[32];
 
   /* The address of the most recently scanned prologue instruction.  */
-  CORE_ADDR last_prologue_pc;
+  CORE_ADDR prolog_pc;
 
   /* The upper bound to of the pc values to scan.  */
   CORE_ADDR lim_pc;
   CORE_ADDR pc;
 
   if (qdsp6_debug == 1)
-  {
       printf_filtered ("QDSP6_DEB: %s, pc = 0x%lx\n",__func__, start_pc);
-  }
 
 
-  memset (gr_saved, 0, sizeof (gr_saved));
-
-  last_prologue_pc = start_pc;
+  prolog_pc = start_pc;
 
   /* Try to compute an upper limit (on how far to scan) based on the
      line number info.  */
@@ -807,9 +785,6 @@ qdsp6_analyze_prologue (struct gdbarch *gdbarch,
 	lim_pc = frame_pc;
     }
 
-//printf("  *** HERE\n");
-
-#if 1
 /*
  * XXX_SM:
  * Note: There is something to consider and that is when pc == end_pc but
@@ -825,7 +800,7 @@ qdsp6_analyze_prologue (struct gdbarch *gdbarch,
  * 15:14 = 1:1 to signify the end of packet
  */
   pc = start_pc;
-  while (pc <= end_pc)
+  while (pc <= end_pc && !end_of_prologue)
     {
       unsigned int insn;
       unsigned int operand;
@@ -843,6 +818,7 @@ qdsp6_analyze_prologue (struct gdbarch *gdbarch,
 
           if (is_allocframe(insn, pc, &operand))
             {
+	      prolog_pc+=4;
 	      allocframe = -operand;	/* Stack grows downward */
 
 	      if (start_pc == end_pc)
@@ -850,11 +826,13 @@ qdsp6_analyze_prologue (struct gdbarch *gdbarch,
             }
           else if (is_more_stack (insn, pc, &operand))
 	    {
+	      prolog_pc+=4;
 	      allocframe += operand;
 	    }
     
           else if (is_memX_r29 (insn, pc, &offset, &reg1, &reg2))
             {
+	      prolog_pc+=4;
               gr_saved[reg1] = 1;
               gr_sp_offset[reg1] = offset;
 	      if (reg2 > 0)
@@ -865,9 +843,11 @@ qdsp6_analyze_prologue (struct gdbarch *gdbarch,
             }
           else if (is_immed (insn, pc))
             {
+	      prolog_pc+=4;
             }
           else if (is_branch(insn, pc)) /* no branches in prologue */
             {
+		end_of_prologue = 1;
 	        break;
             }
           else 
@@ -877,121 +857,6 @@ qdsp6_analyze_prologue (struct gdbarch *gdbarch,
 
 	pc += packet_total * 4;
     }
-
-#else
-
-
-/* XXX_SM : old */
-  pc = start_pc;
-/* XXX_SM -- We are at the start of a function, this signals that we
-             are on an actual allocframe insn  */
-      target_read_memory (end_pc, op_addr, 4);
-      if (ALLOCFRAME_MATCH(op)) 
-	fp_set = 1;
-/* XXX_SM -- */
-
-      target_read_memory (pc, op_addr, 4);
-      if (ALLOCFRAME_MATCH(op)) 
-      {
-	//printf("  *** ALLOCFRAME_MATCH(op)\n");
-	int offset = - ALLOCFRAME_SIZE(op);
-	allocframe = offset;
-
-       /* process optional additional sp updates 
-          (when allocframe immediate was not big enough) */
-      sp_mod_val = 0;
-      do {
-        sp_mod_val += offset;
-	pc += 4;
-        target_read_memory (pc, op_addr, 4);
-        offset = MORE_SP_UPDATE_SIZE(op); 
-        /* offset should be negative since stack grows downward */
-      } while ((MORE_SP_UPDATE_MATCH(op) && offset < 0) &&
-	       (pc < lim_pc));
-
-      //printf(" ** sp_mod_val = %d\n", sp_mod_val);
-
-
-      /* record stores of callee save registers
-	 (offsets for these should be non-negative) for memb(Rs+#s11:0)=Rt */
-      offset = CALLEE_SAVE_OFFSET_B(op);
-      //printf("  * CALLEE_SAVE_MATCH_B(0x%08x) = 0x%08x, offset = 0x%08x\n", op, CALLEE_SAVE_MATCH_B(op), offset);
-      while ((CALLEE_SAVE_MATCH_B(op) && offset >= 0) &&
-	     (pc < lim_pc)) 
-      {
-        int callee_save_reg = CALLEE_SAVE_REG(op);
-        gr_saved[callee_save_reg] = 1;
-        gr_sp_offset[callee_save_reg] = offset;
-	pc += 4;
-        target_read_memory (pc, op_addr, 4);
-        offset = CALLEE_SAVE_OFFSET_B(op);
-      }
-
-      //printf("  * offset = 0x%08x\n", offset);
-
-      /* record stores of callee save registers 
-	 (offsets for these should be non-negative) for memh(Rs+#s11:1)=Rt */
-      offset = CALLEE_SAVE_OFFSET_H(op);
-      while ((CALLEE_SAVE_MATCH_H(op) && offset >= 0) &&
-	     (pc < lim_pc))
-      {
-	int callee_save_reg = CALLEE_SAVE_REG(op);
-	gr_saved[callee_save_reg] = 1;
-        gr_sp_offset[callee_save_reg] = offset;
-	pc += 4;
-        target_read_memory (pc, op_addr, 4);
-        offset = CALLEE_SAVE_OFFSET_H(op);
-      }
-
-      /* record stores of callee save registers 
-         (offsets for these should be non-negative) for memw(Rs+#s11:2)=Rt */
-      offset = CALLEE_SAVE_OFFSET_W(op);
-      while ((CALLEE_SAVE_MATCH_W(op) && offset >= 0) &&
-	     (pc < lim_pc))
-      {
-        int callee_save_reg = CALLEE_SAVE_REG(op);
-        gr_saved[callee_save_reg] = 1;
-        gr_sp_offset[callee_save_reg] = offset;
-	pc += 4;
-        target_read_memory (pc, op_addr, 4);
-        offset = CALLEE_SAVE_OFFSET_W(op);
-      }
-
-      /* record stores of callee save registers
-	 (offsets for these should be non-negative) for memd(Rs+#s11:3)=Rt */
-      offset = CALLEE_SAVE_OFFSET_D(op);
-      while ((CALLEE_SAVE_MATCH_D(op) && offset >= 0) &&
-	     (pc < lim_pc))
-      {
-        int callee_save_reg = CALLEE_SAVE_REG(op);
-        gr_saved[callee_save_reg] = 1;
-        gr_sp_offset[callee_save_reg] = offset;
-	pc += 4;
-        target_read_memory (pc, op_addr, 4);
-        offset = CALLEE_SAVE_OFFSET_D(op);
-      }
-
-
-      /* record stores of function arguments registers  */
-      while ((FUNC_ARG_SAVE_MATCH(op)) &&
-	     (pc < lim_pc))
-      {
-	pc += 4;
-        target_read_memory (pc, op_addr, 4);
-      }
-    }
-
-    else if (IMMEXT_MATCH(op))
-    {
-        printf("  immed match pc = 0x%08x\n", pc);
-        printf("  *** pc = 0x%08x\n", pc);
-    }
-
-
-    last_prologue_pc = pc;
-#endif
-
-
 
   if (next_frame && info)
     {
@@ -1027,10 +892,8 @@ qdsp6_analyze_prologue (struct gdbarch *gdbarch,
 	  info->saved_regs[i].addr = this_base + sp_mod_val + gr_sp_offset[i];
 
       info->saved_regs[REG_FP].addr = this_base;
-      //if (!fp_set)
-          info->saved_regs[REG_LR].addr = this_base + 4;
+      info->saved_regs[REG_LR].addr = this_base + 4;
 
-//      info->saved_regs[REG_PC].addr = this_pc;
       info->saved_regs[REG_PC] = info->saved_regs[REG_LR];
 
       info->prev_sp = this_base + 8; /* +4 for saved R30, +4 for saved R31 */
@@ -1052,7 +915,7 @@ qdsp6_analyze_prologue (struct gdbarch *gdbarch,
 
     }
 
-  return last_prologue_pc;
+  return prolog_pc;
 }
 
 
@@ -1257,8 +1120,8 @@ qdsp6_push_dummy_call (struct gdbarch *gdbarch, struct value *function,
   
 #if 0
   printf("\n In qdsp6_push_dummy_call ........................\n");
-  printf("\nFunction Address = %d\n", func_addr);
-  printf("Push %d args at sp = %x, struct_return=%d (%x)\n",
+  printf("\nFunction Address = 0x%x\n", func_addr);
+  printf("Push %d args at sp = 0x%x, struct_return=%d (%x)\n",
 	 nargs, (int) sp, struct_return, struct_addr);
 #endif
 
@@ -1341,7 +1204,7 @@ qdsp6_push_dummy_call (struct gdbarch *gdbarch, struct value *function,
 	      regval = extract_unsigned_integer (val, partial_len,
 						 BFD_ENDIAN_LITTLE);
 #if 0
-	      printf("  Argnum %d data %x -> reg %d\n",
+	      printf("  Argnum %d data 0x%x -> reg 0x%d\n",
 		     argnum, (int) regval, argreg);
 #endif
 
@@ -1375,7 +1238,7 @@ qdsp6_push_dummy_call (struct gdbarch *gdbarch, struct value *function,
 	  else
 	    {
 #if 0
-	      printf("  Argnum %d data %x -> offset %d (%x)\n",
+	      printf("  Argnum %d data 0x%x -> offset %d (0x%x)\n",
 		     argnum, *((int *)val), stack_offset, (int) (sp + stack_offset));
 #endif
 	      write_memory (sp + stack_offset, val, partial_len);
@@ -1400,7 +1263,7 @@ static void
 qdsp6_store_return_value (struct type *type, struct regcache *regcache,
                         const void *valbuf)
 {
-  //printf("\n In qdsp6_store_return_value .....................\n");
+  printf("\n In qdsp6_store_return_value .....................\n");
   int len = TYPE_LENGTH (type);
 
   if (len <= 4)
@@ -1515,8 +1378,13 @@ qdsp6_unwind_sp (struct gdbarch *gdbarch, struct frame_info *next_frame)
 static struct frame_id
 qdsp6_dummy_id (struct gdbarch *gdbarch, struct frame_info *this_frame)
 {
+  CORE_ADDR pc = get_frame_register_unsigned (this_frame, REG_PC);
+  CORE_ADDR sp = get_frame_register_unsigned (this_frame, REG_SP);
+  return frame_id_build (sp, pc);
+#if 0
   return frame_id_build (qdsp6_unwind_sp (gdbarch, this_frame),
 			 get_frame_pc (this_frame));
+#endif
 }
 
 
