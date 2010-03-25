@@ -23,13 +23,13 @@
 #ifndef GAS
 #define GAS 1
 /* I think this stuff is largely out of date.  xoxorich.
- 
+
    CAPITALISED names are #defined.
    "lowercaseH" is #defined if "lowercase.h" has been #include-d.
    "lowercaseT" is a typedef of "lowercase" objects.
    "lowercaseP" is type "pointer to object of type 'lowercase'".
    "lowercaseS" is typedef struct ... lowercaseS.
-  
+
    #define DEBUG to enable all the "know" assertion tests.
    #define SUSPECT when debugging hash code.
    #define COMMON as "extern" for all modules except one, where you #define
@@ -208,7 +208,7 @@ extern int vsnprintf(char *, size_t, const char *, va_list);
     as_fatal (_("Case value %ld unexpected at line %d of file \"%s\"\n"),   \
 	      (long) val, __LINE__, __FILE__);				    \
   }
-
+
 #include "flonum.h"
 
 /* These are assembler-wide concepts */
@@ -240,12 +240,12 @@ typedef addressT valueT;
 #else
 #define know(p)			/* know() checks are no-op.ed  */
 #endif
-
+
 /* input_scrub.c */
 
 /* Supplies sanitised buffers to read.c.
    Also understands printing line-number part of error messages.  */
-
+
 /* subsegs.c     Sub-segments. Also, segment(=expression type)s.*/
 
 typedef asection *segT;
@@ -350,7 +350,7 @@ struct relax_type
 };
 
 typedef struct relax_type relax_typeS;
-
+
 /* main program "as.c" (command arguments etc).  */
 
 COMMON unsigned char flag_no_comments; /* -f */
@@ -431,7 +431,7 @@ enum debug_info_type
 
 extern enum debug_info_type debug_type;
 extern int use_gnu_debug_info_extensions;
-
+
 /* Maximum level of macro nesting.  */
 extern int max_macro_nest;
 
@@ -643,5 +643,7 @@ COMMON char *        found_comment_file;
 #if OCTETS_PER_BYTE != (1<<OCTETS_PER_BYTE_POWER)
  #error "Octets per byte conflicts with its power-of-two definition!"
 #endif
+
+#define LISTING_MAX 1024
 
 #endif /* GAS */
