@@ -2748,11 +2748,6 @@ qdsp6_dis_opcode
 
   *dst = '\0';
 
-#if 0
-  dst += sprintf(dst, "\t/* packet bits: 0x%x */",
-                 packet_bits >> QDSP6_PACKET_BIT_NUM);
-#endif
-
   if (end_packet)
     {
       if (in_packet)

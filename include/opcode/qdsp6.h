@@ -105,7 +105,8 @@
 */
 #define QDSP6_SLOTS_DUPLEX (0x3) /** < Paired isns. */
 #define QDSP6_SLOTS_STORES (0x2) /** < In-order dual-stores. */
-#define QDSP6_SLOTS_MEM1 (0x1)   /** < Preference for single memory access. */
+#define QDSP6_SLOTS_1      (0x2) /** < Slot #1. */
+#define QDSP6_SLOTS_MEM1   (0x1) /** < Preference for single memory access. */
 
 /* Type to denote an QDSP6 instruction (at least a 32 bit unsigned int).  */
 typedef unsigned int qdsp6_insn;
