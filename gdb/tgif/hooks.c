@@ -23,6 +23,11 @@
 #include <sys/time.h>
 #include <unistd.h>
 #include <fcntl.h>
+
+#if USE_WIN32API
+#include <winsock2.h>
+#endif
+
 /*
  * This is the return buffer so that the results of
  * gdb commands can be sent to tcl.
@@ -89,10 +94,23 @@ tgif_query_hook(char *ctlstr, va_list args) {
 				timeout.tv_sec = 0;
 				timeout.tv_usec = 0;
 
+#if USE_WIN32API
+#ifdef F_GETFL
+				if ((flags = fcntl (fileno (stdin), F_GETFL, 0)) < 0)
+					return (EOF);
+#endif                                        
+#ifdef O_NONBLOC
+				flags |= O_NONBLOCK;
+#endif
+#ifdef F_SETFL
+				fcntl (fileno (stdin), F_SETFL, flags);
+#endif
+#else
 				if ((flags = fcntl (fileno (stdin), F_GETFL, 0)) < 0)
 					return (EOF);
 				flags |= O_NONBLOCK;
 				fcntl (fileno (stdin), F_SETFL, flags);
+#endif
 
 				ans2 = fgetc (stdin);
 

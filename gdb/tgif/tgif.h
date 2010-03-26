@@ -84,7 +84,7 @@ void Execute(char *cmd);
 int Tgif_execute_command (char *cmd, int from_tty);
 static int tgif_AppInit (Tcl_Interp *interp);
 //extern int Print_If_Needed(char *, int);
-extern void Print_If_Needed(char *, int);
+extern void Print_If_Needed();
 
 
 /*

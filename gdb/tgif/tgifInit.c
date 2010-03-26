@@ -3,12 +3,12 @@
 # All Rights Reserved.
 # Modified by QUALCOMM INCORPORATED on $Date$
 *****************************************************************/
-/* --------------------------------------------------------------------
+/* -------------------------------------------------------------------- 
  *
- * File: tgifInit.c
+ * File: tgifInit.c 
  *
- * Purpose: This file contains the initialization routines for Tcl-Gdb
- *          interface, along with constructs to assist in message
+ * Purpose: This file contains the initialization routines for Tcl-Gdb 
+ *          interface, along with constructs to assist in message 
  *          passing between the two.
  *
  * --------------------------------------------------------------------
@@ -31,6 +31,26 @@
 #include "hooks.h"
 #include "register.h"
 
+#if USE_WIN32API
+#include <windows.h>
+#endif
+
+
+
+struct ui_file
+  {
+    int *magic;
+    ui_file_flush_ftype *to_flush;
+    ui_file_write_ftype *to_write;
+    ui_file_fputs_ftype *to_fputs;
+    ui_file_read_ftype *to_read;
+    ui_file_delete_ftype *to_delete;
+    ui_file_isatty_ftype *to_isatty;
+    ui_file_rewind_ftype *to_rewind;
+    ui_file_put_ftype *to_put;
+    void *to_data;
+  };
+
 #define MAXPATHSTRING 2048
 
 /* Global Variable Section */
@@ -39,6 +59,9 @@ int top_level_from_tty = 1;
 int tclsh_executable = 0;
 int need_concatenation = 0;
 int was_proceed_command = 0;
+int is_breakpoint_callbk = 0;
+int cmd_result_flag = TCL_OK;
+
 
 /* Extern Section */
 extern int  is_breakpoint_callbk;
@@ -48,7 +71,7 @@ extern void tcl_setInteractive(int status);
 /*
  * Interpreter for the application
  */
-static Tcl_Interp *interp;
+Tcl_Interp *interp;
 
 
 /*
@@ -61,7 +84,7 @@ void fix_error_level (void) {
 }
 
 
-void
+void 
 Execute(char *cmd) {
   Tcl_Eval(interp, cmd);
 }
@@ -73,7 +96,7 @@ static Tcl_DString tcl_command;
 static int  longCommand = 0;
 
 //int [ams]
-void Print_If_Needed(char *cmd, int from_tty) {
+void Print_If_Needed(void) {
     if (isInteractive()) {
 		printf("%s\n", interp->result);
 	}
@@ -88,11 +111,11 @@ void Print_If_Needed(char *cmd, int from_tty) {
  *          gdb routine) to manage the results from GDB.
  *
  * -------------------------------------------------------------*/
-void Tgif_puts_hook (const char * linebuffer,
+void Tgif_puts_hook (const char * linebuffer, 
                      struct ui_file * stream)
-{
+{    
 	char * temp;
-    int pVal = 0;
+    int pVal = 0; 
 	if ( tcl_status_buffer != NULL ) {
 		int length = strlen(linebuffer);
 		if ( inset_into_buffer+length+1 > tcl_status_buffer+SIZEOFBUFFER ) {
@@ -102,61 +125,74 @@ void Tgif_puts_hook (const char * linebuffer,
 				SIZEOFBUFFER -= 4096;
 				printf("Realloc failed.  Sorry.\n" );
                 return ;
-			} else {
+			} else { 
 				inset_into_buffer = ( inset_into_buffer - tcl_status_buffer ) + temp;
 				tcl_status_buffer = temp;
 			}
 		}
 		strcpy( inset_into_buffer, linebuffer);
-		inset_into_buffer += length;
+		inset_into_buffer += length; 
 		*inset_into_buffer = '\0';
 	}
 
-    /* print output criteria
+    /* print output criteria 
      * 1st  : tcl command */
-    if (was_gdb_command == 0)
+    if (was_gdb_command == 0) 
          stream->to_fputs(linebuffer, stream);
     else if (was_gdb_command == 1)
-    {
+    {   
        /* 1st  : non-nested gdb command @ command line + mi
         * 3rd  : gdb_command in callback, 'puts' alone enabled */
+#ifdef USE_WIN32API
+       if (is_breakpoint_callbk != 1)
+         stream->to_fputs(linebuffer, stream);
+#else
        if ((tcl_getInteractive() == 0) && (is_breakpoint_callbk != 1))
          stream->to_fputs(linebuffer, stream);
+#endif
     }
-  return;
-
+  return; 
+ 
 }
 
 
 /* ---------------------------------------------------------------------
  *
- * Function: Tgif_Init
+ * Function: Tgif_Init 
  *
- * Purpose: This function is called from Gdb to initialize a Tcl
+ * Purpose: This function is called from Gdb to initialize a Tcl 
  *          interpreter.  It initializes a Tcl/Tk interpreter, registers
  *          a few commands with it .
  *
  * ---------------------------------------------------------------------
  */
-int Tgif_Init ( void ) {
+int Tgif_Init ( void ) { 
 
   char PathString[MAXPATHSTRING] = {'0'};
   char temp[MAXPATHSTRING]       = {'0'};
-
+  
     //printf("\nIn  Tgif_Init.\n");
     /* Create Tcl Interpreter.*/
 	interp = Tcl_CreateInterp ();
-
+	
     /*Setup interactvity.*/
     Tcl_SetVar (interp, "tcl_interactive", isatty(0)?"1":"0", TCL_GLOBAL_ONLY);
 
-    /* Get the path where qdsp6-gdb executable resides */
+#ifdef USE_WIN32API
+    GetModuleFileName(NULL,temp,MAXPATHSTRING-1);
+    /* Get the absolute path of tcl8.4 libraries */
+    strcat(temp, "/../../lib/tcl8.4");
+    strcpy(PathString, lrealpath(temp));
+ printf ("PathString = %s\n", PathString);
+#else
+    /* Get the path where qdsp6-gdb executable resides */ 
     snprintf(temp, sizeof(temp),"/proc/self/exe");
-	realpath(temp, PathString);
+    realpath(temp, PathString);
 
     /* Get the absolute path of tcl8.4 libraries */
     strcat(PathString, "/../../lib/tcl8.4");
-
+#endif
+    
     Tcl_SetVar(interp, "tcl_library", PathString, TCL_GLOBAL_ONLY);
 
 	/* Initialize interpreter.*/
@@ -164,25 +200,25 @@ int Tgif_Init ( void ) {
 		fprintf(stderr, "Unable to locate init.tcl.\n");
 		return TCL_ERROR;
 	}
-
+	
 
 	/*Setup the hooks. TEST */
-	query_hook = tgif_query_hook;
+	deprecated_query_hook = tgif_query_hook;
 
-
+	
 	/* Do Command Ini  */
 	if ( tgif_AppInit(interp) != TCL_OK ) {
 		fprintf( stderr, "Tcl_AppInit failed: %s\n", interp->result );
-	}
-
+	}  
+	
    // printf("\nOut Tgif_Init.\n");
     return 1;
 }
 
-/*
+/* 
  * ------------------------------------------------------------------
- *
- * Function: tgif_AppInit
+ * 
+ * Function: tgif_AppInit 
  *
  * Purpose: This function calls various sub-functions to do command
  *          registration.  GDB commands are registered with the Tcl
@@ -203,10 +239,10 @@ tgif_AppInit (Tcl_Interp *interp) {
 
 /*
  * --------------------------------------------------------------------
- *
+ * 
  * Function: eval_command
  *
- * Purpose: This is the main entry point from GDB into Tcl.  A
+ * Purpose: This is the main entry point from GDB into Tcl.  A 
  *          Tcl command executed by SmartGDB will pass through here.
  *          Note that all the output switching (i.e. whether to print
  *          output or not) is done in here.
@@ -226,9 +262,9 @@ eval_command (char *cmd, int from_tty) {
   //  printf("\nIn  eval command.\n");
 	was_gdb_command = 0;
     orig_from_tty   = from_tty;
-
+    
 	if ( from_tty==0  ) {
-	  old_from_status = isInteractive();
+	  old_from_status = isInteractive();	 
 	  setInteractive (0);
 	}
 	/*
@@ -256,23 +292,23 @@ eval_command (char *cmd, int from_tty) {
   //  printf("\nOut eval command.\n");
 }
 
-/*
+/* 
  * ----------------------------------------------------------------------
  *
- * Function: Tgif_execute_command
+ * Function: Tgif_execute_command 
  *
  * Purpose: This is the front end to command processing.  It is called from
- *          the command loop.  It builds up a string of commands until they
- *          are complete (checked by tcl) and then passes them on to be
+ *          the command loop.  It builds up a string of commands until they 
+ *          are complete (checked by tcl) and then passes them on to be 
  *          executed.
  *
  * ----------------------------------------------------------------------
  */
-int
+int 
 Tgif_execute_command (char *cmd, int from_tty) {
 	int  code, old_from_status;
 	char *newCmd;
-
+    
     /* change to tcl prompt */
     set_prompt (TCL_PROMPT);
     /* reset tcl gdb display flag */
@@ -294,10 +330,10 @@ Tgif_execute_command (char *cmd, int from_tty) {
         }
         longCommand = 0;
 	}
-
+   
     /* Process tcl+gdb command */
     eval_command (cmd, from_tty);
-
+   
     /* reset tcl gdb display flag */
     tcl_setInteractive(0);
 
@@ -308,11 +344,11 @@ Tgif_execute_command (char *cmd, int from_tty) {
 }
 
 
-/*
+/* 
  * -------------------------------------------------------------------------
  *
- * Function: Tgif_Cleanup
- *
+ * Function: Tgif_Cleanup 
+ * 
  * Purpose: This function is registered in the cleanup chain to be called
  *          to clean up after our tgif stuff in case of a major error.
  *
@@ -344,10 +380,10 @@ _initialize_tgif (void) {
   tcl_status_buffer = (char *)malloc(SIZEOFBUFFER);
   inset_into_buffer = tcl_status_buffer;
   if ( tcl_status_buffer != NULL ) {
-    Tgif_Init ();
-  } else {
-    fprintf(stderr, "No memory for buffer\n");
-    exit(-1);
+    Tgif_Init ();   
+  } else { 
+    fprintf(stderr, "No memory for buffer\n"); 
+    exit(-1); 
   }
 }
 

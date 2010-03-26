@@ -256,6 +256,31 @@ if test x"$enable_gdbcli" = xyes; then
   fi
 fi
 
+# The TCL cannot be disabled yet, but may be in the future.
+
+if test $ac_cv_env_target_alias_value = qdsp6; then
+# Enable TCL.
+AC_ARG_ENABLE(gdbtgif,
+[  --disable-gdbtgif        disable command-line interface (TCL)], 
+  [case $enableval in
+    yes)    
+      ;;      
+    no)
+      AC_MSG_ERROR([the command-line interface cannot be disabled yet]) ;;
+    *)
+      AC_MSG_ERROR([bad value $enableval for --enable-gdbtgif]) ;;
+  esac],  
+  [enable_gdbtgif=yes])
+if test x"$enable_gdbtgif" = xyes; then
+  if test -d $srcdir/tgif; then
+    CONFIG_OBS="$CONFIG_OBS \$(SUBDIR_TGIF_OBS)"
+    CONFIG_DEPS="$CONFIG_DEPS \$(SUBDIR_TGIF_DEPS)"
+    CONFIG_SRCS="$CONFIG_SRCS \$(SUBDIR_TGIF_SRCS)"
+    ENABLE_CFLAGS="$ENABLE_CFLAGS \$(SUBDIR_TGIF_CFLAGS)"
+  fi
+fi
+fi
+
 # Enable MI.
 AC_ARG_ENABLE(gdbmi,
 AS_HELP_STRING([--disable-gdbmi], [disable machine-interface (MI)]),

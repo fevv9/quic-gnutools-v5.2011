@@ -31,6 +31,10 @@
 #include "serial.h"
 #include "gdbthread.h"
 
+#ifdef HAVE_TCL
+#include "top.h"
+#endif
+
 const struct gdb_exception exception_none = { 0, GDB_NO_ERROR, NULL };
 
 /* Possible catcher states.  */
@@ -473,6 +477,9 @@ catch_exceptions_with_msg (struct ui_out *uiout,
 {
   volatile struct gdb_exception exception;
   volatile int val = 0;
+#ifdef HAVE_TCL
+  extern int Q6_tcl_fe_state;
+#endif
   TRY_CATCH (exception, mask)
     {
       val = (*func) (uiout, func_args);
@@ -492,6 +499,18 @@ catch_exceptions_with_msg (struct ui_out *uiout,
 	  else
 	    *gdberrmsg = NULL;
 	}
+#ifdef HAVE_TCL
+      if (Q6_tcl_fe_state == 1)
+        {
+          extern int is_breakpoint_callbk;
+          if (is_breakpoint_callbk == 1)
+            {
+              printf_filtered ("QDSP6: Error in callback function commands !\n");
+              quit_force ((char *)0, 0);
+            }
+        }
+
+#endif
       return exception.reason;
     }
   return val;

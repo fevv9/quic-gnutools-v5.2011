@@ -2435,6 +2435,7 @@ TclpObjNormalizePath(interp, pathPtr, nextCheckpoint)
 		WIN32_FILE_ATTRIBUTE_DATA data;
 		CONST char *nativePath = Tcl_WinUtfToTChar(path, 
 			    currentPathEndPosition - path, &ds);
+	    if (tclWinProcs->getFileAttributesExProc != NULL) {
 		if ((*tclWinProcs->getFileAttributesExProc)(nativePath,
 		    GetFileExInfoStandard, &data) != TRUE) {
 		    /* File doesn't exist */
@@ -2458,6 +2459,7 @@ TclpObjNormalizePath(interp, pathPtr, nextCheckpoint)
 		    Tcl_DStringFree(&ds);
 		    break;
 		}
+	     }
 
 		/* 
 		 * File 'nativePath' does exist if we get here.  We

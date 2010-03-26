@@ -1713,6 +1713,34 @@ cli-setshow.o: $(srcdir)/cli/cli-setshow.c
 	$(COMPILE) $(srcdir)/cli/cli-setshow.c
 	$(POSTCOMPILE)
 
+#
+# gdb/tgif/ dependencies
+#
+# Need to explicitly specify the compile rule as make will do nothing
+# or try to compile the object file into the sub-directory.
+
+hooks.o: $(srcdir)/tgif/hooks.c $(TCL_SRC_DIR)/generic/tcl.h \
+	$(TCL_SRC_DIR)/generic/tclInt.h  \
+	$(tgif_tgif_h) $(defs_h)
+	$(CC) -c $(INTERNAL_CFLAGS) $(TCL_INCLUDE) $(srcdir)/tgif/hooks.c
+setproc.o: $(srcdir)/tgif/setproc.c $(defs_h)  $(symtab_h) $(value_h) \
+	$(gdbcore_h) $(frame_h) $(command_h) $(target_h) $(expression_h) \
+	$(TCL_SRC_DIR)/generic/tcl.h  $(tgif_tgif_h)
+	$(CC) -c $(INTERNAL_CFLAGS) $(TCL_INCLUDE) $(srcdir)/tgif/setproc.c
+register.o: $(srcdir)/tgif/register.c $(TCL_SRC_DIR)/generic/tcl.h \
+	$(TCL_SRC_DIR)/generic/tclInt.h  \
+	$(tgif_tgif_h) $(defs_h) $(tgif_register_h) $(tgif_hooks_h)
+	$(CC) -c $(INTERNAL_CFLAGS) $(TCL_INCLUDE) $(srcdir)/tgif/register.c
+GuiSupport.o: $(srcdir)/tgif/GuiSupport.c $(TCL_SRC_DIR)/generic/tcl.h \
+	$(TCL_SRC_DIR)/generic/tclInt.h $(tgif_tgif_h) \
+	$(tgif_guisupport_h) 
+	$(CC) -c $(INTERNAL_CFLAGS) $(TCL_INCLUDE) $(srcdir)/tgif/GuiSupport.c
+tgifInit.o: $(srcdir)/tgif/tgifInit.c $(TCL_SRC_DIR)/generic/tcl.h \
+	$(TCL_SRC_DIR)/generic/tclInt.h  \
+	$(tgif_tgif_h) $(defs_h) \
+	$(tgif_guisupport_h) $(tgif_gdb_h) $(tgif_hooks_h) $(tgif_register_h)
+	$(CC) -c $(INTERNAL_CFLAGS) $(TCL_INCLUDE) $(srcdir)/tgif/tgifInit.c
+
 
 #
 # GDBTK sub-directory

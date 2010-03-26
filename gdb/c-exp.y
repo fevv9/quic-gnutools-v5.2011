@@ -232,7 +232,9 @@ static int parse_number (char *, int, int, YYSTYPE *);
 %left '+' '-'
 %left '*' '/' '%'
 %right UNARY INCREMENT DECREMENT
-%right ARROW ARROW_STAR '.' DOT_STAR '[' '('
+/* HAVE_TCL adds the "SEG ARRAY_OPEN"  and the %token ARRAY_CLOSE */
+%right ARROW ARROW_STAR '.' DOT_STAR '[' '(' SEG ARRAY_OPEN
+%token ARRAY_CLOSE
 %token <ssym> BLOCKNAME 
 %token <bval> FILENAME
 %type <bval> block
@@ -375,6 +377,16 @@ exp	:	exp DOT_STAR exp
 exp	:	exp '[' exp1 ']'
 			{ write_exp_elt_opcode (BINOP_SUBSCRIPT); }
 	;
+/* HAVE_TCL */
+exp	:	exp ARRAY_OPEN exp1 ARRAY_CLOSE
+			{ write_exp_elt_opcode (BINOP_SUBSCRIPT); }
+	;
+
+exp	:	exp SEG exp1	
+			{ write_exp_elt_opcode (BINOP_SUBSCRIPT); }
+	;
+/* HAVE_TCL */
+
 
 exp	:	exp '(' 
 			/* This is to save the value of arglist_len
@@ -1692,7 +1704,14 @@ static const struct token tokentab2[] =
     {"!=", NOTEQUAL, BINOP_END, 0},
     {"<=", LEQ, BINOP_END, 0},
     {">=", GEQ, BINOP_END, 0},
+#ifdef HAVE_TCL
+    {".*", DOT_STAR, BINOP_END, 1},
+    {"@@", SEG, BINOP_SUBSCRIPT, 0},	/* SANTOSH Modification here. */
+    {"<:", ARRAY_OPEN, BINOP_SUBSCRIPT, 0},
+    {":>", ARRAY_CLOSE, BINOP_SUBSCRIPT, 0}
+#else
     {".*", DOT_STAR, BINOP_END, 1}
+#endif
   };
 
 /* Identifier-like tokens.  */

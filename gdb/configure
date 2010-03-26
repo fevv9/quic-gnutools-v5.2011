@@ -886,6 +886,7 @@ with_relocated_sources
 enable_targets
 enable_64_bit_bfd
 enable_gdbcli
+enable_gdbtgif
 enable_gdbmi
 enable_tui
 enable_gdbtk
@@ -1558,6 +1559,7 @@ Optional Features:
                           alternative target configurations
   --enable-64-bit-bfd     64-bit support (on hosts with narrower word sizes)
   --disable-gdbcli        disable command-line interface (CLI)
+  --disable-gdbtgif        disable command-line interface (TCL)
   --disable-gdbmi         disable machine-interface (MI)
   --enable-tui            enable full-screen terminal user interface (TUI)
   --enable-gdbtk          enable gdbtk graphical user interface (GUI)
@@ -6851,6 +6853,34 @@ if test x"$enable_gdbcli" = xyes; then
     CONFIG_SRCS="$CONFIG_SRCS \$(SUBDIR_CLI_SRCS)"
     ENABLE_CFLAGS="$ENABLE_CFLAGS \$(SUBDIR_CLI_CFLAGS)"
   fi
+fi
+
+# The TCL cannot be disabled yet, but may be in the future.
+
+if test $ac_cv_env_target_alias_value = qdsp6; then
+# Enable TCL.
+# Check whether --enable-gdbtgif was given.
+if test "${enable_gdbtgif+set}" = set; then :
+  enableval=$enable_gdbtgif; case $enableval in
+    yes)
+      ;;
+    no)
+      as_fn_error "the command-line interface cannot be disabled yet" "$LINENO" 5 ;;
+    *)
+      as_fn_error "bad value $enableval for --enable-gdbtgif" "$LINENO" 5 ;;
+  esac
+else
+  enable_gdbtgif=yes
+fi
+
+if test x"$enable_gdbtgif" = xyes; then
+  if test -d $srcdir/tgif; then
+    CONFIG_OBS="$CONFIG_OBS \$(SUBDIR_TGIF_OBS)"
+    CONFIG_DEPS="$CONFIG_DEPS \$(SUBDIR_TGIF_DEPS)"
+    CONFIG_SRCS="$CONFIG_SRCS \$(SUBDIR_TGIF_SRCS)"
+    ENABLE_CFLAGS="$ENABLE_CFLAGS \$(SUBDIR_TGIF_CFLAGS)"
+  fi
+fi
 fi
 
 # Enable MI.

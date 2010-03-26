@@ -25,6 +25,9 @@
 #include "gdb_string.h"
 
 #include <errno.h>
+#ifdef HAVE_TCL
+#include "tgif/tgif.h"
+#endif
 
 static ui_file_isatty_ftype null_file_isatty;
 static ui_file_write_ftype null_file_write;
@@ -208,7 +211,17 @@ ui_file_read (struct ui_file *file, char *buf, long length_buf)
 void
 fputs_unfiltered (const char *buf, struct ui_file *file)
 {
+#ifdef HAVE_TCL
+  extern int Q6_tcl_fe_state;
+  extern void Tgif_puts_hook (const char *linebuffer, struct ui_file *stream);
+
+  if (Q6_tcl_fe_state == 1)
+    Tgif_puts_hook(buf, file);
+  else
+    file->to_fputs (buf, file);
+#else
   file->to_fputs (buf, file);
+#endif
 }
 
 void

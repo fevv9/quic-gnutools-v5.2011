@@ -183,11 +183,19 @@ static CONST char charTypeTable[] = {
     TYPE_NORMAL,      TYPE_NORMAL,      TYPE_NORMAL,      TYPE_NORMAL,
 };
 
+#ifdef WIN32
+int __declspec(dllexport) tcl_getInteractive()
+#else
 int tcl_getInteractive()
+#endif
 {
 return tcl_suppress_display;
 }
+#ifdef WIN32
+void __declspec(dllexport) tcl_setInteractive(int status)
+#else
 void tcl_setInteractive(int status)
+#endif
 {
  tcl_suppress_display=status;
 }
@@ -1025,6 +1033,7 @@ ParseTokens(src, numBytes, mask, parsePtr)
 	parsePtr->numTokens++;
     }
     parsePtr->term = src;
+
     return TCL_OK;
 }
 

@@ -69,6 +69,11 @@
 
 #include "gdb_usleep.h"
 
+#ifdef HAVE_TCL
+#include "tgif/tgif.h"
+#include <fcntl.h>
+#endif
+
 #if !HAVE_DECL_MALLOC
 extern PTR malloc ();		/* ARI: PTR */
 #endif
@@ -1968,6 +1973,13 @@ prompt_for_continue (void)
   char *ignore;
   char cont_prompt[120];
 
+#ifdef HAVE_TCL
+  extern int Q6_tcl_fe_state;
+  if ((Q6_tcl_fe_state == 1) && (!isInteractive())) {
+    return;
+  }
+#endif
+
   if (annotation_level > 1)
     printf_unfiltered (("\n\032\032pre-prompt-for-continue\n"));
 
@@ -2280,9 +2292,28 @@ putchar_filtered (int c)
 int
 fputc_unfiltered (int c, struct ui_file *stream)
 {
+#ifdef HAVE_TCL
+  extern int Q6_tcl_fe_state;
+  if (Q6_tcl_fe_state == 1)
+    {
+      char buf[2];
+      buf[0] = c;
+      buf[1] = 0;
+
+      fputs_unfiltered (buf, stream);
+      return c;
+    }
+  else
+    {
+      char buf = c;
+      ui_file_write (stream, &buf, 1);
+      return c;
+    }
+#else
   char buf = c;
   ui_file_write (stream, &buf, 1);
   return c;
+#endif
 }
 
 int

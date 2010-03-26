@@ -64,6 +64,26 @@
 #include "ui-out.h"
 #include "cli-out.h"
 
+#ifdef HAVE_TCL
+#include "tgif/tgif.h"
+#include "tcl.h"
+/* Global integer for gdb->tcl output control. */
+extern int was_gdb_command;
+jmp_buf error_return; // [ams]
+
+/* Free resources allocated by qdsp6-tdep.c */
+extern void free_q6alloc_mem(void);
+
+/* One func is the standard the other is the TCL front end */
+int (*exec_cmd_func[2])(char *, int) = {0, 0};
+
+/* Global variable cmd_result_flag which will indicate 
+   if we need to return an error. */
+int cmd_result_flag;
+
+#endif 
+
+
 /* Default command line prompt.  This is overriden in some configs. */
 
 #ifndef DEFAULT_PROMPT
@@ -361,8 +381,13 @@ prepare_execute_command (void)
 /* Execute the line P as a command, in the current user context.
    Pass FROM_TTY as second argument to the defining function.  */
 
+#ifdef HAVE_TCL
+int
+execute_command_default (char *p, int from_tty)
+#else
 void
 execute_command (char *p, int from_tty)
+#endif
 {
   struct cmd_list_element *c;
   enum language flang;
@@ -396,7 +421,11 @@ execute_command (char *p, int from_tty)
 
   /* This can happen when command_line_input hits end of file.  */
   if (p == NULL)
+#ifdef HAVE_TCL
+    return 0;
+#else
     return;
+#endif
 
   target_log_command (p);
 
@@ -484,7 +513,235 @@ execute_command (char *p, int from_tty)
 	  warned = 1;
 	}
     }
+#ifdef HAVE_TCL
+    return 1;
+#endif
 }
+
+#ifdef HAVE_TCL
+void
+non_tcl_execute_command (char *p, int from_tty)
+{
+  struct cmd_list_element *c;
+  enum language flang;
+  static int warned = 0;
+  char *line;
+  long time_at_cmd_start = 0;
+#ifdef HAVE_SBRK
+  long space_at_cmd_start = 0;
+#endif
+  extern int display_time;
+  extern int display_space;
+
+  struct cleanup *saved_cleanup_chain;
+  char *saved_error_pre_print;
+  char *saved_quit_pre_print;
+  int oldInteractive;
+
+  /*
+   * This is the jump buffer init stuff.
+   */
+  jmp_buf tempE, tempQ;
+  memcpy (tempE, error_return, sizeof (jmp_buf));
+
+  saved_cleanup_chain = save_cleanups ();
+  saved_error_pre_print = error_pre_print;
+  saved_quit_pre_print = quit_pre_print;
+
+
+  if (target_can_async_p ())
+    {
+      time_at_cmd_start = get_run_time ();
+
+      if (display_space)
+	{
+#ifdef HAVE_SBRK
+	  char *lim = (char *) sbrk (0);
+	  space_at_cmd_start = lim - lim_at_start;
+#endif
+	}
+    }
+
+  prepare_execute_command ();
+
+  /* Force cleanup of any alloca areas if using C alloca instead of
+     a builtin alloca.  */
+  alloca (0);
+
+  /* This can happen when command_line_input hits end of file.  */
+  if (p == NULL)
+    return;
+
+  target_log_command (p);
+
+ /* main entry to non-tcl commands, so we set our global was_gdb_comand
+   * here.
+   */
+  /* We added the jump buffer reset so that a command that screwed up
+   * wont reset all of tcl/tk too.
+   */
+  was_gdb_command = 1;
+  cmd_result_flag = TCL_OK;
+  oldInteractive = isInteractive();
+
+  if ( setjmp( error_return ) != 0 ) {
+    cmd_result_flag = TCL_ERROR;
+    fix_error_level ();
+    goto RESTORE_STATE;
+  }
+
+  if (*p)
+    {
+      char *arg;
+      line = p;
+
+      /* If trace-commands is set then this will print this command.  */
+      print_command_trace (p);
+
+      c = lookup_cmd (&p, cmdlist, "", 0, 1);
+
+      /* Pass null arg rather than an empty one.  */
+      arg = *p ? p : 0;
+
+      /* FIXME: cagney/2002-02-02: The c->type test is pretty dodgy
+         while the is_complete_command(cfunc) test is just plain
+         bogus.  They should both be replaced by a test of the form
+         c->strip_trailing_white_space_p.  */
+      /* NOTE: cagney/2002-02-02: The function.cfunc in the below
+         can't be replaced with func.  This is because it is the
+         cfunc, and not the func, that has the value that the
+         is_complete_command hack is testing for.  */
+      /* Clear off trailing whitespace, except for set and complete
+         command.  */
+      if (arg
+	  && c->type != set_cmd
+	  && !is_complete_command (c))
+	{
+	  p = arg + strlen (arg) - 1;
+	  while (p >= arg && (*p == ' ' || *p == '\t'))
+	    p--;
+	  *(p + 1) = '\0';
+	}
+
+      /* If this command has been pre-hooked, run the hook first. */
+      execute_cmd_pre_hook (c);
+
+      if (c->flags & DEPRECATED_WARN_USER)
+	deprecated_cmd_warning (&line);
+
+      if (c->class == class_user)
+	execute_user_command (c, arg);
+      else if (c->type == set_cmd || c->type == show_cmd)
+	do_setshow_command (arg, from_tty & caution, c);
+      else if (!cmd_func_p (c))
+	error (_("That is not a command, just a help topic."));
+      else if (deprecated_call_command_hook)
+	deprecated_call_command_hook (c, arg, from_tty & caution);
+      else
+	cmd_func (c, arg, from_tty & caution);
+       
+      /* If this command has been post-hooked, run the hook last. */
+      execute_cmd_post_hook (c);
+
+    }
+   /* [ams] moved "bpstat_do_actions"  from command_loop to here
+    * to execute callbacks of gdb commands inside tcl loops */
+   /* Do any commands attached to breakpoint we stopped at.  */
+   bpstat_do_actions ();
+
+
+  /* Tell the user if the language has changed (except first time).  */
+  if (current_language != expected_language)
+    {
+      if (language_mode == language_mode_auto)
+	{
+	  language_info (1);	/* Print what changed.  */
+	}
+      warned = 0;
+    }
+
+  /* Warn the user if the working language does not match the
+     language of the current frame.  Only warn the user if we are
+     actually running the program, i.e. there is a stack. */
+  /* FIXME:  This should be cacheing the frame and only running when
+     the frame changes.  */
+
+  if (has_stack_frames ())
+    {
+      flang = get_frame_language ();
+      if (!warned
+	  && flang != language_unknown
+	  && flang != current_language->la_language)
+	{
+	  printf_filtered ("%s\n", lang_frame_mismatch_warn);
+	  warned = 1;
+	}
+    }
+
+RESTORE_STATE:
+  setInteractive (oldInteractive);
+  memcpy (tempE, error_return, sizeof (jmp_buf));
+ restore_cleanups (saved_cleanup_chain);
+  error_pre_print = saved_error_pre_print;
+  quit_pre_print = saved_quit_pre_print;
+
+}
+
+
+/* This is the new "execute_command" which first sends the command to 
+ * Tcl for evaluation and processing. It returns a 0 if the command 
+ * sent is incomplete and 1 otherwise.*/
+/* Read commands from `instream' and execute them
+   until end of file or error reading instream.  */
+int
+execute_command_tcl (p, from_tty)
+     char *p;
+     int from_tty;
+{  
+
+  
+  /* This can happen when command_line_input hits end of file.  */
+  if (p == NULL)
+      return 0;
+ 
+  serial_log_command (p);
+ 
+  while (*p == ' ' || *p == '\t') p++;
+
+  {
+        int Tgif_execute_command (char *cmd, int from_tty);
+
+        /* This code is a hook into the Tgif. It takes the command-line
+         * and processes it so that its acceptable to Gdb. Does all the
+         * relevant substitutions, script processing and more. It might
+         * just call "execute_command" recursively.
+         */
+        return (Tgif_execute_command (p, from_tty));
+   }
+}
+
+
+
+int execute_command (char *p, int from_tty)
+{
+   extern int Q6_tcl_fe_state;
+
+/* Q6_tcl_fe_state == 0 means the TCL front end is disabled (default)
+   Q6_tcl_fe_state == 1 means the TCL front end is enabled
+   from the gdb promt say: set tclfe on/off to switch between */
+   
+    if ((Q6_tcl_fe_state == 0) || (Q6_tcl_fe_state == 1))
+        return exec_cmd_func[Q6_tcl_fe_state](p, from_tty);
+    else
+    {
+        error ("Command execution func ptr index is corrupt. Should be 0 or 1, not: %d\n", Q6_tcl_fe_state);
+       return 0;
+    }
+
+}
+#endif /* HAVE_TCL */
+
+
 
 /* Read commands from `instream' and execute them
    until end of file or error reading instream.  */
@@ -501,6 +758,9 @@ command_loop (void)
 #endif
   extern int display_time;
   extern int display_space;
+#ifdef HAVE_TCL
+  extern int Q6_tcl_fe_state;
+#endif
 
   while (instream && !feof (instream))
     {
@@ -531,8 +791,13 @@ command_loop (void)
 
       execute_command (command, instream == stdin);
 
+#ifdef HAVE_TCL
+      if (Q6_tcl_fe_state == 1)
+        bpstat_do_actions ();
+#else
       /* Do any commands attached to breakpoint we are stopped at.  */
       bpstat_do_actions ();
+#endif
 
       do_cleanups (old_chain);
 
@@ -1594,6 +1859,11 @@ init_main (void)
   command_editing_p = 1;
   history_expansion_p = 0;
   write_history_p = 0;
+
+#ifdef HAVE_TCL
+  exec_cmd_func[0] = execute_command_default;
+  exec_cmd_func[1] = execute_command_tcl;
+#endif
 
   /* Setup important stuff for command line editing.  */
   rl_completion_word_break_hook = gdb_completion_word_break_characters;

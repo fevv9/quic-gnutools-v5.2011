@@ -108,7 +108,35 @@ readline_line_completion_function (const char *text, int matches)
 char **
 noop_completer (struct cmd_list_element *ignore, char *text, char *prefix)
 {
+#ifdef HAVE_TCL
+  extern int Q6_tcl_fe_state;
+
+  if (Q6_tcl_fe_state == 1)
+    {
+
+/* If its the first character of the line then we simply return TAB.
+   else we call our usual symbol completer.  */
+
+    if (*text) 
+      return ((char **)readline_line_completion_function (text, 0));
+    else 
+      {
+        if (!prefix)
+          {
+            char *string = (char *) xmalloc (strlen ("\t") + 1);
+
+            strcpy (string, "\t");
+            return ((char **)string);
+          }
+        else
+          return (NULL);
+      }
+    }
+    else
+      return NULL;
+#else
   return NULL;
+#endif
 }
 
 /* Complete on filenames.  */
