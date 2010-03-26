@@ -683,6 +683,11 @@ Excess command line arguments ignored. (%s%s)\n"),
       quiet = 1;
   }
 
+#ifdef HAVE_TCL
+#ifdef WIN32
+  Tcl_FindExecutable (argv[0]);
+#endif
+#endif
   /* Initialize all files.  Give the interpreter a chance to take
      control of the console via the deprecated_init_ui_hook ().  */
   gdb_init (argv[0]);
