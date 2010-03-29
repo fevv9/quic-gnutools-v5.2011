@@ -63,6 +63,7 @@
 #define NUM_GLOBAL_REGS 64
 #define MAX_INTERRUPT 32
 #define END_OFFSET             0xFFFFFFFF
+#define SIM_ARG_MAX 256
 
 /*******************************************************************
  *   Global Variables                                              *
@@ -70,7 +71,7 @@
 
 /* captures the arguments to the target passed thru the 
  * set targetargs command */
-char *q6targetargsInfo[256];
+char *q6targetargsInfo[SIM_ARG_MAX];
 char *current_q6_target = NULL;
 int Q6_tcl_fe_state = 0;
 int qdsp6_debug = 0;
@@ -2131,29 +2132,16 @@ setQ6targetargs (char * args, int tty, struct cmd_list_element *c)
     ULONGEST addr = *(unsigned long *)c->var;
     char *simargs = (char *) addr;
     char **targs = q6targetargsInfo;
-    int index; 
-    int argc = 0;
+    int index = 0; 
 
-    while (*simargs != '\0')
+    simargs = strtok (simargs, " \t\n");
+    while (simargs)
     {
-	targs[argc] = simargs;
-	index = 0;
-	while (*simargs != '\0' && 
-               *simargs != ' '  && 
-               *simargs != '\t' &&
-               *simargs != '\n')
-	{
-	    simargs++;
-	    index++;
-	}
-	targs[argc][index] = '\0'; //terminate each the argument
+	targs[index++] = simargs;
+	simargs = strtok(0, " \t\n");
 
-	argc++;
-	simargs++;
+	gdb_assert (index < SIM_ARG_MAX);
     }
-
-    targs[argc-1] = '\0'; // terminates the whole list.
-
 }
 
 static void
