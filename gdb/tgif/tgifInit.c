@@ -181,7 +181,7 @@ int Tgif_Init ( void ) {
 #ifdef USE_WIN32API
     GetModuleFileName(NULL,temp,MAXPATHSTRING-1);
     /* Get the absolute path of tcl8.4 libraries */
-    strcat(temp, "/../../lib/tcl8.4");
+    strcat(temp, "/../../lib/tcl84");
     strcpy(PathString, lrealpath(temp));
  printf ("PathString = %s\n", PathString);
 #else
@@ -190,7 +190,7 @@ int Tgif_Init ( void ) {
     realpath(temp, PathString);
 
     /* Get the absolute path of tcl8.4 libraries */
-    strcat(PathString, "/../../lib/tcl8.4");
+    strcat(PathString, "/../../lib/tcl84");
 #endif
     
     Tcl_SetVar(interp, "tcl_library", PathString, TCL_GLOBAL_ONLY);
