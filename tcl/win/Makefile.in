@@ -51,7 +51,7 @@ BIN_INSTALL_DIR		= $(INSTALL_ROOT)$(bindir)
 LIB_INSTALL_DIR		= $(INSTALL_ROOT)$(libdir)
 
 # Path name to use when installing library scripts.
-SCRIPT_INSTALL_DIR	= $(INSTALL_ROOT)$(TCL_LIBRARY)
+SCRIPT_INSTALL_DIR	= $(INSTALL_ROOT)$(prefix)/lib/tcl$(VER)
 
 # Directory in which to install the include file tcl.h:
 INCLUDE_INSTALL_DIR	= $(INSTALL_ROOT)$(includedir)
