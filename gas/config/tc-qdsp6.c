@@ -303,12 +303,14 @@ void qdsp6_packet_end_outer (qdsp6_packet *);
 void qdsp6_packet_end_lookahead (int *inner_p, int *);
 void qdsp6_packet_unfold (qdsp6_packet *);
 void qdsp6_packet_fold (qdsp6_packet *);
+void qdsp6_packet_unpad (qdsp6_packet *);
 void qdsp6_packet_write (qdsp6_packet *);
 void qdsp6_packet_finish (qdsp6_packet *);
 int qdsp6_packet_falign (size_t);
-size_t qdsp6_packet_size (const qdsp6_packet *);
+size_t qdsp6_packet_slots (const qdsp6_packet *);
 size_t qdsp6_packet_length (const qdsp6_packet *);
 size_t qdsp6_packet_count (const qdsp6_packet *);
+size_t qdsp6_packet_size (const qdsp6_packet *);
 size_t qdsp6_packet_insns (const qdsp6_packet *);
 int qdsp6_packet_insert
   (qdsp6_packet *, const qdsp6_packet_insn *, const qdsp6_packet_insn *,
@@ -331,6 +333,7 @@ segT qdsp6_create_literal_section (const char *, flagword, unsigned int);
 qdsp6_literal *qdsp6_add_to_lit_pool (expressionS *, size_t);
 void qdsp6_shuffle_packet (qdsp6_packet *, size_t *);
 void qdsp6_shuffle_handle (qdsp6_packet *);
+void qdsp6_shuffle_prepare (qdsp6_packet *);
 void qdsp6_shuffle_do (qdsp6_packet *);
 int qdsp6_shuffle_helper (qdsp6_packet *, size_t, size_t *);
 int qdsp6_discard_dcfetch (qdsp6_packet *, int);
@@ -1023,9 +1026,11 @@ qdsp6_relax_falign
         }
 
       /* Try to shuffle modified packet. */
+      qdsp6_shuffle_prepare (&packet);
       if (qdsp6_shuffle_helper (&packet, 0, NULL))
         {
           qdsp6_packet_fold (&packet);
+          qdsp6_packet_unpad (&packet);
           after = packet.size;
 
           /* Re-emit packet. */
@@ -1072,7 +1077,7 @@ qdsp6_relax_falign
       packet.dpkt--;
     }
 
-  /* Find packet requestin .falign. */
+  /* Find packet requesting .falign. */
   for (previous = fragP, fpacket = NULL;
        previous && (fpacket = &previous->tc_frag_data->packet) && !fpacket->faligned;
        previous = previous->tc_frag_data->previous)
@@ -1155,7 +1160,7 @@ qdsp6_relax_falign_try
 
               if (left)
                 {
-                  size = qdsp6_packet_length (zpacket) - zpacket->relax
+                  size = qdsp6_packet_size (zpacket) - zpacket->relax
                          + zpacket->dpad + zpacket->ddpad
                          + zpacket->drlx + zpacket->ddrlx;
                   assert (size <= MAX_PACKET_INSNS);
@@ -1177,7 +1182,7 @@ qdsp6_relax_falign_try
                       left           -= MIN (left, room);
                     }
 
-                  size = qdsp6_packet_length (zpacket) - zpacket->relax
+                  size = qdsp6_packet_size (zpacket) - zpacket->relax
                          + zpacket->dpad + zpacket->ddpad
                          + zpacket->drlx + zpacket->ddrlx;
                   assert (size <= MAX_PACKET_INSNS);
@@ -1266,9 +1271,6 @@ qdsp6_estimate_size_before_relax
             }
         }
     }
-  else if (apacket->faligned)
-    /* !!! */
-    apacket->faligned = apacket->faligned;
 
   return (delta);
 }
@@ -1294,6 +1296,7 @@ qdsp6_relax_frag (segT segment, fragS *fragP, long stretch)
 
   if (apacket->relax)
     delta += qdsp6_relax_branch_try (fragP, segment, stretch);
+  /* TODO: fetch-align branch-extended packets. */
   else if (apacket->faligned)
     delta += qdsp6_relax_falign_try (fragP, segment, stretch);
 
@@ -2119,7 +2122,7 @@ qdsp6_packet_insert
                  ? 1: 0;
   int duplex   = (insn->opcode->attributes & DUPLEX)? 1: 0;
   int relax    = (insn->flags & QDSP6_INSN_IS_RELAX)? 1: 0;
-  int size     = pad? qdsp6_packet_count (packet): qdsp6_packet_size (packet);
+  int size     = pad? qdsp6_packet_count (packet): qdsp6_packet_slots (packet);
   int length   = pad? qdsp6_packet_count (packet): qdsp6_packet_length (packet);
 
   if (duplex && packet->duplex)
@@ -2345,7 +2348,7 @@ qdsp6_packet_fold
   /* Merge the insn and the prefix arrays. */
   for (i = 0; i < size; i++)
     {
-      if (prefix && apacket->insns [i].padded)
+      if (apacket->insns [i].padded && prefix)
         {
           /* Skip a padding insn to make room for a prefix. */
           prefix--;
@@ -2393,6 +2396,53 @@ qdsp6_packet_fold
   apacket->prefix = 0;
 }
 
+/** Remove padded insns.
+
+Assumes that the packet is in its final form (no prefixes nor pairs).
+
+@param apacket Reference to a packet.
+*/
+void
+qdsp6_packet_unpad
+(qdsp6_packet *apacket)
+{
+  qdsp6_packet packet;
+  size_t size;
+  size_t i;
+
+  size = qdsp6_packet_count (apacket);
+  if (!size)
+    return;
+
+  qdsp6_packet_init (&packet);
+
+  /* Merge the insn and the prefix arrays. */
+  for (i = 0; i < size; i++)
+    {
+      if (apacket->insns [i].padded)
+        continue;
+
+      if (apacket->insns [i].fc && apacket->insns [i].fix)
+        {
+          apacket->insns [i].fix->fx_where   = packet.size * QDSP6_INSN_LEN;
+          apacket->insns [i].fix->fx_offset += apacket->insns [i].fix->fx_pcrel
+                                               ? (packet.size - i) * QDSP6_INSN_LEN
+                                               : 0;
+        }
+
+      /* Insert the insn. */
+      packet.insns [packet.size++] = apacket->insns [i];
+      /* Sanity check. */
+      assert (packet.size <= MAX_PACKET_INSNS);
+    }
+
+  /* Copy new insn array and clear the prefix array. */
+  memcpy (apacket->insns,    packet.insns,    sizeof (apacket->insns));
+
+  /* Update housekeeping. */
+  apacket->size = packet.size;
+}
+
 /** Write the a packet out.
 
 @param apacket Reference to a packet.
@@ -2424,16 +2474,14 @@ qdsp6_packet_write
   for (i = 0, num_nops = 0, num_padded_nops = 0;
        i < qdsp6_packet_count (apacket);
        i++)
-    {
-      if (qdsp6_is_nop (apacket->insns [i].insn)
-          && !qdsp6_is_nop_keep (apacket, i))
-	{
-	  num_nops++;
+    if (qdsp6_is_nop (apacket->insns [i].insn)
+        && !qdsp6_is_nop_keep (apacket, i))
+      {
+        num_nops++;
 
-	  if (apacket->insns [i].padded)
-	    num_padded_nops++;
-	}
-    }
+        if (apacket->insns [i].padded)
+          num_padded_nops++;
+      }
   max_skip = MIN (max_skip, MIN (num_nops, num_padded_nops));
 
   /* Keep track of the number of emitted instructions to
@@ -2467,9 +2515,6 @@ qdsp6_packet_write
 	  continue;
         }
 
-      /* What's left is legit. */
-      apacket->insns [i].padded = FALSE;
-
       /* Set proper packet bits. */
       if (size == (1 - 1) && apacket->is_inner)
 	apacket->insns [i].insn =
@@ -2483,6 +2528,7 @@ qdsp6_packet_write
           QDSP6_END_PACKET_SET (apacket->insns [i].insn, QDSP6_END_PACKET);
       /* Otherwise, leave the packet bits alone. */
 
+      apacket->insns [i].padded = FALSE;
       frag_now->tc_frag_data->packet.insns [size] = apacket->insns [i];
       qdsp6_insn_write (frag_now->tc_frag_data->packet.insns [size].insn,
                         frag_now->tc_frag_data->packet.insns [size].fc,
@@ -3928,7 +3974,7 @@ qdsp6_find_noslot1
   return (-1);
 }
 
-/** For V2, discard specified number of DCFETCH.
+/** Discard specified number of DCFETCH.
 
 It must not be called after packet has been written out.
 @param number # DCFETCH to discard, with "0" meaning all but one.
@@ -3948,52 +3994,46 @@ qdsp6_discard_dcfetch
     {
       if (!number)
         /* Replace all but one DCFETCH instruction. */
-        {
-          for (i = 0; i < qdsp6_packet_count (apacket); i++)
-            {
-              if (!strncasecmp (apacket->insns [i].opcode->syntax,
-                                QDSP6_DCFETCH, QDSP6_DCFETCH_LEN))
-                {
-                  found++;
+        for (i = 0; i < qdsp6_packet_count (apacket); i++)
+          {
+            if (!strncasecmp (apacket->insns [i].opcode->syntax,
+                              QDSP6_DCFETCH, QDSP6_DCFETCH_LEN))
+              {
+                found++;
 
-                  if (found > MAX_DCFETCH)
-                    as_warn (_("more than one `dcfetch' instruction in packet."));
+                if (found > MAX_DCFETCH)
+                  as_warn (_("more than one `dcfetch' instruction in packet."));
 
-                  if (found > 1)
-                    /* Delete extra DCFETCH. */
-                    {
-                      as_warn_where (NULL, apacket->insns [i].lineno,
-                                    _("extra `dcfetch' removed."));
+                if (found > 1)
+                  /* Delete extra DCFETCH. */
+                  {
+                    as_warn_where (NULL, apacket->insns [i].lineno,
+                                  _("extra `dcfetch' removed."));
 
-                      apacket->insns [i]        = qdsp6_nop_insn;
-                      apacket->insns [i].padded = TRUE;
+                    apacket->insns [i]        = qdsp6_nop_insn;
+                    apacket->insns [i].padded = TRUE;
 
-                      count++;
-                    }
-                }
-            }
-        }
+                    count++;
+                  }
+              }
+          }
       else
         /* Replace specified number of DCFETCH. */
-        {
-          for (i = 0; number && i < qdsp6_packet_count (apacket); i++)
+        for (i = 0; number && i < qdsp6_packet_count (apacket); i++)
+          if (!strncasecmp (apacket->insns [i].opcode->syntax,
+                            QDSP6_DCFETCH, QDSP6_DCFETCH_LEN))
             {
-              if (!strncasecmp (apacket->insns [i].opcode->syntax,
-                                QDSP6_DCFETCH, QDSP6_DCFETCH_LEN))
-                {
-                  found++;
+              found++;
 
-                  as_warn_where (NULL, apacket->insns [i].lineno,
-                                _("`dcfetch' removed."));
+              as_warn_where (NULL, apacket->insns [i].lineno,
+                            _("`dcfetch' removed."));
 
-                  apacket->insns [i]        = qdsp6_nop_insn;
-                  apacket->insns [i].padded = TRUE;
+              apacket->insns [i]        = qdsp6_nop_insn;
+              apacket->insns [i].padded = TRUE;
 
-                  number--;
-                  count++;
-                }
+              number--;
+              count++;
             }
-        }
     }
 
   return (count);
@@ -4161,12 +4201,85 @@ qdsp6_shuffle_handle
 (qdsp6_packet *apacket)
 {
   if (!qdsp6_shuffle_helper (apacket, 0, NULL))
-    {
-      /* Try to discard a DCFETCH before trying again. */
-      if (!(qdsp6_discard_dcfetch (apacket, 1)
-            && qdsp6_shuffle_helper (apacket, 0, NULL)))
-        as_bad (_("unable to shuffle instructions in packet."));
-    }
+    /* Try to discard a DCFETCH before trying again. */
+    if (!(qdsp6_discard_dcfetch (apacket, 1)
+          && qdsp6_shuffle_helper (apacket, 0, NULL)))
+      as_bad (_("unable to shuffle instructions in packet."));
+}
+
+void
+qdsp6_shuffle_prepare
+(qdsp6_packet *apacket)
+{
+  size_t fromto [MAX_PACKET_INSNS];
+  unsigned i, j, k;
+  int found;
+
+  /* Initialize shuffle map. */
+  for (i = 0; i < MAX_PACKET_INSNS; i++)
+    fromto [i] = MAX_PACKET_INSNS;
+
+  /* Pad packet with NOPs. */
+  while (qdsp6_packet_insert (apacket, &qdsp6_nop_insn, NULL, NULL, TRUE))
+    ;
+
+  /* Reorder the instructions in the packet so that they start with
+      slot #3 (index #0) instead of slot #0.
+
+      1 - Go through all non-padded instructions, find the highest slot each
+          insn can go to and put it in the corresponding position.  If an
+          position is already assigned, then try the next one.  If all
+          positions after the wanted one are taken, then try again from the
+          beginning of the array.
+
+      2 - For all padded instructions, put them one by one starting from the
+          first available position (or higher slot). */
+
+  /* Step 1. */
+  for (i = 0; i < MAX_PACKET_INSNS; i++)
+    if (!apacket->insns [i].padded)
+      {
+        /* Find the highest ndx that this instruction can go to. */
+        for (j = 0, found = FALSE;
+              j < MAX_PACKET_INSNS && !found;
+              j++)
+          if ((  apacket->insns [i].opcode->slot_mask
+                & (1 << (MAX_PACKET_INSNS - j - 1))))
+            /* Try to allocate the ndx found or a lower one. */
+            for (k = j;
+                  k < MAX_PACKET_INSNS && !found;
+                  k++)
+              if (fromto [k] >= MAX_PACKET_INSNS)
+                {
+                  /* Slot is free. */
+                  fromto [k] = i;
+                  found = TRUE;
+                }
+
+        /* If all the positions after the wanted one are taken,
+            go back to the beginning of the array. */
+        for (j = 0;
+              j < MAX_PACKET_INSNS && !found;
+              j++)
+          if (fromto [j] >= MAX_PACKET_INSNS)
+            {
+              fromto [j] = i;
+              found = TRUE;
+            }
+      }
+
+  /* Step 2. */
+  for (i = 0; i < MAX_PACKET_INSNS; i++)
+    if (apacket->insns [i].padded)
+      /* Find the first unused position for this padded insn. */
+      for (j = 0; j < MAX_PACKET_INSNS; j++)
+        if (fromto [j] >= MAX_PACKET_INSNS)
+          {
+            fromto [j] = i;
+            break;
+          }
+
+  qdsp6_shuffle_packet (apacket, fromto);
 }
 
 /** Main function for packet shuffling.
@@ -4176,101 +4289,26 @@ qdsp6_shuffle_do
 (qdsp6_packet *apacket)
 {
   qdsp6_packet_insn insn;
-  size_t fromto [MAX_PACKET_INSNS];
   char *file;
-  char found, has_prefer_slot0;
-  unsigned i, j, k;
+  int has_prefer_slot0;
+  unsigned i;
 
-      /* Initialize shuffle map. */
-      for (i = 0; i < MAX_PACKET_INSNS; i++)
-        fromto [i] = MAX_PACKET_INSNS;
+  /* Get rid of extra insns. */
+  qdsp6_discard_dcfetch (apacket, 0);
+  qdsp6_shuffle_prepare (apacket);
 
-      /* Get rid of extra insns. */
-      qdsp6_discard_dcfetch (apacket, 0);
+  for (i = 0, has_prefer_slot0 = FALSE;
+        i < MAX_PACKET_INSNS && !has_prefer_slot0;
+        i++)
+    if ((apacket->insns [i].opcode->attributes & A_RESTRICT_PREFERSLOT0))
+      {
+        /* Swap with insn at slot #0. */
+        insn = apacket->insns [i];
+        apacket->insns [i] = apacket->insns [MAX_PACKET_INSNS - 1];
+        apacket->insns [MAX_PACKET_INSNS - 1] = insn;
 
-      /* Reorder the instructions in the packet so that they start with
-         slot #3 (index #0) instead of slot #0.
-
-         1 - Go through all non-padded instructions, find the highest slot each
-             insn can go to and put it in the corresponding position.  If an
-             position is already assigned, then try the next one.  If all
-             positions after the wanted one are taken, then try again from the
-             beginning of the array.
-
-         2 - For all padded instructions, put them one by one starting from the
-             first available position (or higher slot). */
-
-      /* Step 1. */
-      for (i = 0; i < MAX_PACKET_INSNS; i++)
-        {
-          if (!apacket->insns [i].padded)
-            {
-              /* Find the highest ndx that this instruction can go to. */
-              for (j = 0, found = FALSE;
-                   j < MAX_PACKET_INSNS && !found;
-                   j++)
-                if ((  apacket->insns [i].opcode->slot_mask
-                     & (1 << (MAX_PACKET_INSNS - j - 1))))
-                  {
-                    /* Try to allocate the ndx found or a lower one. */
-                    for (k = j;
-                          k < MAX_PACKET_INSNS && !found;
-                          k++)
-                      if (fromto [k] >= MAX_PACKET_INSNS)
-                        {
-                          /* Slot is free. */
-                          fromto [k] = i;
-                          found = TRUE;
-                        }
-                  }
-
-              /* If all the positions after the wanted one are taken,
-                 go back to the beginning of the array. */
-	      for (j = 0;
-		   j < MAX_PACKET_INSNS && !found;
-		   j++)
-		if (fromto [j] >= MAX_PACKET_INSNS)
-		  {
-		    fromto [j] = i;
-		    found = TRUE;
-                  }
-            }
-        }
-
-      /* Step 2. */
-      for (i = 0; i < MAX_PACKET_INSNS; i++)
-	{
-          if (apacket->insns [i].padded)
-	    {
-              /* Find the first unused position for this padded insn. */
-              for (j = 0; j < MAX_PACKET_INSNS; j++)
-		{
-                  if (fromto [j] >= MAX_PACKET_INSNS)
-		    {
-                      fromto [j] = i;
-                      break;
-                    }
-                }
-            }
-        }
-
-      qdsp6_shuffle_packet (apacket, fromto);
-
-      for (i = 0, has_prefer_slot0 = FALSE;
-           i < MAX_PACKET_INSNS && !has_prefer_slot0;
-           i++)
-	{
-          if ((apacket->insns [i].opcode->attributes & A_RESTRICT_PREFERSLOT0))
-	    {
-              /* Swap with insn at slot #0. */
-              insn = apacket->insns [i];
-              apacket->insns [i] = apacket->insns [MAX_PACKET_INSNS - 1];
-              apacket->insns [MAX_PACKET_INSNS - 1] = insn;
-
-              has_prefer_slot0 = TRUE;
-            }
-        }
-
+        has_prefer_slot0 = TRUE;
+      }
 
   qdsp6_shuffle_handle (apacket);
 
@@ -4279,11 +4317,11 @@ qdsp6_shuffle_do
       as_where (&file, NULL);
 
       for (i = 0; i < MAX_PACKET_INSNS - 1; i++)
-	  if ((apacket->insns [i].opcode->attributes & A_RESTRICT_PREFERSLOT0))
-	      as_warn_where (file, apacket->insns [i].lineno,
-	                     _("instruction `%s' prefers slot #0, "
-                               "but has been assigned to slot #%u."),
-			     apacket->insns [i].opcode->syntax, i);
+        if ((apacket->insns [i].opcode->attributes & A_RESTRICT_PREFERSLOT0))
+            as_warn_where (file, apacket->insns [i].lineno,
+                            _("instruction `%s' prefers slot #0, "
+                              "but has been assigned to slot #%u."),
+                            apacket->insns [i].opcode->syntax, i);
     }
 }
 
@@ -4307,15 +4345,13 @@ qdsp6_packet_finish
     if (qdsp6_has_rnew (packet, &inew))
       {
         for (i = 0, off = 0, onew = NULL; i < MAX_PACKET_INSNS; i++)
-          {
-            if ((packet->insns [i].flags & QDSP6_INSN_OUT_RNEW)
-                && (packet->insns [i].oreg == inew->ireg))
-              {
-                off = inew->ndx - packet->insns [i].ndx;
-                onew = packet->insns + i;
-                break;
-              }
-          }
+          if ((packet->insns [i].flags & QDSP6_INSN_OUT_RNEW)
+              && (packet->insns [i].oreg == inew->ireg))
+            {
+              off = inew->ndx - packet->insns [i].ndx;
+              onew = packet->insns + i;
+              break;
+            }
 
         if (onew)
           qdsp6_encode_operand
@@ -4800,7 +4836,7 @@ qdsp6_init_reg
 @param apacket A packet reference.
 */
 size_t
-qdsp6_packet_size
+qdsp6_packet_slots
 (const qdsp6_packet *apacket)
 {
   return (apacket->size + apacket->duplex + apacket->relax);
@@ -4815,6 +4851,17 @@ qdsp6_packet_length
 (const qdsp6_packet *apacket)
 {
   return (apacket->size + apacket->prefix + apacket->relax);
+}
+
+/** Return the size taken up by a packet.
+
+@param apacket A packet reference.
+*/
+size_t
+qdsp6_packet_size
+(const qdsp6_packet *apacket)
+{
+  return (apacket->size + apacket->duplex + apacket->prefix + apacket->relax);
 }
 
 /** Return the number of insns.
@@ -4901,10 +4948,6 @@ qdsp6_packet_end
   numOfBranchAddrMax1 = 0;
   numOfBranchMax1 = 0;
   numOfLoopMax1 = 0;
-
-  /* Pad packet with NOPs. */
-  while (qdsp6_packet_insert (apacket, &qdsp6_nop_insn, NULL, NULL, TRUE))
-    ;
 
   /* Checking for multiple writes to the same register in a packet. */
   for (i = 0; i < apacket->size; i++)
