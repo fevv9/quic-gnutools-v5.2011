@@ -335,6 +335,10 @@ printf ("REG_CCR = %d\n", REG_CCR);
       var->register_names[REG_STID]     = "stid"; 
       var->register_names[REG_HTID]     = "htid"; 
       var->register_names[REG_CCR]      = "ccr"; 
+      var->register_names[REG_G0]      = "g0"; 
+      var->register_names[REG_G1]      = "g1"; 
+      var->register_names[REG_G2]      = "g2"; 
+      var->register_names[REG_G3]      = "g3"; 
   }
 
   return var;
