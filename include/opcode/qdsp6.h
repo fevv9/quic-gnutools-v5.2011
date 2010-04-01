@@ -247,11 +247,13 @@ typedef struct _qdsp6_operand
 #define QDSP6_OPERAND_IS_IMPLIED        (1 << 15)
 #define QDSP6_OPERAND_IS_GUEST          (1 << 16)
 
-#define QDSP6_OPERAND_IS_RELAX          (1 << 27)
-#define QDSP6_OPERAND_IS_REGISTER       (1 << 28)
-#define QDSP6_OPERAND_IS_RNEW           (1 << 29)
-#define QDSP6_OPERAND_IS_KXER           (1 << 30)
-#define QDSP6_OPERAND_IS_KXED           (1 << 31)
+#define QDSP6_OPERAND_IS_RELAX          (1 << 26)
+#define QDSP6_OPERAND_IS_REGISTER       (1 << 27)
+#define QDSP6_OPERAND_IS_RNEW           (1 << 28)
+#define QDSP6_OPERAND_IS_KXER           (1 << 29)
+#define QDSP6_OPERAND_IS_KXED           (1 << 30)
+
+#define QDSP6_OPERAND_IS_INVALID        (1 << 31)
 
 /* Format string and alternate format string for disassembly. */
   char *dis_fmt, *alt_fmt;

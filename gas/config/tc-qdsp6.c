@@ -3016,7 +3016,9 @@ qdsp6_assemble
                         /* This instruction doesn't match the syntax */
                         goto NEXT_OPCODE;
 
-                      if (is_op & QDSP6_OPERAND_IS_RNEW)
+                      if (is_op & QDSP6_OPERAND_IS_INVALID)
+                        goto END_OPCODE;
+                      else if (is_op & QDSP6_OPERAND_IS_RNEW)
                         {
                           insn.flags    |= QDSP6_INSN_IN_RNEW;
                           insn.ioperand  = operand;
@@ -3209,7 +3211,11 @@ qdsp6_assemble
 
       /* Try the next entry.  */
       NEXT_OPCODE:
-        continue;
+      continue;
+
+      /* Stop trying. */
+      END_OPCODE:
+      break;
     }
 
   if (!pair)

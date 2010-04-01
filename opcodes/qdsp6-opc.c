@@ -2043,21 +2043,28 @@ qdsp6_parse_creg
   if (reg < 0)
     return (NULL);
 
+  if (flag)
+    *flag = 0;
+
   if (!qdsp6_verify_hw)
     if ((operand->flags & QDSP6_OPERAND_IS_WRITE)
         && (qdsp6_control_regs [regn].flags & QDSP6_REG_IS_READONLY))
       {
-        sprintf (buf, "Can not write to read-only register `%s'.",
-                  qdsp6_control_regs [regn].name);
-        *errmsg = buf;
-        return (NULL);
+        if (errmsg)
+          {
+            sprintf (buf, "cannot write to read-only register `%s'.",
+                      qdsp6_control_regs [regn].name);
+            *errmsg = buf;
+          }
+        if (flag)
+          *flag |= QDSP6_OPERAND_IS_INVALID;
       }
 
   if (qdsp6_encode_operand
         (operand, insn, opcode, reg, NULL, FALSE, FALSE, errmsg))
     {
       if (flag)
-        *flag = QDSP6_OPERAND_IS_CONTROL;
+        *flag |= QDSP6_OPERAND_IS_CONTROL;
 
       *val = reg;
       return (input);
@@ -2115,23 +2122,30 @@ qdsp6_parse_dcreg
       return NULL;
     }
 
+  if (flag)
+    *flag = 0;
+
   if (!qdsp6_verify_hw)
     if ((operand->flags & QDSP6_OPERAND_IS_WRITE)
         && ((qdsp6_control_regs [rege].flags & QDSP6_REG_IS_READONLY)
             || (qdsp6_control_regs [rego].flags & QDSP6_REG_IS_READONLY)))
       {
-        sprintf (buf, "Can not write to read-only register `%s:%s'.",
-                 qdsp6_control_regs [rego].name,
-                 qdsp6_control_regs [rege].name);
-        *errmsg = buf;
-        return (NULL);
+        if (errmsg)
+          {
+            sprintf (buf, "cannot write to read-only register `%s:%s'.",
+                     qdsp6_control_regs [rego].name,
+                     qdsp6_control_regs [rege].name);
+            *errmsg = buf;
+          }
+        if (flag)
+          *flag |= QDSP6_OPERAND_IS_INVALID;
       }
 
   if (qdsp6_encode_operand
         (operand, insn, opcode, reg_even, NULL, FALSE, FALSE, errmsg))
     {
       if (flag)
-        *flag = QDSP6_OPERAND_IS_PAIR;
+        *flag |= QDSP6_OPERAND_IS_PAIR;
 
       *val = reg_even;
       return (input);
@@ -2153,21 +2167,28 @@ qdsp6_parse_greg
   if (reg < 0)
     return (NULL);
 
+  if (flag)
+    *flag = 0;
+
   if (!qdsp6_verify_hw)
     if ((operand->flags & QDSP6_OPERAND_IS_WRITE)
         && (qdsp6_guest_regs [regn].flags & QDSP6_REG_IS_READONLY))
       {
-        sprintf (buf, "Can not write to read-only register `%s'.",
-                  qdsp6_guest_regs [regn].name);
-        *errmsg = buf;
-        return (NULL);
+        if (errmsg)
+          {
+            sprintf (buf, "cannot write to read-only register `%s'.",
+                     qdsp6_guest_regs [regn].name);
+            *errmsg = buf;
+          }
+        if (flag)
+          *flag |= QDSP6_OPERAND_IS_INVALID;
       }
 
   if (qdsp6_encode_operand
         (operand, insn, opcode, reg, NULL, FALSE, FALSE, errmsg))
     {
       if (flag)
-        *flag = QDSP6_OPERAND_IS_CONTROL;
+        *flag |= QDSP6_OPERAND_IS_CONTROL;
 
       *val = reg;
       return (input);
@@ -2225,23 +2246,30 @@ qdsp6_parse_dgreg
       return NULL;
     }
 
+  if (flag)
+    *flag = 0;
+
   if (!qdsp6_verify_hw)
     if ((operand->flags & QDSP6_OPERAND_IS_WRITE)
         && ((qdsp6_guest_regs [rege].flags & QDSP6_REG_IS_READONLY)
             || (qdsp6_guest_regs [rego].flags & QDSP6_REG_IS_READONLY)))
       {
-        sprintf (buf, "Can not write to read-only register `%s:%s'.",
-                 qdsp6_guest_regs [rego].name,
-                 qdsp6_guest_regs [rege].name);
-        *errmsg = buf;
-        return (NULL);
+        if (errmsg)
+          {
+            sprintf (buf, "cannot write to read-only register `%s:%s'.",
+                     qdsp6_guest_regs [rego].name,
+                     qdsp6_guest_regs [rege].name);
+            *errmsg = buf;
+          }
+        if (flag)
+          *flag |= QDSP6_OPERAND_IS_INVALID;
       }
 
   if (qdsp6_encode_operand
         (operand, insn, opcode, reg_even, NULL, FALSE, FALSE, errmsg))
     {
       if (flag)
-        *flag = QDSP6_OPERAND_IS_PAIR;
+        *flag |= QDSP6_OPERAND_IS_PAIR;
 
       *val = reg_even;
       return (input);
@@ -2263,21 +2291,28 @@ qdsp6_parse_sreg
   if (reg < 0)
     return (NULL);
 
+  if (flag)
+    *flag = 0;
+
   if (!qdsp6_verify_hw)
     if ((operand->flags & QDSP6_OPERAND_IS_WRITE)
         && (qdsp6_supervisor_regs [regn].flags & QDSP6_REG_IS_READONLY))
       {
-        sprintf (buf, "Can not write to read-only register `%s'.",
-                  qdsp6_supervisor_regs [regn].name);
-        *errmsg = buf;
-        return (NULL);
+        if (errmsg)
+          {
+            sprintf (buf, "cannot write to read-only register `%s'.",
+                     qdsp6_supervisor_regs [regn].name);
+            *errmsg = buf;
+          }
+        if (flag)
+          *flag |= QDSP6_OPERAND_IS_INVALID;
       }
 
   if (qdsp6_encode_operand
         (operand, insn, opcode, reg, NULL, FALSE, FALSE, errmsg))
     {
       if (flag)
-        *flag = QDSP6_OPERAND_IS_SYSTEM;
+        *flag |= QDSP6_OPERAND_IS_SYSTEM;
 
       *val = reg;
       return (input);
@@ -2335,23 +2370,30 @@ qdsp6_parse_dsreg
       return NULL;
     }
 
+  if (flag)
+    *flag = 0;
+
   if (!qdsp6_verify_hw)
     if ((operand->flags & QDSP6_OPERAND_IS_WRITE)
         && ((qdsp6_supervisor_regs [rege].flags & QDSP6_REG_IS_READONLY)
             || (qdsp6_supervisor_regs [rego].flags & QDSP6_REG_IS_READONLY)))
       {
-        sprintf (buf, "Can not write to read-only register `%s:%s'.",
-                 qdsp6_supervisor_regs [rego].name,
-                 qdsp6_supervisor_regs [rege].name);
-        *errmsg = buf;
-        return (NULL);
+        if (errmsg)
+          {
+            sprintf (buf, "cannot write to read-only register `%s:%s'.",
+                     qdsp6_supervisor_regs [rego].name,
+                     qdsp6_supervisor_regs [rege].name);
+            *errmsg = buf;
+          }
+        if (flag)
+          *flag |= QDSP6_OPERAND_IS_INVALID;
       }
 
   if (qdsp6_encode_operand
         (operand, insn, opcode, reg_even, NULL, FALSE, FALSE, errmsg))
     {
       if (flag)
-        *flag = QDSP6_OPERAND_IS_PAIR;
+        *flag |= QDSP6_OPERAND_IS_PAIR;
 
       *val = reg_even;
       return (input);
