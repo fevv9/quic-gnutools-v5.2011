@@ -183,7 +183,6 @@ int Tgif_Init ( void ) {
     /* Get the absolute path of tcl8.4 libraries */
     strcat(temp, "/../../lib/tcl84");
     strcpy(PathString, lrealpath(temp));
- printf ("PathString = %s\n", PathString);
 #else
     /* Get the path where qdsp6-gdb executable resides */ 
     snprintf(temp, sizeof(temp),"/proc/self/exe");
