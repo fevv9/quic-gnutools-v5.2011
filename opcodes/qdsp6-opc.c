@@ -89,27 +89,27 @@ const qdsp6_operand qdsp6_operands [] =
 {
   { "Rs32",       5, 's', 0,
     BFD_RELOC_NONE, BFD_RELOC_NONE, BFD_RELOC_NONE,
-    QDSP6_OPERAND_IS_READ,
+    QDSP6_OPERAND_IS_REGISTER | QDSP6_OPERAND_IS_READ,
     "r%u", NULL, qdsp6_parse_reg },
   { "Rt32",       5, 't', 0,
     BFD_RELOC_NONE, BFD_RELOC_NONE, BFD_RELOC_NONE,
-    QDSP6_OPERAND_IS_READ,
+    QDSP6_OPERAND_IS_REGISTER | QDSP6_OPERAND_IS_READ,
     "r%u", NULL, qdsp6_parse_reg },
   { "Ru32",       5, 'u', 0,
     BFD_RELOC_NONE, BFD_RELOC_NONE, BFD_RELOC_NONE,
-    QDSP6_OPERAND_IS_READ,
+    QDSP6_OPERAND_IS_REGISTER | QDSP6_OPERAND_IS_READ,
     "r%u", NULL, qdsp6_parse_reg },
   { "Rd32",       5, 'd', 0,
     BFD_RELOC_NONE, BFD_RELOC_NONE, BFD_RELOC_NONE,
-    QDSP6_OPERAND_IS_WRITE,
+    QDSP6_OPERAND_IS_REGISTER | QDSP6_OPERAND_IS_WRITE,
     "r%u", NULL, qdsp6_parse_reg },
   { "Re32",       5, 'e', 0,
     BFD_RELOC_NONE, BFD_RELOC_NONE, BFD_RELOC_NONE,
-    QDSP6_OPERAND_IS_WRITE,
+    QDSP6_OPERAND_IS_REGISTER | QDSP6_OPERAND_IS_WRITE,
     "r%u", NULL, qdsp6_parse_reg },
   { "Rx32",       5, 'x', 0,
     BFD_RELOC_NONE, BFD_RELOC_NONE, BFD_RELOC_NONE,
-    QDSP6_OPERAND_IS_READ | QDSP6_OPERAND_IS_WRITE,
+    QDSP6_OPERAND_IS_REGISTER | QDSP6_OPERAND_IS_READ | QDSP6_OPERAND_IS_WRITE,
     "r%u", NULL, qdsp6_parse_reg },
 
   { "Rss32",      5, 's', 0,
@@ -315,7 +315,7 @@ const qdsp6_operand qdsp6_operands [] =
 
   { "#u26:6",    26, 'i', 6,
     BFD_RELOC_QDSP6_32_6_X, BFD_RELOC_NONE, BFD_RELOC_NONE,
-    QDSP6_OPERAND_IS_IMMEDIATE,
+    QDSP6_OPERAND_IS_IMMEDIATE | QDSP6_OPERAND_IS_KXER,
     "#%u", NULL, NULL },
   { "#u16:0",    16, 'i', 0,
     BFD_RELOC_NONE, BFD_RELOC_NONE, BFD_RELOC_NONE,
@@ -584,7 +584,7 @@ const qdsp6_operand qdsp6_operands [] =
   /* These do appear in instructions, but are only matched by the relocation. */
   { "#u26:6",    26, 'i', 6,
     BFD_RELOC_QDSP6_B32_PCREL_X, BFD_RELOC_NONE, BFD_RELOC_NONE,
-    QDSP6_OPERAND_IS_IMMEDIATE | QDSP6_OPERAND_PC_RELATIVE | QDSP6_OPERAND_IS_SIGNED,
+    QDSP6_OPERAND_IS_IMMEDIATE | QDSP6_OPERAND_PC_RELATIVE | QDSP6_OPERAND_IS_SIGNED | QDSP6_OPERAND_IS_KXER,
     "#%u", NULL, NULL },
 
   /* These don't appear in any instructions.  We get these by mapping
@@ -2612,31 +2612,64 @@ qdsp6_dis_operand
 (const qdsp6_operand *operand, qdsp6_insn insn, bfd_vma addr,
  char *enc, char *buf, char **errmsg)
 {
-  int value;
-  int n = 0;
+  static int xer, xvalue;
+  int xed, value;
+  int n;
 
   if (!qdsp6_extract_operand (operand, insn, addr, enc, &value, errmsg))
     return NULL;
 
+  xed = FALSE;
+
+  if (operand->flags & QDSP6_OPERAND_IS_KXER)
+    {
+      xer = TRUE;
+      xvalue = value;
+    }
+  else if (xer && operand->flags & QDSP6_OPERAND_IS_KXED)
+    {
+      if (operand->flags & QDSP6_OPERAND_PC_RELATIVE)
+        {
+          xed = FALSE;
+
+          value  -= addr;
+          value >>= operand->shift_count;
+          value  += xvalue + addr;
+        }
+      else
+        {
+          xed = TRUE;
+
+          value >>= operand->shift_count;
+          value  += xvalue;
+        }
+
+      xer = xvalue = 0;
+    }
+
+  if (operand->flags & QDSP6_OPERAND_IS_REGISTER)
+    n = sprintf (buf, operand->dis_fmt, value);
   if (operand->flags & QDSP6_OPERAND_IS_PAIR)
     n = sprintf (buf, operand->dis_fmt, value + 1, value);
   else if (operand->flags & QDSP6_OPERAND_IS_CONTROL)
-    return
-      (qdsp6_dis_named_reg (value,
-                            qdsp6_control_regs_count, qdsp6_control_regs,
-                            buf, errmsg));
+    return (qdsp6_dis_named_reg (value,
+                                 qdsp6_control_regs_count, qdsp6_control_regs,
+                                 buf, errmsg));
   else if (operand->flags & QDSP6_OPERAND_IS_GUEST)
-    return
-      (qdsp6_dis_named_reg (value,
-                            qdsp6_guest_regs_count, qdsp6_guest_regs,
-                            buf, errmsg));
+    return (qdsp6_dis_named_reg (value,
+                                 qdsp6_guest_regs_count, qdsp6_guest_regs,
+                                 buf, errmsg));
   else if (operand->flags & QDSP6_OPERAND_IS_SYSTEM)
-    return
-      (qdsp6_dis_named_reg (value,
-                            qdsp6_supervisor_regs_count, qdsp6_supervisor_regs,
-                            buf, errmsg));
+    return (qdsp6_dis_named_reg (value,
+                                 qdsp6_supervisor_regs_count, qdsp6_supervisor_regs,
+                                 buf, errmsg));
   else
-    n = sprintf (buf, operand->dis_fmt, value);
+    {
+      n = 0;
+      if (xed)
+        buf [n++] = '#';
+      n += sprintf (buf + n, operand->dis_fmt, value);
+    }
 
   if (n > 0)
     return (buf + n);
@@ -2721,14 +2754,26 @@ qdsp6_dis_opcode
 
           for (i = 0; i < qdsp6_operand_count; i++)
             {
-              const qdsp6_operand *operand = &qdsp6_operands [i];
-              size_t len = strlen (operand->fmt);
+              qdsp6_operand operand;
+              size_t len;
 
-              if (!strncmp (src, operand->fmt, len))
+              operand = qdsp6_operands [i];
+              len = strlen (operand.fmt);
+
+              if (!strncmp (src, operand.fmt, len))
                 {
                   found = TRUE;
 
-                  dst = qdsp6_dis_operand (operand, insn, address,
+                  if (opcode->attributes & A_IT_EXTENDER)
+                    operand.flags |= QDSP6_OPERAND_IS_KXER;
+                  else if ((operand.flags & QDSP6_OPERAND_IS_IMMEDIATE)
+                           && (((opcode->attributes & EXTENDABLE_LOWER_CASE_IMMEDIATE)
+                                && (ISLOWER (operand.enc_letter)))
+                               || ((opcode->attributes & EXTENDABLE_UPPER_CASE_IMMEDIATE)
+                                   && (ISUPPER (operand.enc_letter)))))
+                    /* Not necessarily extended, but maybe so. */
+                    operand.flags |= QDSP6_OPERAND_IS_KXED;
+                  dst = qdsp6_dis_operand (&operand, insn, address,
                                            opcode->enc, dst, errmsg);
                   if (!dst)
                     {
