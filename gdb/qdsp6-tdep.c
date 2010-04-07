@@ -857,6 +857,7 @@ qdsp6_analyze_prologue (struct gdbarch *gdbarch,
             }
           else 
             {
+	      prolog_pc+=4;
             }
         }
 
