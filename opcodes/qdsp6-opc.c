@@ -52,7 +52,7 @@ static char *qdsp6_parse_reg8
 static char *qdsp6_parse_dreg8
   (const qdsp6_operand *, qdsp6_insn *, const qdsp6_opcode *,
    char *, long *, int *, char **);
-static char *qdsp6_parse_reg2
+static char *qdsp6_parse_nreg
   (const qdsp6_operand *, qdsp6_insn *, const qdsp6_opcode *,
    char *, long *, int *, char **);
 static char *qdsp6_parse_preg
@@ -83,6 +83,7 @@ static char *qdsp6_parse_mreg
 int qdsp6_verify_hw;
 
 qdsp6_insn qdsp6_nop, qdsp6_kext;
+static qdsp6_insn qdsp6_nop_mask, qdsp6_kext_mask;
 
 /* Various types of QDSP6 operands */
 const qdsp6_operand qdsp6_operands [] =
@@ -193,24 +194,14 @@ const qdsp6_operand qdsp6_operands [] =
     QDSP6_OPERAND_IS_SUBSET | QDSP6_OPERAND_IS_PAIR | QDSP6_OPERAND_IS_READ,
     "r%u:%u", NULL, qdsp6_parse_dreg8 },
 
-  { "Rs2",        1, 's', 0,
-    BFD_RELOC_NONE, BFD_RELOC_NONE, BFD_RELOC_NONE,
-    QDSP6_OPERAND_IS_IMPLIED | QDSP6_OPERAND_IS_READ,
-    "r%u", NULL, qdsp6_parse_reg2 },
-
   { "Ns8",        3, 's', 0,
     BFD_RELOC_NONE, BFD_RELOC_NONE, BFD_RELOC_NONE,
-    QDSP6_OPERAND_IS_IMPLIED | QDSP6_OPERAND_IS_READ,
-    "r%u", NULL, qdsp6_parse_reg2 },
+    QDSP6_OPERAND_IS_NEW | QDSP6_OPERAND_IS_READ,
+    "r%u", NULL, qdsp6_parse_nreg },
   { "Nt8",        3, 't', 0,
     BFD_RELOC_NONE, BFD_RELOC_NONE, BFD_RELOC_NONE,
-    QDSP6_OPERAND_IS_IMPLIED | QDSP6_OPERAND_IS_READ,
-    "r%u", NULL, qdsp6_parse_reg2 },
-
-  { "Rs0",        0, 's', 0,
-    BFD_RELOC_NONE, BFD_RELOC_NONE, BFD_RELOC_NONE,
-    QDSP6_OPERAND_IS_SUBSET | QDSP6_OPERAND_IS_READ,
-    "r%u", NULL, qdsp6_parse_reg },
+    QDSP6_OPERAND_IS_NEW | QDSP6_OPERAND_IS_READ,
+    "r%u", NULL, qdsp6_parse_nreg },
 
   { "Mu2",        1, 'u', 0,
     BFD_RELOC_NONE, BFD_RELOC_NONE, BFD_RELOC_NONE,
@@ -809,6 +800,7 @@ static qdsp6_reg qdsp6_supervisor_regs [] =
   {"isdbmbxout",   41, QDSP6_V4_AND_UP | QDSP6_REG_IS_READWRITE},
   {"isdben",       42, QDSP6_V4_AND_UP | QDSP6_REG_IS_READWRITE},
   {"isdbgpr",      43, QDSP6_V4_AND_UP | QDSP6_REG_IS_READWRITE},
+
   {"s40",          40, QDSP6_V4_AND_UP | QDSP6_REG_IS_READONLY},
   {"s39",          39, QDSP6_V4_AND_UP | QDSP6_REG_IS_READWRITE},
   {"s29",          29, QDSP6_V4_AND_UP | QDSP6_REG_IS_READONLY},
@@ -855,7 +847,6 @@ static qdsp6_reg qdsp6_supervisor_regs [] =
   {"pmucnt3",      51, QDSP6_V3_AND_UP | QDSP6_REG_IS_READWRITE},
   {"pmuevtcfg",    52, QDSP6_V3_AND_UP | QDSP6_REG_IS_READWRITE},
   {"pmucfg",       53, QDSP6_V3_AND_UP | QDSP6_REG_IS_READWRITE},
-
   {"acc0",         61, QDSP6_V2_AND_UP | QDSP6_REG_IS_READWRITE},
   {"acc1",         62, QDSP6_V2_AND_UP | QDSP6_REG_IS_READWRITE},
   {"chicken",      63, QDSP6_V2_AND_UP | QDSP6_REG_IS_READWRITE},
@@ -1360,13 +1351,15 @@ qdsp6_opcode_init_tables
       if ((qdsp6_opcodes [i - 1].attributes & A_IT_NOP)
           || !strcmp (qdsp6_opcodes [i - 1].syntax, "nop"))
         {
-          qdsp6_opcodes [i - 1].attributes |= A_IT_NOP;
           qdsp6_nop = insn;
+          qdsp6_nop_mask = qdsp6_encode_mask (qdsp6_opcodes [i - 1].enc);
+          qdsp6_opcodes [i - 1].attributes |= A_IT_NOP;
         }
 
       if ((qdsp6_opcodes [i - 1].attributes & A_IT_EXTENDER))
         {
           qdsp6_kext = insn;
+          qdsp6_kext_mask = qdsp6_encode_mask (qdsp6_opcodes [i - 1].enc);
           qdsp6_opcodes [i - 1].attributes |= PREFIX;
         }
 
@@ -1959,7 +1952,7 @@ qdsp6_parse_reg8
 }
 
 char *
-qdsp6_parse_reg2
+qdsp6_parse_nreg
 (const qdsp6_operand *operand, qdsp6_insn *insn, const qdsp6_opcode *opcode,
  char *input, long *val, int *flag, char **errmsg)
 {
@@ -2609,18 +2602,26 @@ qdsp6_dis_named_reg
 
 char *
 qdsp6_dis_operand
-(const qdsp6_operand *operand, qdsp6_insn insn, bfd_vma addr,
+(const qdsp6_operand *operand, qdsp6_insn insn, bfd_vma iaddr, bfd_vma paddr,
  char *enc, char *buf, char **errmsg)
 {
+  static bfd_vma previous;
   static int xer, xvalue;
   int xed, value;
+  static int reg [MAX_PACKET_INSNS];
   int n;
 
-  if (!qdsp6_extract_operand (operand, insn, addr, enc, &value, errmsg))
+  if (iaddr != previous && (qdsp6_kext_mask & insn) != qdsp6_kext)
+    {
+      previous = iaddr;
+      memmove (reg + 1, reg, sizeof (reg));
+    }
+
+  if (!qdsp6_extract_operand (operand, insn, paddr, enc, &value, errmsg))
     return NULL;
 
+  /* Handle extenders. */
   xed = FALSE;
-
   if (operand->flags & QDSP6_OPERAND_IS_KXER)
     {
       xer = TRUE;
@@ -2632,9 +2633,9 @@ qdsp6_dis_operand
         {
           xed = FALSE;
 
-          value  -= addr;
+          value  -= paddr;
           value >>= operand->shift_count;
-          value  += xvalue + addr;
+          value  += xvalue + paddr;
         }
       else
         {
@@ -2647,8 +2648,20 @@ qdsp6_dis_operand
       xer = xvalue = 0;
     }
 
-  if (operand->flags & QDSP6_OPERAND_IS_REGISTER)
-    n = sprintf (buf, operand->dis_fmt, value);
+  /* Handle R.NEW. */
+  if ((operand->flags & QDSP6_OPERAND_IS_WRITE)
+      && ((operand->flags & QDSP6_OPERAND_IS_REGISTER)
+           || (operand->flags & QDSP6_OPERAND_IS_PAIR)
+           || (operand->flags & QDSP6_OPERAND_IS_SUBSET)))
+    {
+      reg [0] = value;
+    }
+  else if ((operand->flags & QDSP6_OPERAND_IS_READ)
+           && (operand->flags & QDSP6_OPERAND_IS_NEW))
+    {
+      value = reg [value / 2] + ((reg [value / 2] % 2) ^ (value % 2));
+    }
+
   if (operand->flags & QDSP6_OPERAND_IS_PAIR)
     n = sprintf (buf, operand->dis_fmt, value + 1, value);
   else if (operand->flags & QDSP6_OPERAND_IS_CONTROL)
@@ -2706,6 +2719,8 @@ qdsp6_dis_opcode
       case QDSP6_END_PAIR:
         if (in_packet)
           dst += sprintf (dst, "  ");
+        else
+          packet_addr = address;
         end_packet = TRUE;
         break;
 
@@ -2738,11 +2753,6 @@ qdsp6_dis_opcode
         break;
     }
 
-  /* PC relative operands are based on the address of
-     the first instruction in the packet */
-  if (in_packet)
-    address = packet_addr;
-
   while (*src)
     {
       /* EJP: ignore +I */
@@ -2773,7 +2783,7 @@ qdsp6_dis_opcode
                                    && (ISUPPER (operand.enc_letter)))))
                     /* Not necessarily extended, but maybe so. */
                     operand.flags |= QDSP6_OPERAND_IS_KXED;
-                  dst = qdsp6_dis_operand (&operand, insn, address,
+                  dst = qdsp6_dis_operand (&operand, insn, address, packet_addr,
                                            opcode->enc, dst, errmsg);
                   if (!dst)
                     {
@@ -2914,7 +2924,7 @@ qdsp6_extract_modifier_operand(
   static char xx[100];
 
   // Get the operand i.e. aliased modifier/control register
-  if(!qdsp6_dis_operand(operand, insn, 0, enc, reg_name, errmsg))
+  if(!qdsp6_dis_operand(operand, insn, 0, 0, enc, reg_name, errmsg))
     return 0;
 
   /* scroll through control register array and get the corresponding
@@ -2944,7 +2954,7 @@ qdsp6_extract_predicate_operand
   int reg_num;
 
   // Get the predicate register name from the instruction
-  if (!qdsp6_dis_operand (operand, insn, 0, enc, reg_name, errmsg))
+  if (!qdsp6_dis_operand (operand, insn, 0, 0, enc, reg_name, errmsg))
     return FALSE;
 
   // Get the predicate register number

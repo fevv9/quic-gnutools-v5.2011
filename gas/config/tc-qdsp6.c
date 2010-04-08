@@ -4558,7 +4558,7 @@ qdsp6_check_register
         {
           reg_name
             = qdsp6_dis_operand
-                (operand, insn [n].insn, 0, insn [n].opcode->enc, buff, &errmsg);
+                (operand, insn [n].insn, 0, 0, insn [n].opcode->enc, buff, &errmsg);
 
           if (reg_name)
             as_bad (_("register `%s' modified more than once."), buff);

@@ -229,31 +229,31 @@ typedef struct _qdsp6_operand
   int flags;
 
 /* Values for `flags'.  */
-#define QDSP6_OPERAND_IS_IMMEDIATE      (1 <<  0)
-#define QDSP6_OPERAND_PC_RELATIVE       (1 <<  1)
-#define QDSP6_OPERAND_IS_SIGNED         (1 <<  2)
-#define QDSP6_OPERAND_IS_PAIR           (1 <<  3)
-#define QDSP6_OPERAND_IS_SUBSET         (1 <<  4)
-#define QDSP6_OPERAND_IS_MODIFIER       (1 <<  5)
-#define QDSP6_OPERAND_IS_PREDICATE      (1 <<  6)
-#define QDSP6_OPERAND_IS_CONTROL        (1 <<  7)
-#define QDSP6_OPERAND_IS_SYSTEM         (1 <<  8)
-#define QDSP6_OPERAND_IS_LO16           (1 <<  9)
-#define QDSP6_OPERAND_IS_HI16           (1 << 10)
-#define QDSP6_OPERAND_IS_READ           (1 << 11)
-#define QDSP6_OPERAND_IS_WRITE          (1 << 12)
-#define QDSP6_OPERAND_IS_NEGATIVE       (1 << 13)
-#define QDSP6_OPERAND_IS_CONSTANT       (1 << 14)
-#define QDSP6_OPERAND_IS_IMPLIED        (1 << 15)
-#define QDSP6_OPERAND_IS_GUEST          (1 << 16)
+#define QDSP6_OPERAND_IS_IMMEDIATE (1 <<  0)
+#define QDSP6_OPERAND_PC_RELATIVE  (1 <<  1)
+#define QDSP6_OPERAND_IS_SIGNED    (1 <<  2)
+#define QDSP6_OPERAND_IS_PAIR      (1 <<  3)
+#define QDSP6_OPERAND_IS_SUBSET    (1 <<  4)
+#define QDSP6_OPERAND_IS_MODIFIER  (1 <<  5)
+#define QDSP6_OPERAND_IS_PREDICATE (1 <<  6)
+#define QDSP6_OPERAND_IS_CONTROL   (1 <<  7)
+#define QDSP6_OPERAND_IS_SYSTEM    (1 <<  8)
+#define QDSP6_OPERAND_IS_LO16      (1 <<  9)
+#define QDSP6_OPERAND_IS_HI16      (1 << 10)
+#define QDSP6_OPERAND_IS_READ      (1 << 11)
+#define QDSP6_OPERAND_IS_WRITE     (1 << 12)
+#define QDSP6_OPERAND_IS_NEGATIVE  (1 << 13)
+#define QDSP6_OPERAND_IS_CONSTANT  (1 << 14)
+#define QDSP6_OPERAND_IS_NEW       (1 << 15)
+#define QDSP6_OPERAND_IS_GUEST     (1 << 16)
 
-#define QDSP6_OPERAND_IS_RELAX          (1 << 26)
-#define QDSP6_OPERAND_IS_REGISTER       (1 << 27)
-#define QDSP6_OPERAND_IS_RNEW           (1 << 28)
-#define QDSP6_OPERAND_IS_KXER           (1 << 29)
-#define QDSP6_OPERAND_IS_KXED           (1 << 30)
+#define QDSP6_OPERAND_IS_RELAX     (1 << 26)
+#define QDSP6_OPERAND_IS_REGISTER  (1 << 27)
+#define QDSP6_OPERAND_IS_RNEW      (1 << 28)
+#define QDSP6_OPERAND_IS_KXER      (1 << 29)
+#define QDSP6_OPERAND_IS_KXED      (1 << 30)
 
-#define QDSP6_OPERAND_IS_INVALID        (1 << 31)
+#define QDSP6_OPERAND_IS_INVALID   (1 << 31)
 
 /* Format string and alternate format string for disassembly. */
   char *dis_fmt, *alt_fmt;
@@ -387,7 +387,7 @@ extern int qdsp6_extract_predicate_operand
 extern int qdsp6_extract_modifier_operand
   (const qdsp6_operand *, qdsp6_insn, char *, int *, char **);
 extern char *qdsp6_dis_operand
-  (const qdsp6_operand *, qdsp6_insn, bfd_vma, char *, char *, char **);
+  (const qdsp6_operand *, qdsp6_insn, bfd_vma, bfd_vma, char *, char *, char **);
 extern int qdsp6_dis_opcode
   (char *, qdsp6_insn, bfd_vma, const qdsp6_opcode *, char **);
 extern const qdsp6_operand *qdsp6_operand_find_lo16 (const qdsp6_operand *);
