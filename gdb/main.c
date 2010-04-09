@@ -98,6 +98,10 @@ static void print_gdb_help (struct ui_file *);
 
 extern char *external_editor_command;
 
+#ifdef QDSP6
+extern int Q6_tcl_fe_state;
+#endif
+
 /* Relocate a file or directory.  PROGNAME is the name by which gdb
    was invoked (i.e., argv[0]).  INITIAL is the default value for the
    file or directory.  FLAG is true if the value is relocatable, false
@@ -411,6 +415,9 @@ captured_main (void *data)
       {"version", no_argument, &print_version, 1},
       {"x", required_argument, 0, 'x'},
       {"ex", required_argument, 0, 'X'},
+#ifdef QDSP6
+      {"tclfe", no_argument, &Q6_tcl_fe_state, 1},
+#endif
 #ifdef GDBTK
       {"tclcommand", required_argument, 0, 'z'},
       {"enable-external-editor", no_argument, 0, 'y'},
@@ -981,6 +988,7 @@ Options:\n\n\
   fputs_unfiltered (_("\
   --se=FILE          Use FILE as symbol file and executable file.\n\
   --symbols=SYMFILE  Read symbols from SYMFILE.\n\
+  --tclfe            QUALCOMM's Tcl Front End interpreter enabled.\n\
   --tty=TTY          Use TTY for input/output by the program being debugged.\n\
 "), stream);
 #if defined(TUI)
