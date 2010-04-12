@@ -6897,7 +6897,11 @@ remote_remove_breakpoint (struct gdbarch *gdbarch,
       char *p = rs->buf;
 
       *(p++) = 'z';
+#ifdef QDSP6
+      *(p++) = '1'; /* XXX_SM:FIXME Hack for simulator was '0' */
+#else
       *(p++) = '0';
+#endif
       *(p++) = ',';
 
       addr = (ULONGEST) remote_address_masked (bp_tgt->placed_address);
