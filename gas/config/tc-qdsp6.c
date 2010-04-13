@@ -181,6 +181,7 @@ typedef struct
     const qdsp6_opcode *opcode;
     const qdsp6_operand *ioperand;
     unsigned ireg, oreg;
+    int opair;
     unsigned lineno;
     unsigned flags;
     char padded;
@@ -4352,7 +4353,7 @@ qdsp6_packet_finish
       {
         for (i = 0, off = 0, onew = NULL; i < MAX_PACKET_INSNS; i++)
           if ((packet->insns [i].flags & QDSP6_INSN_OUT_RNEW)
-              && (packet->insns [i].oreg == inew->ireg))
+              && !packet->insns [i].opair && packet->insns [i].oreg == inew->ireg)
             {
               off = inew->ndx - packet->insns [i].ndx;
               onew = packet->insns + i;
@@ -4366,7 +4367,7 @@ qdsp6_packet_finish
         else
           as_bad_where (NULL, inew->lineno,
                         _("register `r%u' used with `.new' "
-                          "but not modified in the same packet."),
+                          "but not validly modified in the same packet."),
                         inew->ireg);
       }
 
@@ -4807,6 +4808,8 @@ qdsp6_check_insn
                           /* Record the first modified GPR. */
                           apacket->insns [n].flags |= QDSP6_INSN_OUT_RNEW;
                           apacket->insns [n].oreg   = reg_num;
+                          apacket->insns [n].opair
+                            = (operand->flags & QDSP6_OPERAND_IS_PAIR);
                         }
                     }
                 }
