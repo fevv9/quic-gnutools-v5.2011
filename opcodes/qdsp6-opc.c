@@ -815,15 +815,15 @@ static qdsp6_reg qdsp6_supervisor_regs [] =
   {"imask",         3, QDSP6_V2_AND_UP | QDSP6_REG_IS_READWRITE},
   {"badva",         4, QDSP6_V2_AND_UP | QDSP6_REG_IS_READWRITE},
   {"elr",           5, QDSP6_V2_AND_UP | QDSP6_REG_IS_READWRITE},
-  {"tid",           6, QDSP6_V2_AND_UP | QDSP6_REG_IS_READWRITE},
+  {"tid",           6, QDSP6_V2_AND_V3 | QDSP6_REG_IS_READWRITE},
   {"evb",          16, QDSP6_V2_AND_UP | QDSP6_REG_IS_READWRITE},
   {"ipend",        17, QDSP6_V2_AND_UP | QDSP6_REG_IS_READONLY},
   {"syscfg",       18, QDSP6_V2_AND_UP | QDSP6_REG_IS_READWRITE},
   {"modectl",      19, QDSP6_V2_AND_UP | QDSP6_REG_IS_READONLY},
   {"rev",          20, QDSP6_V2_AND_UP | QDSP6_REG_IS_READONLY},
-  {"tlbhi",        21, QDSP6_V2_AND_UP | QDSP6_REG_IS_READWRITE},
-  {"tlblo",        22, QDSP6_V2_AND_UP | QDSP6_REG_IS_READWRITE},
-  {"tlbidx",       23, QDSP6_V2_AND_UP | QDSP6_REG_IS_READWRITE},
+  {"tlbhi",        21, QDSP6_V2_AND_V3 | QDSP6_REG_IS_READWRITE},
+  {"tlblo",        22, QDSP6_V2_AND_V3 | QDSP6_REG_IS_READWRITE},
+  {"tlbidx",       23, QDSP6_V2_AND_V3 | QDSP6_REG_IS_READWRITE},
   {"diag",         24, QDSP6_V2_AND_UP | QDSP6_REG_IS_READWRITE},
   {"iad",          25, QDSP6_V2_AND_UP | QDSP6_REG_IS_READONLY},
   {"iel",          26, QDSP6_V2_AND_UP | QDSP6_REG_IS_READWRITE},
@@ -2609,13 +2609,9 @@ qdsp6_dis_operand
   static int xer, xvalue;
   int xed, value;
   static int reg [MAX_PACKET_INSNS];
+  static size_t xreg;
+  size_t ireg;
   int n;
-
-  if (iaddr != previous && (qdsp6_kext_mask & insn) != qdsp6_kext)
-    {
-      previous = iaddr;
-      memmove (reg + 1, reg, sizeof (reg));
-    }
 
   if (!qdsp6_extract_operand (operand, insn, paddr, enc, &value, errmsg))
     return NULL;
@@ -2649,17 +2645,27 @@ qdsp6_dis_operand
     }
 
   /* Handle R.NEW. */
+  if (previous != paddr)
+    {
+      previous = paddr;
+      xreg = 0;
+    }
+  else
+    xreg += xed? 1: 0;
+
+  ireg = ((iaddr - paddr) % (MAX_PACKET_INSNS * QDSP6_INSN_LEN)) / MAX_PACKET_INSNS;
   if ((operand->flags & QDSP6_OPERAND_IS_WRITE)
       && ((operand->flags & QDSP6_OPERAND_IS_REGISTER)
            || (operand->flags & QDSP6_OPERAND_IS_PAIR)
            || (operand->flags & QDSP6_OPERAND_IS_SUBSET)))
     {
-      reg [0] = value;
+      reg [ireg] = value;
     }
   else if ((operand->flags & QDSP6_OPERAND_IS_READ)
            && (operand->flags & QDSP6_OPERAND_IS_NEW))
     {
-      value = reg [value / 2] + ((reg [value / 2] % 2) ^ (value % 2));
+      value = reg [ireg - xreg - (value / 2)]
+              + ((reg [ireg - xreg - (value / 2)] % 2) ^ (value % 2));
     }
 
   if (operand->flags & QDSP6_OPERAND_IS_PAIR)
