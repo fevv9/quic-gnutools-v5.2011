@@ -278,7 +278,7 @@ new_variant (void)
   var->num_gprs = NUM_GEN_REGS;
   var->num_fprs = 0;
   var->num_hw_watchpoints = 0;
-  var->num_hw_breakpoints = 20;
+  var->num_hw_breakpoints = 0;
 
   gdb_assert (qdsp6_reg_index_max != 0);
 
@@ -545,13 +545,27 @@ is_argument_reg (int reg)
 static int
 is_allocframe (unsigned int insn, CORE_ADDR pc, unsigned int *immediate)
 {
+  enum
+  {
+	memd_allocframe = 0xeb001c00,
+  };
+  unsigned int mask = memd_allocframe;
+
   if (ALLOCFRAME_MATCH (insn))
     {
       *immediate = ALLOCFRAME_SIZE (insn);
       return 1;
     }
-  else
-    return 0;
+  else if (q6Version == Q6_V4)
+    {
+      if ((insn & mask) == memd_allocframe)
+	{
+	    *immediate = 8 * ((insn & 0x1f0)>>4);
+            return 1;
+	}
+    }
+
+  return 0;
 }
 
 /*
@@ -712,6 +726,8 @@ get_packet (CORE_ADDR pc, gdb_byte * buffer, enum bfd_endian byte_order)
       insn = extract_unsigned_integer (&buffer[i], 4, byte_order);
       if ((insn & mask) == endofpacket)
 	break;
+      if ((insn & mask) == 0) /* An endof packet and a duplex insn */
+	break;
     }
 
   return packet_cnt;
@@ -743,6 +759,7 @@ qdsp6_analyze_prologue (struct gdbarch *gdbarch,
   enum bfd_endian byte_order = gdbarch_byte_order (gdbarch);
 
   int allocframe = 0;
+  int could_be_frameless = 1;
 
   /* Non-zero iff we've seen the instruction that initializes the
      frame pointer for this function's frame.  */
@@ -825,6 +842,7 @@ qdsp6_analyze_prologue (struct gdbarch *gdbarch,
             {
 	      prolog_pc+=4;
 	      allocframe = -operand;	/* Stack grows downward */
+	      could_be_frameless = 0;
 
 	      if (start_pc == end_pc)
 	          fp_set = 1;
@@ -878,7 +896,7 @@ qdsp6_analyze_prologue (struct gdbarch *gdbarch,
       this_pc = get_frame_register_unsigned (next_frame, REG_PC);
       this_lr = get_frame_register_unsigned (next_frame, REG_LR);
 
-      if (fp_set)
+      if (fp_set || could_be_frameless)
       {
           this_base = get_frame_register_unsigned (next_frame, REG_SP);
 	  this_base -= 8;
