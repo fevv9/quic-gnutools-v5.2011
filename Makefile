@@ -42,7 +42,7 @@ endif
 
 all: help
 
-.PHONY: help
+.PHONY: help build_lnx build_win
 help:
 	@echo "Specify a target:"
 	@echo "	\"build_win\" for windows"
@@ -59,10 +59,11 @@ CONFIGURE_OPTIONS = --target=qdsp6 \
 		    --disable-nls \
 		    --enable-bfd-assembler \
 		    --disable-multilib \
-		    --prefix=$(PREFIX)
+        $(EXP_FLAGS) \
+		    --prefix=$(PREFIX) 
 
 build_win:
-	mkdir $@
+	mkdir -p $@
 	cd $@ && \
 	PATH=$(MINGW_GCC):$(PATH) \
 	CC=i386-pc-mingw32-gcc \
@@ -78,7 +79,7 @@ build_win:
 	PATH=$(MINGW_GCC):$(PATH) $(MAKE) -j $(JOBS) all
 
 build_lnx: 
-	mkdir $@
+	mkdir -p $@
 	cd $@ && \
 	CFLAGS="$(BUILD_CFLAGS)" \
 	MAKEINFO=$(MAKEINFO) \
