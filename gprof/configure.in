@@ -47,6 +47,15 @@ if test $gprof_cv_decl_getopt_unistd_h = yes; then
 	    [Is the prototype for getopt in <unistd.h> in the expected format?])
 fi
 
+# Check whether --with-expiry was given.
+EXPLIBS=
+
+if test "x$with_expiry" != x; then
+  EXPLIBS="-L$with_expiry -Wl,--wrap=main -lexpiry"
+fi
+
+AC_SUBST(EXPLIBS)
+
 # Some systems have fabs only in -lm, not in -lc.
 AC_SEARCH_LIBS(fabs, m)
 

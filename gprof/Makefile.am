@@ -35,7 +35,7 @@ sources = basic_blocks.c call_graph.c cg_arcs.c cg_dfn.c \
 	i386.c alpha.c vax.c tahoe.c sparc.c mips.c
 gprof_SOURCES = $(sources) flat_bl.c bsd_callg_bl.c fsf_callg_bl.c
 gprof_DEPENDENCIES = ../bfd/libbfd.la ../libiberty/libiberty.a ../opcodes/libopcodes.a $(LIBINTL_DEP)
-gprof_LDADD = ../bfd/libbfd.la ../libiberty/libiberty.a  ../opcodes/libopcodes.a $(LIBINTL)
+gprof_LDADD = ../bfd/libbfd.la ../libiberty/libiberty.a  ../opcodes/libopcodes.a $(LIBINTL) $(EXPLIBS)
 
 noinst_HEADERS = \
 	basic_blocks.h call_graph.h cg_arcs.h cg_dfn.h cg_print.h \

@@ -712,6 +712,14 @@ if test "$ac_cv_header_sys_stat_h" = yes; then
     GAS_HAVE_SYS_STAT_TYPE_MEMBER(struct stat, st_mtim, tv_nsec)
 fi
 
+# Check whether --with-expiry was given.
+EXPLIBS=
+
+if test "x$with_expiry" != x; then
+  EXPLIBS="-L$with_expiry -Wl,--wrap=main -lexpiry"
+fi
+
+AC_SUBST(EXPLIBS)
 
 dnl Required for html, pdf, install-pdf and install-html targets.
 AC_SUBST(datarootdir)

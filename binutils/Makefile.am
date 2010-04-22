@@ -184,25 +184,25 @@ dllwrap_DEPENDENCIES =   $(LIBINTL_DEP) $(LIBIBERTY)
 LDADD = $(BFDLIB) $(LIBIBERTY) $(LIBINTL)
 
 size_SOURCES = size.c $(BULIBS)
-size_LDADD   = $(BFDLIB) $(OPCODES) $(LIBINTL) $(LIBIBERTY)
+size_LDADD   = $(BFDLIB) $(OPCODES) $(LIBINTL) $(LIBIBERTY) $(EXPLIBS)
 
 objcopy_SOURCES = objcopy.c not-strip.c rename.c $(WRITE_DEBUG_SRCS) $(BULIBS)
-objcopy_LDADD   = $(BFDLIB) $(OPCODES) $(LIBINTL) $(LIBIBERTY)
+objcopy_LDADD   = $(BFDLIB) $(OPCODES) $(LIBINTL) $(LIBIBERTY) $(EXPLIBS)
 
 strings_SOURCES = strings.c $(BULIBS)
-strings_LDADD   = $(BFDLIB) $(OPCODES) $(LIBINTL) $(LIBIBERTY)
+strings_LDADD   = $(BFDLIB) $(OPCODES) $(LIBINTL) $(LIBIBERTY) $(EXPLIBS)
 
 readelf_SOURCES = readelf.c version.c unwind-ia64.c dwarf.c
-readelf_LDADD   = $(LIBINTL) $(LIBIBERTY)
+readelf_LDADD   = $(LIBINTL) $(LIBIBERTY) $(EXPLIBS)
 
 strip_new_SOURCES = objcopy.c is-strip.c rename.c $(WRITE_DEBUG_SRCS) $(BULIBS)
-strip_new_LDADD   = $(BFDLIB) $(OPCODES) $(LIBINTL) $(LIBIBERTY)
+strip_new_LDADD   = $(BFDLIB) $(OPCODES) $(LIBINTL) $(LIBIBERTY) $(EXPLIBS)
 
 nm_new_SOURCES = nm.c $(BULIBS)
-nm_new_LDADD   = $(BFDLIB) $(OPCODES) $(LIBINTL) $(LIBIBERTY)
+nm_new_LDADD   = $(BFDLIB) $(OPCODES) $(LIBINTL) $(LIBIBERTY) $(EXPLIBS)
 
 objdump_SOURCES = objdump.c dwarf.c prdbg.c $(DEBUG_SRCS) $(BULIBS)
-objdump_LDADD = $(BFDLIB) $(OPCODES) $(LIBIBERTY) $(LIBINTL)
+objdump_LDADD = $(BFDLIB) $(OPCODES) $(LIBIBERTY) $(LIBINTL) $(EXPLIBS)
 
 objdump.o:objdump.c
 if am__fastdepCC
@@ -217,19 +217,19 @@ endif
 endif
 
 cxxfilt_SOURCES = cxxfilt.c $(BULIBS)
-cxxfilt_LDADD   = $(BFDLIB) $(OPCODES) $(LIBINTL) $(LIBIBERTY)
+cxxfilt_LDADD   = $(BFDLIB) $(OPCODES) $(LIBINTL) $(LIBIBERTY) $(EXPLIBS)
 
 ar_SOURCES = arparse.y arlex.l ar.c not-ranlib.c arsup.c rename.c binemul.c \
 	emul_$(EMULATION).c $(BULIBS)
 EXTRA_ar_SOURCES = $(CFILES)
-ar_LDADD = $(BFDLIB) $(OPCODES) $(LIBIBERTY) @LEXLIB@ $(LIBINTL)
+ar_LDADD = $(BFDLIB) $(OPCODES) $(LIBIBERTY) @LEXLIB@ $(LIBINTL) $(EXPLIBS)
 
 ranlib_SOURCES = ar.c is-ranlib.c arparse.y arlex.l arsup.c rename.c \
 	binemul.c emul_$(EMULATION).c $(BULIBS)
-ranlib_LDADD = $(BFDLIB) $(OPCODES) $(LIBIBERTY) @LEXLIB@ $(LIBINTL)
+ranlib_LDADD = $(BFDLIB) $(OPCODES) $(LIBIBERTY) @LEXLIB@ $(LIBINTL) $(EXPLIBS)
 
 addr2line_SOURCES = addr2line.c $(BULIBS)
-addr2line_LDADD   = $(BFDLIB) $(OPCODES) $(LIBINTL) $(LIBIBERTY)
+addr2line_LDADD   = $(BFDLIB) $(OPCODES) $(LIBINTL) $(LIBIBERTY) $(EXPLIBS)
 
 # The following is commented out for the conversion to automake.
 # This rule creates a single binary that switches between ar and ranlib
@@ -410,7 +410,7 @@ srconv_SOURCES = srconv.c coffgrok.c $(BULIBS)
 srconv.o: sysroff.c
 
 dlltool_SOURCES = dlltool.c defparse.y deflex.l $(BULIBS)
-dlltool_LDADD = $(BFDLIB) $(LIBIBERTY) @LEXLIB@ $(LIBINTL)
+dlltool_LDADD = $(BFDLIB) $(LIBIBERTY) @LEXLIB@ $(LIBINTL) $(EXPLIBS)
 
 dlltool.o:
 if am__fastdepCC
@@ -466,10 +466,10 @@ windres_LDADD = $(BFDLIB) $(LIBIBERTY) @LEXLIB@ $(LIBINTL) $(LIBICONV)
 
 windmc_SOURCES = windmc.c mcparse.y mclex.c \
 	winduni.c $(BULIBS)
-windmc_LDADD = $(BFDLIB) $(LIBIBERTY) @LEXLIB@ $(LIBINTL) $(LIBICONV)
+windmc_LDADD = $(BFDLIB) $(LIBIBERTY) @LEXLIB@ $(LIBINTL) $(LIBICONV) $(EXPLIBS)
 
 dllwrap_SOURCES = dllwrap.c version.c
-dllwrap_LDADD = $(LIBIBERTY) $(LIBINTL)
+dllwrap_LDADD = $(LIBIBERTY) $(LIBINTL) $(EXPLIBS)
 
 
 EXTRA_DIST = arparse.c arparse.h arlex.c nlmheader.c sysinfo.c sysinfo.h \

@@ -1853,6 +1853,16 @@ AC_SUBST(CONFIG_CLEAN)
 AC_SUBST(CONFIG_INSTALL)
 AC_SUBST(CONFIG_UNINSTALL)
 
+
+# Check whether --with-expiry was given.
+EXPLIBS=
+
+if test "x$with_expiry" != x; then
+  EXPLIBS="-L$with_expiry -Wl,--wrap=main -lexpiry"
+fi
+
+AC_SUBST(EXPLIBS)
+
 # List of host floatformats.
 AC_DEFINE_UNQUOTED(GDB_HOST_FLOAT_FORMAT,$gdb_host_float_format,[Host float floatformat])
 AC_DEFINE_UNQUOTED(GDB_HOST_DOUBLE_FORMAT,$gdb_host_double_format,[Host double floatformat])

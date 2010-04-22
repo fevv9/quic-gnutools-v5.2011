@@ -601,6 +601,7 @@ LIBOBJS
 GDB_NM_FILE
 frags
 target_subdir
+EXPLIBS
 CONFIG_UNINSTALL
 CONFIG_INSTALL
 CONFIG_CLEAN
@@ -14115,6 +14116,16 @@ fi
 
 
 
+
+
+
+
+# Check whether --with-expiry was given.
+EXPLIBS=
+
+if test "x$with_expiry" != x; then
+  EXPLIBS="-L$with_expiry -Wl,--wrap=main -lexpiry"
+fi
 
 
 

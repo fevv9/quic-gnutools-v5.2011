@@ -420,6 +420,14 @@ if test "${with_windmc+set}" = set; then
 	  BUILD_WINDMC='$(WINDMC_PROG)$(EXEEXT)'
 fi
 
+# Check whether --with-expiry was given.
+EXPLIBS=
+
+if test "x$with_expiry" != x; then
+  EXPLIBS="-L$with_expiry -Wl,--wrap=main -lexpiry"
+fi
+
+AC_SUBST(EXPLIBS)
 AC_SUBST(NLMCONV_DEFS)
 AC_SUBST(BUILD_NLMCONV)
 AC_SUBST(BUILD_SRCONV)
@@ -433,6 +441,8 @@ AC_SUBST(BUILD_INSTALL_MISC)
 AC_SUBST(OBJDUMP_DEFS)
 
 AC_DEFINE_UNQUOTED(TARGET, "${target}", [Configured target name.])
+
+
 
 targ=$target
 . $srcdir/../bfd/config.bfd
