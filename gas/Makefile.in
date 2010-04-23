@@ -85,7 +85,8 @@ am__DEPENDENCIES_1 =
 am__DEPENDENCIES_2 = ../bfd/libbfd.la ../libiberty/libiberty.a
 am_itbl_test_OBJECTS = itbl-parse.$(OBJEXT) itbl-lex.$(OBJEXT)
 itbl_test_OBJECTS = $(am_itbl_test_OBJECTS)
-itbl_test_DEPENDENCIES = itbl-tops.o itbl-test.o $(am__DEPENDENCIES_2)
+itbl_test_DEPENDENCIES = itbl-tops.o itbl-test.o $(am__DEPENDENCIES_2) \
+	$(am__DEPENDENCIES_1)
 SCRIPTS = $(noinst_SCRIPTS)
 DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/../depcomp
@@ -153,6 +154,7 @@ ECHO_N = @ECHO_N@
 ECHO_T = @ECHO_T@
 EGREP = @EGREP@
 EXEEXT = @EXEEXT@
+EXPLIBS = @EXPLIBS@
 FGREP = @FGREP@
 GDBINIT = @GDBINIT@
 GENCAT = @GENCAT@
