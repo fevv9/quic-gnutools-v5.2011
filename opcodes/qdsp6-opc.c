@@ -2608,7 +2608,7 @@ qdsp6_dis_operand
   static bfd_vma previous;
   static int xer, xvalue;
   int xed, value;
-  static int reg [MAX_PACKET_INSNS];
+  static struct {int n, y;} reg [MAX_PACKET_INSNS];
   static size_t xreg;
   size_t ireg;
   int n;
@@ -2649,6 +2649,7 @@ qdsp6_dis_operand
     {
       previous = paddr;
       xreg = 0;
+      memset (reg, 0, sizeof (reg));
     }
   else
     xreg += xed? 1: 0;
@@ -2656,16 +2657,20 @@ qdsp6_dis_operand
   ireg = ((iaddr - paddr) % (MAX_PACKET_INSNS * QDSP6_INSN_LEN)) / MAX_PACKET_INSNS;
   if ((operand->flags & QDSP6_OPERAND_IS_WRITE)
       && ((operand->flags & QDSP6_OPERAND_IS_REGISTER)
-           || (operand->flags & QDSP6_OPERAND_IS_PAIR)
-           || (operand->flags & QDSP6_OPERAND_IS_SUBSET)))
+          || (operand->flags & QDSP6_OPERAND_IS_PAIR)
+          || (operand->flags & QDSP6_OPERAND_IS_SUBSET)))
     {
-      reg [ireg] = value;
+      if (!reg [ireg].y)
+        {
+          reg [ireg].n = value;
+          reg [ireg].y = TRUE;
+        }
     }
   else if ((operand->flags & QDSP6_OPERAND_IS_READ)
            && (operand->flags & QDSP6_OPERAND_IS_NEW))
     {
-      value = reg [ireg - xreg - (value / 2)]
-              + ((reg [ireg - xreg - (value / 2)] % 2) ^ (value % 2));
+      value = reg [ireg - xreg - (value / 2)].n
+              + ((reg [ireg - xreg - (value / 2)].n % 2) ^ (value % 2));
     }
 
   if (operand->flags & QDSP6_OPERAND_IS_PAIR)

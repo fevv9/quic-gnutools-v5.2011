@@ -186,11 +186,11 @@ typedef struct
     unsigned flags;
     char padded;
     char used;
-    size_t fc;
     qdsp6_operand operand;
     expressionS exp;
+    size_t fc;
     fixS *fix;
-    char string [QDSP6_MAPPED_LEN];
+    char *source;
   } qdsp6_packet_insn;
 
 /** Pair of instruction packets. */
@@ -2957,12 +2957,21 @@ qdsp6_assemble
     return FALSE;
   }
 
+  qdsp6_insn_init (&prefix);
+  qdsp6_insn_init (&insn);
+
   /* Keep looking until we find a match.  */
   start = str;
   for (opcode = qdsp6_opcode_lookup_asm (str);
        opcode;
        opcode = QDSP6_OPCODE_NEXT_ASM (opcode))
     {
+      if (insn.source)
+        {
+          free (insn.source);
+          insn.source = NULL;
+        }
+
       /* Is this opcode supported by the selected cpu?  */
       if (!qdsp6_opcode_supported (opcode))
 	continue;
@@ -2971,9 +2980,9 @@ qdsp6_assemble
       qdsp6_insn_init (&prefix);
       qdsp6_insn_init (&insn);
       insn.opcode = opcode;
-      strncpy (insn.string, start, sizeof (insn.string));
+      insn.source = strdup (start);
       /* Yank the packet termination out. */
-      if ((str = strchr (insn.string, PACKET_END)))
+      if ((str = strchr (insn.source, PACKET_END)))
         *str = 0;
 
       /* Scan the syntax string.  If it doesn't match, try the next one.  */
@@ -3336,16 +3345,16 @@ qdsp6_assemble_pair
           continue;
         */
 
-        if (strlen (apacket->insns [i].string) + 1 + strlen (ainsn->string)
+        if (strlen (apacket->insns [i].source) + 1 + strlen (ainsn->source)
             >= sizeof (pair))
           /* Skip a too long a pair. */
           continue;
 
         /* Create a pair and its mirror. */
         snprintf (pair, sizeof (pair), "%s%c%s",
-                  apacket->insns [i].string, PACKET_PAIR, ainsn->string);
+                  apacket->insns [i].source, PACKET_PAIR, ainsn->source);
         snprintf (unpair, sizeof (unpair), "%s%c%s",
-                  ainsn->string, PACKET_PAIR, apacket->insns [i].string);
+                  ainsn->source, PACKET_PAIR, apacket->insns [i].source);
 
         prepair.left.prefix  = apacket->prefixes [i];
         prepair.left.insn    = apacket->insns [i];
