@@ -2951,11 +2951,11 @@ qdsp6_assemble
     str = new_str;
 
   if (strlen (str) > QDSP6_MAPPED_LEN - 1)
-  {
-    as_bad (_("source line too long (maximum length is %d)."),
-            QDSP6_MAPPED_LEN - 1);
-    return FALSE;
-  }
+    {
+      as_bad (_("source line too long (maximum length is %d)."),
+              QDSP6_MAPPED_LEN - 1);
+      return FALSE;
+    }
 
   qdsp6_insn_init (&prefix);
   qdsp6_insn_init (&insn);
@@ -4542,7 +4542,7 @@ qdsp6_check_register
       if (!pred_reg_rd_mask || !prev_pred_reg_rd_mask)
         {
           if (array [reg_num].letter != operand->enc_letter
-              ||    (operand->flags & (QDSP6_OPERAND_IS_READ | QDSP6_OPERAND_IS_WRITE))
+              || (operand->flags & (QDSP6_OPERAND_IS_READ | QDSP6_OPERAND_IS_WRITE))
                  != (QDSP6_OPERAND_IS_READ | QDSP6_OPERAND_IS_WRITE)
               || array [reg_num].ndx != n)
             mult_wr_err = TRUE;
@@ -4568,7 +4568,7 @@ qdsp6_check_register
         {
           reg_name
             = qdsp6_dis_operand
-                (operand, insn [n].insn, 0, 0, insn [n].opcode->enc, buff, &errmsg);
+                (operand, insn->insn, 0, 0, insn->opcode->enc, buff, &errmsg);
 
           if (reg_name)
             as_bad (_("register `%s' modified more than once."), buff);
@@ -4610,13 +4610,16 @@ qdsp6_check_insn
 {
   char *errmsg = NULL;
   int reg_num;
+  qdsp6_packet_insn *ainsn, *binsn;
   qdsp6_reg_score *arrayPtr;
   char *cp;
   int pred_reg_rd_mask = 0;
 
-  // Check whether the instruction is legal inside the packet
-  // But allow single instruction in packet
-  if((apacket->insns [n].opcode->attributes & A_RESTRICT_NOPACKET)
+  ainsn = apacket->insns + n;
+
+  /* Check whether the instruction is legal inside the packet,
+     but allow single instruction in packet. */
+  if((ainsn->opcode->attributes & A_RESTRICT_NOPACKET)
      && qdsp6_packet_insns (apacket) > 1)
     {
       as_bad (_("instruction cannot appear in packet with other instructions."));
@@ -4626,215 +4629,227 @@ qdsp6_check_insn
 
   //Check loop can not exist in the same packet as branch label instructions
   //they are using the same adder
-  if ((apacket->insns [n].opcode->attributes & A_RESTRICT_BRANCHADDER_MAX1))
+  if ((ainsn->opcode->attributes & A_RESTRICT_BRANCHADDER_MAX1))
     numOfBranchAddrMax1++;
 
-  if ((apacket->insns [n].opcode->attributes & A_BRANCHADDER))
+  if ((ainsn->opcode->attributes & A_BRANCHADDER))
     numOfBranchAddr++;
 
-  if ((apacket->insns [n].opcode->attributes & A_RESTRICT_COF_MAX1))
+  if ((ainsn->opcode->attributes & A_RESTRICT_COF_MAX1))
     numOfBranchMax1++;
 
-  if (!(apacket->insns [n].opcode->attributes & A_RELAX_COF_1ST)
-      && (apacket->insns [n].opcode->attributes & A_RELAX_COF_2ND)
+  if (!(ainsn->opcode->attributes & A_RELAX_COF_1ST)
+      && (ainsn->opcode->attributes & A_RELAX_COF_2ND)
       && !numOfBranchRelax)
     numOfBranchRelax2nd++;
 
-  if ((apacket->insns [n].opcode->attributes & A_RELAX_COF_1ST)
-      || (apacket->insns [n].opcode->attributes & A_RELAX_COF_2ND))
+  if ((ainsn->opcode->attributes & A_RELAX_COF_1ST)
+      || (ainsn->opcode->attributes & A_RELAX_COF_2ND))
     numOfBranchRelax++;
 
-  if ((apacket->insns [n].opcode->attributes & A_RESTRICT_LOOP_LA))
+  if ((ainsn->opcode->attributes & A_RESTRICT_LOOP_LA))
     numOfLoopMax1++;
 
-  // check for implicit register definitions
-  if (apacket->insns [n].opcode->implicit)
+  /* Check for implicit register references. */
+  if (ainsn->opcode->implicit)
     {
-      if (apacket->insns [n].opcode->implicit & IMPLICIT_PC)
+      if (ainsn->opcode->implicit & IMPLICIT_PC)
         {
           /* Look into multiple implicit references to the PC in order to allow
              slots with two branches in V3. */
           cArray [QDSP6_PC].used++;
           if (cArray [QDSP6_PC].used > 1 && cArray [QDSP6_PC].used > numOfBranchRelax)
-            qdsp6_check_implicit (apacket->insns [n].opcode, IMPLICIT_PC, QDSP6_PC, cArray, "c9/pc");
+            qdsp6_check_implicit (ainsn->opcode, IMPLICIT_PC, QDSP6_PC, cArray, "c9/pc");
         }
 
       qdsp6_check_implicit
-        (apacket->insns [n].opcode, IMPLICIT_LR,  QDSP6_LR,  gArray, "r31/lr");
+        (ainsn->opcode, IMPLICIT_LR,  QDSP6_LR,  gArray, "r31/lr");
       qdsp6_check_implicit
-        (apacket->insns [n].opcode, IMPLICIT_SP,  QDSP6_SP,  gArray, "r29/sp");
+        (ainsn->opcode, IMPLICIT_SP,  QDSP6_SP,  gArray, "r29/sp");
       qdsp6_check_implicit
-        (apacket->insns [n].opcode, IMPLICIT_FP,  QDSP6_FP,  gArray, "r30/fp");
+        (ainsn->opcode, IMPLICIT_FP,  QDSP6_FP,  gArray, "r30/fp");
       qdsp6_check_implicit
-        (apacket->insns [n].opcode, IMPLICIT_LC0, QDSP6_LC0, cArray, "c1/lc0");
+        (ainsn->opcode, IMPLICIT_LC0, QDSP6_LC0, cArray, "c1/lc0");
       qdsp6_check_implicit
-        (apacket->insns [n].opcode, IMPLICIT_SA0, QDSP6_SA0, cArray, "c0/sa0");
+        (ainsn->opcode, IMPLICIT_SA0, QDSP6_SA0, cArray, "c0/sa0");
       qdsp6_check_implicit
-        (apacket->insns [n].opcode, IMPLICIT_LC1, QDSP6_LC1, cArray, "c3/lc1");
+        (ainsn->opcode, IMPLICIT_LC1, QDSP6_LC1, cArray, "c3/lc1");
       qdsp6_check_implicit
-        (apacket->insns [n].opcode, IMPLICIT_SA1, QDSP6_SA1, cArray, "c2/sa1");
+        (ainsn->opcode, IMPLICIT_SA1, QDSP6_SA1, cArray, "c2/sa1");
       qdsp6_check_implicit_predicate
-        (apacket->insns [n].opcode, IMPLICIT_P3,  3);
+        (ainsn->opcode, IMPLICIT_P3,  3);
       qdsp6_check_implicit_predicate
-        (apacket->insns [n].opcode, IMPLICIT_P1,  1); /* V4 */
+        (ainsn->opcode, IMPLICIT_P1,  1); /* V4 */
       qdsp6_check_implicit_predicate
-        (apacket->insns [n].opcode, IMPLICIT_P0,  0); /* V3 */
+        (ainsn->opcode, IMPLICIT_P0,  0); /* V3 */
 #if 0
       qdsp6_check_implicit
-        (apacket->insns [n].opcode,
-         (apacket->insns [n].opcode->attributes & A_RESTRICT_LATEPRED)
+        (ainsn->opcode,
+         (ainsn->opcode->attributes & A_RESTRICT_LATEPRED)
          ? IMPLICIT_P3: 0, 3, pLateArray, NULL);
       qdsp6_check_implicit
-        (apacket->insns [n].opcode,
-         (apacket->insns [n].opcode->attributes & A_RESTRICT_LATEPRED)
+        (ainsn->opcode,
+         (ainsn->opcode->attributes & A_RESTRICT_LATEPRED)
          ? IMPLICIT_P1: 0, 1, pLateArray, NULL); /* V4 */
       qdsp6_check_implicit
-        (apacket->insns [n].opcode,
-         (apacket->insns [n].opcode->attributes & A_RESTRICT_LATEPRED)
+        (ainsn->opcode,
+         (ainsn->opcode->attributes & A_RESTRICT_LATEPRED)
          ? IMPLICIT_P0: 0, 0, pLateArray, NULL); /* V3 */
 #endif
     }
 
   /* Check for attributes. */
-  if ((apacket->insns [n].opcode->attributes)
-      && (apacket->insns [n].opcode->attributes & A_RESTRICT_NOSRMOVE))
+  if ((ainsn->opcode->attributes)
+      && (ainsn->opcode->attributes & A_RESTRICT_NOSRMOVE))
     implicit_sr_ovf_bit_flag = TRUE;
 
-  for (cp = apacket->insns [n].opcode->syntax; *cp; cp++)
+  if ((ainsn->opcode->attributes)
+      && (ainsn->opcode->attributes & DUPLEX))
+    binsn = &apacket->pairs [n].left.insn;
+  else
+    binsn = ainsn;
+
+  do
     {
-      // Walk the syntax string for the opcode
-      if (ISUPPER (*cp))
+      for (cp = binsn->opcode->syntax; *cp; cp++)
         {
-          // Check for register operand
-          // Get the operand from operand lookup table
-          const qdsp6_operand *operand = qdsp6_lookup_operand (cp);
-          if(operand == NULL)
-            break;
-
-          cp += strlen (operand->fmt); // Move the pointer to the end of the operand
-
-          if ((operand->flags & QDSP6_OPERAND_IS_READ)
-              && (operand->flags & QDSP6_OPERAND_IS_PREDICATE))
+          // Walk the syntax string for the opcode
+          if (ISUPPER (*cp))
             {
-              if (!qdsp6_extract_predicate_operand
-                   (operand, apacket->insns [n].insn,
-                    apacket->insns [n].opcode->enc, &reg_num, &errmsg))
-                {
-                  if (errmsg)
-                    as_bad (errmsg);
-                  break;
-                }
+              // Check for register operand
+              // Get the operand from operand lookup table
+              const qdsp6_operand *operand = qdsp6_lookup_operand (cp);
+              if(operand == NULL)
+                break;
 
-              pred_reg_rd_mask = QDSP6_PRED_SET (0, reg_num, QDSP6_PRED_YES);
-              if (apacket->insns [n].opcode->attributes & CONDITION_SENSE_INVERTED)
-                pred_reg_rd_mask
-                = QDSP6_PRED_SET (pred_reg_rd_mask, reg_num, QDSP6_PRED_NOT);
-              if (apacket->insns [n].opcode->attributes & CONDITION_DOTNEW)
-                {
-                  pred_reg_rd_mask
-                  = QDSP6_PRED_SET (pred_reg_rd_mask, reg_num, QDSP6_PRED_NEW);
-                  pNewArray [reg_num].used = TRUE;
-                }
-            }
+              cp += strlen (operand->fmt); // Move the pointer to the end of the operand
 
-          if (operand->flags & QDSP6_OPERAND_IS_WRITE)
-            {
-              if (operand->flags & QDSP6_OPERAND_IS_PREDICATE)
+              if ((operand->flags & QDSP6_OPERAND_IS_READ)
+                  && (operand->flags & QDSP6_OPERAND_IS_PREDICATE))
                 {
                   if (!qdsp6_extract_predicate_operand
-                        (operand, apacket->insns [n].insn,
-                         apacket->insns [n].opcode->enc, &reg_num, &errmsg))
+                      (operand, binsn->insn, binsn->opcode->enc, &reg_num, &errmsg))
                     {
                       if (errmsg)
                         as_bad (errmsg);
                       break;
                     }
 
-                  if (cArray [QDSP6_P30].used)
+                  pred_reg_rd_mask = QDSP6_PRED_SET (0, reg_num, QDSP6_PRED_YES);
+                  if (binsn->opcode->attributes & CONDITION_SENSE_INVERTED)
+                    pred_reg_rd_mask
+                    = QDSP6_PRED_SET (pred_reg_rd_mask, reg_num, QDSP6_PRED_NOT);
+                  if (binsn->opcode->attributes & CONDITION_DOTNEW)
                     {
-                      as_bad (_("register `P%d' modified more than once."), reg_num);
-                      break;
-                    }
-
-                  if (apacket->insns [n].opcode->attributes & A_RESTRICT_LATEPRED)
-                    pLateArray [reg_num].used++;
-                  qdsp6_check_predicate (reg_num, apacket->insns [n].opcode);
-
-                  if (operand->flags & QDSP6_OPERAND_IS_PAIR)
-                    qdsp6_check_predicate (reg_num + 1, apacket->insns [n].opcode);
-
-                  continue;
-                }
-              else if (operand->flags & QDSP6_OPERAND_IS_MODIFIER)
-                {
-                  arrayPtr = cArray;
-
-                  if (!qdsp6_extract_modifier_operand
-                         (operand, apacket->insns [n].insn,
-                          apacket->insns [n].opcode->enc, &reg_num, &errmsg))
-                    {
-                      if (errmsg)
-                        as_bad (errmsg);
-                      break;
+                      pred_reg_rd_mask
+                        = QDSP6_PRED_SET (pred_reg_rd_mask, reg_num, QDSP6_PRED_NEW);
+                      pNewArray [reg_num].used = TRUE;
                     }
                 }
-              else
-                {
-                  if (!qdsp6_extract_operand
-                         (operand, apacket->insns [n].insn, 0,
-                          apacket->insns [n].opcode->enc, &reg_num, &errmsg))
-                    {
-                      if (errmsg)
-                        as_bad (errmsg);
-                      break;
-                    }
 
-                  if (operand->flags & QDSP6_OPERAND_IS_CONTROL)
+              if (operand->flags
+                  & (QDSP6_OPERAND_IS_WRITE | QDSP6_OPERAND_IS_MODIFIED))
+                {
+                  if (operand->flags & QDSP6_OPERAND_IS_PREDICATE)
                     {
-                      if (reg_num == QDSP6_P30)
+                      if (!qdsp6_extract_predicate_operand
+                            (operand, binsn->insn, binsn->opcode->enc, &reg_num, &errmsg))
                         {
-                          // Set pArray completely
-                          size_t j;
-
-                          for (j = 0; j < QDSP6_NUM_PREDICATE_REGS; j++)
-                            if (pArray [j].used)
-                              {
-                                //as_bad (("register `C%d' modified more than once."), reg_num);
-                                cArray [reg_num].used++;
-                                break;
-                              }
+                          if (errmsg)
+                            as_bad (errmsg);
+                          break;
                         }
-                      arrayPtr = cArray;
+
+                      if (cArray [QDSP6_P30].used)
+                        {
+                          as_bad (_("register `P%d' modified more than once."), reg_num);
+                          break;
+                        }
+
+                      if (ainsn->opcode->attributes & A_RESTRICT_LATEPRED)
+                        pLateArray [reg_num].used++;
+                      qdsp6_check_predicate (reg_num, ainsn->opcode);
+
+                      if (operand->flags & QDSP6_OPERAND_IS_PAIR)
+                        qdsp6_check_predicate (reg_num + 1, ainsn->opcode);
+
+                      continue;
                     }
-                  else if (operand->flags & QDSP6_OPERAND_IS_SYSTEM)
-                    arrayPtr = sArray;
+                  else if (operand->flags & QDSP6_OPERAND_IS_MODIFIER)
+                    {
+                      arrayPtr = cArray;
+
+                      if (!qdsp6_extract_modifier_operand
+                            (operand, binsn->insn, binsn->opcode->enc, &reg_num, &errmsg))
+                        {
+                          if (errmsg)
+                            as_bad (errmsg);
+                          break;
+                        }
+                    }
                   else
                     {
-                      arrayPtr = gArray;
-
-                      if (!(apacket->insns [n].flags & QDSP6_INSN_OUT_RNEW))
+                      if (!qdsp6_extract_operand
+                            (operand, binsn->insn, 0, binsn->opcode->enc, &reg_num, &errmsg))
                         {
-                          /* Record the first modified GPR. */
-                          apacket->insns [n].flags |= QDSP6_INSN_OUT_RNEW;
-                          apacket->insns [n].oreg   = reg_num;
-                          apacket->insns [n].opair
-                            = (operand->flags & QDSP6_OPERAND_IS_PAIR);
+                          if (errmsg)
+                            as_bad (errmsg);
+                          break;
+                        }
+
+                      if (operand->flags & QDSP6_OPERAND_IS_CONTROL)
+                        {
+                          if (reg_num == QDSP6_P30)
+                            {
+                              // Set pArray completely
+                              size_t j;
+
+                              for (j = 0; j < QDSP6_NUM_PREDICATE_REGS; j++)
+                                if (pArray [j].used)
+                                  {
+                                    //as_bad (("register `C%d' modified more than once."), reg_num);
+                                    cArray [reg_num].used++;
+                                    break;
+                                  }
+                            }
+                          arrayPtr = cArray;
+                        }
+                      else if (operand->flags & QDSP6_OPERAND_IS_SYSTEM)
+                        arrayPtr = sArray;
+                      else
+                        {
+                          arrayPtr = gArray;
+
+                          if (!(ainsn->flags & QDSP6_INSN_OUT_RNEW)
+                              && !(operand->flags & QDSP6_OPERAND_IS_MODIFIED))
+                            {
+                              /* Record the first modified GPR. */
+                              ainsn->flags |= QDSP6_INSN_OUT_RNEW;
+                              ainsn->oreg   = reg_num;
+                              ainsn->opair  = (operand->flags & QDSP6_OPERAND_IS_PAIR);
+                            }
                         }
                     }
-                }
 
-              qdsp6_check_register
-                (arrayPtr, reg_num, pred_reg_rd_mask,
-                 operand, apacket->insns, n);
-              if (operand->flags & QDSP6_OPERAND_IS_PAIR)  // For register pairs
-                qdsp6_check_register
-                  (arrayPtr, reg_num + 1, pred_reg_rd_mask,
-                   operand, apacket->insns, n);
-            }
-        } // end if for CAPITAL letters indicating it is a register
-      if (!*cp)
+                  qdsp6_check_register
+                    (arrayPtr, reg_num, pred_reg_rd_mask, operand, binsn, n);
+                  if (operand->flags & QDSP6_OPERAND_IS_PAIR)  // For register pairs
+                    qdsp6_check_register
+                      (arrayPtr, reg_num + 1, pred_reg_rd_mask, operand, binsn, n);
+                }
+            } // end if for CAPITAL letters indicating it is a register
+          if (!*cp)
+            break;
+        } // end for loop for walking the syntax string
+
+      if ((ainsn->opcode->attributes)
+          && (ainsn->opcode->attributes & DUPLEX)
+          && binsn != &apacket->pairs [n].right.insn)
+        binsn = &apacket->pairs [n].right.insn;
+      else
         break;
-    } // end for loop for walking the syntax string
+    }
+  while (TRUE);
 }
 
 void

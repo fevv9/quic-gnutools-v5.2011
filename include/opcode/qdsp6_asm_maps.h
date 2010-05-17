@@ -1391,7 +1391,7 @@ MAP_FUNCTION(S2_pstorerbf_zomap_alt)
  */
 MAP_FUNCTION(S2_pstorerbnewf_zomap)
 {
-    sprintf(DEST,"if (!P%d) memb(R%d+#0)=N%d.new",GET_OP_VAL(0),GET_OP_VAL(1),GET_OP_VAL(2));
+    sprintf(DEST,"if (!P%d) memb(R%d+#0)=R%d.new",GET_OP_VAL(0),GET_OP_VAL(1),GET_OP_VAL(2));
 }
 
 /*
@@ -1402,7 +1402,7 @@ MAP_FUNCTION(S2_pstorerbnewf_zomap)
  */
 MAP_FUNCTION(S2_pstorerbnewf_zomap_alt)
 {
-    sprintf(DEST,"if (!P%d) memb(R%d+#0)=N%d.new",GET_OP_VAL(0),GET_OP_VAL(1),GET_OP_VAL(2));
+    sprintf(DEST,"if (!P%d) memb(R%d+#0)=R%d.new",GET_OP_VAL(0),GET_OP_VAL(1),GET_OP_VAL(2));
 }
 
 /*
@@ -1413,7 +1413,7 @@ MAP_FUNCTION(S2_pstorerbnewf_zomap_alt)
  */
 MAP_FUNCTION(S2_pstorerbnewt_zomap)
 {
-    sprintf(DEST,"if (P%d) memb(R%d+#0)=N%d.new",GET_OP_VAL(0),GET_OP_VAL(1),GET_OP_VAL(2));
+    sprintf(DEST,"if (P%d) memb(R%d+#0)=R%d.new",GET_OP_VAL(0),GET_OP_VAL(1),GET_OP_VAL(2));
 }
 
 /*
@@ -1424,7 +1424,7 @@ MAP_FUNCTION(S2_pstorerbnewt_zomap)
  */
 MAP_FUNCTION(S2_pstorerbnewt_zomap_alt)
 {
-    sprintf(DEST,"if (P%d) memb(R%d+#0)=N%d.new",GET_OP_VAL(0),GET_OP_VAL(1),GET_OP_VAL(2));
+    sprintf(DEST,"if (P%d) memb(R%d+#0)=R%d.new",GET_OP_VAL(0),GET_OP_VAL(1),GET_OP_VAL(2));
 }
 
 /*
@@ -1567,7 +1567,7 @@ MAP_FUNCTION(S2_pstorerhf_zomap_alt)
  */
 MAP_FUNCTION(S2_pstorerhnewf_zomap)
 {
-    sprintf(DEST,"if (!P%d) memh(R%d+#0)=N%d.new",GET_OP_VAL(0),GET_OP_VAL(1),GET_OP_VAL(2));
+    sprintf(DEST,"if (!P%d) memh(R%d+#0)=R%d.new",GET_OP_VAL(0),GET_OP_VAL(1),GET_OP_VAL(2));
 }
 
 /*
@@ -1578,7 +1578,7 @@ MAP_FUNCTION(S2_pstorerhnewf_zomap)
  */
 MAP_FUNCTION(S2_pstorerhnewf_zomap_alt)
 {
-    sprintf(DEST,"if (!P%d) memh(R%d+#0)=N%d.new",GET_OP_VAL(0),GET_OP_VAL(1),GET_OP_VAL(2));
+    sprintf(DEST,"if (!P%d) memh(R%d+#0)=R%d.new",GET_OP_VAL(0),GET_OP_VAL(1),GET_OP_VAL(2));
 }
 
 /*
@@ -1589,7 +1589,7 @@ MAP_FUNCTION(S2_pstorerhnewf_zomap_alt)
  */
 MAP_FUNCTION(S2_pstorerhnewt_zomap)
 {
-    sprintf(DEST,"if (P%d) memh(R%d+#0)=N%d.new",GET_OP_VAL(0),GET_OP_VAL(1),GET_OP_VAL(2));
+    sprintf(DEST,"if (P%d) memh(R%d+#0)=R%d.new",GET_OP_VAL(0),GET_OP_VAL(1),GET_OP_VAL(2));
 }
 
 /*
@@ -1600,7 +1600,7 @@ MAP_FUNCTION(S2_pstorerhnewt_zomap)
  */
 MAP_FUNCTION(S2_pstorerhnewt_zomap_alt)
 {
-    sprintf(DEST,"if (P%d) memh(R%d+#0)=N%d.new",GET_OP_VAL(0),GET_OP_VAL(1),GET_OP_VAL(2));
+    sprintf(DEST,"if (P%d) memh(R%d+#0)=R%d.new",GET_OP_VAL(0),GET_OP_VAL(1),GET_OP_VAL(2));
 }
 
 /*
@@ -1655,7 +1655,7 @@ MAP_FUNCTION(S2_pstorerif_zomap_alt)
  */
 MAP_FUNCTION(S2_pstorerinewf_zomap)
 {
-    sprintf(DEST,"if (!P%d) memw(R%d+#0)=N%d.new",GET_OP_VAL(0),GET_OP_VAL(1),GET_OP_VAL(2));
+    sprintf(DEST,"if (!P%d) memw(R%d+#0)=R%d.new",GET_OP_VAL(0),GET_OP_VAL(1),GET_OP_VAL(2));
 }
 
 /*
@@ -1666,7 +1666,7 @@ MAP_FUNCTION(S2_pstorerinewf_zomap)
  */
 MAP_FUNCTION(S2_pstorerinewf_zomap_alt)
 {
-    sprintf(DEST,"if (!P%d) memw(R%d+#0)=N%d.new",GET_OP_VAL(0),GET_OP_VAL(1),GET_OP_VAL(2));
+    sprintf(DEST,"if (!P%d) memw(R%d+#0)=R%d.new",GET_OP_VAL(0),GET_OP_VAL(1),GET_OP_VAL(2));
 }
 
 /*
@@ -1677,7 +1677,7 @@ MAP_FUNCTION(S2_pstorerinewf_zomap_alt)
  */
 MAP_FUNCTION(S2_pstorerinewt_zomap)
 {
-    sprintf(DEST,"if (P%d) memw(R%d+#0)=N%d.new",GET_OP_VAL(0),GET_OP_VAL(1),GET_OP_VAL(2));
+    sprintf(DEST,"if (P%d) memw(R%d+#0)=R%d.new",GET_OP_VAL(0),GET_OP_VAL(1),GET_OP_VAL(2));
 }
 
 /*
@@ -1688,7 +1688,7 @@ MAP_FUNCTION(S2_pstorerinewt_zomap)
  */
 MAP_FUNCTION(S2_pstorerinewt_zomap_alt)
 {
-    sprintf(DEST,"if (P%d) memw(R%d+#0)=N%d.new",GET_OP_VAL(0),GET_OP_VAL(1),GET_OP_VAL(2));
+    sprintf(DEST,"if (P%d) memw(R%d+#0)=R%d.new",GET_OP_VAL(0),GET_OP_VAL(1),GET_OP_VAL(2));
 }
 
 /*
@@ -1732,7 +1732,7 @@ MAP_FUNCTION(S2_storerb_zomap)
  */
 MAP_FUNCTION(S2_storerbnew_zomap)
 {
-    sprintf(DEST,"memb(R%d+#0)=N%d.new",GET_OP_VAL(0),GET_OP_VAL(1));
+    sprintf(DEST,"memb(R%d+#0)=R%d.new",GET_OP_VAL(0),GET_OP_VAL(1));
 }
 
 /*
@@ -1776,7 +1776,7 @@ MAP_FUNCTION(S2_storerh_zomap)
  */
 MAP_FUNCTION(S2_storerhnew_zomap)
 {
-    sprintf(DEST,"memh(R%d+#0)=N%d.new",GET_OP_VAL(0),GET_OP_VAL(1));
+    sprintf(DEST,"memh(R%d+#0)=R%d.new",GET_OP_VAL(0),GET_OP_VAL(1));
 }
 
 /*
@@ -1798,7 +1798,7 @@ MAP_FUNCTION(S2_storeri_zomap)
  */
 MAP_FUNCTION(S2_storerinew_zomap)
 {
-    sprintf(DEST,"memw(R%d+#0)=N%d.new",GET_OP_VAL(0),GET_OP_VAL(1));
+    sprintf(DEST,"memw(R%d+#0)=R%d.new",GET_OP_VAL(0),GET_OP_VAL(1));
 }
 
 /*
@@ -1875,7 +1875,7 @@ MAP_FUNCTION(S4_pstorerbfnew_zomap_alt)
  */
 MAP_FUNCTION(S4_pstorerbnewfnew_zomap)
 {
-    sprintf(DEST,"if (!P%d.new) memb(R%d+#0)=N%d.new",GET_OP_VAL(0),GET_OP_VAL(1),GET_OP_VAL(2));
+    sprintf(DEST,"if (!P%d.new) memb(R%d+#0)=R%d.new",GET_OP_VAL(0),GET_OP_VAL(1),GET_OP_VAL(2));
 }
 
 /*
@@ -1886,7 +1886,7 @@ MAP_FUNCTION(S4_pstorerbnewfnew_zomap)
  */
 MAP_FUNCTION(S4_pstorerbnewfnew_zomap_alt)
 {
-    sprintf(DEST,"if (!P%d.new) memb(R%d+#0)=N%d.new",GET_OP_VAL(0),GET_OP_VAL(1),GET_OP_VAL(2));
+    sprintf(DEST,"if (!P%d.new) memb(R%d+#0)=R%d.new",GET_OP_VAL(0),GET_OP_VAL(1),GET_OP_VAL(2));
 }
 
 /*
@@ -1897,7 +1897,7 @@ MAP_FUNCTION(S4_pstorerbnewfnew_zomap_alt)
  */
 MAP_FUNCTION(S4_pstorerbnewtnew_zomap)
 {
-    sprintf(DEST,"if (P%d.new) memb(R%d+#0)=N%d.new",GET_OP_VAL(0),GET_OP_VAL(1),GET_OP_VAL(2));
+    sprintf(DEST,"if (P%d.new) memb(R%d+#0)=R%d.new",GET_OP_VAL(0),GET_OP_VAL(1),GET_OP_VAL(2));
 }
 
 /*
@@ -1908,7 +1908,7 @@ MAP_FUNCTION(S4_pstorerbnewtnew_zomap)
  */
 MAP_FUNCTION(S4_pstorerbnewtnew_zomap_alt)
 {
-    sprintf(DEST,"if (P%d.new) memb(R%d+#0)=N%d.new",GET_OP_VAL(0),GET_OP_VAL(1),GET_OP_VAL(2));
+    sprintf(DEST,"if (P%d.new) memb(R%d+#0)=R%d.new",GET_OP_VAL(0),GET_OP_VAL(1),GET_OP_VAL(2));
 }
 
 /*
@@ -2051,7 +2051,7 @@ MAP_FUNCTION(S4_pstorerhfnew_zomap_alt)
  */
 MAP_FUNCTION(S4_pstorerhnewfnew_zomap)
 {
-    sprintf(DEST,"if (!P%d.new) memh(R%d+#0)=N%d.new",GET_OP_VAL(0),GET_OP_VAL(1),GET_OP_VAL(2));
+    sprintf(DEST,"if (!P%d.new) memh(R%d+#0)=R%d.new",GET_OP_VAL(0),GET_OP_VAL(1),GET_OP_VAL(2));
 }
 
 /*
@@ -2062,7 +2062,7 @@ MAP_FUNCTION(S4_pstorerhnewfnew_zomap)
  */
 MAP_FUNCTION(S4_pstorerhnewfnew_zomap_alt)
 {
-    sprintf(DEST,"if (!P%d.new) memh(R%d+#0)=N%d.new",GET_OP_VAL(0),GET_OP_VAL(1),GET_OP_VAL(2));
+    sprintf(DEST,"if (!P%d.new) memh(R%d+#0)=R%d.new",GET_OP_VAL(0),GET_OP_VAL(1),GET_OP_VAL(2));
 }
 
 /*
@@ -2073,7 +2073,7 @@ MAP_FUNCTION(S4_pstorerhnewfnew_zomap_alt)
  */
 MAP_FUNCTION(S4_pstorerhnewtnew_zomap)
 {
-    sprintf(DEST,"if (P%d.new) memh(R%d+#0)=N%d.new",GET_OP_VAL(0),GET_OP_VAL(1),GET_OP_VAL(2));
+    sprintf(DEST,"if (P%d.new) memh(R%d+#0)=R%d.new",GET_OP_VAL(0),GET_OP_VAL(1),GET_OP_VAL(2));
 }
 
 /*
@@ -2084,7 +2084,7 @@ MAP_FUNCTION(S4_pstorerhnewtnew_zomap)
  */
 MAP_FUNCTION(S4_pstorerhnewtnew_zomap_alt)
 {
-    sprintf(DEST,"if (P%d.new) memh(R%d+#0)=N%d.new",GET_OP_VAL(0),GET_OP_VAL(1),GET_OP_VAL(2));
+    sprintf(DEST,"if (P%d.new) memh(R%d+#0)=R%d.new",GET_OP_VAL(0),GET_OP_VAL(1),GET_OP_VAL(2));
 }
 
 /*
@@ -2139,7 +2139,7 @@ MAP_FUNCTION(S4_pstorerifnew_zomap_alt)
  */
 MAP_FUNCTION(S4_pstorerinewfnew_zomap)
 {
-    sprintf(DEST,"if (!P%d.new) memw(R%d+#0)=N%d.new",GET_OP_VAL(0),GET_OP_VAL(1),GET_OP_VAL(2));
+    sprintf(DEST,"if (!P%d.new) memw(R%d+#0)=R%d.new",GET_OP_VAL(0),GET_OP_VAL(1),GET_OP_VAL(2));
 }
 
 /*
@@ -2150,7 +2150,7 @@ MAP_FUNCTION(S4_pstorerinewfnew_zomap)
  */
 MAP_FUNCTION(S4_pstorerinewfnew_zomap_alt)
 {
-    sprintf(DEST,"if (!P%d.new) memw(R%d+#0)=N%d.new",GET_OP_VAL(0),GET_OP_VAL(1),GET_OP_VAL(2));
+    sprintf(DEST,"if (!P%d.new) memw(R%d+#0)=R%d.new",GET_OP_VAL(0),GET_OP_VAL(1),GET_OP_VAL(2));
 }
 
 /*
@@ -2161,7 +2161,7 @@ MAP_FUNCTION(S4_pstorerinewfnew_zomap_alt)
  */
 MAP_FUNCTION(S4_pstorerinewtnew_zomap)
 {
-    sprintf(DEST,"if (P%d.new) memw(R%d+#0)=N%d.new",GET_OP_VAL(0),GET_OP_VAL(1),GET_OP_VAL(2));
+    sprintf(DEST,"if (P%d.new) memw(R%d+#0)=R%d.new",GET_OP_VAL(0),GET_OP_VAL(1),GET_OP_VAL(2));
 }
 
 /*
@@ -2172,7 +2172,7 @@ MAP_FUNCTION(S4_pstorerinewtnew_zomap)
  */
 MAP_FUNCTION(S4_pstorerinewtnew_zomap_alt)
 {
-    sprintf(DEST,"if (P%d.new) memw(R%d+#0)=N%d.new",GET_OP_VAL(0),GET_OP_VAL(1),GET_OP_VAL(2));
+    sprintf(DEST,"if (P%d.new) memw(R%d+#0)=R%d.new",GET_OP_VAL(0),GET_OP_VAL(1),GET_OP_VAL(2));
 }
 
 /*

@@ -149,59 +149,60 @@ typedef struct _qdsp6_opcode {
   unsigned int slot_mask;          /* Slots onto which the instruction can go */
 
   /* Values for implicit register definitions */
-#define IMPLICIT_LR     (1 <<  0)
-#define IMPLICIT_SP     (1 <<  1)
-#define IMPLICIT_FP     (1 <<  2)
-#define IMPLICIT_PC     (1 <<  3)
-#define IMPLICIT_LC0    (1 <<  4)
-#define IMPLICIT_SA0    (1 <<  5)
-#define IMPLICIT_LC1    (1 <<  6)
-#define IMPLICIT_SA1    (1 <<  7)
-#define IMPLICIT_SR_OVF (1 <<  8)
-#define IMPLICIT_P3     (1 <<  9)
+#define IMPLICIT_LR     0x0001
+#define IMPLICIT_SP     0x0002
+#define IMPLICIT_FP     0x0004
+#define IMPLICIT_PC     0x0008
+#define IMPLICIT_LC0    0x0010
+#define IMPLICIT_SA0    0x0020
+#define IMPLICIT_LC1    0x0040
+#define IMPLICIT_SA1    0x0080
+#define IMPLICIT_SR_OVF 0x0100
+#define IMPLICIT_P3     0x0200
   /* V3 */
-#define IMPLICIT_P0     (1 << 10)
+#define IMPLICIT_P0     0x0400
   /* V4 */
-#define IMPLICIT_P1     (1 << 11)
+#define IMPLICIT_P1     0x0800
 
   unsigned int implicit;   /* specifies implicit register writes */
 
   unsigned int attributes;
 
   /* Values for 'attributes' */
-#define A_IT_NOP                        (1 <<  0)
-#define A_RESTRICT_NOSRMOVE             (1 <<  1)
-#define A_RESTRICT_LOOP_LA              (1 <<  2)
-#define A_RESTRICT_COF_MAX1             (1 <<  3)
-#define A_RESTRICT_NOPACKET             (1 <<  4)
-#define A_RESTRICT_NOSLOT1              (1 <<  5)
-#define A_RESTRICT_NOCOF                (1 <<  6)
-#define A_COF                           (1 <<  7)
-#define A_RESTRICT_BRANCHADDER_MAX1     (1 <<  8)
-#define A_BRANCHADDER                   (1 <<  9)
-#define A_RESTRICT_SINGLE_MEM_FIRST     (1 << 10)
-#define CONDITIONAL_EXEC                (1 << 11)
-#define CONDITION_SENSE_INVERTED        (1 << 12)
-#define CONDITION_DOTNEW                (1 << 13)
-#define A_RESTRICT_PREFERSLOT0          (1 << 14)
-#define A_RESTRICT_LATEPRED             (1 << 15)
+#define A_IT_NOP                        0x00000001
+#define A_RESTRICT_NOSRMOVE             0x00000002
+#define A_RESTRICT_LOOP_LA              0x00000004
+#define A_RESTRICT_COF_MAX1             0x00000008
+#define A_RESTRICT_NOPACKET             0x00000010
+#define A_RESTRICT_NOSLOT1              0x00000020
+#define A_RESTRICT_NOCOF                0x00000040
+#define A_COF                           0x00000080
+#define A_RESTRICT_BRANCHADDER_MAX1     0x00000100
+#define A_BRANCHADDER                   0x00000200
+#define A_RESTRICT_SINGLE_MEM_FIRST     0x00000400
+#define CONDITIONAL_EXEC                0x00000800
+#define CONDITION_SENSE_INVERTED        0x00001000
+#define CONDITION_DOTNEW                0x00002000
+#define A_RESTRICT_PREFERSLOT0          0x00004000
+#define A_RESTRICT_LATEPRED             0x00008000
   /* V3 */
-#define A_RESTRICT_PACKET_AXOK          (1 << 16)
-#define A_RESTRICT_PACKET_SOMEREGS_OK   (1 << 17)
-#define A_RELAX_COF_1ST                 (1 << 18)
-#define A_RELAX_COF_2ND                 (1 << 19)
+#define A_RESTRICT_PACKET_AXOK          0x00010000
+#define A_RESTRICT_PACKET_SOMEREGS_OK   0x00020000
+#define A_RELAX_COF_1ST                 0x00040000
+#define A_RELAX_COF_2ND                 0x00080000
   /* V4 */
-#define PACKED                          (1 << 20)
-#define A_IT_EXTENDER                   (1 << 21)
-#define EXTENDABLE_LOWER_CASE_IMMEDIATE (1 << 22)
-#define EXTENDABLE_UPPER_CASE_IMMEDIATE (1 << 23)
-#define A_RESTRICT_SLOT0ONLY            (1 << 24)
-#define A_STORE                         (1 << 25)
-#define A_STOREIMMED                    (1 << 26)
-#define A_RESTRICT_NOSLOT1_STORE        (1 << 27)
+#define PACKED                          0x00100000
+#define A_IT_EXTENDER                   0x00200000
+#define EXTENDABLE_LOWER_CASE_IMMEDIATE 0x00400000
+#define EXTENDABLE_UPPER_CASE_IMMEDIATE 0x00800000
+#define A_RESTRICT_SLOT0ONLY            0x01000000
+#define A_STORE                         0x02000000
+#define A_STOREIMMED                    0x04000000
+#define A_RESTRICT_NOSLOT1_STORE        0x08000000
+#define MUST_EXTEND                     0x10000000
   /* Internal */
-#define DUPLEX                          (1 << 30)
-#define PREFIX                          (1 << 31)
+#define DUPLEX                          0x40000000
+#define PREFIX                          0x80000000
 
   /* If this opcode is mapped, then the function that performs the mapping */
   void *map;
@@ -230,31 +231,31 @@ typedef struct _qdsp6_operand
   int flags;
 
 /* Values for `flags'.  */
-#define QDSP6_OPERAND_IS_IMMEDIATE (1 <<  0)
-#define QDSP6_OPERAND_PC_RELATIVE  (1 <<  1)
-#define QDSP6_OPERAND_IS_SIGNED    (1 <<  2)
-#define QDSP6_OPERAND_IS_PAIR      (1 <<  3)
-#define QDSP6_OPERAND_IS_SUBSET    (1 <<  4)
-#define QDSP6_OPERAND_IS_MODIFIER  (1 <<  5)
-#define QDSP6_OPERAND_IS_PREDICATE (1 <<  6)
-#define QDSP6_OPERAND_IS_CONTROL   (1 <<  7)
-#define QDSP6_OPERAND_IS_SYSTEM    (1 <<  8)
-#define QDSP6_OPERAND_IS_LO16      (1 <<  9)
-#define QDSP6_OPERAND_IS_HI16      (1 << 10)
-#define QDSP6_OPERAND_IS_READ      (1 << 11)
-#define QDSP6_OPERAND_IS_WRITE     (1 << 12)
-#define QDSP6_OPERAND_IS_NEGATIVE  (1 << 13)
-#define QDSP6_OPERAND_IS_CONSTANT  (1 << 14)
-#define QDSP6_OPERAND_IS_NEW       (1 << 15)
-#define QDSP6_OPERAND_IS_GUEST     (1 << 16)
+#define QDSP6_OPERAND_IS_IMMEDIATE 0x00000001
+#define QDSP6_OPERAND_PC_RELATIVE  0x00000002
+#define QDSP6_OPERAND_IS_SIGNED    0x00000004
+#define QDSP6_OPERAND_IS_PAIR      0x00000008
+#define QDSP6_OPERAND_IS_SUBSET    0x00000010
+#define QDSP6_OPERAND_IS_MODIFIER  0x00000020
+#define QDSP6_OPERAND_IS_PREDICATE 0x00000040
+#define QDSP6_OPERAND_IS_CONTROL   0x00000080
+#define QDSP6_OPERAND_IS_SYSTEM    0x00000100
+#define QDSP6_OPERAND_IS_LO16      0x00000200
+#define QDSP6_OPERAND_IS_HI16      0x00000400
+#define QDSP6_OPERAND_IS_READ      0x00000800
+#define QDSP6_OPERAND_IS_WRITE     0x00001000
+#define QDSP6_OPERAND_IS_MODIFIED  0x00002000
+#define QDSP6_OPERAND_IS_NEGATIVE  0x00004000
+#define QDSP6_OPERAND_IS_CONSTANT  0x00008000
+#define QDSP6_OPERAND_IS_NEW       0x00010000
+#define QDSP6_OPERAND_IS_GUEST     0x00020000
+#define QDSP6_OPERAND_IS_REGISTER  0x00040000
+#define QDSP6_OPERAND_IS_RNEW      0x00080000
 
-#define QDSP6_OPERAND_IS_RELAX     (1 << 26)
-#define QDSP6_OPERAND_IS_REGISTER  (1 << 27)
-#define QDSP6_OPERAND_IS_RNEW      (1 << 28)
-#define QDSP6_OPERAND_IS_KXER      (1 << 29)
-#define QDSP6_OPERAND_IS_KXED      (1 << 30)
-
-#define QDSP6_OPERAND_IS_INVALID   (1 << 31)
+#define QDSP6_OPERAND_IS_RELAX     0x10000000
+#define QDSP6_OPERAND_IS_KXER      0x20000000
+#define QDSP6_OPERAND_IS_KXED      0x40000000
+#define QDSP6_OPERAND_IS_INVALID   0x80000000
 
 /* Format string and alternate format string for disassembly. */
   char *dis_fmt, *alt_fmt;

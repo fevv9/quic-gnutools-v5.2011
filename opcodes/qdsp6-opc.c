@@ -79,6 +79,9 @@ static char *qdsp6_parse_dsreg
 static char *qdsp6_parse_mreg
   (const qdsp6_operand *, qdsp6_insn *, const qdsp6_opcode *,
    char *, long *, int *, char **);
+static char *qdsp6_parse_splr
+  (const qdsp6_operand *, qdsp6_insn *, const qdsp6_opcode *,
+   char *, long *, int *, char **);
 
 int qdsp6_verify_hw;
 
@@ -108,9 +111,17 @@ const qdsp6_operand qdsp6_operands [] =
     BFD_RELOC_NONE, BFD_RELOC_NONE, BFD_RELOC_NONE,
     QDSP6_OPERAND_IS_REGISTER | QDSP6_OPERAND_IS_WRITE,
     "r%u", NULL, qdsp6_parse_reg },
+  { "Rf32",       5, 'f', 0,
+    BFD_RELOC_NONE, BFD_RELOC_NONE, BFD_RELOC_NONE,
+    QDSP6_OPERAND_IS_REGISTER | QDSP6_OPERAND_IS_MODIFIED,
+    "r%u", NULL, qdsp6_parse_reg },
   { "Rx32",       5, 'x', 0,
     BFD_RELOC_NONE, BFD_RELOC_NONE, BFD_RELOC_NONE,
     QDSP6_OPERAND_IS_REGISTER | QDSP6_OPERAND_IS_READ | QDSP6_OPERAND_IS_WRITE,
+    "r%u", NULL, qdsp6_parse_reg },
+  { "Rz32",       5, 'z', 0,
+    BFD_RELOC_NONE, BFD_RELOC_NONE, BFD_RELOC_NONE,
+    QDSP6_OPERAND_IS_REGISTER | QDSP6_OPERAND_IS_READ | QDSP6_OPERAND_IS_MODIFIED,
     "r%u", NULL, qdsp6_parse_reg },
 
   { "Rss32",      5, 's', 0,
@@ -613,7 +624,7 @@ const qdsp6_operand qdsp6_operands [] =
     "%d", NULL, NULL },
 
   /* These are just place-holders for implied operands. */
-  { "#-1",         0,   0, 0,
+  { "#-1",        0,   0, 0,
     BFD_RELOC_NONE, BFD_RELOC_NONE, BFD_RELOC_NONE,
     QDSP6_OPERAND_IS_CONSTANT,
     "#-1", NULL, NULL },
@@ -633,7 +644,7 @@ const qdsp6_operand qdsp6_operands [] =
     BFD_RELOC_NONE, BFD_RELOC_NONE, BFD_RELOC_NONE,
     QDSP6_OPERAND_IS_CONSTANT,
     "#3", NULL, NULL },
-  { "#255",         0,   0, 0,
+  { "#255",       0,   0, 0,
     BFD_RELOC_NONE, BFD_RELOC_NONE, BFD_RELOC_NONE,
     QDSP6_OPERAND_IS_CONSTANT,
     "#255", NULL, NULL },
@@ -645,22 +656,14 @@ const qdsp6_operand qdsp6_operands [] =
     BFD_RELOC_NONE, BFD_RELOC_NONE, BFD_RELOC_NONE,
     QDSP6_OPERAND_IS_PREDICATE | QDSP6_OPERAND_IS_READ | QDSP6_OPERAND_IS_WRITE,
     "p1", NULL, NULL },
-  { "r31",         0,   0, 0,
+  { "Lr",         0,   0, 0,
     BFD_RELOC_NONE, BFD_RELOC_NONE, BFD_RELOC_NONE,
-    QDSP6_OPERAND_IS_READ,
-    "lr", NULL, NULL },
-  { "lr",         0,   0, 0,
+    QDSP6_OPERAND_IS_REGISTER | QDSP6_OPERAND_IS_READ,
+    "lr", NULL, qdsp6_parse_splr },
+  { "Sp",         0,   0, 0,
     BFD_RELOC_NONE, BFD_RELOC_NONE, BFD_RELOC_NONE,
-    QDSP6_OPERAND_IS_READ,
-    "lr", NULL, NULL },
-  { "r29",         0,   0, 0,
-    BFD_RELOC_NONE, BFD_RELOC_NONE, BFD_RELOC_NONE,
-    QDSP6_OPERAND_IS_READ,
-    "sp", NULL, NULL },
-  { "sp",         0,   0, 0,
-    BFD_RELOC_NONE, BFD_RELOC_NONE, BFD_RELOC_NONE,
-    QDSP6_OPERAND_IS_READ,
-    "sp", NULL, NULL },
+    QDSP6_OPERAND_IS_REGISTER | QDSP6_OPERAND_IS_READ,
+    "sp", NULL, qdsp6_parse_splr },
 };
 
 const size_t qdsp6_operand_count =
@@ -1967,6 +1970,32 @@ qdsp6_parse_nreg
     {
       if (flag)
         *flag = QDSP6_OPERAND_IS_RNEW;
+
+      *val = reg;
+      return (input);
+    }
+
+  return (NULL);
+}
+
+char *
+qdsp6_parse_splr
+(const qdsp6_operand *operand, qdsp6_insn *insn, const qdsp6_opcode *opcode,
+ char *input, long *val, int *flag, char **errmsg)
+{
+  int reg;
+
+  reg = qdsp6_reg_num (operand, &input, 'r', qdsp6_gp_regs, qdsp6_gp_regs_count, NULL, '\0');
+  if (reg < 0
+      || (operand->fmt [0] == 'S' && operand->fmt [1] == 'p' && reg != 29)
+      || (operand->fmt [0] == 'L' && operand->fmt [1] == 'r' && reg != 31))
+    return (NULL);
+
+  if (qdsp6_encode_operand
+        (operand, insn, opcode, reg, NULL, FALSE, FALSE, errmsg))
+    {
+      if (flag)
+        *flag = QDSP6_OPERAND_IS_REGISTER;
 
       *val = reg;
       return (input);
