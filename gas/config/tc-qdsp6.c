@@ -2923,13 +2923,7 @@ qdsp6_assemble
   qdsp6_packet_insn prefix, insn;
   char *start, *syn;
   int is_id, is_paired;
-  /* to store the new instruction string for following instructions:
-   * Rd32 = CONST32(#imm), Rd32 = CONST32(label)
-   * Rdd32 = CONST64(#imm), Rdd32 = CONST64(label)
-   */
-  char new_str [QDSP6_MAPPED_LEN];
-  /* For instruction mapping */
-  char mapped [QDSP6_MAPPED_LEN];
+  char *new_str, *mapped;
   long op_val;
   char *op_str;
   qdsp6_operand_arg op_args [MAX_OPERANDS];
@@ -2947,15 +2941,9 @@ qdsp6_assemble
   /* Special handling of GP-related syntax:
      - Rd32 = CONST32(#imm) or Rd32 = CONST32(label)
      - Rdd32 = CONST64(#imm) or Rdd32 = CONST64(label) */
+  new_str = alloca (strlen (str) + QDSP6_MAPPED_LEN);
   if (qdsp6_gp_const_lookup (str, new_str))
     str = new_str;
-
-  if (strlen (str) > QDSP6_MAPPED_LEN - 1)
-    {
-      as_bad (_("source line too long (maximum length is %d)."),
-              QDSP6_MAPPED_LEN - 1);
-      return FALSE;
-    }
 
   qdsp6_insn_init (&prefix);
   qdsp6_insn_init (&insn);
@@ -3105,13 +3093,17 @@ qdsp6_assemble
 
           if (insn.opcode->map)
             {
+              size_t l;
+
+              l = strlen (str) + QDSP6_MAPPED_LEN;
+              mapped = alloca (l);
+
               /* Remap insn. */
-              ((qdsp6_mapping) insn.opcode->map)
-                (mapped, QDSP6_MAPPED_LEN, op_args);
+              ((qdsp6_mapping) insn.opcode->map) (mapped, l, op_args);
 
               /* Concatenate the rest of the original insn
                  before assembling the remapped insn. */
-              strncat (mapped, str, QDSP6_MAPPED_LEN - strlen (mapped) - 1);
+              strncat (mapped, str, l - strlen (mapped) - 1);
               return (qdsp6_assemble (apacket, mapped, padded, pair));
             }
 
