@@ -1196,8 +1196,8 @@ qdsp6_relax_falign_try
 
           if (left && bpacket)
             /* Force fetch-alignment by inserting a NOP-packet. */
-            bpacket->ddpkt += bpacket->dpkt
-                              - ((bpacket->dpkt + left) % MAX_PACKET_INSNS);
+            bpacket->ddpkt += ((bpacket->dpkt + left) % MAX_PACKET_INSNS)
+                              - bpacket->dpkt;
         }
     }
 

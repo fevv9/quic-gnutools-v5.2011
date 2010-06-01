@@ -2129,10 +2129,10 @@ relax_segment (struct frag *segment_frag_root, segT segment, int pass)
     /* Cumulative address adjustment.  */
     offsetT stretch;
 
-    /* Have we made any adjustment this pass?  We can't just test
-       stretch because one piece of code may have grown and another
-       shrank.  */
-    int stretched;
+    /* Have we made any adjustment this pass or previous pass?
+       We can't just test stretch because one piece of code
+       may have grown and another shrank.  */
+    int stretched, has_stretched;
 
     /* Most horrible, but gcc may give us some exception data that
        is impossible to assemble, of the form
@@ -2172,11 +2172,12 @@ relax_segment (struct frag *segment_frag_root, segT segment, int pass)
     if (max_iterations < frag_count)
       max_iterations = frag_count;
 
+    stretched = 1;
     ret = 0;
     do
       {
 	stretch = 0;
-	stretched = 0;
+	has_stretched = stretched, stretched = 0;
 
 	for (fragP = segment_frag_root; fragP; fragP = fragP->fr_next)
 	  {
@@ -2482,7 +2483,7 @@ relax_segment (struct frag *segment_frag_root, segT segment, int pass)
 	  rs_leb128_fudge = 0;
       }
     /* Until nothing further to relax.  */
-    while (stretched && -- max_iterations);
+    while ((stretched || has_stretched) && --max_iterations);
 
     if (stretched)
       as_fatal (_("Infinite loop encountered whilst attempting to compute the addresses of symbols in section %s"),
