@@ -669,7 +669,7 @@ static const char *qdsp6_scom_name    [SHN_QDSP6_SCOMMON_8 - SHN_QDSP6_SCOMMON +
 struct qdsp6_reloc_map
 {
   bfd_reloc_code_real_type bfd_reloc_val;
-  unsigned char            elf_reloc_val;
+  unsigned int             elf_reloc_val;
   int                      operand_flag;
 };
 
@@ -771,11 +771,11 @@ static void
 qdsp6_info_to_howto_rel
 (bfd *abfd ATTRIBUTE_UNUSED, arelent *cache_ptr, Elf_Internal_Rela *dst)
 {
-  unsigned int r_type;
+  unsigned int rtype;
 
-  r_type = ELF32_R_TYPE (dst->r_info);
-  BFD_ASSERT (r_type < (unsigned int) R_QDSP6_max);
-  cache_ptr->howto = &elf_qdsp6_howto_table[r_type];
+  rtype = ELF32_R_TYPE (dst->r_info);
+  BFD_ASSERT (rtype < (unsigned int) R_QDSP6_max);
+  cache_ptr->howto = &elf_qdsp6_howto_table [rtype];
 }
 
 /* Set the right machine number for an QDSP6 ELF file.  */
@@ -1626,12 +1626,12 @@ qdsp6_elf_relocate_section
       bfd_boolean is_und = FALSE, is_loc = FALSE;
       asection *sreloc;
       const char *name = NULL;
-      int r_type;
+      unsigned int rtype;
       qdsp6_insn insn;
       bfd_vma ioffset, lmask, rmask;
 
       /* This is a final link.  */
-      r_type = ELF32_R_TYPE (rel->r_info);
+      rtype = ELF32_R_TYPE (rel->r_info);
       r_symndx = ELF32_R_SYM (rel->r_info);
       howto = elf_qdsp6_howto_table + ELF32_R_TYPE (rel->r_info);
 
@@ -1727,7 +1727,7 @@ qdsp6_elf_relocate_section
 
       lmask = rmask = (bfd_vma) ~0;
 
-      switch (r_type)
+      switch (rtype)
 	{
         case R_QDSP6_32_6_X:
           rmask = howto->src_mask;
@@ -1860,7 +1860,7 @@ qdsp6_elf_relocate_section
         case R_QDSP6_B15_PCREL_X:
         case R_QDSP6_B22_PCREL_X:
         case R_QDSP6_B32_PCREL_X:
-          if (r_type == R_QDSP6_B32_PCREL_X)
+          if (rtype == R_QDSP6_B32_PCREL_X)
             rmask = ~(bfd_vma) 0 << howto->rightshift;
           else
             lmask = ~(~(bfd_vma) 0 << howto->bitsize);
@@ -1898,7 +1898,7 @@ qdsp6_elf_relocate_section
 	case R_QDSP6_32:
 	case R_QDSP6_16:
 	case R_QDSP6_8:
-          if (r_type == R_QDSP6_32_PCREL)
+          if (rtype == R_QDSP6_32_PCREL)
             is_rel = TRUE;
           else
             is_abs = TRUE;
@@ -1982,7 +1982,7 @@ qdsp6_elf_relocate_section
                   || h->root.type == bfd_link_hash_defweak))
             {
               /* This symbol is globally defined. */
-              outrel.r_info = ELF32_R_INFO (0, r_type);
+              outrel.r_info = ELF32_R_INFO (0, rtype);
               outrel.r_offset += input_section->output_section->vma
                                  + input_section->output_offset;
               outrel.r_addend = relocation + rel->r_addend;
@@ -1993,7 +1993,7 @@ qdsp6_elf_relocate_section
                        || h->root.type == bfd_link_hash_undefweak))
             {
               /* This symbol is undefined. */
-              outrel.r_info = ELF32_R_INFO (h->dynindx, r_type);
+              outrel.r_info = ELF32_R_INFO (h->dynindx, rtype);
               outrel.r_offset += input_section->output_section->vma
                                  + input_section->output_offset;
               outrel.r_addend = rel->r_addend;
@@ -2001,7 +2001,7 @@ qdsp6_elf_relocate_section
           else
             {
               /* This symbol is local, or marked to become local.  */
-              outrel.r_info = ELF32_R_INFO (0, r_type);
+              outrel.r_info = ELF32_R_INFO (0, rtype);
               outrel.r_offset += input_section->output_section->vma
                                  + input_section->output_offset;
               outrel.r_addend = relocation + rel->r_addend;
@@ -2101,18 +2101,18 @@ qdsp6_elf_relax_section (bfd *input_bfd,
       bfd_vma at_base, to_base, t_base;
       bfd_vma at, t_at, from, to;
       bfd_signed_vma ioffset;
-      bfd_vma r_type;
+      unsigned int rtype;
       bfd_boolean is_def;
 
       irel = irelbuf + ireloc;
 
       /* Look into relocation overflows at branches and add trampolines if needed. */
-      r_type = ELF32_R_TYPE (irel->r_info);
+      rtype = ELF32_R_TYPE (irel->r_info);
       if (link_info->qdsp6_trampolines
-          && (r_type == R_QDSP6_B22_PCREL
-              || r_type == R_QDSP6_B15_PCREL
-              || r_type == R_QDSP6_B13_PCREL
-              || r_type == R_QDSP6_B9_PCREL))
+          && (rtype == R_QDSP6_B22_PCREL
+              || rtype == R_QDSP6_B15_PCREL
+              || rtype == R_QDSP6_B13_PCREL
+              || rtype == R_QDSP6_B9_PCREL))
         {
           isec_size = bfd_section_size (input_bfd, isec);
 
@@ -2211,13 +2211,13 @@ qdsp6_elf_relax_section (bfd *input_bfd,
 
           /* Check if the target is beyond reach. */
           ioffset = abs ((to + to_base) - (from + at_base));
-          if ((is_def && (((r_type == R_QDSP6_B22_PCREL)
+          if ((is_def && (((rtype == R_QDSP6_B22_PCREL)
                                  && QDSP6_TRAMPLINE_NEEDED (ioffset, 24))
-                             || ((r_type == R_QDSP6_B15_PCREL)
+                             || ((rtype == R_QDSP6_B15_PCREL)
                                  && QDSP6_TRAMPLINE_NEEDED (ioffset, 17))
-                             || ((r_type == R_QDSP6_B13_PCREL)
+                             || ((rtype == R_QDSP6_B13_PCREL)
                                  && QDSP6_TRAMPLINE_NEEDED (ioffset, 15))
-                             || ((r_type == R_QDSP6_B9_PCREL)
+                             || ((rtype == R_QDSP6_B9_PCREL)
                                  && QDSP6_TRAMPLINE_NEEDED (ioffset, 11))))
               || !is_def)
 	    {
@@ -2251,7 +2251,7 @@ qdsp6_elf_relax_section (bfd *input_bfd,
               {
                 qdsp6_insn insn;
 
-                insn = qdsp6_get_insn (input_bfd, elf_qdsp6_howto_table + r_type,
+                insn = qdsp6_get_insn (input_bfd, elf_qdsp6_howto_table + rtype,
                                        contents + from - QDSP6_INSN_LEN);
                 if (QDSP6_END_PACKET_GET (insn) == QDSP6_END_PACKET
                     || QDSP6_END_PACKET_GET (insn) == QDSP6_END_PAIR)
@@ -2269,13 +2269,13 @@ qdsp6_elf_relax_section (bfd *input_bfd,
                 {
                   t_at = isec_size;
 
-                  if (((r_type == R_QDSP6_B22_PCREL)
+                  if (((rtype == R_QDSP6_B22_PCREL)
                           && QDSP6_TRAMPLINE_NEEDED (t_at - from, 23))
-                      || ((r_type == R_QDSP6_B15_PCREL)
+                      || ((rtype == R_QDSP6_B15_PCREL)
                           && QDSP6_TRAMPLINE_NEEDED (t_at - from, 16))
-                      || ((r_type == R_QDSP6_B13_PCREL)
+                      || ((rtype == R_QDSP6_B13_PCREL)
                           && QDSP6_TRAMPLINE_NEEDED (t_at - from, 14))
-                      || ((r_type == R_QDSP6_B9_PCREL)
+                      || ((rtype == R_QDSP6_B9_PCREL)
                           && QDSP6_TRAMPLINE_NEEDED (t_at - from, 10)))
                     /* No room for a trampoline. */
                     goto error_return;
@@ -2337,11 +2337,11 @@ qdsp6_elf_relax_section (bfd *input_bfd,
 
               /* Fix up the offending branch by pointing it to the trampoline. */
               insn = qdsp6_get_insn (input_bfd,
-                                     elf_qdsp6_howto_table + r_type,
+                                     elf_qdsp6_howto_table + rtype,
                                      contents + at);
-              if (qdsp6_reloc_operand (elf_qdsp6_howto_table + r_type, &insn,
+              if (qdsp6_reloc_operand (elf_qdsp6_howto_table + rtype, &insn,
                                        t_at - from, NULL))
-                qdsp6_put_insn (input_bfd, elf_qdsp6_howto_table + r_type,
+                qdsp6_put_insn (input_bfd, elf_qdsp6_howto_table + rtype,
                                 contents + at, insn);
 
               /* Done adding the trampolines.
@@ -3163,7 +3163,8 @@ if (!_bfd_elf_link_hash_table_init (&htab->elf, abfd,
 /* We may need to bump up the number of program headers beyond .text and .data. */
 
 static int
-qdsp6_elf_additional_program_headers (bfd *abfd, struct bfd_link_info *info ATTRIBUTE_UNUSED)
+qdsp6_elf_additional_program_headers
+(bfd *abfd, struct bfd_link_info *info ATTRIBUTE_UNUSED)
 {
   asection *s;
   int ret = 0;
@@ -3183,11 +3184,6 @@ qdsp6_elf_additional_program_headers (bfd *abfd, struct bfd_link_info *info ATTR
     ret++;
 
   s = bfd_get_section_by_name (abfd, ".rodata");
-  if (s && (s->flags & SEC_LOAD))
-    ret++;
-
-  /* The SDA shows up even if it's empty. */
-  s = bfd_get_section_by_name (abfd, ".sdata");
   if (s && (s->flags & SEC_LOAD))
     ret++;
 
