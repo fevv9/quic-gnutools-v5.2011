@@ -1,8 +1,4 @@
-/*****************************************************************
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-*****************************************************************/
+
 /* Instruction printing code for the QDSP6.
    Copyright 1994, 1995, 1997, 1998, 2000, 2001, 2002
    Free Software Foundation, Inc.

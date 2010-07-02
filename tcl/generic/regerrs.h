@@ -1,8 +1,4 @@
-/*****************************************************************
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-*****************************************************************/
+
 { REG_OKAY,	"REG_OKAY",	"no errors detected" },
 { REG_NOMATCH,	"REG_NOMATCH",	"failed to match" },
 { REG_BADPAT,	"REG_BADPAT",	"invalid regexp (reg version 0.8)" },

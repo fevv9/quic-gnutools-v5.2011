@@ -1,8 +1,4 @@
-/*****************************************************************
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-*****************************************************************/
+
 /* QDSP6 ELF support for BFD.
    Copyright 1995, 1997, 1998, 2000, 2001 Free Software Foundation, Inc.
 

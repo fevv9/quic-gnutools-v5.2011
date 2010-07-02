@@ -1,8 +1,4 @@
-/*****************************************************************
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-*****************************************************************/
+
 
 { "Cd32 = Rs32"                            , "0110 0010  001sssss  00------  ---ddddd"    , QDSP6_MACH, NULL, NULL, 0x8, 0, 0, NULL},
 { "if ! Pt4 .new Rd32 = memb ( Rs32 )" , "0100 0111 000  sssss  00-tt000  000ddddd"   , QDSP6_MACH, NULL, NULL, 0x3, 0, 0|A_RESTRICT_SINGLE_MEM_FIRST|CONDITIONAL_EXEC|CONDITION_SENSE_INVERTED |CONDITION_DOTNEW, NULL},
