@@ -1,8 +1,4 @@
-##################################################################
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-##################################################################
+
 # http.tcl
 # Client-side HTTP for GET, POST, and HEAD commands.
 # These routines can be used in untrusted code that uses the Safesock

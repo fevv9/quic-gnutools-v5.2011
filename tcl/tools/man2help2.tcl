@@ -1,8 +1,4 @@
-##################################################################
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-##################################################################
+
 # man2help2.tcl --
 #
 # This file defines procedures that are used during the second pass of

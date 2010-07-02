@@ -1,8 +1,4 @@
-##################################################################
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-##################################################################
+
 # uniParse.tcl --
 #
 #	This program parses the UnicodeData file and generates the

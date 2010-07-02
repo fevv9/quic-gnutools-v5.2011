@@ -1,8 +1,4 @@
-##################################################################
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-##################################################################
+
 # package.tcl --
 #
 # utility procs formerly in init.tcl which can be loaded on demand

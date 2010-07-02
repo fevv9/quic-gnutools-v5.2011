@@ -1,8 +1,4 @@
-##################################################################
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-##################################################################
+
 #
 # This file is a Makefile for Tcl.  If it has the name "Makefile.in"
 # then it is a template for a Makefile;  to generate the actual Makefile,

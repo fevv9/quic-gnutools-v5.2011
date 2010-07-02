@@ -1,9 +1,5 @@
 #!/bin/sh
-##################################################################
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-##################################################################
+
 # The next line is executed by /bin/sh, but not tcl \
 exec tclsh8.4 "$0" ${1+"$@"}
 

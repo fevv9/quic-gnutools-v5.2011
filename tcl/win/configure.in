@@ -1,9 +1,5 @@
 #! /bin/bash -norc
-##################################################################
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-##################################################################
+
 # This file is an input file used by the GNU "autoconf" program to
 # generate the file "configure", which is run during Tcl installation
 # to configure the system for the local environment.

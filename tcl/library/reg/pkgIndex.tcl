@@ -1,8 +1,4 @@
-##################################################################
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-##################################################################
+
 if {![package vsatisfies [package provide Tcl] 8]} {return}
 if {[string compare $::tcl_platform(platform) windows]} {return}
 if {[info exists ::tcl_platform(debug)]} {

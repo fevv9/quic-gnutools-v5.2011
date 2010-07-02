@@ -1,8 +1,4 @@
-##################################################################
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-##################################################################
+
 ## Super aggressive EOL-fixer!
 ##
 ##  Will even understand screwed up ones like CRCRLF.

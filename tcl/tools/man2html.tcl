@@ -1,9 +1,5 @@
 #!/proj/tcl/install/5.x-sparc/bin/tclsh7.5
-##################################################################
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-##################################################################
+
 
 if [catch {
 

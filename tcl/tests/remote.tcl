@@ -1,8 +1,4 @@
-##################################################################
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-##################################################################
+
 # This file contains Tcl code to implement a remote server that can be
 # used during testing of Tcl socket code. This server is used by some
 # of the tests in socket.test.
