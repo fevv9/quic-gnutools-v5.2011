@@ -1,5 +1,3 @@
-
-
 #include "defs.h"
 #include "gdbcore.h"
 #include "serial.h"

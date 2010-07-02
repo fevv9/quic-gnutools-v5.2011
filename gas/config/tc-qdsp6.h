@@ -1,8 +1,4 @@
-/*****************************************************************
-* Copyright (c) $Date$ Qualcomm Innovation Center, Inc.
-* All Rights Reserved.
-* Modified by Qualcomm Innovation Center, Inc. on $Date$
-*****************************************************************/
+
 
 /* tc-qdsp6.h - Macros and type defines for the QDSP6.
    Copyright 1994, 1995, 1997, 2000, 2001, 2002

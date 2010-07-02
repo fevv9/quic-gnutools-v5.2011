@@ -1,8 +1,4 @@
 ##################################################################
-# Copyright (c) $Date$ Qualcomm Innovation Center, Inc.
-# All Rights Reserved.
-# Modified by Qualcomm Innovation Center, Inc. on $Date$
-##################################################################
 dnl Process this file with autoconf to produce a configure script
 
 AC_PREREQ(2.64)

@@ -1,8 +1,4 @@
-/*****************************************************************
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-*****************************************************************/
+
 #define HASH_TABLE_SIZE 256      
 
 // To enable printing of register names 

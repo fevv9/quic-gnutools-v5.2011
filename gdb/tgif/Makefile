@@ -1,8 +1,3 @@
-##################################################################
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-##################################################################
 SRCS = tgifInit.c hooks.c setproc.c register.c GuiSupport.c
 OBJS = tgifInit.o hooks.o setproc.o register.o GuiSupport.o
 ARCH = tgif.a

@@ -1,8 +1,4 @@
-/*****************************************************************
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-*****************************************************************/
+
 #ifndef __GUI_SUPP_H
 #define __GUI_SUPP_H
 /*

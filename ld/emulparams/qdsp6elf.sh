@@ -1,9 +1,3 @@
-##################################################################
-# Copyright (c) $Date$ Qualcomm Innovation Center, Inc.
-# All Rights Reserved.
-# Modified by Qualcomm Innovation Center, Inc. on $Date$
-##################################################################
-
 SCRIPT_NAME=qdsp6
 ARCH=qdsp6
 MACHINE=

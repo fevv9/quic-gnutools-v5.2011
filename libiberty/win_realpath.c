@@ -6,11 +6,6 @@ This software is a copyrighted work licensed under the terms of the
 Cygwin license.  Please consult the file "CYGWIN_LICENSE" for
 details. */
 
-/*****************************************************************
-* Copyright (c) $Date$ Qualcomm Innovation Center, Inc.
-* All Rights Reserved.
-* Modified by Qualcomm Innovation Center, Inc. on $Date$
-*****************************************************************/
 
 /* The functions in this file attempt to resolve a windows shortcut file
    or directory name */

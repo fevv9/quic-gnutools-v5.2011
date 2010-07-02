@@ -1,8 +1,4 @@
-/*****************************************************************
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-*****************************************************************/
+
 #ifndef __TGIF_H
 #define __TGIF_H
 #include "tcl.h"

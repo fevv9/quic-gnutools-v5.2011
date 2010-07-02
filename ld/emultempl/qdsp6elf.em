@@ -1,8 +1,4 @@
 ##################################################################
-# Copyright (c) $Date$ Qualcomm Innovation Center, Inc.
-# All Rights Reserved.
-# Modified by Qualcomm Innovation Center, Inc. on $Date$
-##################################################################
 
 # This file is sourced from elf32.em, and defines extra
 # QDSP6-specific routines.

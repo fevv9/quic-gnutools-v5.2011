@@ -15,12 +15,6 @@
 
 @SET_MAKE@
 
-##################################################################
-# Copyright (c) $Date$ Qualcomm Innovation Center, Inc.
-# All Rights Reserved.
-# Modified by Qualcomm Innovation Center, Inc. on $Date$
-##################################################################
-
 
 VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@

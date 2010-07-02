@@ -1,7 +1,3 @@
-/*****************************************************************
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.  All Rights
-# Reserved.  Modified by QUALCOMM INCORPORATED on $Date$
-*****************************************************************/
 /* Target-dependent code for QUALCOMM QDSP6 GDB, the GNU Debugger.
    Copyright 2002, 2003, 2004 Free Software Foundation, Inc.
 

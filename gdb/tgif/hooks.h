@@ -1,8 +1,4 @@
-/*****************************************************************
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-*****************************************************************/
+
 #ifndef __HOOKS_H
 #define __HOOKS_H
 /*
