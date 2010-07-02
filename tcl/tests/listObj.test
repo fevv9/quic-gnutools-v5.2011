@@ -1,8 +1,4 @@
-##################################################################
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-##################################################################
+
 # Functionality covered: operation of the procedures in tclListObj.c that
 # implement the Tcl type manager for the list object type.
 #

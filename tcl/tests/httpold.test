@@ -1,8 +1,4 @@
-##################################################################
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-##################################################################
+
 # Commands covered:  http_config, http_get, http_wait, http_reset
 #
 # This file contains a collection of tests for the http script library.

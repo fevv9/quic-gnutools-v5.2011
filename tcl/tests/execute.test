@@ -1,8 +1,4 @@
-##################################################################
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-##################################################################
+
 # This file contains tests for the tclExecute.c source file. Tests appear
 # in the same order as the C code that they test. The set of tests is
 # currently incomplete since it currently includes only new tests for

@@ -1,8 +1,4 @@
-##################################################################
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-##################################################################
+
 # This file (ioUtil.test) tests the hookable TclStat(), TclAccess(),
 # and Tcl_OpenFileChannel, routines in the file generic/tclIOUtils.c.
 # Sourcing this file into Tcl runs the tests and generates output for

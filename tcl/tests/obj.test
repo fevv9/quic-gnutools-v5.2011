@@ -1,8 +1,4 @@
-##################################################################
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-##################################################################
+
 # Functionality covered: this file contains a collection of tests for the
 # procedures in tclObj.c that implement Tcl's basic type support and the
 # type managers for the types boolean, double, and integer.

@@ -1,8 +1,4 @@
-##################################################################
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-##################################################################
+
 # This file contains a collection of tests for the procedures in the
 # file tclParse.c.  Sourcing this file into Tcl runs the tests and
 # generates output for errors.  No output means no errors were found.

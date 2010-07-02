@@ -1,8 +1,4 @@
-##################################################################
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-##################################################################
+
 # This file is a Tcl script to test out the the procedures in file
 # tkIndexObj.c, which implement indexed table lookups.  The tests here
 # are organized in the standard fashion for Tcl tests.
