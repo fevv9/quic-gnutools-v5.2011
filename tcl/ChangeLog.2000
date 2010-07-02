@@ -1,8 +1,3 @@
-##################################################################
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-##################################################################
 2000-12-14  Don Porter  <dgp@users.sourceforge.net>
 
 	* generic/tclExecute.c:

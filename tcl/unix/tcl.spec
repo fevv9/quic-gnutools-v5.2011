@@ -1,8 +1,3 @@
-##################################################################
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-##################################################################
 # $Id$
 # This file is the basis for a binary Tcl RPM for Linux.
 

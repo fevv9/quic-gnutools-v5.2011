@@ -1,8 +1,3 @@
-##################################################################
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-##################################################################
 # Microsoft Developer Studio Project File - Name="tcl" - Package Owner=<4>
 # Microsoft Developer Studio Generated Build File, Format Version 6.00
 # ** DO NOT EDIT **

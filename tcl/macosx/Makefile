@@ -1,8 +1,3 @@
-##################################################################
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-##################################################################
 ########################################################################################################
 #
 # Makefile wrapper to build tcl on Mac OS X in a way compatible with the tk/macosx Xcode buildsystem

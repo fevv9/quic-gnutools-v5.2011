@@ -1,8 +1,3 @@
-##################################################################
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-##################################################################
 README:  Tcl
     This is the Tcl 8.4.13 source distribution.
     Tcl/Tk is also available through NetCVS:

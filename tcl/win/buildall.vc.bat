@@ -1,8 +1,3 @@
-:: ##################################################################
-:: # Copyright (c) $Date$ QUALCOMM INCORPORATED.
-:: # All Rights Reserved.
-:: # Modified by QUALCOMM INCORPORATED on $Date$
-:: ##################################################################
 @echo off
 
 ::  This is an example batchfile for building everything. Please

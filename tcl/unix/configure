@@ -1,9 +1,4 @@
 #! /bin/sh
-##################################################################
-# Copyright (c) $Date$ QUALCOMM INCORPORATED.
-# All Rights Reserved.
-# Modified by QUALCOMM INCORPORATED on $Date$
-##################################################################
 
 # Guess values for system-dependent variables and create Makefiles.
 # Generated automatically using autoconf version 2.13
