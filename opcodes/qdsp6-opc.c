@@ -678,7 +678,7 @@ qdsp6_opcode *qdsp6_opcodes;
 size_t qdsp6_opcodes_count;
 
 #define QDSP6_MAP_FNAME(TAG) qdsp6_map_##TAG
-#define QDSP6_MAP_SIGN(TAG) void QDSP6_MAP_FNAME (TAG) \
+#define QDSP6_MAP_SIGN(TAG) static void QDSP6_MAP_FNAME (TAG) \
   (char *i, size_t n, const qdsp6_operand_arg args [])
 #define MAP_FUNCTION(TAG) QDSP6_MAP_SIGN (TAG); \
   QDSP6_MAP_SIGN (TAG)
@@ -777,7 +777,7 @@ static qdsp6_reg qdsp6_supervisor_regs [] =
   {"badva1",        5, QDSP6_V4_AND_UP | QDSP6_REG_IS_READWRITE},
   {"ssr",           6, QDSP6_V4_AND_UP | QDSP6_REG_IS_READWRITE},
   {"ccr",           7, QDSP6_V4_AND_UP | QDSP6_REG_IS_READWRITE},
-  {"htid",          8, QDSP6_V4_AND_UP | QDSP6_REG_IS_READWRITE},
+  {"htid",          8, QDSP6_V4_AND_UP | QDSP6_REG_IS_READONLY},
   {"badva",         9, QDSP6_V4_AND_UP | QDSP6_REG_IS_READWRITE},
   {"imask",        10, QDSP6_V4_AND_UP | QDSP6_REG_IS_READWRITE},
   {"modectl",      17, QDSP6_V4_AND_UP | QDSP6_REG_IS_READONLY},
@@ -806,6 +806,7 @@ static qdsp6_reg qdsp6_supervisor_regs [] =
   {"s25",          25, QDSP6_V4_AND_UP | QDSP6_REG_IS_READWRITE},
   {"s22",          22, QDSP6_V4_AND_UP | QDSP6_REG_IS_READONLY},
   {"s19",          19, QDSP6_V4_AND_UP | QDSP6_REG_IS_READWRITE},
+  {"s1",            1, QDSP6_V4_AND_UP | QDSP6_REG_IS_READWRITE},
 
   /* Legacy system register map */
   {"sgp",           0, QDSP6_V2_AND_UP | QDSP6_REG_IS_READWRITE},
@@ -948,37 +949,26 @@ static const qdsp6_reg qdsp6_control_regs [] =
   { "upmucnt1",   27, QDSP6_V4_AND_UP | QDSP6_REG_IS_READONLY},
   { "upmucnt2",   28, QDSP6_V4_AND_UP | QDSP6_REG_IS_READONLY},
   { "upmucnt3",   29, QDSP6_V4_AND_UP | QDSP6_REG_IS_READONLY},
-  /* They can also be named by cX, where X is
-     the control register number */
+
   /* Note that they are in reverse order so that they
      are parsed properly (e.g., c10 is ahead of c1) */
-//  { "c31",       31 },     ***** reserved *****
-//  { "c30",       30 },     ***** reserved *****
   { "c29",       29, QDSP6_V4_AND_UP | QDSP6_REG_IS_READONLY},
   { "c28",       28, QDSP6_V4_AND_UP | QDSP6_REG_IS_READONLY},
   { "c27",       27, QDSP6_V4_AND_UP | QDSP6_REG_IS_READONLY},
   { "c26",       26, QDSP6_V4_AND_UP | QDSP6_REG_IS_READONLY},
   { "c25",       25, QDSP6_V4_AND_UP | QDSP6_REG_IS_READONLY},
   { "c24",       24, QDSP6_V4_AND_UP | QDSP6_REG_IS_READONLY},
-//  { "c23",       23 },     ***** reserved *****
-//  { "c22",       22 },     ***** reserved *****
-//  { "c21",       21 },     ***** reserved *****
-//  { "c20",       20 },     ***** reserved *****
-//  { "c19",       19 },     ***** reserved *****
-//  { "c18",       18 },     ***** reserved *****
-//  { "c17",       17 },     ***** reserved *****
-//  { "c16",       16 },     ***** reserved *****
-//  { "c15",       15 },     ***** reserved *****
-//  { "c14",       14 },     ***** reserved *****
+
   { "c13",       13, QDSP6_V4_AND_UP | QDSP6_REG_IS_READWRITE},
   { "c12",       12, QDSP6_V4_AND_UP | QDSP6_REG_IS_READWRITE},
   { "c11",       11, QDSP6_V2_AND_UP | QDSP6_REG_IS_READWRITE},
   { "c10",       10, QDSP6_V2_AND_UP | QDSP6_REG_IS_READWRITE},
   { "c9",         9, QDSP6_V2_AND_UP | QDSP6_REG_IS_READONLY},
+
   { "c8",         8, QDSP6_V2_AND_UP | QDSP6_REG_IS_READWRITE},
   { "c7",         7, QDSP6_V2_AND_UP | QDSP6_REG_IS_READWRITE},
   { "c6",         6, QDSP6_V2_AND_UP | QDSP6_REG_IS_READWRITE},
-//  { "c5",         5 },     ***** reserved *****
+
   { "c4",         4, QDSP6_V2_AND_UP | QDSP6_REG_IS_READWRITE},
   { "c3",         3, QDSP6_V2_AND_UP | QDSP6_REG_IS_READWRITE},
   { "c2",         2, QDSP6_V2_AND_UP | QDSP6_REG_IS_READWRITE},
@@ -997,6 +987,14 @@ static const qdsp6_reg qdsp6_guest_regs [] =
   { "gpmucnt1",   27, QDSP6_V4_AND_UP | QDSP6_REG_IS_READONLY},
   { "gpmucnt2",   28, QDSP6_V4_AND_UP | QDSP6_REG_IS_READONLY},
   { "gpmucnt3",   29, QDSP6_V4_AND_UP | QDSP6_REG_IS_READONLY},
+
+  { "g29",        29, QDSP6_V4_AND_UP | QDSP6_REG_IS_READONLY},
+  { "g28",        28, QDSP6_V4_AND_UP | QDSP6_REG_IS_READONLY},
+  { "g27",        27, QDSP6_V4_AND_UP | QDSP6_REG_IS_READONLY},
+  { "g26",        26, QDSP6_V4_AND_UP | QDSP6_REG_IS_READONLY},
+  { "g25",        25, QDSP6_V4_AND_UP | QDSP6_REG_IS_READONLY},
+  { "g24",        24, QDSP6_V4_AND_UP | QDSP6_REG_IS_READONLY},
+
   { "g3",          3, QDSP6_V4_AND_UP | QDSP6_REG_IS_READWRITE},
   { "g2",          2, QDSP6_V4_AND_UP | QDSP6_REG_IS_READWRITE},
   { "g1",          1, QDSP6_V4_AND_UP | QDSP6_REG_IS_READWRITE},

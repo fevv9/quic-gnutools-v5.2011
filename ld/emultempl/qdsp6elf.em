@@ -81,11 +81,9 @@ PARSE_AND_LIST_LONGOPTS=$'
 
 # QDSP6 target help.
 PARSE_AND_LIST_OPTIONS=$'
-  fprintf (file, _("  -mv2                        Link for the QDSP6 V2 architecture (default)\\n"));
-  fprintf (file, _("  -mv3                        Link for the QDSP6 V3 architecture\\n"));
-  fprintf (file, _("  -mv4                        Link for the QDSP6 V4 architecture\\n"));
   fprintf (file, _("  --march={v2|v3|v4}          Link for the specified QDSP6 architecture\\n"));
   fprintf (file, _("  --mcpu={v2|v3|v4}           Equivalent to `--march\'\\n"));
+  fprintf (file, _("  -m{v2|v3|v4}                Equivalent to `--march\'\\n"));
   fprintf (file, _("  --tcm                       Use the TCM\\n"));
   fprintf (file, _("  --trampolines[={yes|no}]    Add trampolines when necessary (default)\\n"));
 '
