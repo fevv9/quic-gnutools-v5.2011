@@ -1096,7 +1096,7 @@ qdsp6_relax_falign
 /**
 
 Determine if packet is not fetch-aligned and then request previous packets to
-grow through padding NOPs, if possible or insert a NOP-packet.
+grow through padding NOPs, if possible, or through inserting a NOP-packet.
 */
 long
 qdsp6_relax_falign_try
@@ -1161,16 +1161,14 @@ qdsp6_relax_falign_try
                   assert (size <= MAX_PACKET_INSNS);
 
                   if (zpacket->faligned)
-                    {
-                      /* The room in a fetch-aligned packet must be
-                        within its fetch window. */
-                      next = (previous->fr_address / QDSP6_INSN_LEN + size)
-                             % MAX_PACKET_INSNS;
-                      room = MAX_PACKET_INSNS - MAX (size, next);
-                    }
+                    /* The room in a fetch-aligned packet must be
+                      within its fetch window. */
+                    next = (previous->fr_address / QDSP6_INSN_LEN + size)
+                            % MAX_PACKET_INSNS;
                   else
-                    room = MAX_PACKET_INSNS - size;
+                    next = 0;
 
+                  room = MAX_PACKET_INSNS - MAX (size, next);
                   if (room)
                     {
                       zpacket->ddpad += MIN (left, room);
