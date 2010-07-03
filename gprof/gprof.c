@@ -428,8 +428,9 @@ main (int argc, char **argv)
 	  printf (_("\
 This program is free software; you may redistribute it under the terms of\n\
 the GNU General Public License.  This program has absolutely no warranty.\n\
-\n\
-Copyright 2005-2010 Qualcomm, Inc.  All Rights Reserved.\n"));
+\n"));
+          printf(_(QC_COPYRT_MSG));
+          printf(_("\n"));
 	  done (0);
 	case 'w':
 	  output_width = atoi (optarg);
