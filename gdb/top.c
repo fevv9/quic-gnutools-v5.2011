@@ -1415,6 +1415,7 @@ and \"show warranty\" for details.\n");
 			_("\nFor bug reporting instructions, please see:\n"));
       fprintf_filtered (stream, "%s.", REPORT_BUGS_TO);
     }
+  fprintf_filtered(stream,"Copyright 2010 Code Aurora Forum.   All Rights Reserved\n");
 }
 
 /* get_prompt: access method for the GDB prompt string.  */
