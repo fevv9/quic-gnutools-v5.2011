@@ -1041,7 +1041,7 @@ bfd_elf_generic_reloc (bfd *abfd ATTRIBUTE_UNUSED,
 
   return bfd_reloc_continue;
 }
-
+
 /* Copy the program header and other data from one object module to
    another.  */
 
@@ -1472,7 +1472,7 @@ _bfd_elf_stringtab_init (void)
     }
   return ret;
 }
-
+
 /* ELF .o/exec file reading */
 
 /* Create a new bfd section from an ELF section header.  */
@@ -3742,25 +3742,52 @@ _bfd_elf_map_sections_to_segments (bfd *abfd, struct bfd_link_info *info)
 		 skip a page in the segment, then we need a new segment.  */
 	      new_segment = TRUE;
 	    }
-	  else if ((last_hdr->flags & (SEC_LOAD | SEC_THREAD_LOCAL)) == 0
-		   && (hdr->flags & (SEC_LOAD | SEC_THREAD_LOCAL)) != 0)
+	  else if (!(last_hdr->flags & (SEC_LOAD | SEC_THREAD_LOCAL))
+		   && (hdr->flags & (SEC_LOAD | SEC_THREAD_LOCAL)))
 	    {
 	      /* We don't want to put a loadable section after a
 		 nonloadable section in the same segment.
 		 Consider .tbss sections as loadable for this purpose.  */
 	      new_segment = TRUE;
 	    }
-	  else if ((abfd->flags & D_PAGED) == 0)
+	  else if (!(abfd->flags & D_PAGED))
 	    {
 	      /* If the file is not demand paged, which means that we
 		 don't require the sections to be correctly aligned in the
 		 file, then there is no other reason for a new segment.  */
 	      new_segment = FALSE;
 	    }
+          else if ((((last_hdr->flags & SEC_CODE) && !(hdr->flags & SEC_CODE))
+                    || (!(last_hdr->flags & SEC_CODE) && (hdr->flags & SEC_CODE)))
+                   && (((last_hdr->lma + last_size) & -maxpagesize)
+                       != (hdr->lma & -maxpagesize)))
+            {
+              /* We don't want to put a code section in a data
+                segment, unless they are on the same page in memory
+                anyhow.  We already know that the last section does not
+                bring us past the current section on the page, so the
+                only case in which the new section is not on the same
+                page as the previous section is when the previous section
+                ends precisely on a page boundary.  */
+	      new_segment = TRUE;
+            }
+          else if (((!writable && !(hdr->flags & SEC_READONLY))
+                    || (writable && (hdr->flags & SEC_READONLY)))
+                   && (((last_hdr->lma + last_size) & -maxpagesize)
+                       != (hdr->lma & -maxpagesize)))
+            {
+              /* We don't want to put a writable section in a read only
+                segment, unless they are on the same page in memory
+                anyhow.  We already know that the last section does not
+                bring us past the current section on the page, so the
+                only case in which the new section is not on the same
+                page as the previous section is when the previous section
+                ends precisely on a page boundary.  */
+	      new_segment = TRUE;
+            }
 	  else if (! writable
-		   && (hdr->flags & SEC_READONLY) == 0
-		   && (((last_hdr->lma + last_size - 1)
-			& ~(maxpagesize - 1))
+		   && !(hdr->flags & SEC_READONLY)
+		   && (((last_hdr->lma + last_size - 1) & ~(maxpagesize - 1))
 		       != (hdr->lma & ~(maxpagesize - 1))))
 	    {
 	      /* We don't want to put a writable section in a read only
@@ -5191,7 +5218,7 @@ rewrite_elf_program_header (bfd *ibfd, bfd *obfd)
        1. It is within the address space of the segment -- we use the LMA
 	  if that is set for the segment and the VMA otherwise,
        2. It is an allocated section or a NOTE section in a PT_NOTE
-	  segment.         
+	  segment.
        3. There is an output section associated with it,
        4. The section has not already been allocated to a previous segment.
        5. PT_GNU_STACK segments do not include any sections.
@@ -5876,7 +5903,7 @@ copy_elf_program_header (bfd *ibfd, bfd *obfd)
       if (map->includes_filehdr && first_section)
 	/* We need to keep the space used by the headers fixed.  */
 	map->header_size = first_section->vma - segment->p_vaddr;
-      
+
       if (!map->includes_phdrs
 	  && !map->includes_filehdr
 	  && map->p_paddr_valid)
@@ -6667,7 +6694,7 @@ _bfd_elf_canonicalize_dynamic_reloc (bfd *abfd,
 
   return ret;
 }
-
+
 /* Read in the version information.  */
 
 bfd_boolean
@@ -6984,7 +7011,7 @@ error_return_verdef:
     free (contents);
   return FALSE;
 }
-
+
 asymbol *
 _bfd_elf_make_empty_symbol (bfd *abfd)
 {
@@ -7412,7 +7439,7 @@ _bfd_elf_rel_vtable_reloc_fn
 {
   return bfd_reloc_ok;
 }
-
+
 /* Elf core file support.  Much of this only works on native
    toolchains, since we rely on knowing the
    machine-dependent procfs structure in order to pick
@@ -8737,7 +8764,7 @@ elf_read_notes (bfd *abfd, file_ptr offset, bfd_size_type size)
   free (buf);
   return TRUE;
 }
-
+
 /* Providing external access to the ELF program header table.  */
 
 /* Return an upper bound on the number of bytes required to store a
@@ -8861,7 +8888,7 @@ _bfd_elf_section_offset (bfd *abfd,
       return offset;
     }
 }
-
+
 /* Create a new BFD as if by bfd_openr.  Rather than opening a file,
    reconstruct an ELF file by reading the segments out of remote memory
    based on the ELF file header at EHDR_VMA and the ELF program headers it
@@ -8885,7 +8912,7 @@ bfd_elf_bfd_from_remote_memory
   return (*get_elf_backend_data (templ)->elf_backend_bfd_from_remote_memory)
     (templ, ehdr_vma, loadbasep, target_read_memory);
 }
-
+
 long
 _bfd_elf_get_synthetic_symtab (bfd *abfd,
 			       long symcount ATTRIBUTE_UNUSED,
