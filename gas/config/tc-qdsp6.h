@@ -1,5 +1,3 @@
-
-
 /* tc-qdsp6.h - Macros and type defines for the QDSP6.
    Copyright 1994, 1995, 1997, 2000, 2001, 2002
    Free Software Foundation, Inc.
@@ -60,18 +58,14 @@ extern const char *qdsp6_target_format;
 
 #define DOUBLESLASH_LINE_COMMENTS
 
+#define TC_EXTRA_RELAX 1
+
 /* THIS IS A BIG HACK!!!
    We need to look at stuff before and after the ":"
    so we access a variable here that is not passed to the macro
  */
 #define TC_START_LABEL(C, B, A) qdsp6_start_label (C, B, A)
 extern int qdsp6_start_label PARAMS ((char c, char *before, char *after));
-
-/* This hook is used to capture labels defined between .falign
-   and the falign-ed packet */
-#define tc_frob_label(S) qdsp6_frob_label (S)
-
-extern void qdsp6_frob_label PARAMS ((symbolS *));
 
 /* The QDSP6 needs to parse reloc specifiers in .word.  */
 #define TC_PARSE_CONS_EXPRESSION(EXP, NBYTES) \

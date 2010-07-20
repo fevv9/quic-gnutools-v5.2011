@@ -2172,7 +2172,11 @@ relax_segment (struct frag *segment_frag_root, segT segment, int pass)
     if (max_iterations < frag_count)
       max_iterations = frag_count;
 
-    stretched = 1;
+#ifdef TC_EXTRA_RELAX
+    stretched = TC_EXTRA_RELAX;
+#else
+    stretched = 0;
+#endif
     ret = 0;
     do
       {
