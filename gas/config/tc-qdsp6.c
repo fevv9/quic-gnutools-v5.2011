@@ -903,8 +903,10 @@ qdsp6_relax_branch
   md_number_to_chars (fragP->fr_literal + i * QDSP6_INSN_LEN,
                       apacket->insns [i].insn, QDSP6_INSN_LEN);
   apacket->size++;
-  fragP->fr_subtype = QDSP6_RELAX_DONE;
+  apacket->relax = FALSE;
+  apacket->drlx = apacket->ddrlx = 0;
 
+  fragP->fr_subtype = QDSP6_RELAX_DONE;
   fragP->fr_fix += QDSP6_INSN_LEN;
   return (fragP->fr_fix - fix);
 }
@@ -975,8 +977,16 @@ qdsp6_relax_branch_try
   if (growth)
     {
       fragP->fr_subtype = this;
-      apacket->drlx   = now->rlx_length / QDSP6_INSN_LEN;
-      apacket->ddpad -= apacket->dpad? apacket->drlx: 0;
+      apacket->drlx = now->rlx_length / QDSP6_INSN_LEN;
+
+      /* Replace any padding for the extension. */
+      if (apacket->dpad)
+        {
+          apacket->dpad -= now->rlx_length / QDSP6_INSN_LEN;
+          growth        -= now->rlx_length;
+        }
+      else if (apacket->ddpad)
+        apacket->ddpad -= now->rlx_length / QDSP6_INSN_LEN;
     }
 
   return (growth);
@@ -1090,6 +1100,10 @@ qdsp6_relax_falign
     }
 
   fragP->fr_fix += (apacket->dpad + apacket->dpkt) * QDSP6_INSN_LEN;
+
+  apacket->dpad = apacket->ddpad = 0;
+  apacket->dpkt = apacket->ddpkt = 0;
+
   return TRUE;
 }
 
@@ -1124,7 +1138,9 @@ qdsp6_relax_falign_try
 
   delta = 0;
 
-  size  = apacket->size + apacket->dpad + apacket->drlx;
+  size  = apacket->size
+          + apacket->dpad + apacket->ddpad
+          + apacket->drlx + apacket->ddrlx;
   first = (fragP->fr_address / QDSP6_INSN_LEN) % MAX_PACKET_INSNS;
   next  = first + size;
 
@@ -1225,7 +1241,9 @@ qdsp6_estimate_size_before_relax
 
   apacket->dpad += ddpad;
   apacket->dpkt += ddpkt;
+
   apacket->ddpad = apacket->ddpkt = 0;
+
   delta = QDSP6_INSN_LEN * (apacket->dpad + apacket->dpkt);
 
   if (apacket->relax)
@@ -1252,12 +1270,13 @@ qdsp6_estimate_size_before_relax
                       && ((S_IS_EXTERNAL (sym) && !S_IS_DEFINED (sym))
                           || S_IS_WEAK (sym))))
                 /* Symbol is external, in another segment, or we need to keep a
-                  relocation so that weak symbols can be overridden.  Regardless, add
-                  the extender. */
+                  relocation so that weak symbols can be overridden.  In these
+                  cases, always add the extender. */
                 {
                   apacket->drlx++;
                   delta += qdsp6_relax_branch (fragP);
-                  frag_wane (fragP);
+                  /* Do not wane frag in case it needs another type of
+                     relaxation pass. */
                 }
               else
                 delta += qdsp6_relax_table [fragP->fr_subtype].rlx_length;
@@ -1281,16 +1300,18 @@ qdsp6_relax_frag (segT segment, fragS *fragP, long stretch)
           ? apacket->ddpad: -apacket->dpad;
   ddpkt = apacket->dpkt + apacket->ddpkt <= SSIZE_MAX
           ? apacket->ddpkt: -apacket->dpkt;
-  delta = QDSP6_INSN_LEN * (ddpad + ddpkt);
 
   apacket->dpad += ddpad;
   apacket->dpkt += ddpkt;
+
   apacket->ddpad = apacket->ddpkt = 0;
+
+  delta = QDSP6_INSN_LEN * (ddpad + ddpkt);
 
   if (apacket->relax)
     delta += qdsp6_relax_branch_try (fragP, segment, stretch);
   /* TODO: fetch-align branch-extended packets. */
-  else if (apacket->faligned)
+  if (apacket->faligned)
     delta += qdsp6_relax_falign_try (fragP, segment, stretch);
 
   return (delta);
@@ -1804,18 +1825,6 @@ qdsp6_falign
 
   /* Just in case out of .text. */
   record_alignment (now_seg, DEFAULT_CODE_FALIGN);
-}
-
-void
-qdsp6_frob_label
-(symbolS *label ATTRIBUTE_UNUSED)
-{
-  /* Do not frob literal symbols. */
-  if (!strncmp (now_seg->name, LITERAL_SECTION, LITERAL_LEN)
-      || !strncmp (now_seg->name, LITERAL_SECTION_ONCE, LITERAL_ONCE_LEN))
-    return;
-
-  return;
 }
 
 /** Insert a NOP packet to align code.
