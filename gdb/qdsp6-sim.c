@@ -150,24 +150,6 @@ qdsp6sim_can_run(void)
 }
 
 /*
- * function: exec_found
- * description:
- *	- Given an array of strings look for a match in the array.
- */
-static int
-exec_found (char *array[], char *string)
-{
-    int rc = 0;
-    int index=0;
-
-    while (array[index])
-       if (!strcmp (lbasename(array[index++]), lbasename(string)))
-	  rc = 1;
-
-    return rc;
-}
-
-/*
  * function: qdsp6sim_exec_simulation
  * description:
  * 	Call fork/execvp to start the simulator
@@ -202,18 +184,10 @@ qdsp6sim_exec_simulation(char *sim_name, char *exec_name,
         sim_args[index++] = strdupa (sim_name);
 
 /* XXX_SM: When the user passes explicit arguments to the simulator
-           he may include the matching executable name, so we
-           ignore the provided exec_name in favor of the one passed via
-  	   the "set targetargs" command.
+           he should not include the matching executable name, gdb
+           will furnish that to the simulator.
  */
-
-
-	if (q6targetargsInfo[0]!=(char *)0)
-	{
-	    if (!exec_found (q6targetargsInfo, exec_name))
-	        sim_args[index++] = strdupa (exec_name);
-	}
-	else
+	if (q6targetargsInfo[0]==(char *)0)
 	    sim_args[index++] = strdupa (exec_name);
 
         sim_args[index++] = strdupa ("--gdbserv");
@@ -230,6 +204,15 @@ qdsp6sim_exec_simulation(char *sim_name, char *exec_name,
 	if (args)
 	{
             sim_args[index++] = strdupa ("--");
+
+            /*
+             * When simulator targetargs have been specified place the
+             * exec name prior to the argument list being passed to
+             * the executable running on the simulator.
+             */
+	    if (q6targetargsInfo[0]!=(char *)0)
+	        sim_args[index++] = strdupa (exec_name);
+
 	    sim_args[index++] = strdupa (args);
 	    sim_args[index++] = 0;
 	}
