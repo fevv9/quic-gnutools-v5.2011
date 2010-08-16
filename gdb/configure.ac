@@ -606,13 +606,20 @@ dnl Utility to simplify finding libpython.
 AC_DEFUN([AC_TRY_LIBPYTHON],
 [
   version=$1
+  lversion=$1
+  case "${host}" in
+    *-*-mingw32*) lversion=`echo "${version}" | sed -e 's/\.//'`
+    ;;
+    *) lversion=$1
+    ;;
+  esac
   define([have_libpython_var],$2)
   define([VERSION],[translit([$1],[abcdefghijklmnopqrstuvwxyz./-],
                                   [ABCDEFGHIJKLMNOPQRSTUVWXYZ___])])
   [HAVE_LIB]VERSION=no
   AC_MSG_CHECKING([for ${version}])
   save_LIBS=$LIBS
-  LIBS="$LIBS -l${version}"
+  LIBS="$LIBS -l${lversion}"
   AC_LINK_IFELSE(AC_LANG_PROGRAM([[#include "${version}/Python.h"]],
                                  [[Py_Initialize ();]]),
                  [[HAVE_LIB]VERSION=yes
@@ -639,7 +646,12 @@ else
     ;;
   /*)
     python_includes="-I${with_python}/include"
-    python_libs="-L${with_python}/lib"
+    case "${host}" in
+      *-*-mingw32*) python_libs="-L${with_python}/libs"
+      ;;
+      *) python_libs="-L${with_python}/lib"
+      ;;
+    esac
     ;;
   *)
     AC_ERROR(invalid value for --with-python)

@@ -9222,7 +9222,12 @@ else
     ;;
   /*)
     python_includes="-I${with_python}/include"
-    python_libs="-L${with_python}/lib"
+    case "${host}" in
+      *-*-mingw32*) python_libs="-L${with_python}/libs"
+      ;;
+      *) python_libs="-L${with_python}/lib"
+      ;;
+    esac
     ;;
   *)
     as_fn_error "invalid value for --with-python" "$LINENO" 5
@@ -9237,13 +9242,20 @@ else
   if test "${have_libpython}" = no; then
 
   version=python2.6
+  lversion=python2.6
+  case "${host}" in
+    *-*-mingw32*) lversion=`echo "${version}" | sed -e 's/\.//'`
+    ;;
+    *) lversion=python2.6
+    ;;
+  esac
 
 
   HAVE_LIBPYTHON2_6=no
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for ${version}" >&5
 $as_echo_n "checking for ${version}... " >&6; }
   save_LIBS=$LIBS
-  LIBS="$LIBS -l${version}"
+  LIBS="$LIBS -l${lversion}"
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 #include "${version}/Python.h"
@@ -9275,13 +9287,20 @@ $as_echo "#define HAVE_LIBPYTHON2_6 1" >>confdefs.h
   if test ${have_libpython} = no; then
 
   version=python2.5
+  lversion=python2.5
+  case "${host}" in
+    *-*-mingw32*) lversion=`echo "${version}" | sed -e 's/\.//'`
+    ;;
+    *) lversion=python2.5
+    ;;
+  esac
 
 
   HAVE_LIBPYTHON2_5=no
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for ${version}" >&5
 $as_echo_n "checking for ${version}... " >&6; }
   save_LIBS=$LIBS
-  LIBS="$LIBS -l${version}"
+  LIBS="$LIBS -l${lversion}"
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 #include "${version}/Python.h"
@@ -9313,13 +9332,20 @@ $as_echo "#define HAVE_LIBPYTHON2_5 1" >>confdefs.h
   if test ${have_libpython} = no; then
 
   version=python2.4
+  lversion=python2.4
+  case "${host}" in
+    *-*-mingw32*) lversion=`echo "${version}" | sed -e 's/\.//'`
+    ;;
+    *) lversion=python2.4
+    ;;
+  esac
 
 
   HAVE_LIBPYTHON2_4=no
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for ${version}" >&5
 $as_echo_n "checking for ${version}... " >&6; }
   save_LIBS=$LIBS
-  LIBS="$LIBS -l${version}"
+  LIBS="$LIBS -l${lversion}"
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 #include "${version}/Python.h"
