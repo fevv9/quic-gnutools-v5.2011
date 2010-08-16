@@ -803,9 +803,14 @@ static qdsp6_reg qdsp6_supervisor_regs [] =
   {"s40",          40, QDSP6_V4_AND_UP | QDSP6_REG_IS_READONLY},
   {"s39",          39, QDSP6_V4_AND_UP | QDSP6_REG_IS_READWRITE},
   {"s29",          29, QDSP6_V4_AND_UP | QDSP6_REG_IS_READONLY},
+  {"s28",          28, QDSP6_V4_AND_UP | QDSP6_REG_IS_READWRITE},
   {"s25",          25, QDSP6_V4_AND_UP | QDSP6_REG_IS_READWRITE},
   {"s22",          22, QDSP6_V4_AND_UP | QDSP6_REG_IS_READONLY},
   {"s19",          19, QDSP6_V4_AND_UP | QDSP6_REG_IS_READWRITE},
+  {"s10",          10, QDSP6_V4_AND_UP | QDSP6_REG_IS_READWRITE},
+  {"s9",            9, QDSP6_V4_AND_UP | QDSP6_REG_IS_READWRITE},
+  {"s8",            8, QDSP6_V4_AND_UP | QDSP6_REG_IS_READONLY},
+  {"s7",            7, QDSP6_V4_AND_UP | QDSP6_REG_IS_READWRITE},
   {"s1",            1, QDSP6_V4_AND_UP | QDSP6_REG_IS_READWRITE},
 
   /* Legacy system register map */
