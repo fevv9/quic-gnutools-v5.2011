@@ -174,6 +174,7 @@ typedef struct
     size_t ndx;
     const qdsp6_opcode *opcode;
     const qdsp6_operand *ioperand;
+    unsigned conditional, predicate;
     unsigned ireg, oreg;
     int opair;
     unsigned lineno;
@@ -3022,6 +3023,15 @@ qdsp6_assemble
 
                       if (is_op & QDSP6_OPERAND_IS_INVALID)
                         goto END_OPCODE;
+                      else if (is_op & QDSP6_OPERAND_IS_PREDICATE
+                               && (insn.opcode->attributes & CONDITIONAL_EXEC))
+                        {
+                          insn.conditional = (insn.opcode->attributes
+                                              & (CONDITIONAL_EXEC
+                                                 | CONDITION_SENSE_INVERTED
+                                                 | CONDITION_DOTNEW));
+                          insn.predicate  = op_val;
+                        }
                       else if (is_op & QDSP6_OPERAND_IS_RNEW)
                         {
                           insn.flags    |= QDSP6_INSN_IN_RNEW;
@@ -4360,7 +4370,11 @@ qdsp6_packet_finish
       {
         for (i = 0, off = 0, onew = NULL; i < MAX_PACKET_INSNS; i++)
           if ((packet->insns [i].flags & QDSP6_INSN_OUT_RNEW)
-              && !packet->insns [i].opair && packet->insns [i].oreg == inew->ireg)
+              && !packet->insns [i].opair
+              && packet->insns [i].oreg == inew->ireg
+              && (!packet->insns [i].conditional
+                  || (packet->insns [i].conditional == inew->conditional
+                      && packet->insns [i].predicate == inew->predicate)))
             {
               off = inew->ndx - packet->insns [i].ndx;
               onew = packet->insns + i;
