@@ -1091,12 +1091,17 @@ qdsp6_relax_falign
    if (fpacket)
     {
       /* Collect stats. */
-      (pad || pkt) && !(fpacket->stats & QDSP6_STATS_FALIGN)
-      && (fpacket->stats |= QDSP6_STATS_FALIGN) && n_falign [QDSP6_FALIGN_NEED]++;
-      pad && !(fpacket->stats & QDSP6_STATS_PAD)
-      && (fpacket->stats |= QDSP6_STATS_PAD) && n_falign [QDSP6_FALIGN_PAD]++;
-      pkt && !(fpacket->stats & QDSP6_STATS_PACK)
-      && (fpacket->stats |= QDSP6_STATS_PACK) && n_falign [QDSP6_FALIGN_PACK]++;
+      if ((pad || pkt) && !(fpacket->stats & QDSP6_STATS_FALIGN) && 
+	 (fpacket->stats |= QDSP6_STATS_FALIGN)) 
+	n_falign [QDSP6_FALIGN_NEED]++;
+
+      if (pad && !(fpacket->stats & QDSP6_STATS_PAD) && 
+	 (fpacket->stats |= QDSP6_STATS_PAD))
+	n_falign [QDSP6_FALIGN_PAD]++;
+
+      if (pkt && !(fpacket->stats & QDSP6_STATS_PACK) && 
+	 (fpacket->stats |= QDSP6_STATS_PACK))
+	n_falign [QDSP6_FALIGN_PACK]++;
     }
 
   fragP->fr_fix += (apacket->dpad + apacket->dpkt) * QDSP6_INSN_LEN;
@@ -1492,7 +1497,7 @@ qdsp6_insert_operand
             strcat (errmsg, tmpError);
           }
 
-        as_bad (errmsg);
+        as_bad ("%s\n", errmsg);
       }
 
   if (target_big_endian)
@@ -3226,7 +3231,7 @@ qdsp6_assemble
       int big = strlen (start) > MAX_MESSAGE - 3;
 
       if (errmsg)
-        as_bad (errmsg);
+        as_bad ("%s\n", errmsg);
       as_bad (_("invalid instruction `%.*s%s'"),
               big? MAX_MESSAGE - 3: MAX_MESSAGE, start, big? "...": "");
     }
@@ -4566,7 +4571,7 @@ qdsp6_check_register
           if (reg_name)
             as_bad (_("register `%s' modified more than once."), buff);
           else if (errmsg)
-            as_bad (errmsg);
+            as_bad ("%s\n", errmsg);
         }
       else
         {
@@ -4724,7 +4729,7 @@ qdsp6_check_insn
                       (operand, binsn->insn, binsn->opcode->enc, &reg_num, &errmsg))
                     {
                       if (errmsg)
-                        as_bad (errmsg);
+                        as_bad ("%s\n", errmsg);
                       break;
                     }
 
@@ -4749,7 +4754,7 @@ qdsp6_check_insn
                             (operand, binsn->insn, binsn->opcode->enc, &reg_num, &errmsg))
                         {
                           if (errmsg)
-                            as_bad (errmsg);
+                            as_bad ("%s\n", errmsg);
                           break;
                         }
 
@@ -4776,7 +4781,7 @@ qdsp6_check_insn
                             (operand, binsn->insn, binsn->opcode->enc, &reg_num, &errmsg))
                         {
                           if (errmsg)
-                            as_bad (errmsg);
+                            as_bad ("%s\n", errmsg);
                           break;
                         }
                     }
@@ -4786,7 +4791,7 @@ qdsp6_check_insn
                             (operand, binsn->insn, 0, binsn->opcode->enc, &reg_num, &errmsg))
                         {
                           if (errmsg)
-                            as_bad (errmsg);
+                            as_bad ("%s\n", errmsg);
                           break;
                         }
 
