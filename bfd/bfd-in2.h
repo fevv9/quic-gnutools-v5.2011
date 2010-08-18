@@ -4600,7 +4600,7 @@ the dynamic object into the runtime process image.  */
 /* QDSP6 relocation with 32 bits shifted right by 6.  */
   BFD_RELOC_QDSP6_32_6_X,
 
-/* QDSP6 basic signed relocation extended by BFD_RELOC_QDSP6_32_6_X, holding
+/* QDSP6 basic signed relocations extended by BFD_RELOC_QDSP6_32_6_X, holding
 the lower 6 bits.  */
   BFD_RELOC_QDSP6_16_X,
   BFD_RELOC_QDSP6_12_X,
@@ -4610,6 +4610,9 @@ the lower 6 bits.  */
   BFD_RELOC_QDSP6_8_X,
   BFD_RELOC_QDSP6_7_X,
   BFD_RELOC_QDSP6_6_X,
+
+/* QDSP6 PC-relative relocation with 32-bit signed offset.  */
+  BFD_RELOC_QDSP6_32_PCREL,
 
 /* QDSP6 PC-relative relocations with 24, 17, 15, 11 or 9-bit signed offset
 shifted right by 1.  */
@@ -4635,7 +4638,7 @@ applied to individual instructions or to a pair of instructions.  */
   BFD_RELOC_QDSP6_HI16,
   BFD_RELOC_QDSP6_HL16,
 
-/* QDSP6 relocations relative to the GP with 16, 17, 18 or 19-bit unsigned offset
+/* QDSP6 GP-relative relocations with 16, 17, 18 or 19-bit unsigned offset
 shifted right by the access size.  */
   BFD_RELOC_QDSP6_GPREL16_0,
   BFD_RELOC_QDSP6_GPREL16_1,

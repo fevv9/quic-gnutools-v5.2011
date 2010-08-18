@@ -5264,6 +5264,7 @@ ENUM
   BFD_RELOC_QDSP6_32_6_X
 ENUMDOC
   QDSP6 relocation with 32 bits shifted right by 6.
+
 ENUM
   BFD_RELOC_QDSP6_16_X
 ENUMX
@@ -5281,8 +5282,14 @@ ENUMX
 ENUMX
   BFD_RELOC_QDSP6_6_X
 ENUMDOC
-  QDSP6 basic signed relocation extended by BFD_RELOC_QDSP6_32_6_X, holding
+  QDSP6 basic signed relocations extended by BFD_RELOC_QDSP6_32_6_X, holding
   the lower 6 bits.
+
+ENUM
+  BFD_RELOC_QDSP6_32_PCREL
+ENUMDOC
+  QDSP6 PC-relative relocation with 32-bit signed offset.
+
 ENUM
   BFD_RELOC_QDSP6_B22_PCREL
 ENUMX
@@ -5296,10 +5303,12 @@ ENUMX
 ENUMDOC
   QDSP6 PC-relative relocations with 24, 17, 15, 11 or 9-bit signed offset
   shifted right by 1.
+
 ENUM
   BFD_RELOC_QDSP6_B32_PCREL_X
 ENUMDOC
   QDSP6 PC-relative relocations with 32-bit signed offset shifted right by 6.
+
 ENUM
   BFD_RELOC_QDSP6_B22_PCREL_X
 ENUMX
@@ -5311,6 +5320,7 @@ ENUMX
 ENUMDOC
   QDSP6 PC-relative relocations extended by BFD_RELOC_QDSP6_B32_PCREL_X,
   holding the lower 6 bits shifted right by 1.
+
 ENUM
   BFD_RELOC_QDSP6_LO16
 ENUMX
@@ -5320,6 +5330,7 @@ ENUMX
 ENUMDOC
   QDSP6 relocations for the lower and higher 16 bits of a 32-bit address,
   applied to individual instructions or to a pair of instructions.
+
 ENUM
   BFD_RELOC_QDSP6_GPREL16_0
 ENUMX
@@ -5329,7 +5340,7 @@ ENUMX
 ENUMX
   BFD_RELOC_QDSP6_GPREL16_3
 ENUMDOC
-  QDSP6 relocations relative to the GP with 16, 17, 18 or 19-bit unsigned offset
+  QDSP6 GP-relative relocations with 16, 17, 18 or 19-bit unsigned offset
   shifted right by the access size.
 
 ENDSENUM
