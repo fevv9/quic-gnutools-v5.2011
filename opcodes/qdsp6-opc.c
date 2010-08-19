@@ -1984,7 +1984,8 @@ qdsp6_parse_splr
 {
   int reg;
 
-  reg = qdsp6_reg_num (operand, &input, 'r', qdsp6_gp_regs, qdsp6_gp_regs_count, NULL, '\0');
+  reg = qdsp6_reg_num
+          (operand, &input, 'r', qdsp6_gp_regs, qdsp6_gp_regs_count, NULL, '\0');
   if (reg < 0
       || (operand->fmt [0] == 'S' && operand->fmt [1] == 'p' && reg != 29)
       || (operand->fmt [0] == 'L' && operand->fmt [1] == 'r' && reg != 31))
