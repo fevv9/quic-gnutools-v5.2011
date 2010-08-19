@@ -343,6 +343,7 @@ int qdsp6_has_rnew (const qdsp6_packet *, qdsp6_packet_insn **);
 int qdsp6_has_mem (const qdsp6_packet *);
 int qdsp6_has_store (const qdsp6_packet *);
 int qdsp6_has_store_not (const qdsp6_packet *);
+int qdsp6_has_but_ax (const qdsp6_packet *);
 addressT qdsp6_frag_fix_addr (void);
 int qdsp6_is_nop_keep (const qdsp6_packet *, int);
 int qdsp6_find_noslot1 (const qdsp6_packet *, size_t);
@@ -1092,15 +1093,15 @@ qdsp6_relax_falign
    if (fpacket)
     {
       /* Collect stats. */
-      if ((pad || pkt) && !(fpacket->stats & QDSP6_STATS_FALIGN) && 
-	 (fpacket->stats |= QDSP6_STATS_FALIGN)) 
+      if ((pad || pkt) && !(fpacket->stats & QDSP6_STATS_FALIGN) &&
+	 (fpacket->stats |= QDSP6_STATS_FALIGN))
 	n_falign [QDSP6_FALIGN_NEED]++;
 
-      if (pad && !(fpacket->stats & QDSP6_STATS_PAD) && 
+      if (pad && !(fpacket->stats & QDSP6_STATS_PAD) &&
 	 (fpacket->stats |= QDSP6_STATS_PAD))
 	n_falign [QDSP6_FALIGN_PAD]++;
 
-      if (pkt && !(fpacket->stats & QDSP6_STATS_PACK) && 
+      if (pkt && !(fpacket->stats & QDSP6_STATS_PACK) &&
 	 (fpacket->stats |= QDSP6_STATS_PACK))
 	n_falign [QDSP6_FALIGN_PACK]++;
     }
@@ -2076,6 +2077,34 @@ qdsp6_has_store_not
       count++;
 
   return (count);
+}
+
+/** Check if packet has an insn that precludes others insns in packet,
+but A and X-type insns.
+
+@param packet Packet to examine.
+@return True if so.
+*/
+int
+qdsp6_has_but_ax
+(const qdsp6_packet *apacket)
+{
+  size_t i;
+  size_t axok, count;
+
+  /* Count number of non-A and non-X insns in this packet. */
+  for (i = axok = count = 0; i < qdsp6_packet_count (apacket); i++)
+    {
+      if (apacket->insns [i].opcode->attributes & A_RESTRICT_PACKET_AXOK)
+        axok++;
+
+      if (!(apacket->insns [i].opcode->attributes & PACKED)
+          && (QDSP6_INSN_TYPE_A (apacket->insns [i].insn)
+              || QDSP6_INSN_TYPE_X (apacket->insns [i].insn)))
+        count++;
+    }
+
+  return (!axok || ((axok + count) == qdsp6_packet_count (apacket)));
 }
 
 int
@@ -3675,7 +3704,9 @@ qdsp6_check_operand_args
   for (i = 0; i < n; i++)
     for (j = i + 1; j < n; j++)
       {
-        if (args [i].operand->enc_letter == args [j].operand->enc_letter)
+        if (args [i].operand->bits
+            && args [i].operand->bits == args [j].operand->bits
+            && args [i].operand->enc_letter == args [j].operand->enc_letter)
           if (args [i].value != args [j].value)
             return FALSE;
       }
@@ -4635,7 +4666,7 @@ qdsp6_check_insn
      && qdsp6_packet_insns (apacket) > 1)
     {
       as_bad (_("instruction cannot appear in packet with other instructions."));
-      qdsp6_in_packet = 0;
+      qdsp6_in_packet = FALSE;
       return;
     }
 
@@ -4750,7 +4781,7 @@ qdsp6_check_insn
                   pred_reg_rd_mask = QDSP6_PRED_SET (0, reg_num, QDSP6_PRED_YES);
                   if (binsn->opcode->attributes & CONDITION_SENSE_INVERTED)
                     pred_reg_rd_mask
-                    = QDSP6_PRED_SET (pred_reg_rd_mask, reg_num, QDSP6_PRED_NOT);
+                      = QDSP6_PRED_SET (pred_reg_rd_mask, reg_num, QDSP6_PRED_NOT);
                   if (binsn->opcode->attributes & CONDITION_DOTNEW)
                     {
                       pred_reg_rd_mask
@@ -5034,11 +5065,14 @@ qdsp6_packet_end
       return;
     }
 
+  if (!qdsp6_has_but_ax (qdsp6_packets))
+    as_bad (_("instruction cannot appear in packet with other than A-type or X-type instructions."));
+
   n = qdsp6_has_mem (qdsp6_packets);
   if ((qdsp6_no_dual_memory && n > 1) || n > 2)
     as_bad (_("multiple memory operations in packet."));
 
-    if (qdsp6_pairs_info && qdsp6_has_pair (apacket))
+  if (qdsp6_pairs_info && qdsp6_has_pair (apacket))
     as_warn (_("instructions paired."));
 
   qdsp6_shuffle_do (apacket);

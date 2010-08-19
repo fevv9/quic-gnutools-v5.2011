@@ -105,6 +105,24 @@
 #define QDSP6_SLOTS_1      (0x2) /** < Slot #1. */
 #define QDSP6_SLOTS_MEM1   (0x1) /** < Preference for single memory access. */
 
+/** Insn type opcode ranges.
+*/
+#define QDSP6_INSN_TYPE_A7   (0x70000000) /** A-type. */
+#define QDSP6_INSN_TYPE_X8   (0x80000000) /** X-type. */
+#define QDSP6_INSN_TYPE_A11  (0xb0000000) /** A-type. */
+#define QDSP6_INSN_TYPE_X12  (0xc0000000) /** X-type. */
+#define QDSP6_INSN_TYPE_X13  (0xd0000000) /** X-type. */
+#define QDSP6_INSN_TYPE_X14  (0xe0000000) /** X-type. */
+#define QDSP6_INSN_TYPE_A15  (0xf0000000) /** A-type. */
+#define QDSP6_INSN_TYPE_MASK(i) ((i) & 0xf0000000) /** Insn type mask. */
+#define QDSP6_INSN_TYPE_A(i) ((QDSP6_INSN_TYPE_MASK (i) == QDSP6_INSN_TYPE_A7) \
+                              || (QDSP6_INSN_TYPE_MASK (i) == QDSP6_INSN_TYPE_A11) \
+                              || (QDSP6_INSN_TYPE_MASK (i) == QDSP6_INSN_TYPE_A15))
+#define QDSP6_INSN_TYPE_X(i) ((QDSP6_INSN_TYPE_MASK (i) == QDSP6_INSN_TYPE_X8) \
+                              || (QDSP6_INSN_TYPE_MASK (i) == QDSP6_INSN_TYPE_X12) \
+                              || (QDSP6_INSN_TYPE_MASK (i) == QDSP6_INSN_TYPE_X13) \
+                              || (QDSP6_INSN_TYPE_MASK (i) == QDSP6_INSN_TYPE_X14))
+
 /* Type to denote an QDSP6 instruction (at least a 32 bit unsigned int).  */
 typedef unsigned int qdsp6_insn;
 
@@ -144,6 +162,8 @@ typedef struct _qdsp6_opcode {
 
   unsigned int slot_mask;          /* Slots onto which the instruction can go */
 
+  unsigned int implicit;   /* specifies implicit register writes */
+
   /* Values for implicit register definitions */
 #define IMPLICIT_LR     0x0001
 #define IMPLICIT_SP     0x0002
@@ -159,8 +179,6 @@ typedef struct _qdsp6_opcode {
 #define IMPLICIT_P0     0x0400
   /* V4 */
 #define IMPLICIT_P1     0x0800
-
-  unsigned int implicit;   /* specifies implicit register writes */
 
   unsigned int attributes;
 
@@ -183,19 +201,19 @@ typedef struct _qdsp6_opcode {
 #define A_RESTRICT_LATEPRED             0x00008000
   /* V3 */
 #define A_RESTRICT_PACKET_AXOK          0x00010000
-#define A_RESTRICT_PACKET_SOMEREGS_OK   0x00020000
-#define A_RELAX_COF_1ST                 0x00040000
-#define A_RELAX_COF_2ND                 0x00080000
+#define A_RESTRICT_PACKET_SOMEREGS_OK   0x00000000
+#define A_RELAX_COF_1ST                 0x00020000
+#define A_RELAX_COF_2ND                 0x00040000
   /* V4 */
-#define PACKED                          0x00100000
-#define A_IT_EXTENDER                   0x00200000
-#define EXTENDABLE_LOWER_CASE_IMMEDIATE 0x00400000
-#define EXTENDABLE_UPPER_CASE_IMMEDIATE 0x00800000
-#define A_RESTRICT_SLOT0ONLY            0x01000000
-#define A_STORE                         0x02000000
-#define A_STOREIMMED                    0x04000000
-#define A_RESTRICT_NOSLOT1_STORE        0x08000000
-#define MUST_EXTEND                     0x10000000
+#define PACKED                          0x00080000
+#define A_IT_EXTENDER                   0x00100000
+#define EXTENDABLE_LOWER_CASE_IMMEDIATE 0x00200000
+#define EXTENDABLE_UPPER_CASE_IMMEDIATE 0x00400000
+#define A_RESTRICT_SLOT0ONLY            0x00800000
+#define A_STORE                         0x01000000
+#define A_STOREIMMED                    0x02000000
+#define A_RESTRICT_NOSLOT1_STORE        0x04000000
+#define MUST_EXTEND                     0x08000000
   /* Internal */
 #define DUPLEX                          0x40000000
 #define PREFIX                          0x80000000
