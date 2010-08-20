@@ -373,8 +373,13 @@ gdbpy_new_objfile (struct objfile *objfile)
   char *realname;
   char *filename, *debugfile;
   int len;
+#ifdef USE_WIN32API
+  PyObject *input = 0;
+#else
   FILE *input;
+#endif
   struct cleanup *cleanups;
+
 
   if (!gdbpy_auto_load || !objfile || !objfile->name)
     return;
@@ -389,7 +394,11 @@ gdbpy_new_objfile (struct objfile *objfile)
   memcpy (filename, realname, len);
   strcpy (filename + len, GDBPY_AUTO_FILENAME);
 
+#ifdef USE_WIN32API
+  input = PyFile_FromString(filename, "r");
+#else
   input = fopen (filename, "r");
+#endif
   debugfile = filename;
 
   make_cleanup (xfree, filename);
@@ -405,7 +414,11 @@ gdbpy_new_objfile (struct objfile *objfile)
       strcat (debugfile, filename);
 
       make_cleanup (xfree, debugfile);
+#ifdef USE_WIN32API
+      input = PyFile_FromString(debugfile, "r");
+#else
       input = fopen (debugfile, "r");
+#endif
     }
 
   if (!input && gdb_datadir)
@@ -420,16 +433,26 @@ gdbpy_new_objfile (struct objfile *objfile)
       strcat (debugfile, filename);
 
       make_cleanup (xfree, debugfile);
+#ifdef USE_WIN32API
+      input = PyFile_FromString(debugfile, "r");
+#else
       input = fopen (debugfile, "r");
+#endif
     }
 
   if (input)
     {
       /* We don't want to throw an exception here -- but the user
 	 would like to know that something went wrong.  */
+#ifdef USE_WIN32API
+      if (PyRun_SimpleFile (PyFile_AsFile(input), debugfile))
+#else
       if (PyRun_SimpleFile (input, debugfile))
+#endif
 	gdbpy_print_stack ();
+#ifndef USE_WIN32API
       fclose (input);
+#endif
     }
 
   do_cleanups (cleanups);

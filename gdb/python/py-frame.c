@@ -210,6 +210,7 @@ frame_info_to_frame_object (struct frame_info *frame)
 {
   frame_object *frame_obj;
 
+  frame_object_type.tp_new = PyType_GenericNew;
   frame_obj = PyObject_New (frame_object, &frame_object_type);
   if (frame_obj == NULL)
     {
@@ -535,5 +536,5 @@ static PyTypeObject frame_object_type = {
   0,				  /* tp_dictoffset */
   0,				  /* tp_init */
   0,				  /* tp_alloc */
-  PyType_GenericNew		  /* tp_new */
+  0 		  		  /* tp_new */
 };
