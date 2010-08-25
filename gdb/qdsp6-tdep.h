@@ -130,6 +130,7 @@ struct qdsp6_system_register_offsets
     int reg_upmucnt1;
     int reg_upmucnt2;
     int reg_upmucnt3;
+    int reg_vid;
 };
 
 
@@ -253,7 +254,8 @@ struct qdsp6_system_register_offsets reg_offset =
     reg_upmucnt0: -1,
     reg_upmucnt1: -1,
     reg_upmucnt2: -1,
-    reg_upmucnt3: -1
+    reg_upmucnt3: -1,
+    reg_vid: -1
 };
 
 #include "v4/reg_offsets.h"
@@ -375,7 +377,8 @@ struct qdsp6_system_register_offsets reg_offset_v4 =
     reg_upmucnt0: REG_UPMUCNT0,
     reg_upmucnt1: REG_UPMUCNT1,
     reg_upmucnt2: REG_UPMUCNT2,
-    reg_upmucnt3: REG_UPMUCNT3
+    reg_upmucnt3: REG_UPMUCNT3,
+    reg_vid: REG_VID
 };
 
 /*
@@ -599,6 +602,8 @@ static int q6stopme(int var)
 #define REG_UPMUCNT2 q6RegOffset?q6RegOffset->reg_upmucnt2:q6stopme(-1)
 #undef REG_UPMUCNT3
 #define REG_UPMUCNT3 q6RegOffset?q6RegOffset->reg_upmucnt3:q6stopme(-1)
+#undef REG_VID
+#define REG_VID q6RegOffset?q6RegOffset->reg_vid:q6stopme(-1)
 #undef REG_USR
 #define REG_USR q6RegOffset?q6RegOffset->reg_usr:q6stopme(-1)
 #undef REG_SGP

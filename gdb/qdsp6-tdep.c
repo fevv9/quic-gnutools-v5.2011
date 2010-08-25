@@ -670,6 +670,24 @@ is_immed (unsigned int insn, CORE_ADDR pc)
 }
 
 /*
+ * function: is_bogus
+ * description:
+ * 	- looks for a non-insn, when this happens we have read too
+ *        far or received some bogus pc.
+ */
+static int
+is_bogus (unsigned int insn, CORE_ADDR pc)
+{
+  int rc = 0;
+  if (insn == 0x0)
+    rc = 1;
+  else if (insn == 0x1f1f1f1f)
+    rc = 1;
+
+  return rc;
+}
+
+/*
  * function: is_branch
  * description:
  * 	- looks for a call or jump, return 1 if found.
@@ -865,6 +883,11 @@ qdsp6_analyze_prologue (struct gdbarch *gdbarch,
 	      prolog_pc+=4;
             }
           else if (is_branch(insn, pc)) /* no branches in prologue */
+            {
+		end_of_prologue = 1;
+	        break;
+            }
+          else if (is_bogus (insn, pc))
             {
 		end_of_prologue = 1;
 	        break;
@@ -1606,7 +1629,7 @@ qdsp6_print_reg_info(char  *regname,  LONGEST regvalue)
 {
 
   if(regname == NULL)
-    error("Invalid Register Name\n");
+    warning("Invalid Register Name\n");
 
   if(strlen(regname) <=7)
      fprintf_filtered(gdb_stdout,"%s\t\t", regname);
