@@ -274,16 +274,7 @@ typedef struct _qdsp6_operand
 /* Format string and alternate format string for disassembly. */
   char *dis_fmt, *alt_fmt;
 
-/* Parse function.
-   This is used by the assembler to parse.
-
-   If successful, insert the bits into the instruction and
-   return the pointer to the next character of the input.
-   Otherwise, return NULL;
-
-   If there is a problem, the function will set *errmsg.
- */
-
+/* Function used to change the original insn into another semantically equivalent. */
   char *(*parse) (const struct _qdsp6_operand *, qdsp6_insn *,
                   const qdsp6_opcode *, char *, long *, int *, char **);
 } qdsp6_operand;
