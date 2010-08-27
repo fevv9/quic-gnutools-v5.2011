@@ -185,6 +185,7 @@ typedef struct
     expressionS exp;
     size_t fc;
     fixS *fix;
+    unsigned relax;
     char *source;
   } qdsp6_packet_insn;
 
@@ -492,8 +493,8 @@ typedef enum _qdsp6_relax_state
     /* Matching the respective entries in qdsp6_relax_table. */
     QDSP6_RELAX_NONE = 0,
     /* Relax state for BFD_RELOC_QDSP6_B9_PCREL. */
-    QDSP6_RELAX_B9 = 1,
-    /* Other odd-numbered relax states go here. */
+    QDSP6_RELAX_B9, QDSP6_RELAX_B9_A,
+    /* Other relax state pairs go here. */
     /* Done relaxing. */
     QDSP6_RELAX_DONE
   } qdsp6_relax_state;
@@ -518,14 +519,17 @@ typedef enum _qdsp6_relax_state
 const struct relax_type qdsp6_relax_table [] =
   {
     /* Dummy entry. */
-    {0L, 0L,
-     0, 0},
+    {              0L,                0L,
+                    0, QDSP6_RELAX_NONE},
     /* Entries for BFD_RELOC_QDSP6_B9_PCREL. */
     {QDSP6_RANGE (11), -QDSP6_RANGE (11),
-     0, QDSP6_RELAXED (QDSP6_RELAX_B9)},
-    {0L, 0L,
-     QDSP6_INSN_LEN, QDSP6_RELAX_NONE},
-    /* Entries for other relocations go here. */
+                    0, QDSP6_RELAXED (QDSP6_RELAX_B9)},
+    {              0L,                0L,
+       QDSP6_INSN_LEN, QDSP6_RELAX_DONE},
+    /* Pair of entries for other relocations go here. */
+    /* Final entry. */
+    {              0L,                0L,
+                    0, QDSP6_RELAX_NONE},
   };
 
 static int qdsp6_autoand = TRUE;
@@ -834,6 +838,11 @@ md_begin ()
   subseg_set (current_section, current_subsec);
 }
 
+/** Relax branch by adding the extender.
+
+@param fragP Relaxed fragment with room for the extension.
+*/
+
 int
 qdsp6_relax_branch
 (fragS *fragP)
@@ -847,7 +856,7 @@ qdsp6_relax_branch
   fix = fragP->fr_fix;
 
   apacket = &fragP->tc_frag_data->packet;
-  if (!fragP->fr_subtype || !apacket->relax || !apacket->drlx)
+  if (!apacket->relax || !apacket->drlx)
     return FALSE;
 
   /* Sanity check. */
@@ -858,58 +867,66 @@ qdsp6_relax_branch
     if (apacket->insns [i].flags & QDSP6_INSN_IS_RELAX
         && apacket->insns [i].fc)
       {
+        if (apacket->insns [i].relax == QDSP6_RELAX_NONE
+            || apacket->insns [i].relax == QDSP6_RELAX_DONE
+            || apacket->insns [i].relax % 2)
+          continue;
+
         fx = apacket->insns [i].fix;
-        break;
+        fxup = *fx;
+
+        operand = fx->tc_fix_data;
+
+        /* Adjusted extended insn. */
+        operand->flags |= QDSP6_OPERAND_IS_KXED;
+        apacket->insns [i].flags |= QDSP6_INSN_IS_KXED;
+        fx->fx_r_type = operand->reloc_kxed;
+
+        /* Make room for extender. */
+        for (j = apacket->size; j > i; j--)
+          {
+            qdsp6_insn *pi;
+
+            pi = ((qdsp6_insn *) fragP->fr_literal) + j;
+            pi [0] = pi [-1];
+
+            apacket->insns [j] = apacket->insns [j - 1];
+            if (apacket->insns [j].fc && apacket->insns [j].fix)
+              {
+                apacket->insns [j].fix->fx_where += QDSP6_INSN_LEN;
+                apacket->insns [j].fix->fx_offset
+                  += apacket->insns [j].fix->fx_pcrel? QDSP6_INSN_LEN: 0;
+              }
+          }
+
+        /* Create extender. */
+        apacket->insns [i] = qdsp6_kext_insn;
+        apacket->insns [i].operand
+          = *(qdsp6_operand *) qdsp6_lookup_reloc (operand->reloc_kxer, 0,
+                                                   apacket->insns [i].opcode);
+        apacket->insns [i].fc++;
+        apacket->insns [i].fix
+          = fix_new (fragP, fxup.fx_where, QDSP6_INSN_LEN, fxup.fx_addsy,
+                     fxup.fx_offset, fxup.fx_pcrel, operand->reloc_kxer);
+        apacket->insns [i].fix->fx_line = fxup.fx_line;
+        apacket->insns [i].fix->tc_fix_data = &apacket->insns [i].operand;
+
+        /* Add extender. */
+        md_number_to_chars (fragP->fr_literal + i * QDSP6_INSN_LEN,
+                            apacket->insns [i].insn, QDSP6_INSN_LEN);
+
+        apacket->relax--;
+        apacket->drlx--;
+        apacket->size++;
+        fragP->fr_fix += QDSP6_INSN_LEN;
+
+        /* Skip extended branch. */
+        i++;
+        apacket->insns [i].relax = QDSP6_RELAX_DONE;
       }
 
-  if (!fx)
-    return FALSE;
+  apacket->ddrlx = 0;
 
-  fxup = *fx;
-  operand = fx->tc_fix_data;
-
-  /* Adjusted extended insn. */
-  operand->flags |= QDSP6_OPERAND_IS_KXED;
-  apacket->insns [i].flags |= QDSP6_INSN_IS_KXED;
-  fx->fx_r_type = operand->reloc_kxed;
-
-  /* Make room for extender. */
-  for (j = apacket->size; j > i; j--)
-    {
-      qdsp6_insn *pi;
-
-      pi = ((qdsp6_insn *) fragP->fr_literal) + j;
-      pi [0] = pi [-1];
-
-      apacket->insns [j] = apacket->insns [j - 1];
-      if (apacket->insns [j].fc && apacket->insns [j].fix)
-        {
-          apacket->insns [j].fix->fx_where += QDSP6_INSN_LEN;
-          apacket->insns [j].fix->fx_offset
-            += apacket->insns [j].fix->fx_pcrel? QDSP6_INSN_LEN: 0;
-        }
-    }
-
-  /* Create extender. */
-  apacket->insns [i] = qdsp6_kext_insn;
-  apacket->insns [i].operand
-    = *(qdsp6_operand *) qdsp6_lookup_reloc (operand->reloc_kxer, 0, apacket->insns [i].opcode);
-  apacket->insns [i].fc++;
-  apacket->insns [i].fix
-    = fix_new (fragP, fxup.fx_where, QDSP6_INSN_LEN,
-               fxup.fx_addsy, fxup.fx_offset, fxup.fx_pcrel, operand->reloc_kxer);
-  apacket->insns [i].fix->fx_line = fxup.fx_line;
-  apacket->insns [i].fix->tc_fix_data = &apacket->insns [i].operand;
-
-  /* Add extender. */
-  md_number_to_chars (fragP->fr_literal + i * QDSP6_INSN_LEN,
-                      apacket->insns [i].insn, QDSP6_INSN_LEN);
-  apacket->size++;
-  apacket->relax = FALSE;
-  apacket->drlx = apacket->ddrlx = 0;
-
-  fragP->fr_subtype = QDSP6_RELAX_DONE;
-  fragP->fr_fix += QDSP6_INSN_LEN;
   return (fragP->fr_fix - fix);
 }
 
@@ -928,75 +945,77 @@ qdsp6_relax_branch_try
   symbolS *sym;
   addressT from, to;
   offsetT aim;
-  long growth;
+  long delta, growth;
   size_t i;
 
   apacket = &fragP->tc_frag_data->packet;
 
-  if (!fragP->fr_subtype || !apacket->relax)
+  if (!apacket->relax)
     return FALSE;
 
-  for (i = 0, sym = NULL; i < MAX_PACKET_INSNS; i++)
+  for (i = 0, delta = 0; i < apacket->size; i++)
     if (apacket->insns [i].flags & QDSP6_INSN_IS_RELAX
         && apacket->insns [i].fc)
       {
+        if (apacket->insns [i].relax == QDSP6_RELAX_DONE)
+          continue;
+
         sym = apacket->insns [i].fix->fx_addsy;
-        break;
+        if (sym)
+          {
+            to = S_GET_VALUE (sym);
+
+            if (stretch
+                && symbol_get_frag (sym)->relax_marker != fragP->relax_marker
+                && S_GET_SEGMENT (sym) == segment)
+              to += stretch;
+          }
+        else
+          to = 0;
+
+        if (apacket->insns [i].fc)
+          to += apacket->insns [i].fix->fx_offset;
+
+        before = now = qdsp6_relax_table + apacket->insns [i].relax;
+
+        from = fragP->fr_address;
+        aim  = to - from;
+        for (next = now->rlx_more;
+             next != QDSP6_RELAX_NONE && next != QDSP6_RELAX_DONE; )
+          if ((aim <  0 && aim >= now->rlx_backward)
+              || (aim >= 0 && aim <= now->rlx_forward))
+            next = QDSP6_RELAX_NONE;
+          else
+            {
+              /* Grow to next state.  */
+              this = next;
+              now = qdsp6_relax_table + this;
+              next = now->rlx_more;
+            }
+
+        growth = now->rlx_length - before->rlx_length;
+        if (growth)
+          {
+            apacket->insns [i].relax = this;
+
+            apacket->drlx += now->rlx_length / QDSP6_INSN_LEN;
+
+            /* Replace any padding for the extension. */
+            if (apacket->dpad)
+              {
+                apacket->dpad -= now->rlx_length / QDSP6_INSN_LEN;
+                growth        -= now->rlx_length;
+              }
+            else if (apacket->ddpad)
+              apacket->ddpad -= now->rlx_length / QDSP6_INSN_LEN;
+          }
+        delta += growth;
       }
 
-  if (sym)
-    {
-      to = S_GET_VALUE (sym);
-
-      if (stretch
-          && symbol_get_frag (sym)->relax_marker != fragP->relax_marker
-          && S_GET_SEGMENT (sym) == segment)
-        to += stretch;
-    }
-  else
-    to = 0;
-
-  if (apacket->insns [i].fc)
-    to += apacket->insns [i].fix->fx_offset;
-
-  before = now = qdsp6_relax_table + fragP->fr_subtype;
-
-  from = fragP->fr_address;
-  aim  = to - from;
-  for (next = now->rlx_more; next; )
-    if ((aim <  0 && aim >= now->rlx_backward)
-        || (aim >= 0 && aim <= now->rlx_forward))
-      next = 0;
-    else
-      {
-        /* Grow to next state.  */
-        this = next;
-        now = qdsp6_relax_table + this;
-        next = now->rlx_more;
-      }
-
-  growth = now->rlx_length - before->rlx_length;
-  if (growth)
-    {
-      fragP->fr_subtype = this;
-      apacket->drlx = now->rlx_length / QDSP6_INSN_LEN;
-
-      /* Replace any padding for the extension. */
-      if (apacket->dpad)
-        {
-          apacket->dpad -= now->rlx_length / QDSP6_INSN_LEN;
-          growth        -= now->rlx_length;
-        }
-      else if (apacket->ddpad)
-        apacket->ddpad -= now->rlx_length / QDSP6_INSN_LEN;
-    }
-
-  return (growth);
+  return (delta);
 }
 
-/**
-
-Process the resulting padding delta.
+/** Process the resulting padding delta.
 */
 int
 qdsp6_relax_falign
@@ -1114,9 +1133,7 @@ qdsp6_relax_falign
   return TRUE;
 }
 
-/**
-
-Determine if packet is not fetch-aligned and then request previous packets to
+/** Determine if packet is not fetch-aligned and then request previous packets to
 grow through padding NOPs, if possible, or through inserting a NOP-packet.
 */
 long
@@ -1219,9 +1236,7 @@ qdsp6_relax_falign_try
   return (QDSP6_INSN_LEN * (int) delta);
 }
 
-/**
-
-Extend some branches when otherwise the destination is out of reach.
+/** Extend some branches when otherwise the destination is out of reach.
 */
 
 int
@@ -1251,43 +1266,42 @@ qdsp6_estimate_size_before_relax
 
   apacket->ddpad = apacket->ddpkt = 0;
 
-  delta = QDSP6_INSN_LEN * (apacket->dpad + apacket->dpkt);
+  delta = QDSP6_INSN_LEN * (apacket->drlx + apacket->dpad + apacket->dpkt);
 
   if (apacket->relax)
     {
       symbolS *sym;
       size_t i;
 
-      for (i = 0, sym = NULL; i < MAX_PACKET_INSNS; i++)
+      for (i = 0, sym = NULL; i < apacket->size; i++)
         if (apacket->insns [i].flags & QDSP6_INSN_IS_RELAX
             && apacket->insns [i].fc)
           {
-            sym = apacket->insns [i].fix->fx_addsy;
-            break;
-          }
+            if (apacket->insns [i].relax == QDSP6_RELAX_DONE)
+              continue;
 
-      if (sym)
-        {
-          if (fragP->fr_subtype
-              || ((fragP->fr_subtype
-                   = ENCODE_RELAX (apacket->insns [i].operand.reloc_type))))
-            {
-              if (S_GET_SEGMENT (sym) != segment
-                  || (OUTPUT_FLAVOR == bfd_target_elf_flavour
-                      && ((S_IS_EXTERNAL (sym) && !S_IS_DEFINED (sym))
-                          || S_IS_WEAK (sym))))
-                /* Symbol is external, in another segment, or we need to keep a
-                  relocation so that weak symbols can be overridden.  In these
-                  cases, always add the extender. */
-                {
-                  apacket->drlx++;
-                  delta += qdsp6_relax_branch (fragP);
-                  /* Do not wane frag in case it needs another type of
-                     relaxation pass. */
-                }
-              else
-                delta += qdsp6_relax_table [fragP->fr_subtype].rlx_length;
-            }
+            sym = apacket->insns [i].fix->fx_addsy;
+
+            if (apacket->insns [i].relax == QDSP6_RELAX_NONE)
+              {
+                apacket->insns [i].relax
+                  = ENCODE_RELAX (apacket->insns [i].operand.reloc_type);
+                if (apacket->insns [i].relax == QDSP6_RELAX_NONE)
+                  continue;
+
+                if (S_GET_SEGMENT (sym) != segment
+                    || (OUTPUT_FLAVOR == bfd_target_elf_flavour
+                        && ((S_IS_EXTERNAL (sym) && !S_IS_DEFINED (sym))
+                            || S_IS_WEAK (sym))))
+                  {
+                    /* Symbol is external, in another segment, or weak, then
+                       an extender should be added. */
+                    apacket->drlx++;
+                    apacket->insns [i].relax
+                      = qdsp6_relax_table [apacket->insns [i].relax].rlx_more;
+                  }
+                delta += qdsp6_relax_table [apacket->insns [i].relax].rlx_length;
+              }
         }
     }
 
@@ -1317,7 +1331,6 @@ qdsp6_relax_frag (segT segment, fragS *fragP, long stretch)
 
   if (apacket->relax)
     delta += qdsp6_relax_branch_try (fragP, segment, stretch);
-  /* TODO: fetch-align branch-extended packets. */
   if (apacket->faligned)
     delta += qdsp6_relax_falign_try (fragP, segment, stretch);
 
@@ -1581,8 +1594,10 @@ qdsp6_parse_immediate
         {
           /* Skip over the 2nd '#' */
           str++;
-          is_x = qdsp6_extender;
+          is_x = (qdsp6_extender);
         }
+      else
+        is_x = (insn->opcode->attributes & MUST_EXTEND);
     }
   else if (!(operand->flags & QDSP6_OPERAND_PC_RELATIVE))
     return NULL;
@@ -1780,7 +1795,7 @@ qdsp6_insn_write
       fixP = fix_new_exp
         (frag_now, stream + offset - frag_now->fr_literal, QDSP6_INSN_LEN, exp,
          (operand->flags & QDSP6_OPERAND_PC_RELATIVE) == QDSP6_OPERAND_PC_RELATIVE,
-          reloc_type);
+         reloc_type);
       fixP->tc_fix_data = operand;
 
       if (operand->flags & (QDSP6_OPERAND_IS_LO16 | QDSP6_OPERAND_IS_HI16))
@@ -2032,7 +2047,7 @@ qdsp6_has_mem
 
   /* Count number of memory ops in this packet. */
   for (i = count = 0; i < qdsp6_packet_count (apacket); i++)
-    if (   apacket->insns [i].opcode
+    if (apacket->insns [i].opcode
         && (apacket->insns [i].opcode->attributes & A_RESTRICT_SINGLE_MEM_FIRST))
       count++;
 
@@ -3295,7 +3310,7 @@ qdsp6_assemble_pair
   qdsp6_packet_pair prepair;
   char pair [QDSP6_MAPPED_LEN], unpair [QDSP6_MAPPED_LEN];
   size_t i, j, k, a_branch, a_duplex;
-  size_t is_duplex, is_prefix;
+  size_t is_duplex, is_prefix, is_mem;
   int has_hits, has_ommited, has_room;
 
   /* Do nothing if pairing disabled. */
@@ -3387,6 +3402,11 @@ qdsp6_assemble_pair
           /* Skip a too long a pair. */
           continue;
 
+        /* Memory operations must be paired in source order. */
+        is_mem = (ainsn->opcode->attributes & A_RESTRICT_SINGLE_MEM_FIRST)
+                 && (apacket->insns [i].opcode->attributes
+                     & A_RESTRICT_SINGLE_MEM_FIRST);
+
         /* Create a pair and its mirror. */
         snprintf (pair, sizeof (pair), "%s%c%s",
                   apacket->insns [i].source, PACKET_PAIR, ainsn->source);
@@ -3399,8 +3419,8 @@ qdsp6_assemble_pair
         prepair.right.insn   = *ainsn;
 
         qdsp6_packet_init (&packet);
-        if (qdsp6_assemble (&packet, pair,   FALSE, TRUE)
-            || qdsp6_assemble (&packet, unpair, FALSE, TRUE))
+        if (qdsp6_assemble (&packet, pair, FALSE, TRUE)
+            || (!is_mem && qdsp6_assemble (&packet, unpair, FALSE, TRUE)))
           {
             is_duplex = (packet.insns [0].opcode->attributes & DUPLEX)? 1: 0;
             is_prefix = (packet.insns [0].flags & QDSP6_INSN_IS_KXED)? 1: 0;
@@ -4032,6 +4052,7 @@ qdsp6_find_noslot1
 /** Discard specified number of DCFETCH.
 
 It must not be called after packet has been written out.
+
 @param number # DCFETCH to discard, with "0" meaning all but one.
 @return # replacements performed.
  */
@@ -4042,13 +4063,10 @@ qdsp6_discard_dcfetch
   int count = 0, found = 0;
   size_t i;
 
-    // dcfetch fix:
-    // for V2, there cannot be 2 or more dcfetch instructions
-    // and a dcfetch cannot go into ndx 0
   if (!qdsp6_if_arch_v1 () && qdsp6_packet_count (apacket) > 1)
     {
       if (!number)
-        /* Replace all but one DCFETCH instruction. */
+        /* Discard all but one DCFETCH instruction. */
         for (i = 0; i < qdsp6_packet_count (apacket); i++)
           {
             if (!strncasecmp (apacket->insns [i].opcode->syntax,
@@ -4073,7 +4091,7 @@ qdsp6_discard_dcfetch
               }
           }
       else
-        /* Replace specified number of DCFETCH. */
+        /* Discard specified number of DCFETCH. */
         for (i = 0; number && i < qdsp6_packet_count (apacket); i++)
           if (!strncasecmp (apacket->insns [i].opcode->syntax,
                             QDSP6_DCFETCH, QDSP6_DCFETCH_LEN))
