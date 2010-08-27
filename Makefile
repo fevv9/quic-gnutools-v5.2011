@@ -35,6 +35,8 @@ ifneq ("$(shell $(MAKEINFO) --version | egrep 'texinfo[^0-9]*(4\.([0-6]))')","")
   MAKEINFO := /pkg/qct/software/gnu/texinfo/4.13a/bin/makeinfo
 endif
 
+PYTHON_INSTALL=/pkg/qct/software/python/2.7
+
 all: help
 
 .PHONY: help build_lnx build_win
@@ -67,7 +69,8 @@ build_win:
 	MAKEINFO=$(MAKEINFO) \
 	ISS_DIR=$(ISS_DIR) \
 	../configure \
-		 --x-includes=../win \
+		--with-python=/prj/dsp/qdsp6/austin/builds/hexbuild/python/Python26 \
+		--x-includes=../win \
   		--host=i386-pc-mingw32 \
   		--build=i686-linux \
 		$(CONFIGURE_OPTIONS)  && \
@@ -80,6 +83,7 @@ build_lnx:
 	MAKEINFO=$(MAKEINFO) \
 	ISS_DIR=$(ISS_DIR) \
 	../configure \
+		--with-python=$(PYTHON_INSTALL) \
 		$(CONFIGURE_OPTIONS)  && \
 	$(MAKE) -j $(JOBS) all
 
