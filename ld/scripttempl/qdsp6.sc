@@ -150,10 +150,10 @@ if test -z "${NO_SMALL_DATA}"; then
   {
     ${RELOCATING+${SBSS_START_SYMBOLS}}
     ${CREATE_SHLIB+*(.sbss2 .sbss2.* .gnu.linkonce.sb2.*)}
+    *(.dynsbss)
     *(.sbss.hot${RELOCATING+ .sbss.hot.* .gnu.linkonce.sb.hot.*})
     *(.sbss${RELOCATING+ .sbss.* .gnu.linkonce.sb.*})
     *(.scommon${RELOCATING+ .scommon.*})
-    *(.dynsbss)
     ${RELOCATING+. = ALIGN (${ALIGNMENT});}
     ${RELOCATING+${SBSS_END_SYMBOLS}}
   }"
@@ -535,6 +535,7 @@ fi
 cat <<EOF
 /* Code starts. */
   ${RELOCATING+. = ALIGN (DEFINED (TEXTALIGN)? (TEXTALIGN * 1K) : ${MAXPAGESIZE});}
+  ${TCM+. = ALIGN (DEFINED (EBI_CODE_CACHED_ALIGN)? EBI_CODE_CACHED_ALIGN : ${MAXPAGESIZE});}
 
   ${TCM+.BOOTUP : "{}" :BOOTUP}
 
@@ -578,6 +579,7 @@ cat <<EOF
 
 /* Constants start. */
   ${RELOCATING+. = ALIGN (DEFINED (RODATAALIGN)? (RODATAALIGN * 1K) : ${MAXPAGESIZE});}
+  ${TCM+. = ALIGN (DEFINED (EBI_DATA_CACHED_ALIGN)? EBI_DATA_CACHED_ALIGN : ${MAXPAGESIZE});}
 
   ${TCM+.CONST : "{}" :CONST}
 
@@ -596,6 +598,7 @@ cat <<EOF
   ${CREATE_PIE+${RELOCATING+. = ${SHLIB_DATA_ADDR-${DATA_SEGMENT_ALIGN}};}}
 
   ${RELOCATING+. = ALIGN (DEFINED (DATAALIGN)? (DATAALIGN * 1K) : ${MAXPAGESIZE});}
+  ${TCM+. = ALIGN (DEFINED (EBI_DATA_CACHED_ALIGN)? EBI_DATA_CACHED_ALIGN : ${MAXPAGESIZE});}
 
   ${TCM+.DATA : "{}" :DATA}
 
@@ -662,8 +665,8 @@ cat <<EOF
   ${BSS_PLT+${PLT}}
   .bss          ${RELOCATING-0} : ${TCM+AT (__ebi_pa_start__ + ADDR (.bss) - __ebi_va_start__)}
   {
-   *(.bss.hot${RELOCATING+ .bss.hot.* .gnu.linkonce.b.hot.*})
    *(.dynbss)
+   *(.bss.hot${RELOCATING+ .bss.hot.* .gnu.linkonce.b.hot.*})
    *(.bss${RELOCATING+ .bss.* .gnu.linkonce.b.*})
    *(COMMON)
    /* Align here to ensure that the .bss section occupies space up to
@@ -681,6 +684,7 @@ cat <<EOF
 
 /* Small data start. */
   ${RELOCATING+. = ALIGN (DEFINED (DATAALIGN)? (DATAALIGN * 1K) : 512K);}
+  ${TCM+. = ALIGN (DEFINED (EBI_DATA_CACHED_ALIGN)? EBI_DATA_CACHED_ALIGN : 512K);}
 
   ${TCM+.SDATA : "{}" :SDATA}
 
