@@ -154,7 +154,7 @@ if test -z "${NO_SMALL_DATA}"; then
     *(.sbss.hot${RELOCATING+ .sbss.hot.* .gnu.linkonce.sb.hot.*})
     *(.sbss${RELOCATING+ .sbss.* .gnu.linkonce.sb.*})
     *(.scommon${RELOCATING+ .scommon.*})
-    ${RELOCATING+. = ALIGN (${ALIGNMENT});}
+    ${RELOCATING+. = ALIGN (. != 0 ? ${ALIGNMENT} : 1);}
     ${RELOCATING+${SBSS_END_SYMBOLS}}
   }"
   SBSS2="
@@ -172,11 +172,10 @@ if test -z "${NO_SMALL_DATA}"; then
     *(.sdata.2${RELOCATING+ .sdata.2.* .gnu.linkonce.s.2.*})
     *(.sbss.2${RELOCATING+ .sbss.2.* .gnu.linkonce.sb.2.*})
     *(.scommon.2${RELOCATING+ .scommon.2.*})
+    *(.sdata.4${RELOCATING+ .sdata.4.* .gnu.linkonce.s.4.*})
     *(.sbss.4${RELOCATING+ .sbss.4.* .gnu.linkonce.sb.4.*})
     *(.scommon.4${RELOCATING+ .scommon.4.*})
-    *(.sdata.4${RELOCATING+ .sdata.4.* .gnu.linkonce.s.4.*})
-    *(.lita${RELOCATING+ .lita.* .gnu.linkonce.la.*})
-    *(.lit4${RELOCATING+ .lit4.* .gnu.linkonce.l4.*})
+    *(.lit[a4]${RELOCATING+ .lit[a4].* .gnu.linkonce.l[a4].*})
     *(.lit8${RELOCATING+ .lit8.* .gnu.linkonce.l8.*})
     *(.sdata.8${RELOCATING+ .sdata.8.* .gnu.linkonce.s.8.*})
     *(.sbss.8${RELOCATING+ .sbss.8.* .gnu.linkonce.sb.8.*})
