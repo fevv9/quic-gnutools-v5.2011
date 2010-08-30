@@ -566,6 +566,7 @@ static qdsp6_reg_score gArray [QDSP6_NUM_GENERAL_PURPOSE_REGS],
                        cArray [QDSP6_NUM_CONTROL_REGS],
                        sArray [QDSP6_NUM_SYS_CTRL_REGS],
                        pArray [QDSP6_NUM_PREDICATE_REGS],
+                       guArray[QDSP6_NUM_GUEST_REGS],
 // To keep track of register reads
            pNewArray [QDSP6_NUM_PREDICATE_REGS],
            pLateArray [QDSP6_NUM_PREDICATE_REGS];
@@ -4877,6 +4878,8 @@ qdsp6_check_insn
                         }
                       else if (operand->flags & QDSP6_OPERAND_IS_SYSTEM)
                         arrayPtr = sArray;
+                      else if (operand->flags & QDSP6_OPERAND_IS_GUEST)
+                        arrayPtr = guArray;
                       else
                         {
                           arrayPtr = gArray;
@@ -4921,6 +4924,7 @@ qdsp6_init_reg
   memset (cArray,     0, sizeof (cArray));
   memset (sArray,     0, sizeof (sArray));
   memset (pArray,     0, sizeof (pArray));
+  memset (guArray,    0, sizeof (guArray));
   memset (pNewArray,  0, sizeof (pNewArray));
   memset (pLateArray, 0, sizeof (pLateArray));
 }
