@@ -85,6 +85,7 @@
 #define QDSP6_NUM_CONTROL_REGS         32
 #define QDSP6_NUM_SYS_CTRL_REGS        64
 #define QDSP6_NUM_PREDICATE_REGS       4
+#define QDSP6_NUM_GUEST_REGS           32
 
 /* Specify the register sub-ranges. */
 #define QDSP6_SUBREGS    (16)
