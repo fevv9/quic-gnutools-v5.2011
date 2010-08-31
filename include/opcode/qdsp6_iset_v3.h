@@ -779,7 +779,7 @@
 { "dccleaninva ( Rs32 )"                   , "1010 000 00 10sssss 00------ --------"      , QDSP6_MACH, NULL, NULL, 0x1, 0, 0|A_RESTRICT_NOSLOT1|A_RESTRICT_SINGLE_MEM_FIRST, NULL},
 { "dccleaninvidx ( Rs32 )"                 , "1010 001 00 11sssss 00------ --------"      , QDSP6_MACH, NULL, NULL, 0x1, 0, 0|A_RESTRICT_NOSLOT1|A_RESTRICT_SINGLE_MEM_FIRST, NULL},
 { "dcfetch ( Rs32 )"                       , "0000sssss00000000000000000000000"           , QDSP6_MACH, NULL, NULL, 0xf, 0, 0, QDSP6_MAP_FNAME(Y2_dcfetch)}, /* mapped to dcfetch(Rs32+#0) */
-{ "dcfetch ( Rs32 + #u11:3 )"              , "1001 010 0 000 sssss 000--iii iiiiiiii"     , QDSP6_MACH, NULL, NULL, 0x1, 0, 0|A_RESTRICT_PREFERSLOT0, NULL},
+{ "dcfetch ( Rs32 + #u11:3 )"              , "1001 010 0 000 sssss 000--iii iiiiiiii"     , QDSP6_MACH, NULL, NULL, 0x1, 0, 0|A_RESTRICT_PREFERSLOT0|A_RESTRICT_SINGLE_MEM_FIRST, NULL},
 { "dcinva ( Rs32 )"                        , "1010 000 00 01sssss 00------ --------"      , QDSP6_MACH, NULL, NULL, 0x1, 0, 0|A_RESTRICT_NOSLOT1|A_RESTRICT_SINGLE_MEM_FIRST, NULL},
 { "dcinvidx ( Rs32 )"                      , "1010 001 00 10sssss 00------ --------"      , QDSP6_MACH, NULL, NULL, 0x1, 0, 0|A_RESTRICT_NOSLOT1|A_RESTRICT_SINGLE_MEM_FIRST, NULL},
 { "dckill"                                 , "1010 001 00 00----- 00------ --------"      , QDSP6_MACH, NULL, NULL, 0x1, 0, 0|A_RESTRICT_NOPACKET, NULL},
