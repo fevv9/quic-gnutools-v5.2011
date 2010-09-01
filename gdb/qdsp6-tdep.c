@@ -48,6 +48,7 @@
 #include "qdsp6-tdep.h"
 #include "cli/cli-decode.h"
 #include "qdsp6-sim.h"
+#include "watchpoint_types.h"
 
 
 /* following register values taken from architecture register definitions */
@@ -2763,8 +2764,54 @@ qdsp6_command (char *args, int from_tty)
 static void
 qdsp6_watch_command (char *args, int from_tty)
 {
-  printf_unfiltered (_("QDSP6 watch command.\n"));
+    char *substr;
+    long cycle = 0;
+    long interval = 0;
+    long address = 0;
+    long pagesize = 0;
+    char msg [80]  = {'0'};
 
+    substr = strtok(args, " \t\r\n");
+    if (substr != NULL)
+    {
+	if (!(strcmp (substr, "cycle")))
+	{
+	    if ((substr = strtok(NULL, " \t\r\n"))!=NULL)
+	    {
+		/* if not base 10 check for base 16 */
+		if ((cycle = strtol(substr, NULL, 10))==NULL)
+		  cycle = strtol(substr, NULL, 16);
+	    }
+	    if ((substr = strtok(NULL, " \t\r\n"))!=NULL)
+	    {
+		if ((interval = strtol(substr, NULL, 10))==NULL)
+		  interval = strtol(substr, NULL, 16);
+	    }
+
+	    sprintf(msg, "qRegWatch,%d,%x,%x", WATCHPOINT_PCYCLE,
+		    cycle, interval);
+	    putpkt (msg);
+  	    getpkt (&response, &gdb_rsp_ril_info_max_size , 0);
+	    
+	}
+	else if (!(strcmp (substr, "tlbmiss")))
+	{
+	    if ((substr = strtok(NULL, " \t\r\n"))!=NULL)
+	    {
+		if ((address = strtol(substr, NULL, 10))==NULL)
+		  address = strtol(substr, NULL, 16);
+	    }
+	    if ((substr = strtok(NULL, " \t\r\n"))!=NULL)
+	    {
+		if ((pagesize = strtol(substr, NULL, 10))==NULL)
+		  pagesize = strtol(substr, NULL, 16);
+	    }
+	    sprintf(msg, "qRegWatch,%d,%x,%x", WATCHPOINT_TLBMISS,
+		    address, pagesize);
+	    putpkt (msg);
+  	    getpkt (&response, &gdb_rsp_ril_info_max_size , 0);
+	}
+    }
 }
  
 void 
