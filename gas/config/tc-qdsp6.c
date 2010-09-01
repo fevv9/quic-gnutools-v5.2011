@@ -283,7 +283,6 @@ int qdsp6_is_prefix (qdsp6_insn);
 qdsp6_insn qdsp6_find_nop (void);
 qdsp6_insn qdsp6_find_kext (void);
 qdsp6_insn qdsp6_find_insn (const char *);
-void qdsp6_depend_init (void);
 int qdsp6_check_operand_args (const qdsp6_operand_arg [], size_t);
 int qdsp6_check_new_predicate (void);
 int qdsp6_pair_open (void);
@@ -509,8 +508,6 @@ typedef enum _qdsp6_relax_state
       r = QDSP6_RELAX_NONE; \
     r;})
 
-#define QDSP6_RELAXED(R) ((R) + 1)
-
 #define QDSP6_RANGE(B) (~(~0L << ((B) - 1)) \
                         & -(2 * MAX_PACKET_INSNS * QDSP6_INSN_LEN))
 
@@ -521,16 +518,16 @@ const struct relax_type qdsp6_relax_table [] =
   {
     /* Dummy entry. */
     {              0L,                0L,
-                    0, QDSP6_RELAX_NONE},
+                    0,  QDSP6_RELAX_NONE},
     /* Entries for BFD_RELOC_QDSP6_B9_PCREL. */
     {QDSP6_RANGE (11), -QDSP6_RANGE (11),
-                    0, QDSP6_RELAXED (QDSP6_RELAX_B9)},
+                    0,  QDSP6_RELAX_B9_A},
     {              0L,                0L,
-       QDSP6_INSN_LEN, QDSP6_RELAX_DONE},
+       QDSP6_INSN_LEN,  QDSP6_RELAX_DONE},
     /* Pair of entries for other relocations go here. */
     /* Final entry. */
     {              0L,                0L,
-                    0, QDSP6_RELAX_NONE},
+                    0,  QDSP6_RELAX_NONE},
   };
 
 static int qdsp6_autoand = TRUE;
@@ -4684,6 +4681,25 @@ qdsp6_packet_check
   char *cp;
   int pred_reg_rd_mask;
 
+  /* Initialize score-boards. */
+  {
+    numOfOvf = 0;
+
+    numOfBranchAddr  = numOfBranchAddrMax1 = 0;
+    numOfBranchMax1  = numOfBranchStiff    = 0;
+    numOfBranchRelax = numOfBranchRelax2nd = numOfBranchAddrRelax = 0;
+
+    numOfLoopMax1 = 0;
+
+    memset (gArray,     0, sizeof (gArray));
+    memset (cArray,     0, sizeof (cArray));
+    memset (sArray,     0, sizeof (sArray));
+    memset (pArray,     0, sizeof (pArray));
+    memset (guArray,    0, sizeof (guArray));
+    memset (pNewArray,  0, sizeof (pNewArray));
+    memset (pLateArray, 0, sizeof (pLateArray));
+  }
+
   for (i = 0; i < apacket->size; i++)
     {
       ainsn = apacket->insns + i;
@@ -4866,10 +4882,6 @@ qdsp6_packet_check
                               break;
                             }
                         }
-                      else if (operand->flags & QDSP6_OPERAND_IS_SYSTEM)
-                        arrayPtr = sArray;
-                      else if (operand->flags & QDSP6_OPERAND_IS_GUEST)
-                        arrayPtr = guArray;
                       else
                         {
                           if (!qdsp6_extract_operand
@@ -4899,6 +4911,8 @@ qdsp6_packet_check
                             }
                           else if (operand->flags & QDSP6_OPERAND_IS_SYSTEM)
                             arrayPtr = sArray;
+                          else if (operand->flags & QDSP6_OPERAND_IS_GUEST)
+                            arrayPtr = guArray;
                           else
                             {
                               arrayPtr = gArray;
@@ -4946,27 +4960,6 @@ qdsp6_packet_check
         }
       while (TRUE);
     }
-}
-
-void
-qdsp6_depend_init
-(void)
-{
-  numOfOvf = 0;
-
-  numOfBranchAddr  = numOfBranchAddrMax1 = 0;
-  numOfBranchMax1  = numOfBranchStiff    = 0;
-  numOfBranchRelax = numOfBranchRelax2nd = numOfBranchAddrRelax = 0;
-
-  numOfLoopMax1 = 0;
-
-  memset (gArray,     0, sizeof (gArray));
-  memset (cArray,     0, sizeof (cArray));
-  memset (sArray,     0, sizeof (sArray));
-  memset (pArray,     0, sizeof (pArray));
-  memset (guArray,    0, sizeof (guArray));
-  memset (pNewArray,  0, sizeof (pNewArray));
-  memset (pLateArray, 0, sizeof (pLateArray));
 }
 
 /** Return the number of slots.
@@ -5076,8 +5069,6 @@ qdsp6_packet_end
 (qdsp6_packet *apacket)
 {
   int n;
-
-  qdsp6_depend_init ();
 
   /* Checking for multiple restrictions in packet. */
   qdsp6_packet_check (apacket);
