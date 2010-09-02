@@ -395,7 +395,8 @@ gdbpy_new_objfile (struct objfile *objfile)
   strcpy (filename + len, GDBPY_AUTO_FILENAME);
 
 #ifdef USE_WIN32API
-  input = PyFile_FromString(filename, "r");
+  if ((_access (filename, 0)) != -1)
+    input = PyFile_FromString(filename, "r");
 #else
   input = fopen (filename, "r");
 #endif
@@ -415,7 +416,8 @@ gdbpy_new_objfile (struct objfile *objfile)
 
       make_cleanup (xfree, debugfile);
 #ifdef USE_WIN32API
-      input = PyFile_FromString(debugfile, "r");
+      if ((_access (filename, 0)) != -1)
+        input = PyFile_FromString(debugfile, "r");
 #else
       input = fopen (debugfile, "r");
 #endif
@@ -434,7 +436,8 @@ gdbpy_new_objfile (struct objfile *objfile)
 
       make_cleanup (xfree, debugfile);
 #ifdef USE_WIN32API
-      input = PyFile_FromString(debugfile, "r");
+      if ((_access (filename, 0)) != -1)
+        input = PyFile_FromString(debugfile, "r");
 #else
       input = fopen (debugfile, "r");
 #endif
