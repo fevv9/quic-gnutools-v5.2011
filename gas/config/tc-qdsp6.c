@@ -157,6 +157,7 @@
 typedef struct _qdsp6_literal
   {
     expressionS e;
+    expressionS e1;
     segT        sec;
     int         sub;
     symbolS    *sym;
@@ -326,7 +327,7 @@ int qdsp6_gp_const_lookup (char *str, char *);
 segT qdsp6_create_sbss_section (const char *, flagword, unsigned int);
 segT qdsp6_create_scom_section (const char *, flagword, unsigned int);
 segT qdsp6_create_literal_section (const char *, flagword, unsigned int);
-qdsp6_literal *qdsp6_add_to_lit_pool (expressionS *, size_t);
+qdsp6_literal *qdsp6_add_to_lit_pool (expressionS *, expressionS *, size_t);
 void qdsp6_shuffle_packet (qdsp6_packet *, size_t *);
 void qdsp6_shuffle_handle (qdsp6_packet *);
 void qdsp6_shuffle_prepare (qdsp6_packet *);
@@ -2717,10 +2718,16 @@ qdsp6_create_literal_section
   return (new_section);
 }
 
+#define IS_SAME_SYMBOL(e,e1) (((e).X_op == (e1)->X_op) \
+                              && ((e).X_op == O_symbol) \
+                              && ((e).X_op_symbol == (e1)->X_op_symbol) \
+                              && ((e).X_add_symbol == (e1)->X_add_symbol) \
+                              && ((e).X_add_number == (e1)->X_add_number))
+
 /* add the expression exp to the .sdata literal pool */
 qdsp6_literal *
 qdsp6_add_to_lit_pool
-(expressionS *exp, size_t size)
+(expressionS *exp, expressionS *exp1, size_t size)
 {
   qdsp6_literal *literal, *last;
   segT current_section = now_seg;
@@ -2736,19 +2743,23 @@ qdsp6_add_to_lit_pool
     {
       /* Save the last node. */
       last = literal;
-
+      
+      // check for a constant value
       if ((literal->e.X_op == exp->X_op)
           && (literal->e.X_op == O_constant)
           && ((literal->e.X_add_number & mask) == (exp->X_add_number & mask))
           && (literal->size == size))
         break;
+      
+      // check for 32-bit or 64-bit (two 32-bit) symbol
+      if (IS_SAME_SYMBOL(literal->e, exp) 
+          && IS_SAME_SYMBOL(literal->e1, exp1)
+          && literal->size == size)
+        break;
 
-      if ((literal->e.X_op == exp->X_op)
-          && (literal->e.X_op == O_symbol)
-          && (literal->e.X_op_symbol == exp->X_op_symbol)
-          && (literal->e.X_add_symbol == exp->X_add_symbol)
-          && (literal->e.X_add_number == exp->X_add_number)
-          && (literal->size == size))
+      // check for a 32-bit symbol in a 64-bit (2 32-bit) symbol
+      if (IS_SAME_SYMBOL(literal->e1, exp)
+          && literal->size == 8 && size == 4)
         break;
     }
 
@@ -2771,6 +2782,7 @@ qdsp6_add_to_lit_pool
 
       /* get the expression */
       literal->e = *exp;
+      literal->e1 = *exp1;
 
       if (literal->e.X_op == O_constant)
         /* Create a constant symbol (with its value as the suffix). */
@@ -2828,6 +2840,11 @@ qdsp6_add_to_lit_pool
         S_SET_EXTERNAL (literal->sym);
 
       /* Emit the data definition. */
+      if(literal->e1.X_op == O_symbol){
+        size = size/2;
+        emit_expr(&(literal->e1), size);
+      }
+
       emit_expr (&(literal->e), size);
 
       /* Restore the last section. */
@@ -2876,26 +2893,30 @@ qdsp6_gp_const_lookup
     = "=[[:space:]]*" REGEX_ENCLOSE ("const32") "[[:space:]]*\\(#?(.+)\\)";
   static const char ex_c64 []
     = "=[[:space:]]*" REGEX_ENCLOSE ("const64") "[[:space:]]*\\(#?(.+)\\)";
+  static const char ex_c64_2 []
+    = "=[[:space:]]*" REGEX_ENCLOSE ("const64") "[[:space:]]*\\(#?(.+),[[:space:]]*#?(.+)\\)";
   static const char ex_r32 [] =
     "^" REGEX_ENCLOSE ("(r((0*[12]?[0-9])|30|31))|sp|fp|lr");
   static const char ex_r64 [] =
     "^" REGEX_ENCLOSE ("((r((0*[12]?[13579])|31))|sp|lr):"
                        "((0*[12]?[02468])|30|fp)");
-  static regex_t re_c32, re_c64, re_r32, re_r64;
-  regmatch_t rm_left [1], rm_right [2];
+  static regex_t re_c32, re_c64, re_c64_2, re_r32, re_r64;
+  regmatch_t rm_left [1], rm_right [3];
   static int re_ok;
   int er_re;
   int size;
-  expressionS exp;
+  expressionS exp, exp1;
   qdsp6_literal *litcurptr;
   char *save;
   segT seg;
+  int num_args;
 
   if (!re_ok)
     {
       /* Compile REs. */
       assert (!regcomp (&re_c32, ex_c32, REG_EXTENDED | REG_ICASE));
       assert (!regcomp (&re_c64, ex_c64, REG_EXTENDED | REG_ICASE));
+      assert (!regcomp (&re_c64_2, ex_c64_2, REG_EXTENDED | REG_ICASE));
       assert (!regcomp (&re_r32, ex_r32, REG_EXTENDED | REG_ICASE));
       assert (!regcomp (&re_r64, ex_r64, REG_EXTENDED | REG_ICASE));
 
@@ -2911,6 +2932,16 @@ qdsp6_gp_const_lookup
         return FALSE;
       else
         size = 4;
+      num_args = 1;
+    }
+  else if (!(er_re = regexec (&re_c64_2, str, 3, rm_right, 0)))
+    {
+      if (rm_right [1].rm_so < 0 || rm_right [1].rm_eo < 0
+          || (er_re = regexec (&re_r64, str, 1, rm_left, 0)))
+        return FALSE;
+      else
+        size = 8;
+      num_args = 2;
     }
   else if (!(er_re = regexec (&re_c64, str, 2, rm_right, 0)))
     {
@@ -2919,6 +2950,7 @@ qdsp6_gp_const_lookup
         return FALSE;
       else
         size = 8;
+      num_args = 1;
     }
   else
     return FALSE;
@@ -2927,10 +2959,20 @@ qdsp6_gp_const_lookup
   save = input_line_pointer;
   input_line_pointer = str + rm_right [1].rm_so;
   seg = expression (&exp);
+  if (num_args == 2) 
+    {
+      input_line_pointer = str + rm_right [2].rm_so;
+      seg = expression(&exp1);
+    }
+  else {
+    exp1.X_op = O_absent;
+    exp1.X_add_symbol = exp1.X_op_symbol = NULL;
+    exp1.X_add_number = 0;
+  }
   input_line_pointer = save;
 
   /* 64-bit literals must be constants. */
-  if (exp.X_op != O_constant && size == 8)
+  if (exp.X_op != O_constant && size == 8 && num_args == 1)
     {
       as_bad (_("64-bit expression `%.*s' is not constant."),
               rm_right [1].rm_eo - rm_right [1].rm_so,
@@ -2938,9 +2980,16 @@ qdsp6_gp_const_lookup
 
       return FALSE;
     }
+  /* const64 with two args only allows symbols */
+  if (num_args == 2 && (exp.X_op != O_symbol || exp1.X_op != O_symbol || size != 8))
+    {
+      as_bad (_("Arguments in expression `%.*s' must be symbols."),
+              rm_right [0].rm_eo - rm_right [0].rm_so,
+              str + rm_right [0].rm_so);
+    }
 
   /* Add a literal for the expression. */
-  litcurptr = qdsp6_add_to_lit_pool (&exp, size);
+  litcurptr = qdsp6_add_to_lit_pool (&exp, &exp1, size);
 
   /* Replace original "insn" with a GP-relative load from the literal. */
   if (litcurptr)
