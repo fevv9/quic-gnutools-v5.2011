@@ -2635,7 +2635,7 @@ qdsp6_dis_operand
  char *enc, char *buf, char **errmsg)
 {
   static bfd_vma previous;
-  static int num_xer, xer, xvalue;
+  static int xer, xreg, xvalue;
   int xed, value;
   static struct {int n, y;} reg [MAX_PACKET_INSNS];
   size_t ireg;
@@ -2648,7 +2648,7 @@ qdsp6_dis_operand
   xed = FALSE;
   if (operand->flags & QDSP6_OPERAND_IS_KXER)
     {
-      num_xer++;
+      xreg++;
       xer = TRUE;
       xvalue = value;
     }
@@ -2677,12 +2677,12 @@ qdsp6_dis_operand
   if (previous != paddr)
     {
       previous = paddr;
-      num_xer = 0;
+      xreg = 0;
       memset (reg, 0, sizeof (reg));
     }
 
   ireg = ((iaddr - paddr) % (MAX_PACKET_INSNS * QDSP6_INSN_LEN)) / MAX_PACKET_INSNS;
-  ireg -= num_xer;
+  ireg -= xreg;
   if ((operand->flags & QDSP6_OPERAND_IS_WRITE)
       && ((operand->flags & QDSP6_OPERAND_IS_REGISTER)
           || (operand->flags & QDSP6_OPERAND_IS_PAIR)
