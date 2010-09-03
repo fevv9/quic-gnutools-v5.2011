@@ -45,8 +45,6 @@
 #    define MIN(a,b) ((a) < (b) ? (a) : (b))
 #  endif
 
-#define regcomp xregcomp
-#define regexec xregexec
 #endif
 #define MAYBE (TRUE + 1)
 #define TRUER(a, b) ((a) == TRUE \
@@ -56,15 +54,6 @@
                        : (a) == MAYBE \
                          ? (a) \
                          : (b))
-
-#ifdef __CYGWIN__
-#  define REGEX_LEFT(re) "[[:<:]]" re
-#  define REGEX_RITE(re) re "[[:>:]]"
-#else
-#  define REGEX_LEFT(re) "\\<" re
-#  define REGEX_RITE(re) re "\\>"
-#endif
-#define REGEX_ENCLOSE(re) REGEX_LEFT (REGEX_RITE (re))
 
 #define DEFAULT_CODE_ALIGNMENT (2) /* log2 (4) */
 #define DEFAULT_CODE_FALIGN    (4) /* log2 (16) */
@@ -279,6 +268,7 @@ void qdsp6_common (int);
 void qdsp6_option (int);
 void qdsp6_falign (int);
 void qdsp6_init (int);
+void qdsp6_frag_init (fragS *, fragS *);
 int qdsp6_is_nop (qdsp6_insn);
 int qdsp6_is_prefix (qdsp6_insn);
 qdsp6_insn qdsp6_find_nop (void);
@@ -1183,7 +1173,7 @@ qdsp6_relax_falign_try
             {
               zpacket = &previous->tc_frag_data->packet;
 
-              if (previous->fr_type == rs_fill)
+              if (previous->fr_type == rs_fill) /* TODO: rs_space too? */
                 /* Skip standard frags. */
                 continue;
               else if (previous->fr_type != rs_machine_dependent)
@@ -1223,10 +1213,20 @@ qdsp6_relax_falign_try
                 break;
             }
 
-          if (left && bpacket)
-            /* Force fetch-alignment by inserting a NOP-packet. */
-            bpacket->ddpkt += ((bpacket->dpkt + left) % MAX_PACKET_INSNS)
-                              - bpacket->dpkt;
+          if (left)
+            {
+              if (bpacket)
+                /* Force fetch-alignment by inserting a NOP-packet. */
+                bpacket->ddpkt += ((bpacket->dpkt + left) % MAX_PACKET_INSNS)
+                                  - bpacket->dpkt;
+              else
+                {
+                  /* Without a previous packet, this packet cannot be
+                     fetch-aligned. */
+                  saligning = NULL;
+                  faligning = NULL;
+                }
+            }
         }
     }
 
@@ -1353,15 +1353,16 @@ qdsp6_convert_frag
 int qdsp6_start_label
 (char c, char *before, char *after)
 {
-  static int re_ok;
-  static const char *ex_before;
   static const char ex_before_legacy [] =
-    REGEX_LEFT ("((r((0*[12]?[13579])|31))|sp|lr|p3)$");
+    "\\<((r((0*[12]?[13579])|31))|sp|lr|p3)$";
+  static const char ex_after_legacy [] =
+    "^((0*[12]?[02468])|30|fp)\\>";
   static const char ex_before_pairs [] =
-    REGEX_LEFT ("(((c|g|r|s)((0*[12]?[13579])|31))|sp|lr|p3)$");
-  static const char ex_after [] =
-    REGEX_RITE ("^((0*[12]?[02468])|30|fp)");
+    "\\<(((c|g|r)((0*[12]?[13579])|31))|(s((0*[12345]?[13579])|61|63))|sp|lr|p3)$";
+  static const char ex_after_pairs [] =
+    "^((0*[12345]?[02468])|60|62|fp)\\>";
   static regex_t re_before, re_after;
+  static int re_ok;
   int er_before, er_after;
 
   /* Labels require a colon. */
@@ -1373,18 +1374,23 @@ int qdsp6_start_label
 
   if (!re_ok)
     {
+      const char *ex_before, *ex_after;
+
       ex_before = qdsp6_if_arch_pairs ()? ex_before_pairs: ex_before_legacy;
+      ex_after  = qdsp6_if_arch_pairs ()? ex_after_pairs:  ex_after_legacy;
 
       /* Compile RE for GPR or predicate pairs. */
-      assert (!regcomp (&re_before, ex_before, REG_EXTENDED | REG_ICASE | REG_NOSUB));
-      assert (!regcomp (&re_after,  ex_after,  REG_EXTENDED | REG_ICASE | REG_NOSUB));
+      assert (!xregcomp (&re_before, ex_before,
+                         REG_EXTENDED | REG_ICASE | REG_NOSUB));
+      assert (!xregcomp (&re_after,  ex_after,
+                         REG_EXTENDED | REG_ICASE | REG_NOSUB));
 
       re_ok = TRUE;
     }
 
   /* Register pairs are not labels. */
-  if ( !(er_before = regexec (&re_before, before, 0, NULL, 0))
-       && !(er_after  = regexec (&re_after,  after,  0, NULL, 0)))
+  if ( !(er_before = xregexec (&re_before, before, 0, NULL, 0))
+       && !(er_after = xregexec (&re_after,  after,  0, NULL, 0)))
     return FALSE;
 
   /* After everything else has been tried, this must be a label,
@@ -1476,8 +1482,24 @@ qdsp6_init
     }
 }
 
-/* Insert an operand value into an instruction. */
+/** Initialize custom data in frag.
 
+@param fragP Pointer to frag to be initialized.
+@param previus Optional pointer to previous frag.
+*/
+void
+qdsp6_frag_init
+(fragS *fragP, fragS *previous)
+{
+  if (!fragP->tc_frag_data)
+    fragP->tc_frag_data = xmalloc (sizeof (*fragP->tc_frag_data));
+
+  if (fragP != previous)
+    fragP->tc_frag_data->previous = previous;
+}
+
+/** Insert an operand value into an instruction.
+*/
 void
 qdsp6_insert_operand
 (char *where, const qdsp6_operand *operand, offsetT val, fixS *fixP)
@@ -1494,7 +1516,7 @@ qdsp6_insert_operand
 
   opcode = qdsp6_lookup_insn (insn);
   if (!opcode)
-    as_bad ("opcode not found.");
+    as_bad (_("opcode not found."));
 
   if (!qdsp6_encode_operand
          (operand, &insn, opcode, val,
@@ -1505,7 +1527,8 @@ qdsp6_insert_operand
         if (fixP && fixP->fx_file)
           {
             char tmpError [200];
-  	    sprintf(tmpError, " when resolving symbol in file %s at line %d.", fixP->fx_file, fixP->fx_line);
+  	    sprintf (tmpError, _(" when resolving symbol in file %s at line %d."),
+  	             fixP->fx_file, fixP->fx_line);
             strcat (errmsg, tmpError);
           }
 
@@ -2179,7 +2202,7 @@ qdsp6_packet_insert
     return FALSE;
 
   if ((size + duplex + relax < MAX_PACKET_INSNS)
-      || (length + prefixed + relax < MAX_PACKET_INSNS))
+      && (length + prefixed + relax < MAX_PACKET_INSNS))
     {
       packet->insns [qdsp6_packet_count (packet)] = *insn;
       packet->insns [qdsp6_packet_count (packet)].padded = pad;
@@ -2537,14 +2560,20 @@ qdsp6_packet_write
      determine which packet bits to set. */
   req_insns = qdsp6_packet_count (apacket) - max_skip;
 
+  /* Make sure that packet frags have nothing else. */
+  if (obstack_object_size (&frchain_now->frch_obstack))
+    {
+      previous = frag_now;
+      frag_wane (frag_now);
+      frag_new (0);
+      qdsp6_frag_init (frag_now, previous);
+    }
+
+  /* Make room for maximum packet size and possible padding. */
   previous = frag_now;
   frag_grow (2 * MAX_PACKET_INSNS * QDSP6_INSN_LEN);
   first = frag_more (req_insns * QDSP6_INSN_LEN);
-  if (!frag_now->tc_frag_data)
-    {
-      frag_now->tc_frag_data = xmalloc (sizeof (*frag_now->tc_frag_data));
-      frag_now->tc_frag_data->previous = previous != frag_now? previous: NULL;
-    }
+  qdsp6_frag_init (frag_now, previous);
 
   /* Initialize scratch packet. */
   frag_now->tc_frag_data->packet = *apacket;
@@ -2597,8 +2626,7 @@ qdsp6_packet_write
   frag_var (rs_machine_dependent,
             (2 * MAX_PACKET_INSNS - req_insns) * QDSP6_INSN_LEN,
             0, 0, NULL, 0, first);
-  frag_now->tc_frag_data = xmalloc (sizeof (*frag_now->tc_frag_data));
-  frag_now->tc_frag_data->previous = previous;
+  qdsp6_frag_init (frag_now, previous);
   qdsp6_packet_init (&frag_now->tc_frag_data->packet);
 
   /* Prepare packet for next insns. */
@@ -2743,16 +2771,16 @@ qdsp6_add_to_lit_pool
     {
       /* Save the last node. */
       last = literal;
-      
+
       // check for a constant value
       if ((literal->e.X_op == exp->X_op)
           && (literal->e.X_op == O_constant)
           && ((literal->e.X_add_number & mask) == (exp->X_add_number & mask))
           && (literal->size == size))
         break;
-      
+
       // check for 32-bit or 64-bit (two 32-bit) symbol
-      if (IS_SAME_SYMBOL(literal->e, exp) 
+      if (IS_SAME_SYMBOL(literal->e, exp)
           && IS_SAME_SYMBOL(literal->e1, exp1)
           && literal->size == size)
         break;
@@ -2890,16 +2918,19 @@ qdsp6_gp_const_lookup
 (char *str, char *new_str)
 {
   static const char ex_c32 []
-    = "=[[:space:]]*" REGEX_ENCLOSE ("const32") "[[:space:]]*\\(#?(.+)\\)";
+    = "=[[:space:]]*" "\\<const32\\>" "[[:space:]]*"
+      "\\([[:space:]]*#?[[:space:]]*(.+)[[:space:]]*\\)";
   static const char ex_c64 []
-    = "=[[:space:]]*" REGEX_ENCLOSE ("const64") "[[:space:]]*\\(#?(.+)\\)";
+    = "=[[:space:]]*" "\\<const64\\>" "[[:space:]]*"
+      "\\([[:space:]]*#?[[:space:]]*(.+)[[:space:]]*\\)";
   static const char ex_c64_2 []
-    = "=[[:space:]]*" REGEX_ENCLOSE ("const64") "[[:space:]]*\\(#?(.+),[[:space:]]*#?(.+)\\)";
-  static const char ex_r32 [] =
-    "^" REGEX_ENCLOSE ("(r((0*[12]?[0-9])|30|31))|sp|fp|lr");
-  static const char ex_r64 [] =
-    "^" REGEX_ENCLOSE ("((r((0*[12]?[13579])|31))|sp|lr):"
-                       "((0*[12]?[02468])|30|fp)");
+    = "=[[:space:]]*" "\\<const64\\>" "[[:space:]]*"
+      "\\([[:space:]]*#?[[:space:]]*(.+)[[:space:]]*,"
+         "[[:space:]]*#?[[:space:]]*(.+)[[:space:]]*\\)";
+  static const char ex_r32 []
+    = "^\\<(r((0*[12]?[0-9])|30|31))|sp|fp|lr\\>";
+  static const char ex_r64 []
+    = "^\\<((r((0*[12]?[13579])|31))|sp|lr):((0*[12]?[02468])|30|fp)\\>";
   static regex_t re_c32, re_c64, re_c64_2, re_r32, re_r64;
   regmatch_t rm_left [1], rm_right [3];
   static int re_ok;
@@ -2914,21 +2945,21 @@ qdsp6_gp_const_lookup
   if (!re_ok)
     {
       /* Compile REs. */
-      assert (!regcomp (&re_c32, ex_c32, REG_EXTENDED | REG_ICASE));
-      assert (!regcomp (&re_c64, ex_c64, REG_EXTENDED | REG_ICASE));
-      assert (!regcomp (&re_c64_2, ex_c64_2, REG_EXTENDED | REG_ICASE));
-      assert (!regcomp (&re_r32, ex_r32, REG_EXTENDED | REG_ICASE));
-      assert (!regcomp (&re_r64, ex_r64, REG_EXTENDED | REG_ICASE));
+      assert (!xregcomp (&re_c32, ex_c32, REG_EXTENDED | REG_ICASE));
+      assert (!xregcomp (&re_c64, ex_c64, REG_EXTENDED | REG_ICASE));
+      assert (!xregcomp (&re_c64_2, ex_c64_2, REG_EXTENDED | REG_ICASE));
+      assert (!xregcomp (&re_r32, ex_r32, REG_EXTENDED | REG_ICASE));
+      assert (!xregcomp (&re_r64, ex_r64, REG_EXTENDED | REG_ICASE));
 
       re_ok = TRUE;
     }
 
   /* Get the left and right-side expressions and
      distinguish between CONST32 and CONST64. */
-  if (!(er_re = regexec (&re_c32, str, 2, rm_right, 0)))
+  if (!(er_re = xregexec (&re_c32, str, 2, rm_right, 0)))
     {
       if (rm_right [1].rm_so < 0 || rm_right [1].rm_eo < 0
-          || (er_re = regexec (&re_r32, str, 1, rm_left, 0)))
+          || (er_re = xregexec (&re_r32, str, 1, rm_left, 0)))
         return FALSE;
       else
         size = 4;
@@ -2943,10 +2974,10 @@ qdsp6_gp_const_lookup
         size = 8;
       num_args = 2;
     }
-  else if (!(er_re = regexec (&re_c64, str, 2, rm_right, 0)))
+  else if (!(er_re = xregexec (&re_c64, str, 2, rm_right, 0)))
     {
       if (rm_right [1].rm_so < 0 || rm_right [1].rm_eo < 0
-          || (er_re = regexec (&re_r64, str, 1, rm_left, 0)))
+          || (er_re = xregexec (&re_r64, str, 1, rm_left, 0)))
         return FALSE;
       else
         size = 8;
@@ -2959,7 +2990,7 @@ qdsp6_gp_const_lookup
   save = input_line_pointer;
   input_line_pointer = str + rm_right [1].rm_so;
   seg = expression (&exp);
-  if (num_args == 2) 
+  if (num_args == 2)
     {
       input_line_pointer = str + rm_right [2].rm_so;
       seg = expression(&exp1);
@@ -4036,7 +4067,7 @@ md_apply_fix
             {
               asymbol *sym = symbol_get_bfdsym (fixP->fx_addsy);
               as_bad_where (fixP->fx_file, fixP->fx_line,
-                            "unknown relocation for symbol `%s'.",
+                            _("unknown relocation for symbol `%s'."),
                             sym->name);
             }
         }
@@ -4060,7 +4091,7 @@ tc_gen_reloc
   reloc->howto = bfd_reloc_type_lookup (stdoutput, fixP->fx_r_type);
   if (reloc->howto == (reloc_howto_type *) NULL) {
     as_bad_where (fixP->fx_file, fixP->fx_line,
-                  "assembler internal error: can't export reloc type %d (\"%s\").",
+                  _("assembler internal error: can't export reloc type %d (\"%s\")."),
                   fixP->fx_r_type,
                   bfd_get_reloc_code_name (fixP->fx_r_type));
     return NULL;
@@ -4912,8 +4943,8 @@ qdsp6_packet_check
 
                           if (ainsn->opcode->attributes & A_RESTRICT_LATEPRED)
                             pLateArray [reg_num].used++;
-                          qdsp6_check_predicate (reg_num, ainsn->opcode);
 
+                          qdsp6_check_predicate (reg_num, ainsn->opcode);
                           if (operand->flags & QDSP6_OPERAND_IS_PAIR)
                             qdsp6_check_predicate (reg_num + 1, ainsn->opcode);
 

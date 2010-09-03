@@ -90,6 +90,8 @@ extern const char qdsp6_symbol_chars [];
 
 struct qdsp6_frag_data;
 #define TC_FRAG_TYPE struct qdsp6_frag_data*
+extern void qdsp6_frag_init (fragS *, fragS *);
+#define TC_FRAG_INIT(F) qdsp6_frag_init (F, NULL)
 
 /* Make sure we don't resolve fixups for pc relative relocations */
 #define TC_FORCE_RELOCATION_LOCAL(FIX) \
