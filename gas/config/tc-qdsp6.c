@@ -208,6 +208,7 @@ typedef struct
     size_t drlx, ddrlx; /* Deltas in extensions. */
     size_t dpad, ddpad; /* Deltas in padding NOPs. */
     size_t dpkt, ddpkt; /* Deltas in padding NOPs in packets. */
+    unsigned lineno; /* Line number at closing. */
     char faligned; /* Packet should be fetch-aligned. */
     char is_inner; /* Packet has :endloop0. */
     char is_outer; /* Packet has :endloop1. */
@@ -1494,7 +1495,7 @@ qdsp6_frag_init
   if (!fragP->tc_frag_data)
     fragP->tc_frag_data = xmalloc (sizeof (*fragP->tc_frag_data));
 
-  if (fragP != previous)
+  if (previous && fragP != previous)
     fragP->tc_frag_data->previous = previous;
 }
 
@@ -5050,7 +5051,7 @@ size_t
 qdsp6_packet_slots
 (const qdsp6_packet *apacket)
 {
-  return (apacket->size + apacket->duplex + apacket->relax);
+  return (apacket->size + apacket->duplex);
 }
 
 /** Return the number of words.
@@ -5148,7 +5149,13 @@ void
 qdsp6_packet_end
 (qdsp6_packet *apacket)
 {
+  char *file;
+  unsigned lineno;
   int n;
+
+  /* Grab line number. */
+  as_where (&file, &lineno);
+  apacket->lineno = lineno;
 
   /* Checking for multiple restrictions in packet. */
   qdsp6_packet_check (apacket);
@@ -5295,7 +5302,7 @@ qdsp6_packet_end_lookahead
         }
       else if (*input_line_pointer == '\n')
         {
-          if (input_line_pointer[-1] == '\n')
+          if (input_line_pointer [-1] == '\n')
             bump_line_counters ();
 
           input_line_pointer += 1;
@@ -5316,8 +5323,8 @@ qdsp6_packet_end_lookahead
           input_line_pointer += 1;
         }
       else if (!inner
-               && !strncmp (input_line_pointer,
-                            PACKET_END_INNER, strlen (PACKET_END_INNER)))
+               && !strncasecmp (input_line_pointer,
+                                PACKET_END_INNER, strlen (PACKET_END_INNER)))
         {
           if (input_line_pointer [-1] == '\n')
             bump_line_counters ();
@@ -5329,8 +5336,8 @@ qdsp6_packet_end_lookahead
             break;
         }
       else if (!outer
-               && !strncmp (input_line_pointer,
-                            PACKET_END_OUTER, strlen (PACKET_END_OUTER)))
+               && !strncasecmp (input_line_pointer,
+                                PACKET_END_OUTER, strlen (PACKET_END_OUTER)))
         {
           if (input_line_pointer [-1] == '\n')
             bump_line_counters ();
@@ -5383,14 +5390,14 @@ qdsp6_unrecognized_line
 
       return TRUE;
     }
-  else if (!strncmp (str, PACKET_END_INNER, strlen (PACKET_END_INNER)))
+  else if (!strncasecmp (str, PACKET_END_INNER, strlen (PACKET_END_INNER)))
     {
       as_warn (_("found `%s' when not closing a packet."), PACKET_END_INNER);
 
       input_line_pointer += strlen (PACKET_END_INNER) - 1;
       return TRUE;
     }
-  else if (!strncmp (str, PACKET_END_OUTER, strlen (PACKET_END_OUTER)))
+  else if (!strncasecmp (str, PACKET_END_OUTER, strlen (PACKET_END_OUTER)))
     {
       as_warn (_("found `%s' when not closing a packet."), PACKET_END_OUTER);
 
