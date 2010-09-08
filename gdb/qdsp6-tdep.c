@@ -1307,7 +1307,6 @@ static void
 qdsp6_store_return_value (struct type *type, struct regcache *regcache,
                         const void *valbuf)
 {
-  printf("\n In qdsp6_store_return_value .....................\n");
   int len = TYPE_LENGTH (type);
 
   if (len <= 4)
