@@ -2869,12 +2869,13 @@ qdsp6_add_to_lit_pool
         S_SET_EXTERNAL (literal->sym);
 
       /* Emit the data definition. */
-      if(literal->e1.X_op == O_symbol){
-        size = size/2;
-        emit_expr(&(literal->e1), size);
+      if(literal->e1.X_op == O_symbol || literal->e1.X_op == O_constant){
+        emit_expr(&(literal->e), size/2);
+        emit_expr(&(literal->e1), size/2);
       }
-
-      emit_expr (&(literal->e), size);
+      else {
+        emit_expr (&(literal->e), size);
+      }
 
       /* Restore the last section. */
       subseg_set (current_section, current_subsec);
@@ -2893,6 +2894,7 @@ qdsp6_add_to_lit_pool
  * instructions:
  * Rd32 = CONST32(#imm), Rd32 = CONST32(label)
  * Rdd32 = CONST64(#imm), Rdd32 = CONST64(label)
+ * Rdd32 = CONST64(#imm|label, #imm|label)
  * If it is identified as such an instruction, following translation
  * will be performed:
  * 1. Add an internal reference to "#imm" or "label"
@@ -3012,12 +3014,16 @@ qdsp6_gp_const_lookup
 
       return FALSE;
     }
-  /* const64 with two args only allows symbols */
-  if (num_args == 2 && (exp.X_op != O_symbol || exp1.X_op != O_symbol || size != 8))
+  if (num_args == 2 && size != 8)
     {
-      as_bad (_("Arguments in expression `%.*s' must be symbols."),
-              rm_right [0].rm_eo - rm_right [0].rm_so,
-              str + rm_right [0].rm_so);
+      as_bad (_("2 arguments allowed only with CONST64."));
+    }
+  /* If both args are constants, then create a single experssion ((exp)<<32)|exp1 */
+  if (num_args == 2 && size == 8 && exp.X_op == O_constant && exp1.X_op == O_constant)
+    {
+      exp.X_add_number = ((exp.X_add_number << 32) | exp1.X_add_number);
+      exp1.X_op = O_absent;
+      exp1.X_add_number = 0;
     }
 
   /* Add a literal for the expression. */
