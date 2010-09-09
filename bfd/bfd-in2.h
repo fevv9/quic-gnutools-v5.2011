@@ -4631,6 +4631,7 @@ holding the lower 6 bits shifted right by 1.  */
   BFD_RELOC_QDSP6_B15_PCREL_X,
   BFD_RELOC_QDSP6_B13_PCREL_X,
   BFD_RELOC_QDSP6_B9_PCREL_X,
+  BFD_RELOC_QDSP6_B7_PCREL_X,
 
 /* QDSP6 relocations for the lower and higher 16 bits of a 32-bit address,
 applied to individual instructions or to a pair of instructions.  */

@@ -515,6 +515,21 @@ static reloc_howto_type elf_qdsp6_howto_table_v2 [] =
 	 0x00c000ff,		/* dst_mask  */
 	 FALSE),		/* pcrel_offset  */
 
+  /* An extended relative 7 bit branch. */
+  HOWTO (R_QDSP6_B7_PCREL_X,	/* type  */
+	 2,			/* rightshift  */
+	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
+	 6,			/* bitsize  */
+	 TRUE,			/* pc_relative  */
+	 0,			/* bitpos  */
+	 complain_overflow_signed, /* complain_on_overflow  */
+	 qdsp6_elf_reloc,	/* special_function  */
+	 "R_QDSP6_B7_PCREL_X",	/* name  */
+	 FALSE,			/* partial_inplace  */
+	 0x3f,			/* src_mask  */
+	 0x00001f18,		/* dst_mask  */
+	 FALSE),		/* pcrel_offset  */
+
   /* An extended signed 16 bit number. */
   HOWTO (R_QDSP6_16_X,		/* type  */
 	 0,			/* rightshift  */
@@ -686,6 +701,7 @@ static const struct qdsp6_reloc_map qdsp6_reloc_map [] =
   { BFD_RELOC_QDSP6_B9_PCREL,    R_QDSP6_B9_PCREL,    0 },
   { BFD_RELOC_QDSP6_B9_PCREL_X,  R_QDSP6_B9_PCREL_X,  QDSP6_OPERAND_IS_KXED },
   { BFD_RELOC_QDSP6_B7_PCREL,    R_QDSP6_B7_PCREL,    0 },
+  { BFD_RELOC_QDSP6_B7_PCREL_X,  R_QDSP6_B7_PCREL_X,  QDSP6_OPERAND_IS_KXED },
   { BFD_RELOC_QDSP6_LO16,        R_QDSP6_LO16,        0 },
   { BFD_RELOC_QDSP6_HI16,        R_QDSP6_HI16,        0 },
   { BFD_RELOC_QDSP6_HL16,        R_QDSP6_HL16,        0 },
@@ -1855,6 +1871,7 @@ qdsp6_elf_relocate_section
             break;
 	  }
 
+        case R_QDSP6_B7_PCREL_X:
         case R_QDSP6_B9_PCREL_X:
         case R_QDSP6_B13_PCREL_X:
         case R_QDSP6_B15_PCREL_X:

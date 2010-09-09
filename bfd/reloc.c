@@ -5317,6 +5317,8 @@ ENUMX
   BFD_RELOC_QDSP6_B13_PCREL_X
 ENUMX
   BFD_RELOC_QDSP6_B9_PCREL_X
+ENUMX
+  BFD_RELOC_QDSP6_B7_PCREL_X
 ENUMDOC
   QDSP6 PC-relative relocations extended by BFD_RELOC_QDSP6_B32_PCREL_X,
   holding the lower 6 bits shifted right by 1.
