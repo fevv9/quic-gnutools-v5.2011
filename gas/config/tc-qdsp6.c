@@ -484,8 +484,14 @@ typedef enum _qdsp6_relax_state
   {
     /* Matching the respective entries in qdsp6_relax_table. */
     QDSP6_RELAX_NONE = 0,
-    /* Relax state for BFD_RELOC_QDSP6_B9_PCREL. */
+    /* Relax state for R_QDSP6_B7_PCREL. */
+    QDSP6_RELAX_B7, QDSP6_RELAX_B7_A,
+    /* Relax state for R_QDSP6_B9_PCREL. */
     QDSP6_RELAX_B9, QDSP6_RELAX_B9_A,
+    /* Relax state for R_QDSP6_B13_PCREL. */
+    QDSP6_RELAX_B13, QDSP6_RELAX_B13_A,
+    /* Relax state for R_QDSP6_B15_PCREL. */
+    QDSP6_RELAX_B15, QDSP6_RELAX_B15_A,
     /* Other relax state pairs go here. */
     /* Done relaxing. */
     QDSP6_RELAX_DONE
@@ -511,9 +517,24 @@ const struct relax_type qdsp6_relax_table [] =
     /* Dummy entry. */
     {              0L,                0L,
                     0,  QDSP6_RELAX_NONE},
-    /* Entries for BFD_RELOC_QDSP6_B9_PCREL. */
+    /* Entries for R_QDSP6_B7_PCREL. */
+    {QDSP6_RANGE  (9),  -QDSP6_RANGE (9),
+                    0, QDSP6_RELAX_B7_A},
+    {              0L,                0L,
+       QDSP6_INSN_LEN,  QDSP6_RELAX_DONE},
+    /* Entries for R_QDSP6_B9_PCREL. */
     {QDSP6_RANGE (11), -QDSP6_RANGE (11),
-                    0,  QDSP6_RELAX_B9_A},
+                    0, QDSP6_RELAX_B9_A},
+    {              0L,                0L,
+       QDSP6_INSN_LEN,  QDSP6_RELAX_DONE},
+    /* Entries for R_QDSP6_B13_PCREL. */
+    {QDSP6_RANGE (15),  -QDSP6_RANGE (15),
+                    0, QDSP6_RELAX_B13_A},
+    {              0L,                0L,
+       QDSP6_INSN_LEN,  QDSP6_RELAX_DONE},
+    /* Entries for R_QDSP6_B15_PCREL. */
+    {QDSP6_RANGE (17),  -QDSP6_RANGE (17),
+                    0, QDSP6_RELAX_B15_A},
     {              0L,                0L,
        QDSP6_INSN_LEN,  QDSP6_RELAX_DONE},
     /* Pair of entries for other relocations go here. */
@@ -1603,7 +1624,8 @@ qdsp6_parse_immediate
   const qdsp6_operand *operandx;
   long value = 0;
   long xvalue = 0;
-  int is_x = FALSE, is_relax = FALSE;
+  int is_x = FALSE, may_x;
+  int is_relax = FALSE;
   int is_lo16 = FALSE, is_hi16 = FALSE;
 
   /* We only have the mandatory '#' for immediates that are NOT pc relative */
@@ -1623,17 +1645,17 @@ qdsp6_parse_immediate
   else if (!(operand->flags & QDSP6_OPERAND_PC_RELATIVE))
     return NULL;
 
-  is_relax = qdsp6_relax && ENCODE_RELAX (operand->reloc_type);
+  may_x = (((insn->opcode->attributes & EXTENDABLE_LOWER_CASE_IMMEDIATE)
+            && ISLOWER (operand->enc_letter))
+           || ((insn->opcode->attributes & EXTENDABLE_UPPER_CASE_IMMEDIATE)
+               && ISUPPER (operand->enc_letter)));
+
+  is_relax = qdsp6_relax && may_x && ENCODE_RELAX (operand->reloc_type);
 
   if (is_x && !insn->opcode->map)
     {
       /* Check if the operand can truly be extended. */
-      if ((!(insn->opcode->attributes & EXTENDABLE_LOWER_CASE_IMMEDIATE)
-              && !(insn->opcode->attributes & EXTENDABLE_UPPER_CASE_IMMEDIATE))
-          || ((insn->opcode->attributes & EXTENDABLE_LOWER_CASE_IMMEDIATE)
-              && !ISLOWER (operand->enc_letter))
-          || ((insn->opcode->attributes & EXTENDABLE_UPPER_CASE_IMMEDIATE)
-              && !ISUPPER (operand->enc_letter)))
+      if (!may_x)
         {
           if (errmsg)
             *errmsg = _("operand cannot be extended.");
@@ -1796,7 +1818,6 @@ qdsp6_insn_write
     {
       bfd_reloc_code_real_type reloc_type;
       qdsp6_operand *operand;
-      int var;
 
       operand = xmalloc (sizeof (*operand));
       *operand = *op;
@@ -1806,17 +1827,16 @@ qdsp6_insn_write
       else
         reloc_type = operand->reloc_type;
 
-      var = qdsp6_relax
-            && (operand->flags & QDSP6_OPERAND_IS_RELAX)
-            && ENCODE_RELAX (operand->reloc_type);
-
       dwarf2_emit_insn (QDSP6_INSN_LEN);
       pc = frag_now->fr_address + frag_now_fix ();
 
-      fixP = fix_new_exp
-        (frag_now, stream + offset - frag_now->fr_literal, QDSP6_INSN_LEN, exp,
-         (operand->flags & QDSP6_OPERAND_PC_RELATIVE) == QDSP6_OPERAND_PC_RELATIVE,
-         reloc_type);
+      fixP
+        = fix_new_exp
+            (frag_now, stream + offset - frag_now->fr_literal, QDSP6_INSN_LEN,
+            exp,
+            (operand->flags & QDSP6_OPERAND_PC_RELATIVE)
+            == QDSP6_OPERAND_PC_RELATIVE,
+            reloc_type);
       fixP->tc_fix_data = operand;
 
       if (operand->flags & (QDSP6_OPERAND_IS_LO16 | QDSP6_OPERAND_IS_HI16))
@@ -2258,7 +2278,10 @@ qdsp6_packet_cram
   else
     {
       insn = *ainsn;
-      insn.flags &= ~QDSP6_INSN_IS_RELAX;
+
+      insn.relax          = QDSP6_RELAX_NONE;
+      insn.flags         &= ~QDSP6_INSN_IS_RELAX;
+      insn.operand.flags &= ~QDSP6_OPERAND_IS_RELAX;
 
       /* Try again, but without branch relaxation. */
       if (qdsp6_packet_insert (apacket, &insn, prefix, pair, pad))
@@ -2275,11 +2298,12 @@ qdsp6_packet_cram
               packet = *apacket;
               /* Remove all branch relaxations. */
               for (i = 0; i < packet.size; i++)
-                if ((packet.insns [i].flags & QDSP6_INSN_IS_RELAX)
-                    || (packet.insns [i].operand.flags & QDSP6_OPERAND_IS_RELAX))
+                if (packet.insns [i].flags & QDSP6_INSN_IS_RELAX)
                   {
+                    packet.insns [i].relax          = QDSP6_RELAX_NONE;
                     packet.insns [i].flags         &= ~QDSP6_INSN_IS_RELAX;
                     packet.insns [i].operand.flags &= ~QDSP6_OPERAND_IS_RELAX;
+
                     packet.relax--;
                   }
 
@@ -3450,7 +3474,7 @@ qdsp6_assemble_pair
         if (
             /* After the restriction vector. */
             ((ainsn->opcode->attributes & attr [j])
-            || (apacket->insns [i].opcode->attributes & attr [j]))
+             || (apacket->insns [i].opcode->attributes & attr [j]))
             /* Packed or duplex insns. */
             || ((apacket->insns [i].opcode->attributes & PACKED)
                 || (apacket->insns [i].opcode->attributes & DUPLEX))
@@ -3546,7 +3570,7 @@ qdsp6_assemble_pair
                         has_room = qdsp6_packet_cram
                                      (&packet,
                                       apacket->insns + k, apacket->prefixes + k,
-                                      NULL, FALSE);
+                                      apacket->pairs + k, FALSE);
                     }
                   }
               else
@@ -3576,7 +3600,7 @@ qdsp6_assemble_pair
                         has_room = qdsp6_packet_cram
                                      (&packet,
                                       apacket->insns + k, apacket->prefixes + k,
-                                      NULL, FALSE);
+                                      apacket->pairs + k, FALSE);
                     }
                 }
 
@@ -4097,10 +4121,10 @@ tc_gen_reloc
   reloc->address = fixP->fx_frag->fr_address + fixP->fx_where;
   reloc->howto = bfd_reloc_type_lookup (stdoutput, fixP->fx_r_type);
   if (reloc->howto == (reloc_howto_type *) NULL) {
-    as_bad_where (fixP->fx_file, fixP->fx_line,
-                  _("assembler internal error: can't export reloc type %d (\"%s\")."),
-                  fixP->fx_r_type,
-                  bfd_get_reloc_code_name (fixP->fx_r_type));
+    as_fatal (fixP->fx_file, fixP->fx_line,
+              _("cannot export relocation type \"%s\"."),
+              fixP->fx_r_type,
+              bfd_get_reloc_code_name (fixP->fx_r_type));
     return NULL;
   }
 
@@ -4110,7 +4134,7 @@ tc_gen_reloc
      need to propagate it into the (RELA) relocation */
   reloc->addend = fixP->fx_offset;
 
-  return reloc;
+  return (reloc);
 }
 
 /** Look for insns in the packet which restricts slot #1.
@@ -4858,6 +4882,7 @@ qdsp6_packet_check
             (ainsn->opcode, IMPLICIT_LC1, QDSP6_LC1, cArray, "c3/lc1");
           qdsp6_check_implicit
             (ainsn->opcode, IMPLICIT_SA1, QDSP6_SA1, cArray, "c2/sa1");
+
           qdsp6_check_implicit_predicate
             (ainsn->opcode, IMPLICIT_P3,  3);
           qdsp6_check_implicit_predicate
