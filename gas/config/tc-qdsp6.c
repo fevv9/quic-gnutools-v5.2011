@@ -748,24 +748,25 @@ md_show_usage (
      FILE *stream
 )
 {
-  fprintf (stream, "\
+  fprintf (stream,
+"\
 QDSP6 Options:\n\
   -EB                      select big-endian output\n\
   -EL                      select little-endian ouptut (default)\n\
-  -G SIZE                  small-data size limit (default is %d)\n\
+  -G SIZE                  small-data size limit (default is \"%d\")\n\
+  -march={v2|v3|v4}        assemble for the specified QDSP6 architecture\n\
+                           (default is \"v2\")\n\
+  -mcpu={v2|v3|v4}         equivalent to \"-march\"\n\
+  -m{v2|v3|v4}             equivalent to \"-march\"\n\
   -mfalign-info            report \".falign\" statistics\n\
   -mno-extender            disable the use of constant extenders\n\
   -mno-jumps               disable automatic extension of branch instructions\n\
-  -mno-pairing             disable pairing of packet instructions\n\
+  -mno-pairing             disable pairing of instructions\n\
   -mno-pairing-duplex      disable pairing to duplex instructions\n\
   -mno-pairing-branch      disable pairing of branch instructions\n\
   -mpairing-info           report instruction pairing statistics\n\
   -msort-sda               enable sorting the small-data area (default)\n\
-  -mv2                     assemble code for the QDSP6 V2 architecture (default)\n\
-  -mv3                     assemble code for the QDSP6 V3 architecture\n\
-  -mv4                     assemble code for the QDSP6 V4 architecture\n\
-  -march={v2|v3|v4}        assemble code for the specified QDSP6 architecture\n\
-  -mcpu={v2|v3|v4}         equivalent to \"-march\"\n",
+",
            QDSP6_SMALL_GPSIZE);
 }
 
@@ -4677,6 +4678,21 @@ qdsp6_check_implicit_predicate
 }
 
 void
+qdsp6_check_predicate
+(int reg_num, const qdsp6_opcode *opcode)
+{
+  int used;
+
+  used =  (!qdsp6_autoand || (opcode->attributes & A_RESTRICT_LATEPRED))
+          ? TRUE: MAYBE;
+
+  if (pArray [reg_num].used == TRUE || pArray [reg_num].used > used)
+    as_bad (_("register `p%d' modified more than once."), reg_num);
+  else
+    pArray [reg_num].used = used;;
+}
+
+void
 qdsp6_check_implicit
 (const qdsp6_opcode *opcode, unsigned int implicit, int reg,
  qdsp6_reg_score *array, const char *name)
@@ -4769,18 +4785,6 @@ qdsp6_check_register
 }
 
 void
-qdsp6_check_predicate
-(int reg_num, const qdsp6_opcode *opcode)
-{
-  if (pArray [reg_num].used == TRUE)
-    as_bad (_("register `p%d' modified more than once."), reg_num);
-  else
-    pArray [reg_num].used =
-      (!qdsp6_autoand || (opcode->attributes & A_RESTRICT_LATEPRED))
-      ? TRUE: MAYBE;
-}
-
-void
 qdsp6_packet_check
 (qdsp6_packet *apacket)
 {
@@ -4860,50 +4864,6 @@ qdsp6_packet_check
 
       if ((ainsn->opcode->attributes & A_RESTRICT_LOOP_LA))
         numOfLoopMax1++;
-
-      /* Check for implicit register references. */
-      if (ainsn->opcode->implicit)
-        {
-          if (ainsn->opcode->implicit & IMPLICIT_PC)
-            {
-              /* Look into multiple implicit references to the PC in order to allow
-                 slots with two branches in V3. */
-              cArray [QDSP6_PC].used++;
-              if (cArray [QDSP6_PC].used > 1 && cArray [QDSP6_PC].used > numOfBranchRelax)
-                qdsp6_check_implicit
-                  (ainsn->opcode, IMPLICIT_PC, QDSP6_PC, cArray, "c9/pc");
-            }
-
-          qdsp6_check_implicit
-            (ainsn->opcode, IMPLICIT_LC0, QDSP6_LC0, cArray, "c1/lc0");
-          qdsp6_check_implicit
-            (ainsn->opcode, IMPLICIT_SA0, QDSP6_SA0, cArray, "c0/sa0");
-          qdsp6_check_implicit
-            (ainsn->opcode, IMPLICIT_LC1, QDSP6_LC1, cArray, "c3/lc1");
-          qdsp6_check_implicit
-            (ainsn->opcode, IMPLICIT_SA1, QDSP6_SA1, cArray, "c2/sa1");
-
-          qdsp6_check_implicit_predicate
-            (ainsn->opcode, IMPLICIT_P3,  3);
-          qdsp6_check_implicit_predicate
-            (ainsn->opcode, IMPLICIT_P0,  0); /* V3 */
-          qdsp6_check_implicit_predicate
-            (ainsn->opcode, IMPLICIT_P1,  1); /* V4 */
-    #if 0
-          qdsp6_check_implicit
-            (ainsn->opcode,
-            (ainsn->opcode->attributes & A_RESTRICT_LATEPRED)
-            ? IMPLICIT_P3: 0, 3, pLateArray, NULL);
-          qdsp6_check_implicit
-            (ainsn->opcode,
-            (ainsn->opcode->attributes & A_RESTRICT_LATEPRED)
-            ? IMPLICIT_P1: 0, 1, pLateArray, NULL); /* V4 */
-          qdsp6_check_implicit
-            (ainsn->opcode,
-            (ainsn->opcode->attributes & A_RESTRICT_LATEPRED)
-            ? IMPLICIT_P0: 0, 0, pLateArray, NULL); /* V3 */
-    #endif
-        }
 
       /* Check for attributes. */
       if ((ainsn->opcode->attributes)
@@ -5051,16 +5011,46 @@ qdsp6_packet_check
                 break;
             }
 
-          /* Check implicit oeprands. */
-          if (binsn->opcode->implicit & IMPLICIT_SP)
-            qdsp6_check_register
-              (gArray, QDSP6_SP, "r29/sp", pred_reg_rd_mask, NULL, binsn, i);
-          if (binsn->opcode->implicit & IMPLICIT_FP)
-            qdsp6_check_register
-              (gArray, QDSP6_FP, "r30/fp", pred_reg_rd_mask, NULL, binsn, i);
-          if (binsn->opcode->implicit & IMPLICIT_LR)
-            qdsp6_check_register
-              (gArray, QDSP6_LR, "r31/lr", pred_reg_rd_mask, NULL, binsn, i);
+          /* Check for implicit operand conflicts. */
+          if (binsn->opcode->implicit)
+            {
+              if (binsn->opcode->implicit & IMPLICIT_PC)
+                {
+                  /* Look into multiple implicit references to the PC in order
+                     to allow slots with two branches. */
+                  cArray [QDSP6_PC].used++;
+                  if (cArray [QDSP6_PC].used > 1
+                      && cArray [QDSP6_PC].used > numOfBranchRelax)
+                    qdsp6_check_implicit
+                      (binsn->opcode, IMPLICIT_PC, QDSP6_PC, cArray, "c9/pc");
+                }
+
+              qdsp6_check_implicit
+                (binsn->opcode, IMPLICIT_LC0, QDSP6_LC0, cArray, "c1/lc0");
+              qdsp6_check_implicit
+                (binsn->opcode, IMPLICIT_SA0, QDSP6_SA0, cArray, "c0/sa0");
+              qdsp6_check_implicit
+                (binsn->opcode, IMPLICIT_LC1, QDSP6_LC1, cArray, "c3/lc1");
+              qdsp6_check_implicit
+                (binsn->opcode, IMPLICIT_SA1, QDSP6_SA1, cArray, "c2/sa1");
+
+              qdsp6_check_implicit_predicate
+                (binsn->opcode, IMPLICIT_P3,  3);
+              qdsp6_check_implicit_predicate
+                (binsn->opcode, IMPLICIT_P0,  0); /* V3 */
+              qdsp6_check_implicit_predicate
+                (binsn->opcode, IMPLICIT_P1,  1); /* V4 */
+
+              if (binsn->opcode->implicit & IMPLICIT_SP)
+                qdsp6_check_register
+                  (gArray, QDSP6_SP, "r29/sp", pred_reg_rd_mask, NULL, binsn, i);
+              if (binsn->opcode->implicit & IMPLICIT_FP)
+                qdsp6_check_register
+                  (gArray, QDSP6_FP, "r30/fp", pred_reg_rd_mask, NULL, binsn, i);
+              if (binsn->opcode->implicit & IMPLICIT_LR)
+                qdsp6_check_register
+                  (gArray, QDSP6_LR, "r31/lr", pred_reg_rd_mask, NULL, binsn, i);
+            }
 
           /* If a pair, move to the righthand insn. */
           if ((ainsn->opcode->attributes)
