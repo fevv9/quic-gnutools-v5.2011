@@ -3321,7 +3321,7 @@ qdsp6_assemble
                   if (!strncasecmp (str, PACKET_END_INNER,
                                     strlen (PACKET_END_INNER)))
                     {
-                      qdsp6_packet_end_inner (qdsp6_packets + 0);
+                      qdsp6_packet_end_inner (apacket);
                       str += strlen (PACKET_END_INNER);
 
                       while (ISSPACE (*str))
@@ -3330,7 +3330,7 @@ qdsp6_assemble
                   else if (!strncasecmp (str, PACKET_END_OUTER,
 			                  strlen (PACKET_END_OUTER)))
                     {
-                      qdsp6_packet_end_outer (qdsp6_packets + 0);
+                      qdsp6_packet_end_outer (apacket);
                       str += strlen (PACKET_END_OUTER);
 
                       while (ISSPACE (*str))
@@ -3550,10 +3550,10 @@ qdsp6_assemble_pair
             for (k = 0, has_hits = has_ommited = FALSE, has_room = TRUE;
                  k < qdsp6_packet_count (apacket) && !has_hits && has_room;
                  k++)
-              if (k <= a_branch)
+              if (k == i)
                 {
-                  /* Before last branch, if any. */
-                  if (k == i)
+                  /* Maintain the order of branches if the pair has one. */
+                  if (!(apacket->insns [k].opcode->implicit & IMPLICIT_PC))
                     {
                       /* Ommit the paired insn. */
                       has_ommited = TRUE;
@@ -3561,48 +3561,31 @@ qdsp6_assemble_pair
                     }
                   else
                     {
-                      a_duplex = i;
-                      if ((has_hits = qdsp6_has_duplex_hits
-                                        (&packet, apacket->insns + k, &a_duplex)))
-                        /* Bail if the new pair causes conflicts. */
-                        break;
-                      else
-                        /* Insert original insn. */
-                        has_room = qdsp6_packet_cram
-                                     (&packet,
-                                      apacket->insns + k, apacket->prefixes + k,
-                                      apacket->pairs + k, FALSE);
-                    }
-                  }
-              else
-                {
-                  /* Past last branch, if any. */
-                  if (k == i)
-                    {
+                      /* Insert pair. */
                       a_duplex = i;
                       if ((has_hits = qdsp6_has_duplex_hits
                                         (&packet, &insn, &a_duplex)))
                         /* Bail if the new pair causes conflicts. */
                         break;
                       else
-                        /* Insert paired insn instead. */
+                        /* Insert pair instead. */
                         has_room = qdsp6_packet_cram
-                                     (&packet, &insn, &prefix, &prepair, FALSE);
+                                      (&packet, &insn, &prefix, &prepair, FALSE);
                     }
+                }
+              else
+                {
+                  a_duplex = i;
+                  if ((has_hits = qdsp6_has_duplex_hits
+                                    (&packet, apacket->insns + k, &a_duplex)))
+                    /* Bail if the new pair causes conflicts. */
+                    break;
                   else
-                    {
-                      a_duplex = i;
-                      if ((has_hits = qdsp6_has_duplex_hits
-                                        (&packet, apacket->insns + k, &a_duplex)))
-                        /* Bail if the new pair causes conflicts. */
-                        break;
-                      else
-                        /* Insert original insn. */
-                        has_room = qdsp6_packet_cram
-                                     (&packet,
-                                      apacket->insns + k, apacket->prefixes + k,
-                                      apacket->pairs + k, FALSE);
-                    }
+                    /* Insert original insn. */
+                    has_room = qdsp6_packet_cram
+                                  (&packet,
+                                  apacket->insns + k, apacket->prefixes + k,
+                                  apacket->pairs + k, FALSE);
                 }
 
             if (has_hits || !has_room)
@@ -5219,10 +5202,10 @@ qdsp6_packet_end
       return;
     }
 
-  if (!qdsp6_has_but_ax (qdsp6_packets))
+  if (!qdsp6_has_but_ax (apacket))
     as_bad (_("instruction cannot appear in packet with other than A-type or X-type instructions."));
 
-  n = qdsp6_has_mem (qdsp6_packets);
+  n = qdsp6_has_mem (apacket);
   if ((qdsp6_no_dual_memory && n > 1) || n > 2)
     as_bad (_("multiple memory operations in packet."));
 
