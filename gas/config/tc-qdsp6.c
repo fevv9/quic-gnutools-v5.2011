@@ -1113,26 +1113,32 @@ qdsp6_relax_falign
       packet.dpkt--;
     }
 
-  /* Find packet requesting .falign. */
-  for (previous = fragP, fpacket = NULL;
-       previous && (fpacket = &previous->tc_frag_data->packet) && !fpacket->faligned;
-       previous = previous->tc_frag_data->previous)
-    ;
-
-   if (fpacket)
+  if (qdsp6_falign_info)
     {
-      /* Collect stats. */
-      if ((pad || pkt) && !(fpacket->stats & QDSP6_STATS_FALIGN) &&
-	 (fpacket->stats |= QDSP6_STATS_FALIGN))
-	n_falign [QDSP6_FALIGN_NEED]++;
+      /* Find packet requesting .falign. */
+      for (previous = fragP, fpacket = NULL;
+          previous
+          && previous->tc_frag_data
+          && (fpacket = &previous->tc_frag_data->packet)
+          && !fpacket->faligned;
+          previous = previous->tc_frag_data->previous)
+        ;
 
-      if (pad && !(fpacket->stats & QDSP6_STATS_PAD) &&
-	 (fpacket->stats |= QDSP6_STATS_PAD))
-	n_falign [QDSP6_FALIGN_PAD]++;
+      if (fpacket)
+        {
+          /* Collect stats. */
+          if ((pad || pkt) && !(fpacket->stats & QDSP6_STATS_FALIGN) &&
+            (fpacket->stats |= QDSP6_STATS_FALIGN))
+            n_falign [QDSP6_FALIGN_NEED]++;
 
-      if (pkt && !(fpacket->stats & QDSP6_STATS_PACK) &&
-	 (fpacket->stats |= QDSP6_STATS_PACK))
-	n_falign [QDSP6_FALIGN_PACK]++;
+          if (pad && !(fpacket->stats & QDSP6_STATS_PAD) &&
+            (fpacket->stats |= QDSP6_STATS_PAD))
+            n_falign [QDSP6_FALIGN_PAD]++;
+
+          if (pkt && !(fpacket->stats & QDSP6_STATS_PACK) &&
+            (fpacket->stats |= QDSP6_STATS_PACK))
+            n_falign [QDSP6_FALIGN_PACK]++;
+        }
     }
 
   fragP->fr_fix += (apacket->dpad + apacket->dpkt) * QDSP6_INSN_LEN;
@@ -3417,22 +3423,13 @@ qdsp6_assemble_pair
   qdsp6_packet_insn insn, prefix;
   qdsp6_packet_pair prepair;
   char pair [QDSP6_MAPPED_LEN], unpair [QDSP6_MAPPED_LEN];
-  size_t i, j, k, a_branch, a_duplex;
+  size_t i, j, k, a_duplex;
   size_t is_duplex, is_prefix, are_stores;
   int has_hits, has_ommited, has_room;
 
   /* Do nothing if pairing disabled. */
   if (!qdsp6_pairing)
     return FALSE;
-
-  /* Branches cannot be paired out of source order, so find the last one. */
-  for (i = a_branch = qdsp6_packet_count (apacket); i > 0; i--)
-    if ((ainsn->opcode->implicit & IMPLICIT_PC)
-        && (apacket->insns [i - 1].opcode->implicit & IMPLICIT_PC))
-      {
-        a_branch = i - 1;
-        break;
-      }
 
   a_duplex = MAX_PACKET_INSNS;
   /* Break a previous duplex if it conflicts with other insns in the packet. */
