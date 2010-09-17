@@ -1520,8 +1520,12 @@ void
 qdsp6_frag_init
 (fragS *fragP, fragS *previous)
 {
+  /* Bug# 4443. Use calloc instead of malloc to zero out
+   * the previous ptr. Otherwise previous will be set to
+   * 0xbaadf00d and loops that terminate on previous == NULL
+   * will access bad memory */
   if (!fragP->tc_frag_data)
-    fragP->tc_frag_data = xmalloc (sizeof (*fragP->tc_frag_data));
+    fragP->tc_frag_data = xcalloc (sizeof (*fragP->tc_frag_data), 1);
 
   if (previous && fragP != previous)
     fragP->tc_frag_data->previous = previous;
