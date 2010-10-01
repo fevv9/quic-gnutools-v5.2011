@@ -1580,6 +1580,7 @@ get_qdsp6_dynamic_type (unsigned long type)
   switch (type)
     {
     case DT_QDSP6_SYMSZ: return "QDSP6_SYMSZ";
+    case DT_QDSP6_VER:   return "QDSP6_VER";
     default:
       return NULL;
     }
@@ -5892,6 +5893,10 @@ dynamic_section_qdsp6_val (Elf_Internal_Dyn * entry)
     case DT_QDSP6_SYMSZ:
       print_vma (entry->d_un.d_ptr, UNSIGNED);
       printf (" (bytes)");
+      break;
+
+    case DT_QDSP6_VER:
+      print_vma (entry->d_un.d_ptr, UNSIGNED);
       break;
     }
   putchar ('\n');
