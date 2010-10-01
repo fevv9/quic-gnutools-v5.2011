@@ -673,7 +673,7 @@ do_scrub_chars (int (*get) (char *, int), char *tostart, int tolen)
 	case 16:
 	  /* We have seen an 'a' at the start of a symbol, look for an 'f'.  */
 	  ch = GET ();
-	  if (ch == 'f' || ch == 'F') 
+	  if (ch == 'f' || ch == 'F')
 	    {
 	      state = 17;
 	      PUT (ch);
@@ -1217,7 +1217,7 @@ do_scrub_chars (int (*get) (char *, int), char *tostart, int tolen)
 	      break;
 	    }
 
-#ifdef TC_D10V
+#if defined (TC_D10V) || defined (TC_QDSP6)
 	  /* All insns end in a char for which LEX_IS_SYMBOL_COMPONENT is true.
 	     Trap is the only short insn that has a first operand that is
 	     neither register nor label.
@@ -1313,12 +1313,12 @@ do_scrub_chars (int (*get) (char *, int), char *tostart, int tolen)
 
 #ifdef TC_Z80
 	  /* "af'" is a symbol containing '\''.  */
-	  if (state == 3 && (ch == 'a' || ch == 'A')) 
+	  if (state == 3 && (ch == 'a' || ch == 'A'))
 	    {
 	      state = 16;
 	      PUT (ch);
 	      ch = GET ();
-	      if (ch == 'f' || ch == 'F') 
+	      if (ch == 'f' || ch == 'F')
 		{
 		  state = 17;
 		  PUT (ch);
@@ -1327,7 +1327,7 @@ do_scrub_chars (int (*get) (char *, int), char *tostart, int tolen)
 	      else
 		{
 		  state = 9;
-		  if (!IS_SYMBOL_COMPONENT (ch)) 
+		  if (!IS_SYMBOL_COMPONENT (ch))
 		    {
 		      if (ch != EOF)
 			UNGET (ch);
