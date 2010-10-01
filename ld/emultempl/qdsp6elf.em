@@ -3,7 +3,7 @@
 # This file is sourced from elf32.em, and defines extra
 # QDSP6-specific routines.
 
-cat >>e${EMULATION_NAME}.c <<EOF
+cat >>e${EMULATION_NAME}.c <<"EOF"
 
 #include "elf/internal.h"
 #include "elf/qdsp6.h"
@@ -41,7 +41,14 @@ qdsp6_after_parse (void)
 
   /* It likely does not make sense to have a DSO using the TCM. */
   if (config.use_tcm && link_info.shared)
-    einfo (_("%P%F: \"-tcm\" not supported with \"-shared\"\n"));
+    einfo (_("%P%F: `-tcm\' not supported with `-shared\'\n"));
+
+  /* For now, the SDA is not supported in a DSO. */
+  if (g_switch_value && link_info.shared)
+    {
+      g_switch_value = 0;
+      einfo (_("%P: small data size set to zero with `-shared\'\n"));
+    }
 
   after_parse_default();
 }
@@ -104,7 +111,7 @@ PARSE_AND_LIST_ARGS_CASES=$'
           in_bfd = bfd_openr (optarg, NULL);
           if (in_bfd == NULL)
             {
-              einfo(_("%P%F: Cannot read file \'%s\'\\n"), optarg);
+              einfo(_("%P%F: Cannot read file `%s\'\\n"), optarg);
               xexit(1);
             }
 
@@ -113,7 +120,7 @@ PARSE_AND_LIST_ARGS_CASES=$'
               in_bfd_name = (char*) bfd_printable_name (in_bfd);
               if (!in_bfd_name)
                 {
-                  einfo (_("%P%F: Does not recognize the architecture of file \'%s\'.\\n"), optarg);
+                  einfo (_("%P%F: Does not recognize the architecture of file `%s\'.\\n"), optarg);
                   xexit (1);
                 }
 

@@ -191,13 +191,17 @@ if test -z "${NO_SMALL_DATA}"; then
       { *(.sdata2${RELOCATING+ .sdata2.* .gnu.linkonce.s2.*})}
     }"
   REL_SDATA="
-  .rela.sdata   ${RELOCATING-0} : ${TCM+AT (__ebi_pa_start__ + ADDR (.rela.sdata) - __ebi_va_start__)} { *(.rela.sdata${RELOCATING+ .rela.sdata.* .rela.gnu.linkonce.s.*}) }"
+  .rela.sdata   ${RELOCATING-0} : ${TCM+AT (__ebi_pa_start__ + ADDR (.rela.sdata) - __ebi_va_start__)} \
+{ *(.rela.sdata .rela.lit[a48]${RELOCATING+ .rela.sdata.* .rela.lit[a48].* .rela.gnu.linkonce.s.* .rela.gnu.linkonce.l[a48].*}) }"
   REL_SBSS="
-  .rela.sbss    ${RELOCATING-0} : ${TCM+AT (__ebi_pa_start__ + ADDR (.rela.sbss) - __ebi_va_start__)} { *(.rela.sbss${RELOCATING+ .rela.sbss.* .rela.gnu.linkonce.sb.*}) }"
+  .rela.sbss    ${RELOCATING-0} : ${TCM+AT (__ebi_pa_start__ + ADDR (.rela.sbss) - __ebi_va_start__)} \
+{ *(.rela.sbss${RELOCATING+ .rela.sbss.* .rela.gnu.linkonce.sb.*}) }"
   REL_SDATA2="
-  .rela.sdata2  ${RELOCATING-0} : ${TCM+AT (__ebi_pa_start__ + ADDR (.rela.sdata2) - __ebi_va_start__)} { *(.rela.sdata2${RELOCATING+ .rela.sdata2.* .rela.gnu.linkonce.s2.*}) }"
+  .rela.sdata2  ${RELOCATING-0} : ${TCM+AT (__ebi_pa_start__ + ADDR (.rela.sdata2) - __ebi_va_start__)} \
+{ *(.rela.sdata2${RELOCATING+ .rela.sdata2.* .rela.gnu.linkonce.s2.*}) }"
   REL_SBSS2="
-  .rela.sbss2   ${RELOCATING-0} : ${TCM+AT (__ebi_pa_start__ + ADDR (.rela.sbss2) - __ebi_va_start__)} { *(.rela.sbss2${RELOCATING+ .rela.sbss2.* .rela.gnu.linkonce.sb2.*}) }"
+  .rela.sbss2   ${RELOCATING-0} : ${TCM+AT (__ebi_pa_start__ + ADDR (.rela.sbss2) - __ebi_va_start__)} \
+{ *(.rela.sbss2${RELOCATING+ .rela.sbss2.* .rela.gnu.linkonce.sb2.*}) }"
 else
   NO_SMALL_DATA=" "
 fi

@@ -1880,8 +1880,14 @@ fragment <<EOF
 EOF
 sed $sc ldscripts/${EMULATION_NAME}.xu			>> e${EMULATION_NAME}.c
 if [ "${ARCH}" = "qdsp6" ]; then
-echo '  ; else if (config.use_tcm) return'              >> e${EMULATION_NAME}.c
-sed $sc ldscripts/${EMULATION_NAME}.tcm                 >> e${EMULATION_NAME}.c
+  case ${target} in
+    *-linux*)
+      ;;
+    *)
+      echo '  ; else if (config.use_tcm) return'              >> e${EMULATION_NAME}.c
+      sed $sc ldscripts/${EMULATION_NAME}.tcm                 >> e${EMULATION_NAME}.c
+      ;;
+  esac
 fi
 echo '  ; else if (link_info.relocatable) return'	>> e${EMULATION_NAME}.c
 sed $sc ldscripts/${EMULATION_NAME}.xr			>> e${EMULATION_NAME}.c

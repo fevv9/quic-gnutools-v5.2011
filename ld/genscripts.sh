@@ -324,19 +324,25 @@ DATA_ALIGNMENT=${DATA_ALIGNMENT_N}
   . ${srcdir}/scripttempl/${SCRIPT_NAME}.sc
 ) | sed -e '/^ *$/d;s/[ 	]*$//' > ldscripts/${EMULATION_NAME}.xbn
 
-if [ "${target_alias}" = "qdsp6" ]; then
-LD_FLAG=tcm
-DATA_ALIGNMENT=${DATA_ALIGNMENT_}
-( echo "/* Script for -tcm: normal executables using TCM */"
-  TCM=" "
-  . ${CUSTOMIZER_SCRIPT}
-  . ${srcdir}/scripttempl/${SCRIPT_NAME}.sc
-) | sed -e '/^ *$/d;s/[ 	]*$//' > ldscripts/${EMULATION_NAME}.tcm
-fi
+case "${target_alias}" in
+  qdsp6*-linux*)
+    ;;
+  *)
+    LD_FLAG=tcm
+    DATA_ALIGNMENT=${DATA_ALIGNMENT_}
+    EMBEDDED=yes
+    ( echo "/* Script for -tcm: normal executables using TCM */"
+      TCM=" "
+      . ${CUSTOMIZER_SCRIPT}
+      . ${srcdir}/scripttempl/${SCRIPT_NAME}.sc
+    ) | sed -e '/^ *$/d;s/[ 	]*$//' > ldscripts/${EMULATION_NAME}.tcm
+    EMBEDDED=
+    ;;
+esac
 
 if test -n "$GENERATE_COMBRELOC_SCRIPT"; then
-  DATA_ALIGNMENT=${DATA_ALIGNMENT_c-${DATA_ALIGNMENT_}}
   LD_FLAG=c
+  DATA_ALIGNMENT=${DATA_ALIGNMENT_c-${DATA_ALIGNMENT_}}
   COMBRELOC=ldscripts/${EMULATION_NAME}.xc.tmp
   ( echo "/* Script for -z combreloc: combine and sort reloc sections */"
     . ${CUSTOMIZER_SCRIPT}

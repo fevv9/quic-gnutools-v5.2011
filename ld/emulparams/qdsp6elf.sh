@@ -6,9 +6,7 @@ EXTRA_EM_FILE=qdsp6elf
 OUTPUT_FORMAT="elf32-littleqdsp6"
 LITTLE_OUTPUT_FORMAT="elf32-littleqdsp6"
 BIG_OUTPUT_FORMAT="elf32-bigqdsp6"
-EMBEDDED=yes
 MAXPAGESIZE="CONSTANT (MAXPAGESIZE)"
-TEXT_START_ADDR=0
 NONPAGED_TEXT_START_ADDR=0
 ENTRY=start
 DATA_GOT=yes
@@ -19,10 +17,20 @@ GENERATE_COMBRELOC_SCRIPT=yes
 NOP=0x00c0007f
 # Largest cache-line size
 ALIGNMENT=64 # L2
-OTHER_EXCLUDE_FILES=fini.o
 SBSS_START_SYMBOLS="PROVIDE (${USER_LABEL_PREFIX}__sbss_start = .);
-    PROVIDE (${USER_LABEL_PREFIX}___sbss_start = .);"
+PROVIDE (${USER_LABEL_PREFIX}___sbss_start = .);"
 SBSS_END_SYMBOLS="PROVIDE (${USER_LABEL_PREFIX}__sbss_end = .);
-    PROVIDE (${USER_LABEL_PREFIX}___sbss_end = .);"
+PROVIDE (${USER_LABEL_PREFIX}___sbss_end = .);"
 SDATA_START_SYMBOLS="__default_sda_base__ = .;
-    PROVIDE (_SDA_BASE_ = .);"
+PROVIDE (_SDA_BASE_ = .);"
+
+case "$target" in
+  qdsp6*-linux*)
+    TEXT_START_ADDR="CONSTANT (MAXPAGESIZE)"
+    ;;
+  *)
+    EMBEDDED=yes
+    OTHER_EXCLUDE_FILES=fini.o
+    TEXT_START_ADDR=0
+    ;;
+esac
