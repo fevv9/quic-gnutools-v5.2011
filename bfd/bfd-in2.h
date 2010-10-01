@@ -4622,6 +4622,10 @@ shifted right by 1.  */
   BFD_RELOC_QDSP6_B9_PCREL,
   BFD_RELOC_QDSP6_B7_PCREL,
 
+/* QDSP6 PC-relative relocations with 23-bit signed offset
+shifted right by 1 to a PLT entry.  */
+  BFD_RELOC_QDSP6_PLT_B22_PCREL,
+
 /* QDSP6 PC-relative relocations with 32-bit signed offset shifted right by 6.  */
   BFD_RELOC_QDSP6_B32_PCREL_X,
 
@@ -4633,11 +4637,24 @@ holding the lower 6 bits shifted right by 1.  */
   BFD_RELOC_QDSP6_B9_PCREL_X,
   BFD_RELOC_QDSP6_B7_PCREL_X,
 
-/* QDSP6 relocations for the lower and higher 16 bits of a 32-bit address,
+/* QDSP6 relocations for the lower and the higher 16 bits of a 32-bit address,
 applied to individual instructions or to a pair of instructions.  */
   BFD_RELOC_QDSP6_LO16,
   BFD_RELOC_QDSP6_HI16,
   BFD_RELOC_QDSP6_HL16,
+
+/* QDSP6 GOT-relative relocations for the lower and the higher 16 bits and
+all 32 bits of a 32-bit address.  */
+  BFD_RELOC_QDSP6_GOTOFF_LO16,
+  BFD_RELOC_QDSP6_GOTOFF_HI16,
+  BFD_RELOC_QDSP6_GOTOFF_32,
+
+/* QDSP6 GOT-relative relocations for the lower and the higher 16 bits,
+all 32 bits and the signed lower 16 bits of a signed 32-bit offset.  */
+  BFD_RELOC_QDSP6_GOT_LO16,
+  BFD_RELOC_QDSP6_GOT_HI16,
+  BFD_RELOC_QDSP6_GOT_32,
+  BFD_RELOC_QDSP6_GOT_16,
 
 /* QDSP6 GP-relative relocations with 16, 17, 18 or 19-bit unsigned offset
 shifted right by the access size.  */
@@ -4645,6 +4662,12 @@ shifted right by the access size.  */
   BFD_RELOC_QDSP6_GPREL16_1,
   BFD_RELOC_QDSP6_GPREL16_2,
   BFD_RELOC_QDSP6_GPREL16_3,
+
+/* QDSP6 relocations for dynamic linking support.  */
+  BFD_RELOC_QDSP6_GLOB_DAT,
+  BFD_RELOC_QDSP6_COPY,
+  BFD_RELOC_QDSP6_JMP_SLOT,
+  BFD_RELOC_QDSP6_RELATIVE,
   BFD_RELOC_UNUSED };
 typedef enum bfd_reloc_code_real bfd_reloc_code_real_type;
 reloc_howto_type *bfd_reloc_type_lookup
