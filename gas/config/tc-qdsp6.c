@@ -2783,7 +2783,7 @@ qdsp6_create_literal_section
 }
 
 #define IS_SAME_SYMBOL(e,e1) (((e).X_op == (e1)->X_op) \
-                              && ((e).X_op == O_symbol) \
+                              && (((e).X_op == O_symbol) || (e).X_op == O_absent) \
                               && ((e).X_op_symbol == (e1)->X_op_symbol) \
                               && ((e).X_add_symbol == (e1)->X_add_symbol) \
                               && ((e).X_add_number == (e1)->X_add_number))
