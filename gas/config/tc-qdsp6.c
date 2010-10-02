@@ -259,11 +259,20 @@ enum _qdsp6_pairs_counters
     QDSP6_PAIRS_COUNTERS
   };
 
+typedef enum _qdsp6_pic_type
+  {
+    PIC_NONE = 0,
+    PIC_GOT,
+    PIC_GOTOFF,
+    PIC_PLT
+  } qdsp6_pic_type;
+
 extern int qdsp6_get_mach (char *);
 extern void qdsp6_code_symbol (expressionS *);
 
 int qdsp6_assemble (qdsp6_packet *, char *, int, int);
 int qdsp6_assemble_pair (qdsp6_packet *, qdsp6_packet_insn *, qdsp6_packet_insn *);
+int qdsp6_parse_name (char *, expressionS *, char *);
 void qdsp6_insert_operand (char *, const qdsp6_operand *, offsetT, fixS*);
 void qdsp6_common (int);
 void qdsp6_option (int);
@@ -314,6 +323,7 @@ char *qdsp6_insn_write
 char *qdsp6_parse_immediate
   (qdsp6_packet_insn *, qdsp6_packet_insn *, const qdsp6_operand *,
    char *, long *, char **);
+static char *qdsp6_parse_pic (qdsp6_pic_type *);
 int qdsp6_gp_const_lookup (char *str, char *);
 segT qdsp6_create_sbss_section (const char *, flagword, unsigned int);
 segT qdsp6_create_scom_section (const char *, flagword, unsigned int);
@@ -336,7 +346,6 @@ int qdsp6_has_mem (const qdsp6_packet *);
 int qdsp6_has_store (const qdsp6_packet *);
 int qdsp6_has_store_not (const qdsp6_packet *);
 int qdsp6_has_but_ax (const qdsp6_packet *);
-addressT qdsp6_frag_fix_addr (void);
 int qdsp6_is_nop_keep (const qdsp6_packet *, int);
 int qdsp6_find_noslot1 (const qdsp6_packet *, size_t);
 void qdsp6_check_register
@@ -353,6 +362,8 @@ long qdsp6_relax_branch_try (fragS *, segT, long);
 long qdsp6_relax_falign_try (fragS *, segT, long);
 long qdsp6_relax_frag (segT, fragS *, long);
 void qdsp6_statistics (void);
+addressT qdsp6_frag_fix_addr (void);
+bfd_reloc_code_real_type qdsp6_got_frag (fragS *, int, int, expressionS *);
 
 static segT qdsp6_sdata_section, qdsp6_sbss_section;
 static asection qdsp6_scom_section;
@@ -363,6 +374,8 @@ static unsigned qdsp6_pool_counter;
 
 /* Special insns created by GAS. */
 static qdsp6_packet_insn qdsp6_nop_insn, qdsp6_kext_insn;
+
+static symbolS *qdsp6_got_symbol;
 
 const pseudo_typeS md_pseudo_table [] =
 {
@@ -751,21 +764,21 @@ md_show_usage (
   fprintf (stream,
 "\
 QDSP6 Options:\n\
-  -EB                      select big-endian output\n\
-  -EL                      select little-endian ouptut (default)\n\
-  -G SIZE                  small-data size limit (default is \"%d\")\n\
-  -march={v2|v3|v4}        assemble for the specified QDSP6 architecture\n\
-                           (default is \"v2\")\n\
-  -mcpu={v2|v3|v4}         equivalent to \"-march\"\n\
-  -m{v2|v3|v4}             equivalent to \"-march\"\n\
-  -mfalign-info            report \".falign\" statistics\n\
-  -mno-extender            disable the use of constant extenders\n\
-  -mno-jumps               disable automatic extension of branch instructions\n\
-  -mno-pairing             disable pairing of instructions\n\
-  -mno-pairing-duplex      disable pairing to duplex instructions\n\
-  -mno-pairing-branch      disable pairing of branch instructions\n\
-  -mpairing-info           report instruction pairing statistics\n\
-  -msort-sda               enable sorting the small-data area (default)\n\
+  -EB                     select big-endian output\n\
+  -EL                     select little-endian ouptut (default)\n\
+  -G SIZE                 small-data size limit (default is \"%d\")\n\
+  -march={v2|v3|v4}       assemble for the specified QDSP6 architecture\n\
+                          (default is \"v2\")\n\
+  -mcpu={v2|v3|v4}        equivalent to \"-march\"\n\
+  -m{v2|v3|v4}            equivalent to \"-march\"\n\
+  -mfalign-info           report \".falign\" statistics\n\
+  -mno-extender           disable the use of constant extenders\n\
+  -mno-jumps              disable automatic extension of branch instructions\n\
+  -mno-pairing            disable pairing of instructions\n\
+  -mno-pairing-duplex     disable pairing to duplex instructions\n\
+  -mno-pairing-branch     disable pairing of branch instructions\n\
+  -mpairing-info          report instruction pairing statistics\n\
+  -msort-sda              enable sorting the small-data area (default)\n\
 ",
            QDSP6_SMALL_GPSIZE);
 }
@@ -1113,38 +1126,40 @@ qdsp6_relax_falign
       packet.dpkt--;
     }
 
-  if (qdsp6_falign_info)
-    {
-      /* Find packet requesting .falign. */
-      for (previous = fragP, fpacket = NULL;
-          previous
-          && previous->tc_frag_data
-          && (fpacket = &previous->tc_frag_data->packet)
-          && !fpacket->faligned;
-          previous = previous->tc_frag_data->previous)
-        ;
-
-      if (fpacket)
-        {
-          /* Collect stats. */
-          if ((pad || pkt) && !(fpacket->stats & QDSP6_STATS_FALIGN) &&
-            (fpacket->stats |= QDSP6_STATS_FALIGN))
-            n_falign [QDSP6_FALIGN_NEED]++;
-
-          if (pad && !(fpacket->stats & QDSP6_STATS_PAD) &&
-            (fpacket->stats |= QDSP6_STATS_PAD))
-            n_falign [QDSP6_FALIGN_PAD]++;
-
-          if (pkt && !(fpacket->stats & QDSP6_STATS_PACK) &&
-            (fpacket->stats |= QDSP6_STATS_PACK))
-            n_falign [QDSP6_FALIGN_PACK]++;
-        }
-    }
-
   fragP->fr_fix += (apacket->dpad + apacket->dpkt) * QDSP6_INSN_LEN;
 
   apacket->dpad = apacket->ddpad = 0;
   apacket->dpkt = apacket->ddpkt = 0;
+
+  /* Collect .falign stats. */
+  {
+    /* Find packet requesting .falign. */
+    for (previous = fragP, fpacket = NULL;
+        previous
+        && previous->tc_frag_data
+        && (fpacket = &previous->tc_frag_data->packet)
+        && !fpacket->faligned;
+        previous = previous->tc_frag_data->previous)
+      ;
+
+    if (fpacket)
+      {
+        if ((pad || pkt)
+            && !(fpacket->stats & QDSP6_STATS_FALIGN)
+            && (fpacket->stats |= QDSP6_STATS_FALIGN))
+          n_falign [QDSP6_FALIGN_NEED]++;
+
+        if (pad
+            && !(fpacket->stats & QDSP6_STATS_PAD)
+            && (fpacket->stats |= QDSP6_STATS_PAD))
+          n_falign [QDSP6_FALIGN_PAD]++;
+
+        if (pkt
+            && !(fpacket->stats & QDSP6_STATS_PACK)
+            && (fpacket->stats |= QDSP6_STATS_PACK))
+          n_falign [QDSP6_FALIGN_PACK]++;
+      }
+  }
 
   return TRUE;
 }
@@ -1475,6 +1490,36 @@ qdsp6_frag_fix_addr
   return (addr / OCTETS_PER_BYTE);
 }
 
+/**  Allow certain fixups to be adjusted to make them relative to the
+beginning of the section instead of the symbol.
+*/
+
+int
+qdsp6_fix_adjustable (fixS *fixP)
+{
+  /* FIXME: x86-64 adds some other cases here. */
+
+  /* adjust_reloc_syms doesn't know about the GOT.  */
+  switch (fixP->fx_r_type)
+    {
+    case BFD_RELOC_QDSP6_PLT_B22_PCREL:
+    case BFD_RELOC_32_PCREL:
+    case BFD_RELOC_QDSP6_GOTOFF_HI16:
+    case BFD_RELOC_QDSP6_GOTOFF_LO16:
+    case BFD_RELOC_32_GOTOFF:
+    case BFD_RELOC_QDSP6_GOT_HI16:
+    case BFD_RELOC_QDSP6_GOT_LO16:
+    case BFD_RELOC_QDSP6_GOT_32:
+    case BFD_RELOC_QDSP6_GOT_16:
+      return (0);
+
+    default:
+      break;
+    }
+
+  return (1);
+}
+
 /* Initialize the various opcode and operand tables. */
 void
 qdsp6_init
@@ -1525,7 +1570,7 @@ qdsp6_frag_init
    * 0xbaadf00d and loops that terminate on previous == NULL
    * will access bad memory */
   if (!fragP->tc_frag_data)
-    fragP->tc_frag_data = xcalloc (sizeof (*fragP->tc_frag_data), 1);
+    fragP->tc_frag_data = xcalloc (1, sizeof (*fragP->tc_frag_data));
 
   if (previous && fragP != previous)
     fragP->tc_frag_data->previous = previous;
@@ -1638,6 +1683,8 @@ qdsp6_parse_immediate
   int is_x = FALSE, may_x;
   int is_relax = FALSE;
   int is_lo16 = FALSE, is_hi16 = FALSE;
+  char *pic_line;
+  qdsp6_pic_type pic_type = PIC_NONE;
 
   /* We only have the mandatory '#' for immediates that are NOT pc relative */
   if (*str == '#')
@@ -1698,9 +1745,22 @@ qdsp6_parse_immediate
 
   hold = input_line_pointer;
   input_line_pointer = str;
+
+  pic_line = qdsp6_parse_pic (&pic_type);
+  if (pic_line)
+    input_line_pointer = pic_line;
+
   expression (&exp);
+
   str = input_line_pointer;
   input_line_pointer = hold;
+
+  if (pic_type == PIC_GOT)
+    operand = qdsp6_operand_find (operand, "got");
+  else if (pic_type == PIC_GOTOFF)
+    operand = qdsp6_operand_find (operand, "gotoff");
+  else if (pic_type == PIC_PLT)
+    operand = qdsp6_operand_find (operand, "plt");
 
   if (is_lo16 || is_hi16)
     {
@@ -1716,6 +1776,15 @@ qdsp6_parse_immediate
         }
       else
         str++;
+    }
+
+  /* FIXME */
+  /* Advance to the end of the line when there is a PIC line. */
+  if (pic_type != PIC_NONE)
+    {
+      while (!is_end_of_line [(unsigned char) *str++])
+        ;
+      str--;
     }
 
   if (exp.X_op == O_illegal)
@@ -3941,6 +4010,21 @@ symbolS *
 md_undefined_symbol
 (char *name ATTRIBUTE_UNUSED)
 {
+  if (name [0] == GLOBAL_OFFSET_TABLE_NAME [0]
+      && name [1] == GLOBAL_OFFSET_TABLE_NAME [1]
+      && name [2] == GLOBAL_OFFSET_TABLE_NAME [2]
+      && !strcmp (name, GLOBAL_OFFSET_TABLE_NAME))
+    {
+      if (!qdsp6_got_symbol)
+	{
+	  if (symbol_find (name))
+	    as_bad (_("GOT already in symbol table."));
+	  qdsp6_got_symbol
+	    = symbol_new (name, undefined_section, 0, &zero_address_frag);
+	};
+      return (qdsp6_got_symbol);
+    }
+
   return NULL;
 }
 
@@ -3952,10 +4036,8 @@ md_undefined_symbol
    `label' will be right shifted by 2.  */
 
 void
-qdsp6_parse_cons_expression(
-     expressionS *exp,
-     unsigned int nbytes ATTRIBUTE_UNUSED
-)
+qdsp6_parse_cons_expression
+(expressionS *exp, unsigned int nbytes ATTRIBUTE_UNUSED)
 {
   char *p = input_line_pointer;
   int code_symbol_fix = 0;
@@ -3973,6 +4055,169 @@ qdsp6_parse_cons_expression(
       qdsp6_code_symbol (exp);
       input_line_pointer = p;
     }
+}
+
+/* FIXME: i386 does this quite differently. */
+
+/* Record a fixup for a cons expression.  */
+
+/* cons_fix_new is called via the expression parsing code when a relocation
+   is needed.  This hook is used to get the correct GOT relocation.  */
+/* FIXME: May need this.
+static enum bfd_reloc_code_real got_reloc = NO_RELOC;
+*/
+
+bfd_reloc_code_real_type
+qdsp6_got_frag
+(fragS *frag ATTRIBUTE_UNUSED, int where ATTRIBUTE_UNUSED, int nbytes, expressionS *exp)
+{
+  bfd_reloc_code_real_type r_type = NO_RELOC;
+
+  if ((exp->X_op == O_subtract)
+      && (exp->X_add_symbol == qdsp6_got_symbol))
+    {
+      if (nbytes == 4)
+        r_type = BFD_RELOC_32_PCREL;
+    }
+
+  return (r_type);
+}
+
+/* Parse operands of the form "<symbol>@GOT+<nnn>" and other GOT or PLT
+   references.  If one is found, set up the correct relocation in RELOC and
+   copy the input string, minus the "@..." into an allocated buffer for
+   parsing by the calling routine.  Return this buffer, and if ADJUST is
+   non-null set it to the length of the string that was removed from the
+   input line.  Otherwise return NULL.  */
+
+static char *
+qdsp6_parse_pic
+(qdsp6_pic_type *gottype)
+{
+  static const struct
+    {
+      const char *str;
+      const qdsp6_pic_type gottype;
+    }
+  gotrel [] =
+    {
+      { "GOTOFF", PIC_GOTOFF },
+      { "GOT", PIC_GOT },
+      { "PLT", PIC_PLT }
+    };
+  char *cp;
+  unsigned int j;
+
+  for (cp = input_line_pointer; *cp != '@'; cp++)
+    if (is_end_of_line [(unsigned char) *cp])
+      return NULL;
+
+  for (j = 0; j < sizeof (gotrel) / sizeof (gotrel [0]); j++)
+    {
+      int len;
+
+      len = strlen (gotrel [j].str);
+      if (!(strncasecmp (cp + 1, gotrel [j].str, len)))
+	{
+          int first, second;
+          char *tmpbuf, *past_reloc;
+
+          /* Replace the relocation token with ' ', so that
+              errors like foo@GOTOFF1 will be detected.  */
+
+          /* The length of the first part of our input line.  */
+          first = cp - input_line_pointer;
+
+          /* The second part goes from after the relocation token until
+              (and including) an end_of_line char.  Don't use strlen
+              here as the end_of_line char may not be a NUL.  */
+          past_reloc = cp + 1 + len;
+          for (cp = past_reloc; !is_end_of_line [(unsigned char) *cp++]; )
+            ;
+          second = cp - past_reloc;
+
+          /* Allocate and copy string.  The trailing NUL shouldn't be
+             necessary, but be safe.  */
+          tmpbuf = xmalloc (first + second + 2);
+
+          memcpy (tmpbuf, input_line_pointer, first);
+          tmpbuf [first] = ' ';
+          memcpy (tmpbuf + first + 1, past_reloc, second);
+          tmpbuf [first + second + 1] = '\0';
+          *gottype = gotrel [j].gottype;
+
+          return (tmpbuf);
+	}
+    }
+
+  /* Might be a symbol version string.  Don't as_bad here.  */
+  return NULL;
+}
+
+void
+qdsp6_cons_fix_new
+(fragS *frag, int where, int nbytes, expressionS *exp)
+{
+  bfd_reloc_code_real_type r_type;
+
+  if ((r_type = qdsp6_got_frag (frag, where, nbytes, exp)) == NO_RELOC)
+    {
+      switch (nbytes)
+      {
+        case 1:
+          r_type = BFD_RELOC_8;
+          break;
+
+        case 2:
+          r_type = BFD_RELOC_16;
+          break;
+
+        case 4:
+	  {
+	    expressionS exptmp;
+	    char *save;
+	    char *picptr;
+	    qdsp6_pic_type pic;
+
+            r_type = BFD_RELOC_32;
+
+	    save = input_line_pointer;
+	    if (!(strncmp (save, "@GOT", 4)))
+              {
+                /* Handle GOT and PLT expressions. */
+                picptr = qdsp6_parse_pic (&pic);
+                if (pic != PIC_NONE)
+                  {
+                    input_line_pointer = picptr;
+                    expression (&exptmp);
+                    exp->X_add_number += exptmp.X_add_number;
+
+                    if (pic == PIC_GOTOFF)
+                      r_type = BFD_RELOC_32_GOTOFF;
+                    else if (pic == PIC_GOT)
+                      r_type = BFD_RELOC_QDSP6_GOT_32;
+                  }
+
+                while (!is_end_of_line [(unsigned char) *save++])
+                  ;
+                save--;
+              }
+	    input_line_pointer = save;
+	  }
+          break;
+
+        case 8:
+          r_type = BFD_RELOC_64;
+          break;
+
+        default:
+          as_bad (_("unsupported BFD relocation size %u"), nbytes);
+          r_type = BFD_RELOC_32;
+          break;
+      }
+    }
+
+  fix_new_exp (frag_now, where, (int) nbytes, exp, 0, r_type);
 }
 
 /* Functions concerning relocs.  */
@@ -4029,7 +4274,7 @@ md_apply_fix
       /* Hack around bfd_install_relocation brain damage.  */
       if (S_GET_SEGMENT (fixP->fx_addsy) != seg)
         value += md_pcrel_from (fixP);
-      else
+      else if (fixP->fx_r_type != BFD_RELOC_QDSP6_PLT_B22_PCREL)
         fixP->fx_done = 1;
     }
 

@@ -74,12 +74,16 @@ extern void qdsp6_parse_cons_expression PARAMS ((struct expressionS *, unsigned)
 
 #define TC_EQUAL_IN_INSN(C, PTR) (1)
 
-#if 0
+#define GLOBAL_OFFSET_TABLE_NAME "_GLOBAL_OFFSET_TABLE_"
+#define NO_RELOC BFD_RELOC_NONE
+
+#define tc_fix_adjustable(X) qdsp6_fix_adjustable(X)
+extern int qdsp6_fix_adjustable PARAMS ((struct fix *));
+
 #define TC_CONS_FIX_NEW(FRAG, WHERE, NBYTES, EXP) \
   qdsp6_cons_fix_new (FRAG, WHERE, NBYTES, EXP)
 extern void
 qdsp6_cons_fix_new PARAMS ((struct frag *, int, int, struct expressionS *));
-#endif
 
 #define tc_symbol_chars qdsp6_symbol_chars
 extern const char qdsp6_symbol_chars [];
@@ -88,10 +92,10 @@ extern const char qdsp6_symbol_chars [];
 #define TC_FIX_TYPE PTR
 #define TC_INIT_FIX_DATA(F) ((F)->tc_fix_data = NULL)
 
+#define TC_FRAG_TYPE struct qdsp6_frag_data *
 struct qdsp6_frag_data;
-#define TC_FRAG_TYPE struct qdsp6_frag_data*
-extern void qdsp6_frag_init (fragS *, fragS *);
 #define TC_FRAG_INIT(F) qdsp6_frag_init (F, NULL)
+extern void qdsp6_frag_init (fragS *, fragS *);
 
 /* Make sure we don't resolve fixups for pc relative relocations */
 #define TC_FORCE_RELOCATION_LOCAL(FIX) \

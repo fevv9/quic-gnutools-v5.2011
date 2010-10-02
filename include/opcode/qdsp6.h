@@ -275,7 +275,16 @@ typedef struct _qdsp6_operand
 /* Format string and alternate format string for disassembly. */
   char *dis_fmt, *alt_fmt;
 
-/* Function used to change the original insn into another semantically equivalent. */
+/* Parse function.
+   This is used by the assembler to parse.
+
+   If successful, insert the bits into the instruction and
+   return the pointer to the next character of the input.
+   Otherwise, return NULL;
+
+   If there is a problem, the function will set *errmsg.
+ */
+
   char *(*parse) (const struct _qdsp6_operand *, qdsp6_insn *,
                   const qdsp6_opcode *, char *, long *, int *, char **);
 } qdsp6_operand;
@@ -400,6 +409,8 @@ extern int qdsp6_dis_opcode
   (char *, qdsp6_insn, bfd_vma, const qdsp6_opcode *, char **);
 extern const qdsp6_operand *qdsp6_operand_find_lo16 (const qdsp6_operand *);
 extern const qdsp6_operand *qdsp6_operand_find_hi16 (const qdsp6_operand *);
+extern const qdsp6_operand *qdsp6_operand_find
+  (const qdsp6_operand *, const char *);
 
 /* We don't put the packet header in the opcode table */
 extern const qdsp6_opcode qdsp6_packet_header_opcode;
