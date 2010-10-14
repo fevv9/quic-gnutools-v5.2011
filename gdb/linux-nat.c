@@ -3680,11 +3680,7 @@ linux_nat_do_thread_registers (bfd *obfd, ptid_t ptid,
 			       enum target_signal stop_signal)
 {
   gdb_gregset_t gregs;
-#if 0
   gdb_fpregset_t fpregs;
-#else
-  int fpregs;
-#endif
   unsigned long lwp = ptid_get_lwp (ptid);
   struct gdbarch *gdbarch = target_gdbarch;
   struct regcache *regcache = get_thread_arch_regcache (ptid, gdbarch);
