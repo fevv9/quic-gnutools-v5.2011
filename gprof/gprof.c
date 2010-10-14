@@ -429,7 +429,7 @@ main (int argc, char **argv)
 This program is free software; you may redistribute it under the terms of\n\
 the GNU General Public License.  This program has absolutely no warranty.\n\
 \n"));
-          printf(_(" "));
+          printf(_("QC_COPYRT_MSG"));
           printf(_("\n"));
 	  done (0);
 	case 'w':
