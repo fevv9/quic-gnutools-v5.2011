@@ -6800,6 +6800,7 @@ _ACEOF
 
 fi
 
+  LIBS="$LIBS ../tcl/libtcl84.a"
 fi
 
 # For other settings, only the main target counts.

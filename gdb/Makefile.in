@@ -294,7 +294,6 @@ SUBDIR_PYTHON_CFLAGS=
 
 # Where is the TCL library?  Typically in ../tcl.
 TCL_DIR = ../tcl
-TCL_LIB = $(TCL_DIR)/libtcl84.a
 TCL_SRC_DIR = $(srcdir)/../tcl
 TCL_INCLUDE =  -I$(TCL_SRC_DIR)/unix -I$(TCL_SRC_DIR)/generic
 
@@ -538,7 +537,7 @@ ALL_TARGET_OBS = \
 	mt-tdep.o \
 	nto-tdep.o \
 	ppc-linux-tdep.o ppcnbsd-tdep.o ppcobsd-tdep.o ppc-sysv-tdep.o \
-	qdsp6-tdep.o qdsp6-sim.o qdsp6-rumi.o qdsp6-zebu.o \
+	qdsp6-linux-tdep.o qdsp6-tdep.o qdsp6-sim.o \
 	rs6000-aix-tdep.o rs6000-tdep.o \
 	s390-tdep.o \
 	score-tdep.o \
@@ -1480,7 +1479,7 @@ ALLDEPFILES = \
 	ppcnbsd-nat.c ppcnbsd-tdep.c \
 	ppcobsd-nat.c ppcobsd-tdep.c \
 	procfs.c \
-	qdsp6-tdep.c qdsp6-sim.c qdsp6-rumi.c qdsp6-zebu.c \
+	qdsp6-tdep.c qdsp6-linux-tdep.c qdsp6-sim.c \
 	rs6000-aix-tdep.o rs6000-tdep.o \
 	remote-m32r-sdi.c remote-mips.c \
 	remote-sim.c \

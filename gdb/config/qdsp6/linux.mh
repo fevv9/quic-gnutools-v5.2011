@@ -1,0 +1,14 @@
+# Host: Qualcomm Hexagon running GNU/Linux.
+
+NAT_FILE= config/nm-linux.h
+NATDEPFILES= qdsp6-linux-tdep.o qdsp6-linux-nat.o inf-ptrace.o fork-child.o proc-service.o linux-thread-db.o linux-nat.o linux-fork.o
+#NATDEPFILES= inf-ptrace.o fork-child.o proc-service.o linux-fork.o
+
+#
+# Some configs of the compiler don't enable this by default
+# dwarf2read.c requires this
+MH_CFLAGS= -fno-short-enums
+
+# The dynamically loaded libthread_db needs access to symbols in the
+# gdb executable.
+LOADLIBES = -ldl -rdynamic

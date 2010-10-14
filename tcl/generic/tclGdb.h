@@ -16,8 +16,8 @@ typedef struct
 
 // To automatically get all thread registers from arch
 static gdbregtype_t threadRegs[]={
-#include "../../../../tools/include/arch/v2/thread_regs.h"    
-#include "../../../../tools/include/arch/v3/thread_regs.h"    
+#include "../../../include/arch/v2/thread_regs.h"    
+#include "../../../include/arch/v3/thread_regs.h"    
 {"", 0xFFFFFFFF}
 };
 

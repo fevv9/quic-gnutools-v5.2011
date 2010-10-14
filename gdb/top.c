@@ -71,9 +71,6 @@
 extern int was_gdb_command;
 jmp_buf error_return; // [ams]
 
-/* Free resources allocated by qdsp6-tdep.c */
-extern void free_q6alloc_mem(void);
-
 /* One func is the standard the other is the TCL front end */
 int (*exec_cmd_func[2])(char *, int) = {0, 0};
 

@@ -209,6 +209,7 @@ if test "$ac_cv_env_target_alias_value" = "qdsp6"; then
   AC_DEFINE(HAVE_TCL, 1, [Define if qdsp6 is the target. ])
   AC_DEFINE(QDSP6, 1, [Define if qdsp6 is the target. ])
   AC_CHECK_LIB(dl, dlopen) 
+  LIBS="$LIBS ../tcl/libtcl84.a"
 fi
 
 # For other settings, only the main target counts.

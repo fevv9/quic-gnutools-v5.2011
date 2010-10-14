@@ -48,29 +48,12 @@
 #include "qdsp6-tdep.h"
 #include "cli/cli-decode.h"
 #include "qdsp6-sim.h"
-#include "watchpoint_types.h"
 
 
-/* following register values taken from architecture register definitions */
-#define MAXREGNAMELEN     50
-#define NUM_GEN_REGS      32
-#define NUM_PER_THREAD_CR 40
-#define NUM_GLOBAL_REGS   64
-#define TOTAL_PER_THREAD_REGS (NUM_GEN_REGS+NUM_PER_THREAD_CR)
-#define NUM_GLOBAL_REGS 64
-#define MAX_INTERRUPT 32
-#define END_OFFSET             0xFFFFFFFF
-#define SIM_ARG_MAX 256
 
 /*******************************************************************
  *   Global Variables                                              *
  *******************************************************************/   
-
-/* captures the arguments to the target passed thru the 
- * set targetargs command */
-char *q6targetargsInfo[SIM_ARG_MAX];
-char *current_q6_target = NULL;
-int Q6_tcl_fe_state = 0;
 int qdsp6_debug = 0;
 
 /*******************************************************************
@@ -80,17 +63,6 @@ extern void _initialize_qdsp6_tdep (void);
 extern char *current_q6_target;
 extern int frame_debug;
 
-/*******************************************************************
- *   Static Variables                                              *
- *******************************************************************/   
-/* for set globalregs command - contains the user typed string*/
-static char *q6globalregsInfo = NULL;
-/* for set interrupt command - contains the user typed string*/
-static char *q6Interrupt      = NULL;
-/* for hwthrdbg command; 0 indicates s/w thread debug; non-zero indicated 
-   h/w thread debug */
-static int q6hwthread_debug = 0;
-
 static gdbarch_init_ftype qdsp6_gdbarch_init;
 static gdbarch_register_name_ftype qdsp6_register_name;
 static gdbarch_breakpoint_from_pc_ftype qdsp6_breakpoint_from_pc;
@@ -98,58 +70,51 @@ static gdbarch_adjust_breakpoint_address_ftype qdsp6_gdbarch_adjust_breakpoint_a
 static gdbarch_skip_prologue_ftype qdsp6_skip_prologue;
 static LONGEST qdsp6_call_dummy_words[] ={0};
 
-/* The list of available "info q6 " commands.  */
-static struct cmd_list_element *q6cmdlist = NULL;
 
-// To enable printing of register names 
-typedef struct 
-{
-  char* reg_name; // reg name
-  int   index; // Offset in reg file
-} regtype_t;
-
-
+#define END_OFFSET             0xFFFFFFFF
 // To automatically get all thread registers from arch
-static regtype_t threadRegSetInfo_v2[]={
+static q6_regtype_t threadRegSetInfo_v2[]={
 #include "v2/thread_regs.h"
   {"", END_OFFSET}
 };
 
 // To automatically get all thread registers from arch
-static regtype_t globalRegSetInfo_v2[]={
+static q6_regtype_t globalRegSetInfo_v2[]={
 #include "v2/global_regs.h"
   {"", END_OFFSET}
 };
 
 // To automatically get all thread registers from arch
-static regtype_t threadRegSetInfo_v3[]={
+static q6_regtype_t threadRegSetInfo_v3[]={
 #include "v3/thread_regs.h"
   {"", END_OFFSET}
 };
 
 // To automatically get all thread registers from arch
-static regtype_t globalRegSetInfo_v3[]={
+static q6_regtype_t globalRegSetInfo_v3[]={
 #include "v3/global_regs.h"
   {"", END_OFFSET}
 };
 
 // To automatically get all thread registers from arch
-static regtype_t threadRegSetInfo_v4[]={
+static q6_regtype_t threadRegSetInfo_v4[]={
 #include "v4/thread_regs.h"
   {"", END_OFFSET}
 };
 
 // To automatically get all thread registers from arch
-static regtype_t globalRegSetInfo_v4[]={
+static q6_regtype_t globalRegSetInfo_v4[]={
 #include "v4/global_regs.h"
   {"", END_OFFSET}
 };
 
-/* static pointer which points to the v1/v2 thread registers */
-static regtype_t * threadRegSetInfo;
-/* static pointer which points to the v1/v2 thread registers */
-static regtype_t * globalRegSetInfo;
-static struct qdsp6_system_register_offsets *q6RegOffset = (struct qdsp6_system_register_offsets *)0;
+/* pointer to the architecture's thread registers */
+q6_regtype_t * threadRegSetInfo;
+/* pointer to the architecture's thread registers */
+q6_regtype_t * globalRegSetInfo;
+
+struct qdsp6_system_register_offsets *q6RegOffset = (struct qdsp6_system_register_offsets *)0;
+
 
 enum 
 {
@@ -237,7 +202,7 @@ struct gdbarch_tdep
  *		  
  */
 static int
-qdsp6_index_max (regtype_t *rt)
+qdsp6_index_max (q6_regtype_t *rt)
 {
   int max_index = 0;
   while (rt->index != END_OFFSET)
@@ -396,21 +361,6 @@ static struct type *
 qdsp6_register_type (struct gdbarch *gdbarch, int reg)
 {
     return builtin_type (gdbarch)->builtin_uint32;
-}
-
-static void
-qdsp6_pseudo_register_read (struct gdbarch *gdbarch, struct regcache *regcache,
-                          int reg, void *buffer)
-{
-  return;
-}
-
-static void
-qdsp6_pseudo_register_write (struct gdbarch *gdbarch, struct regcache *regcache,
-                          int reg, const void *buffer)
-{
-  return;
-
 }
 
 static const unsigned char *
@@ -736,7 +686,12 @@ get_packet (CORE_ADDR pc, gdb_byte * buffer, enum bfd_endian byte_order)
   for (i = 0; i < 16; i += 4, pc += 4, packet_cnt++)
     {
       if (target_read_memory (pc, &buffer[i], 4))
-	gdb_assert (0);
+	{
+           internal_warning (__FILE__, __LINE__,
+                    _("\ntarget_read_memory failed to read address: 0x%lx"),
+                    pc);
+	   return 0;
+	}
 
       insn = extract_unsigned_integer (&buffer[i], 4, byte_order);
       if ((insn & mask) == endofpacket)
@@ -800,6 +755,11 @@ qdsp6_analyze_prologue (struct gdbarch *gdbarch,
       printf_filtered ("QDSP6_DEB: %s, pc = 0x%lx\n",__func__, start_pc);
 
 
+#if 1
+  if (start_pc == 0)
+	start_pc = end_pc;
+#endif
+
   prolog_pc = start_pc;
 
   /* Try to compute an upper limit (on how far to scan) based on the
@@ -847,7 +807,8 @@ qdsp6_analyze_prologue (struct gdbarch *gdbarch,
       int packet_total;
       int pcnt;
  
-      packet_total = get_packet (pc, buf, byte_order);
+      if (!(packet_total = get_packet (pc, buf, byte_order)))
+	return 0;
 
       for (pcnt = 0; pcnt<packet_total; pcnt++)
         {
@@ -1436,8 +1397,6 @@ qdsp6_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
 {
   struct gdbarch *gdbarch;
   struct gdbarch_tdep *var;
-  extern struct qdsp6_system_register_offsets reg_offset_v4;
-  extern struct qdsp6_system_register_offsets reg_offset;
 
   /* Check to see if we've already built an appropriate architecture
      object for this executable.  */
@@ -1445,7 +1404,7 @@ qdsp6_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
   arches = gdbarch_list_lookup_by_info (arches, &info);
   if (arches)
     return arches->gdbarch;
- 
+
  /* V2/V3/V4 registers set by new_variant
     Note: ABI says registers r0-r5 can be used as arguments to
           a function */
@@ -1453,26 +1412,23 @@ qdsp6_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
     {
     case bfd_mach_qdsp6_v2:
       q6Version = Q6_V2;
-      q6ArgRegMax = 6;
       threadRegSetInfo = &threadRegSetInfo_v2[0];
       globalRegSetInfo = &globalRegSetInfo_v2[0];
-      q6RegOffset = &reg_offset;      
+      q6RegOffset = &q6_reg_offset;
     break;
     
     case bfd_mach_qdsp6_v3:
       q6Version = Q6_V3;
-      q6ArgRegMax = 6;
       threadRegSetInfo = &threadRegSetInfo_v3[0];
       globalRegSetInfo = &globalRegSetInfo_v3[0];
-      q6RegOffset = &reg_offset;      
+      q6RegOffset = &q6_reg_offset;
     break;
 
     case bfd_mach_qdsp6_v4:
       q6Version = Q6_V4;
-      q6ArgRegMax = 6;
       threadRegSetInfo = &threadRegSetInfo_v4[0];
       globalRegSetInfo = &globalRegSetInfo_v4[0];
-      q6RegOffset = &reg_offset_v4;      
+      q6RegOffset = &q6_reg_offset_v4;
     break;
     
     default:
@@ -1481,6 +1437,7 @@ qdsp6_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
     }
 
 
+  q6ArgRegMax = 6;
   qdsp6_reg_index_max = qdsp6_index_max (threadRegSetInfo);
   
   /* Select the right tdep structure for this variant (qdsp6).  */
@@ -1523,12 +1480,7 @@ qdsp6_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
 
   set_gdbarch_register_name (gdbarch, qdsp6_register_name);
   set_gdbarch_register_type (gdbarch, qdsp6_register_type);
-#if 0
-  set_gdbarch_register_sim_regno (gdbarch, qdsp6_register_sim_regno);
-
-  set_gdbarch_pseudo_register_read (gdbarch, qdsp6_pseudo_register_read);
-  set_gdbarch_pseudo_register_write (gdbarch, qdsp6_pseudo_register_write);
-#endif
+  //set_gdbarch_register_sim_regno (gdbarch, qdsp6_register_sim_regno);
 
   set_gdbarch_skip_prologue (gdbarch, qdsp6_skip_prologue);
   set_gdbarch_breakpoint_from_pc (gdbarch, qdsp6_breakpoint_from_pc);
@@ -1555,7 +1507,6 @@ qdsp6_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
   /* Settings that should be unnecessary.  */
   set_gdbarch_inner_than (gdbarch, core_addr_lessthan);
 
-  /* Hardware watchpoint / breakpoint support.  */
   var->num_hw_watchpoints = 0;
   var->num_hw_breakpoints = 0;
 
@@ -1565,6 +1516,9 @@ qdsp6_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
 		                  (info.bfd_arch_info->mach,
                                    (info.byte_order == BFD_ENDIAN_BIG)));
 
+  /* Hook in ABI-specific overrides, if they have been registered.  */
+  gdbarch_init_osabi (info, gdbarch);
+
   /* Bug Fix for bug1316
      Changed CALL_DUMMY_LOCATION from default AT_ENTRY to ON_STACK
    */  
@@ -1573,1351 +1527,8 @@ qdsp6_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
   return gdbarch;
 }
 
-/* Map global register name to its register number */
-static int 
-qdsp6_global_regnum_from_name(char *regname, int *index)
-{
-  int i, len= strlen(regname)  ;
-  int regnum = -1 ;
-  int numGblRegs;
-  if(regname == NULL)
-    return -1;
-
-  switch (q6Version)
-  {
-    case Q6_V4:
-	numGblRegs = sizeof(globalRegSetInfo_v4)/sizeof(regtype_t);
-	break;
-    
-    case Q6_V3:
-	numGblRegs = sizeof(globalRegSetInfo_v3)/sizeof(regtype_t);
-	break;
-
-    case Q6_V2:
-	numGblRegs = sizeof(globalRegSetInfo_v2)/sizeof(regtype_t);
-	break;
-
-    default:
-	printf_filtered ("%s, invalid setting for arch level %d\n",__func__, q6Version);
-	gdb_assert(0);
-	break;
-  }
-
-  for (i = 0; i < numGblRegs; i++)
-  {
-
-    if(globalRegSetInfo[i].reg_name == NULL)
-        break;
-
-    if ((regname != NULL)                    && 
-	(len == strlen (globalRegSetInfo[i].reg_name)) && 
-	(strncmp (globalRegSetInfo[i].reg_name,regname,len) == 0))
-    {
-        regnum =  globalRegSetInfo[i].index ;
-        break;
-    }
-  }
-
-  *index = i ;
-  return regnum;
-}
-
-/* Print reg info in the following format
-   register name  0xff 255 */ 
-static void  
-qdsp6_print_reg_info(char  *regname,  LONGEST regvalue)
-{
-
-  if(regname == NULL)
-    warning("Invalid Register Name\n");
-
-  if(strlen(regname) <=7)
-     fprintf_filtered(gdb_stdout,"%s\t\t", regname);
-  else
-     fprintf_filtered(gdb_stdout,"%s\t", regname);
-  
-  fprintf_filtered(gdb_stdout, "0x%x", (unsigned int) regvalue);
-  fprintf_filtered(gdb_stdout, "\t");  
-  
-  // print the value of the register in decimal
-  fprintf_filtered(gdb_stdout, "%u", (unsigned int) regvalue);
-
-  fprintf_filtered(gdb_stdout, "\n");
-  
-  gdb_flush (gdb_stdout);
-}
-
-
-
-/* maximum message size from RIL */
-/* 1.0 MB = 512 * 2048 */
-#define GDB_RSP_RIL_INFO_MAX_SIZE 256 * 2048
-#define SET_CMD_BUFFER_SIZE 1024
-static long gdb_rsp_ril_info_max_size=GDB_RSP_RIL_INFO_MAX_SIZE;
-
-/* store for holding the response; this is raw-ascii coded */
-static char response_buf[GDB_RSP_RIL_INFO_MAX_SIZE];
-static char *response = response_buf;
-
-/* storage to hold the display buffer */
-static char display_buf[GDB_RSP_RIL_INFO_MAX_SIZE/2 +1];
-
-/* print out if no timeout occured and got non null string */
-#define PRINT_MSG \
-   if ((response[0] != 0) && ((strstr(response, "timeout") == NULL)))\
-    {\
-      n = min (strlen (response) / 2, sizeof (display_buf));\
-      result = hex2bin (response, display_buf, n);\
-      display_buf [result] = '\0';\
-      printf_filtered("%s\n", display_buf);\
-    }
-
-
-char* gettargetresponse ()
-{
- int n;
- int result;
-  
- if ((response[0] != 0) && ((strstr(response, "timeout") == NULL)))
-    {
-      n = min (strlen (response) / 2, sizeof (display_buf));
-      result = hex2bin (response, display_buf, n);
-      display_buf [result] = '\0';
-    }
-    return display_buf;
-}
-
-static void
-qdsp6_rtos_info_command (char *args, int from_tty)
-{
-  int result;
-  int n = 0;                    /* position in display_buf */
-  
-  if(current_q6_target == NULL)
-    error ("Program has no rtos info. Load program first");
-    
-  putpkt ("qq6RtosInfo");
-  getpkt (&response, &gdb_rsp_ril_info_max_size , 0);
-  PRINT_MSG;
-}
-
-static ULONGEST qdsp6_get_pagetable_size ()
-{
-  char *pResponse;
-  long long unsigned pSize = 0;
-
-  putpkt ("qPageTableSize");
-  getpkt ( &response, &gdb_rsp_ril_info_max_size , 0);
- 
-  if(response == NULL)
-    error ("Invalid Page Table size string returned from DRIL.");
-
-  pResponse = gettargetresponse();
-
-  if(pResponse == NULL)
-    error ("Invalid Page Table size string returned from DRIL.");
-
-  if(strcmp(pResponse,"PageTable command supported only for rtos apps") == 0)
-    error ("PageTable command supported only for rtos apps");
-
-  /* Check for valid page size */
-  sscanf(pResponse,"%llu",&pSize);
-
-  if (pSize <= 0)
-     error ("Invalid Page Table size returned from DRIL.");
-
-  return pSize;
-
-}
-static void
-qdsp6_pagetable_info_command (char *args, int from_tty)
-{
-  int result;
-  int n              = 0;  /* position in display_buf */
-  ULONGEST pSize     = 0;
-  char *pageBuf      = NULL;
-  char * displayBuf  = NULL;
-
-  if(current_q6_target == NULL)
-    error ("Program has no pagetable info. Load program first");
-
-  /* Get the size of page table data */  
-  pSize = qdsp6_get_pagetable_size() ;
-
-  /* Allocate memory chunk for page table 
-   * We allocate double the size as the msg is hex encoded*/
-  pageBuf    = (char*) malloc (pSize*2+1);
-   /* Allocate memory chunk for page table display */ 
-  displayBuf = (char*) malloc (pSize+1);
-
-  if ((pageBuf == NULL) || (displayBuf == NULL))
-    error ("Page Table memory allocation failed");
-  
-  putpkt ("qPageTableInfo");
-  getpkt (&pageBuf, &gdb_rsp_ril_info_max_size , 0);
-
-  /* Display page table info */
-  if ((pageBuf[0] != 0) && ((strstr(pageBuf, "timeout") == NULL)))
-  {
-    n = min(strlen(pageBuf)/2, pSize+1);
-    result = hex2bin (pageBuf, displayBuf, n);
-    displayBuf [result] = '\0';
-    printf_filtered("%s\n", displayBuf);
-  }
- 
-  /* Free resources allocated locally */
-  if (pageBuf != NULL)
-  {  
-    free (pageBuf);
-    pageBuf = NULL;
-  }
-
-  if (displayBuf != NULL)
-  {  
-    free (displayBuf);
-    displayBuf = NULL;
-  }
-
-}
-
-
-static void
-qdsp6_tlb_info_command (char *args, int from_tty)
-{
-  int result;
-  int n = 0;                    /* position in display_buf */
-
-  if(current_q6_target == NULL)
-    error ("Program has no tlb info. Load program first");
-    
-  putpkt ("qTLBInfo");
-  getpkt (&response, &gdb_rsp_ril_info_max_size, 0);
-  PRINT_MSG;
-}
-
-
-
-static LONGEST
-get_globalregs_buffer (char* args, int printInfo)
-{
-  int  result, namelen, numValidGlobalRegs=0;
-  int  n = 0,  i =0 ;                  
-  int  lenDelimiter=2 , lenValue=8 , lenData, lenResponse;
-    
-  char sDisplayBuf[SET_CMD_BUFFER_SIZE];
-  char * sDelimiter; 
-  char * sRegData = response;
-  char sRegNames[NUM_GLOBAL_REGS][MAXREGNAMELEN]; 
-  LONGEST  regValues[NUM_GLOBAL_REGS];
-
-  putpkt ("qGlobalRegsInfo");
-  getpkt (&response, &gdb_rsp_ril_info_max_size , 0);
-  
-  lenResponse  = strlen(response); 
-
- /*RSP for each register = register name:value */
-  /* value for each reigster is represented as 8 nibbles */
-  for(n =0, lenData =0; 
-     (n<NUM_GLOBAL_REGS) && (lenData< lenResponse); 
-     n++ )
-  {
-    if ((response[0] != 0) && 
-	((strstr(response, "timeout") == NULL)))
-    {
-      /*read in the register name till : is seen */
-      for(i=0, namelen = 0;;i+=2, namelen+=2)
-         if((sRegData[i] == '3') && (sRegData[i+1] == 'a'))
-          break;
-      
-      result  = hex2bin(sRegData, sRegNames[n], namelen/2);
-      sRegNames[n][result] = '\0';
-
-      /* read reg value after strlen(reg name) + strlen("3a"). 
-         0x3a = ':' the delimiter between register name and its value*/
-      result = hex2bin (sRegData+namelen+lenDelimiter,
-                        sDisplayBuf, lenValue/2);
-      sDisplayBuf [result] = '\0';
-      
-
-      /* get the register offset to store the register value */
-      i  =  qdsp6_global_regnum_from_name(sRegNames[n], &result);
-
-      if(i == -1)
-      {
-        qdsp6_print_reg_info("Invalid Register Name", 0);
-        return -1;
-      }
-
-      /* Get the value of the register */
-      regValues[i] = extract_signed_integer((const gdb_byte *)&sDisplayBuf,
-					    lenValue/2, BFD_ENDIAN_LITTLE);
-    
-      /* get the length of the string read so far */  
-      lenData += namelen+lenDelimiter+lenValue;
-
-      /* advance the data to read in the next register set info */
-      /* advance pointer by reg name length + : + 8 bytes of reg value */ 
-      sRegData+=namelen;
-      sRegData+=lenDelimiter;
-      sRegData+=lenValue;
-
-      /* increase the valid reg count */
-      numValidGlobalRegs++;
-    }
-  }
-  /* get particular register value , get the index into the array*/
-  /* passing 0 as 2nd arg will return register offset in arch defn */
-  if((printInfo != 1) && (args != NULL))
-  {
-     n =  qdsp6_global_regnum_from_name(args, &i);
-     return regValues[n];
-  }
-  else if(printInfo == 1)
-  {
-
-    if(args != NULL)
-    {
-       /* print particular register , get the index into the array*/
-       /* passing 0 as 2nd arg will return register offset in arch defn */
-       n =  qdsp6_global_regnum_from_name(args, &i);
-       if(n != -1)
-         qdsp6_print_reg_info(globalRegSetInfo[i].reg_name, regValues[n] );
-       else
-         qdsp6_print_reg_info("Invalid Register Name", 0);
-
-    }
-   else
-   {
-   
-    /* Print all the registers */
-    for(result =0; result<numValidGlobalRegs ; result++)
-    {
-      /* get the register offset to store the register value */
-      n  =  qdsp6_global_regnum_from_name(sRegNames[result], &i);
-      qdsp6_print_reg_info(globalRegSetInfo[i].reg_name, regValues[n]);
-    }
-   }
-  }
-
-  return 0;  
-}
-
-
-static void
-qdsp6_globalregs_info_command (char *args, int from_tty)
-{
-  int  result, namelen, numValidGlobalRegs=0;
-  int  n = 0,  i =0 ;                  
-  int  lenDelimiter=2 , lenValue=8 , lenData, lenResponse;
-  
-  char sDisplayBuf[SET_CMD_BUFFER_SIZE];
-  char * sDelimiter; 
-  char * sRegData = response;
-  char sRegNames[NUM_GLOBAL_REGS][MAXREGNAMELEN]; 
-  LONGEST  regValues[NUM_GLOBAL_REGS];
-
-  if(current_q6_target == NULL)
-    error ("Program has no global registers. Load program first");
-
-  putpkt ("qGlobalRegsInfo");
-  getpkt (&response, &gdb_rsp_ril_info_max_size , 0);
-
-  if(strncmp(response,"E00", strlen("E00"))==0)
-     error ("Error reading register values from simulator!"); 
-     
-  lenResponse  = strlen(response);
-  
-  /*RSP for each register = register name:value */
-  /* value for each reigster is represented as 8 nibbles */
-  for(n =0, lenData =0; 
-     (n<NUM_GLOBAL_REGS) && (lenData< lenResponse); 
-      n++)
-  {
-    if ((response[0] != 0) && 
-	((strstr(response, "timeout") == NULL)))
-    {
-      /*read in the register name till : is seen */
-      for(i=0, namelen = 0;;i+=2, namelen+=2)
-         if((sRegData[i] == '3') && (sRegData[i+1] == 'a'))
-          break;
-      
-      result  = hex2bin(sRegData, sRegNames[n], namelen/2);
-      sRegNames[n][result] = '\0';
-
-      /* read reg value after strlen(reg name) + strlen("3a"). 
-         0x3a = ':' the delimiter between register name and its value*/
-      result = hex2bin (sRegData+namelen+lenDelimiter,
-                        sDisplayBuf, lenValue/2);
-      sDisplayBuf [result] = '\0';
-      
-
-      /* get the register offset to store the register value */
-      i  =  qdsp6_global_regnum_from_name(sRegNames[n], &result);
-
-      if(i == -1)
-      {
-        qdsp6_print_reg_info("Invalid Register Name", 0);
-        return;
-      }
-
-      /* Get the value of the register */
-      regValues[i] = extract_signed_integer((const gdb_byte *)&sDisplayBuf,
-					    lenValue/2, BFD_ENDIAN_LITTLE);
-    
-      /* get the length of the string read so far */  
-      lenData += namelen+lenDelimiter+lenValue;
-
-      /* advance the data to read in the next register set info */
-      /* advance pointer by reg name length + : + 8 bytes of reg value */ 
-      sRegData+=namelen;
-      sRegData+=lenDelimiter;
-      sRegData+=lenValue;
-
-      /* increase the valid reg count */
-      numValidGlobalRegs++;
-    }
-  }
-  
-  /* Print register Info */
-
-  if(args != NULL)
-  {
-    /* print particular register , get the index into the array*/
-    /* passing 0 as 2nd arg will return register offset in arch defn */
-    n =  qdsp6_global_regnum_from_name(args, &i);
-    if(n != -1)
-      qdsp6_print_reg_info(globalRegSetInfo[i].reg_name, regValues[n] );
-    else
-      qdsp6_print_reg_info("Invalid Register Name", 0);
-  }
-  else
-  {
-    /* Print all the registers */
-    for(result =0; result<numValidGlobalRegs ; result++)
-    {
-      /* get the register offset to store the register value */
-      n  =  qdsp6_global_regnum_from_name(sRegNames[result], &i);
-      qdsp6_print_reg_info(globalRegSetInfo[i].reg_name, regValues[n]);
-    }
-  }
-  
-}
-
-/* Get the value of a particular register */
-int get_q6globalregs_value (char *args)
-{
-
-  LONGEST regVal;
-
-  if(current_q6_target == NULL)
-    error ("Program has no global registers. Load program first.");
-
-  if(args == NULL)
-   error ("Empty register name !.\n");
- 
-  return get_globalregs_buffer (args,0);
-}
-
-static void
-qdsp6_thread_details_info_command (char *args, int from_tty)
-{
-  int result;
-  int num;
-  ptid_t ptid;
-  int n = 0;                    /* position in display_buf */
-  char message[30];
-
-  if (!args)
-    {
-      error ("Thread ID not specified");
-      return;
-    }
-
-  sscanf(args, "%d", &num);
-
-  /* convert into tid */
-  ptid = thread_id_to_pid (num);
-
-  if (ptid_equal(ptid, pid_to_ptid(-1)))
-    {
-      error ("Thread ID %d not known.", num);
-      return;
-    }
-
-
-  sprintf(message, "qThreadDetailInfo,%d", PIDGET(ptid));
-  putpkt (message);
-  getpkt (&response, &gdb_rsp_ril_info_max_size , 0);
-  PRINT_MSG;
-}
-
-
-void 
-setglobalregistervalue(char *args, int from_tty, 
-                       struct cmd_list_element *cmdlist)
-{
-  char *regName, *regValue, *substr,*q6regbuf = NULL;
-  char tmpbuf[9], message[256];
-  int regNum, len=0, result;
-  int newValue;   //LONGEST newValue;
-  struct expression *expr;
- 
-  if(current_q6_target == NULL)
-    error("Program has no global registers. Load program first");
-  else if(q6globalregsInfo == NULL)
-    error("Invalid register name/value.");
-					
-  /*Check for blanks in the user entered string */ 
-   substr = strtok((char*)q6globalregsInfo, " ");
-   if(substr != NULL)
-   {		
-     q6regbuf = (char*)malloc(sizeof(char) * SET_CMD_BUFFER_SIZE);
-
-     if(q6regbuf == NULL)
-        error("Memory allocation for register buffer failed !");
-
-     /*clear the temporary buffer */
-     memset(q6regbuf,0,SET_CMD_BUFFER_SIZE);
-
-     /*extract user string with spaces removed */
-     strcat(q6regbuf, substr);
-     while ( (substr=strtok(NULL, " ")) != NULL)
-       strcat(q6regbuf, substr);
-   }
-   else
-     q6regbuf=q6globalregsInfo; 
-
-  /* Extract the register name whose value is to be set  */
-  regName = strtok(q6regbuf, "=");
-  if(regName == NULL)  
-    error("Invalid register name/value.");
-  
-  /* Get the global register index for this register */
-  regNum =  qdsp6_global_regnum_from_name(regName, &result);
-  if(regNum == -1)  
-    error("Invalid register name : %s.",regName );
-  
-  /* get the register value to be set  */
-  regValue =q6regbuf+strlen(regName)+1;
-
-  /* parse the new register value and get the decimal value
-     expr->elts[2].longconst stores the converted values */
-  expr =  parse_expression (regValue);
-
-  if(!expr)
-    return;
-  
-  /* get the decimal value to be set */
-  newValue = expr->elts[2].longconst;
-
-  /* get the reg num and reg value to be set into string format */
-  sprintf(message, "qSetGlobalRegsInfo,%x,", regNum);
-
-  sprintf(tmpbuf,"%02x", newValue & 0x0ff);
-  strcat(message,tmpbuf);
-  sprintf(tmpbuf,"%02x",(newValue>>8) & 0x0ff);
-  strcat(message,tmpbuf);
-  sprintf(tmpbuf,"%02x",(newValue>>16) & 0x0ff);
-  strcat(message,tmpbuf);
-  sprintf(tmpbuf,"%02x",(newValue>>24) & 0x0ff);
-  strcat(message,tmpbuf);
-
-  putpkt (message);
-  getpkt (&response, &gdb_rsp_ril_info_max_size , 0);
-
-  if(strcmp(response,"E02") == 0)
-    error ("'%s' is a read-only register.",regName);
-
-  gdb_flush (gdb_stdout);
-
-  /* free resources allocated to q6globalregsinfo */
-  if(q6regbuf != NULL)
-    free (q6regbuf); 
-
-}  
-
-void init_globalregs()
-{
-   /* Chain containing all defined show subcommands.  */
-   struct cmd_list_element *q6showlist = NULL;
-
-   /* allocate memory for control variable for setshow command */
-   q6globalregsInfo  = (char*)malloc(sizeof(char) * SET_CMD_BUFFER_SIZE);
-  
- 
-    if(q6globalregsInfo ==  NULL)
-        error ("Memory allocation for register buffer failed!");
-     /* set global regs */
-      add_setshow_string_noescape_cmd ("globalregs",         /* name */
-		   no_class,             /* class category for help list */
-		   &q6globalregsInfo,    /* address of the variable being controlled by this */
-           "set Q6 global register to the specified value", /* documentation for this cmd */
-           "set Q6 global register to the specified value", /* documentation for this cmd */
-           "set Q6 global register to the specified value", /* documentation for this cmd */
-		   &setglobalregistervalue,  /* set cmd func ptr */
-		   NULL,                     /* show cmd fn  ptr */
-		   &setlist,
-		   &q6showlist);
-
-
-}
-
-/*
- * function: setQ6targetargs
- * description:
- * 	- takes a single input string and breaks it up into component
- * 	  parts suitable execvp
- */
-void  
-setQ6targetargs (char * args, int tty, struct cmd_list_element *c)
-{
-    ULONGEST addr = *(unsigned long *)c->var;
-    char *simargs = (char *) addr;
-    char **targs = q6targetargsInfo;
-    int index = 0; 
-
-    simargs = strtok (simargs, " \t\n");
-    while (simargs)
-    {
-	targs[index++] = simargs;
-	simargs = strtok(0, " \t\n");
-
-	gdb_assert (index < SIM_ARG_MAX);
-    }
-}
-
-static void
-qdsp6_tclfe_set (char *args, int from_tty,
-		 struct cmd_list_element *c)
-{
-/* Note: the var_type is var_boolean so this will only be 1 or 0 */
-   Q6_tcl_fe_state = *(int *)(c->var);
-}
-
-static void
-qdsp6_tclfe_show (char *args, int from_tty,
-		 struct cmd_list_element *c)
-{
-   return;
-}
-
-void init_targetargs()
-{
-   /* Chain containing all defined show subcommands.  */
-   struct cmd_list_element *targetargsshowlist = NULL;
-
-   /* set global regs */
-   add_setshow_string_noescape_cmd ("targetargs",         /* name */
-		            no_class,      /* class category for help list */
-		            &q6targetargsInfo[0],    /* control var address */
-                    "set Q6 target args", /* doc for this cmd */
-                    "set Q6 target args", /* doc for this cmd */
-                    "set Q6 target args", /* doc for this cmd */
-		            &setQ6targetargs, /* set cmd func ptr */
-		            NULL,                 /* show cmd fn  ptr */
-		            &setlist,
-		            &targetargsshowlist);
-
-   add_setshow_boolean_cmd ("tclfe",             /* name */
-		    no_class,            /* class category for help list */
-		    &Q6_tcl_fe_state,	 /* control var address */
-                    "Turn on or off Q6 GDB's TCL interpreter", 
-                    "Turn on or off Q6 GDB's TCL interpreter", 
-                    "Turn on or off Q6 GDB's TCL interpreter", 
-		    qdsp6_tclfe_set,	 /* Add function to set */
-		    NULL,	 /* Add function to print show */
-		    &setlist,
-		    &showlist);
-
-}
-
-
-void
-set_Q6_hwthread_debug(char *args, int from_tty, struct cmd_list_element *cmdlist)
-{
-
-  char message[SET_CMD_BUFFER_SIZE] = {'\0'};
-  
-  if (current_q6_target == NULL)
-    error ("Cannot set interrupts. Load program first.");
-
-  if (q6hwthread_debug)
-    {
-      sprintf(message, "q6hwThreadDebug,%d", 1);
-    }
-  else
-    {
-      sprintf(message, "q6hwThreadDebug,%d", 0);
-      
-    }
-    
-  putpkt (message);
-  getpkt (&response, &gdb_rsp_ril_info_max_size , 0);
-  
-  gdb_flush (gdb_stdout);
-}
-
-
-void 
-set_Q6_interrupt(char *args, int from_tty, struct cmd_list_element *cmdlist)
-{
-  char message[SET_CMD_BUFFER_SIZE] = {'0'};
-  char buf[256] = {'0'};
-  char *substr;
-  int interruptNum; //LONGEST interruptNum;
-  struct expression* expr;
- 
-  if (current_q6_target == NULL)
-    error ("Cannot set interrupts. Load program first.");
- 
-  if (q6Interrupt == NULL)
-     error ("Usage: set interrupt <interrupt no> <delay> <period>.");
-  
-  /*Extract watch point type*/ 
-  substr = strtok(q6Interrupt, " ");
-  if(substr != NULL)
-  {
-    /* parse user input and get decimal values, This
-       function does error checking on the value entered */
-    expr =  parse_expression (substr);
-
-    if(!expr) return;
-  
-    /* get the decimal value to be set */
-    interruptNum = expr->elts[2].longconst;
-
-    /* Check if interrupt num specified lies in the valid range */ 
-    if((interruptNum <0)) /* || (interruptNum > MAX_INTERRUPT)) */
-       error( "Invalid Interrupt Number %d, set interrupts 0 - 32.",
-        interruptNum);
-
-    /* get the reg num and reg value to be set into string format */
-    sprintf(message, "qGenInterrupt,%x", interruptNum);
-
-    /* get the period and delay if any */
-    while ((substr=strtok(NULL, " ")) != NULL)
-    {
-
-      /* parse user input and get decimal values, This
-      function does error checking on the value entered */
-      expr =  parse_expression (substr);
-
-      if(!expr) return;
-  
-      /* get the decimal value to be set */
-      interruptNum = expr->elts[2].longconst;
-    
-      /* get the delay/period to be set into string format */
-      sprintf(buf, ",%x", interruptNum);
-      strcat(message,buf);
-
-     }
-   }
-   else
-    error ("Usage: set interrupt <interrupt no> <delay> <period>.");
-
-  
-  putpkt (message);
-  getpkt (&response, &gdb_rsp_ril_info_max_size , 0);
-
-  gdb_flush (gdb_stdout);
-
-}
-
-
-void init_set_hwthread_debug_only_mode()
-{
-  /* Chain containing all defined show subcommands.  */
-   struct cmd_list_element *q6showlist = NULL;
-
-
-   /* set hwthrdbg */
-   add_setshow_zinteger_cmd ("hwthrdbg",        /* name */
-                    no_class,          /* class category for help list */
-                    &q6hwthread_debug, /*address of the variable being controlled by this */
-                    "switch to hw thread debug more", /* documentation for this cmd */
-                    "switch to hw thread debug more", /* documentation for this cmd */
-                    "switch to hw thread debug more", /* documentation for this cmd */
-                    &set_Q6_hwthread_debug,          /* set cmd func ptr */
-                    NULL,                     /* show cmd fn  ptr */
-                    &setlist,
-                    &q6showlist);
-   
-   
-}
-
-
-void init_set_interrupt()
-{
-   /* Chain containing all defined show subcommands.  */
-   struct cmd_list_element *q6showlist = NULL;
-   struct cmd_list_element *c  ;
-
-   /* for set interrupt command - contains the user typed string*/
-   q6Interrupt = (char*)malloc(sizeof(char) * SET_CMD_BUFFER_SIZE);
- 
-   if(q6Interrupt == NULL)
-        error ("Memory allocation for interrupt buffer failed !");
-
-   /* set interrupt */
-   add_setshow_string_noescape_cmd ("interrupt",               /* name */
-		             no_class,                 /* class category for help list */
-		             &q6Interrupt,             /*address of the variable being controlled by this */
-       	             "generate interrupt in Q6 core", /* documentation for this cmd */
-       	             "generate interrupt in Q6 core", /* documentation for this cmd */
-       	             "generate interrupt in Q6 core", /* documentation for this cmd */
-		             &set_Q6_interrupt,          /* set cmd func ptr */
-		             NULL,                     /* show cmd fn  ptr */
-		             &setlist,
-		             &q6showlist);
-
-
-
-
-
-/*c = (add_set_cmd ("interrupt", no_class, var_string,
-		   (char *) &q6Interrupt,
-		   "Set interrupt in Q6 core", 
-           &sethistlist));
-  set_cmd_sfunc (c, set_Q6_interrupt);      
-  add_show_from_set (c, &showlist);
-  set_cmd_completer (c, command_completer);
-  */ 
-}
-
-void
-qdsp6_proc_cycles_info_command(char *args, int from_tty)
-{
-  unsigned long long cycle_count = 0;
-  int i;
-  if(current_q6_target == NULL)
-    error ("Program has no proc cycle info. Load program first");
-    
-  putpkt ("qProcCyclesInfo");
-  getpkt (&response, &gdb_rsp_ril_info_max_size , 0);
-
-  if (strlen(response) == 16) {
-    // got 16 nibbles get the cycle count and print
-    for (i=0; i<8; i++) {
-      cycle_count |= (((fromhex(response[i*2]) << 4) |
-		       (fromhex(response[i*2 + 1]))) << (i*8));  
-    }
-    printf_filtered("%lld\n", cycle_count);
-  }
-  else {
-    error ("Processor cycles not available");
-  }
-}
-
-
-void
-qdsp6_thread_cycles_info_command(char *args, int from_tty)
-{
-  unsigned long long cycle_count = 0;
-  int i, num;
-  ptid_t ptid;
-  char message[30];
-  
-  if(current_q6_target == NULL)
-    error ("Program has no thread cycles info. Load program first");
-    
-  if (!args) {
-    error ("Thread ID not specified");
-    return;
-  }
-
-  sscanf(args, "%d", &num);
-
-  /* convert into tid */
-  ptid = thread_id_to_pid (num);
-  
-  if (ptid_equal(ptid, pid_to_ptid(-1))) {
-    error ("Thread ID %d not known.", num);
-    return;
-  }
-
-  /* send the message out */
-  sprintf(message, "qThreadCyclesInfo,%d", PIDGET(ptid));
-  putpkt (message);
-
-  /* get the response */
-  getpkt (&response, &gdb_rsp_ril_info_max_size , 0);
-
-  if (strlen(response) == 16) {
-    // got 16 nibbles get the cycle count and print
-    for (i=0; i<8; i++) {
-      cycle_count |= (((fromhex(response[i*2]) << 4) |
-		       (fromhex(response[i*2 + 1]))) << (i*8));  
-    }
-    printf_filtered("0x%llx\n", cycle_count);
-  }
-  else {
-    error ("Thread cycles not available");
-  }
-}
-
-
-void
-qdsp6_msg_channels_info_command (char *args, int from_tty)
-{
- int result;
- int n = 0;                    /* position in display_buf */
- 
- if(current_q6_target == NULL)
-   error ("Program has no message channels info. Load program first");
-    
- putpkt ("q6MsgChannelInfo");
- getpkt (&response, &gdb_rsp_ril_info_max_size , 0);
- if(strncmp(response,"E00", strlen("E00"))==0)
-    warning ("No message channel information.");
- else   
-    PRINT_MSG;
-
-}
-
-void
-qdsp6_msg_queues_info_command (char *args, int from_tty)
-{
- int result;
- int n = 0;                    /* position in display_buf */
- char msgStr[256]={0};
- char pktStr[256]={0};
- 
- 
- if(current_q6_target == NULL)
-   error ("Program has no message queues info. Load program first");
-
-  while(args && (*args != '\0') && ((*args == ' ') || (*args == '\t'))) args++;
-  if (!args || (*args == '\0')) {
-    error ("Message Channel name not specified.");
-    return;
-  }
-
-  // ASG - bug 1436.  Need to pass whole string
-  //sscanf(args, "%s", &msgStr[0]);
-    /* send the message out */
-  //sprintf(pktStr, "q6MsgQueueInfo,%s", msgStr);
-  sprintf(pktStr, "q6MsgQueueInfo,%s", args);
-  putpkt (pktStr);
-
-  /* get the response */
-  getpkt (&response, &gdb_rsp_ril_info_max_size , 0);
-  
-  if(strncmp(response,"E00", strlen("E00"))==0)
-    warning ("Error reading message queue information. Check message queue name!");
-  else   
-    PRINT_MSG;
-
-}
-
-void
-qdsp6_timers_info_command (char *args, int from_tty)
-{
- int result;
- int n = 0;                    /* position in display_buf */
- 
- if(current_q6_target == NULL)
-   error ("Program has no timer info. Load program first");
-    
- putpkt ("q6TimerInfo");
- getpkt (&response, &gdb_rsp_ril_info_max_size , 0);
- if(strncmp(response,"E00", strlen("E00"))==0)
-    warning ("No timer information.");
- else   
-    PRINT_MSG;
-
-}
-
-
-void
-qdsp6_mutex_info_command (char *args, int from_tty)
-{
- int result;
- int n = 0;                    /* position in display_buf */
- int mutexID;
- char pktStr[256]={0};
- struct expression * expr;
- 
- if(current_q6_target == NULL)
-   error ("Program has no mutex info. Load program first");
-
-  if (!args) {
-    error ("Mutex ID not specified.");
-    return;
-  }
-
-  /* parse the mutex ID and get the decimal value
-     expr->elts[2].longconst stores the converted values */
-  expr =  parse_expression (args);
-
-  if(!expr)
-   warning("Invalid Mutex ID specified !");;
-  
-  /* get the decimal value to be set */
-  mutexID = expr->elts[2].longconst;
-    
-    /* send the message out */
-  sprintf(pktStr, "q6MutexInfo,%x", mutexID);
-  putpkt (pktStr);
-
-  /* get the response */
-  getpkt (&response, &gdb_rsp_ril_info_max_size , 0);
-  
-  if(strncmp(response,"E00", strlen("E00"))==0)
-    warning ("Error reading mutex information. Check mutex ID!");
-  else   
-    PRINT_MSG;
-
-}
-
-
-
-void  
-qdsp6_interrupt_map_info_command(char *args, int from_tty)
-{
- 
- int result;
- int n = 0;                    /* position in display_buf */
- 
- if(current_q6_target == NULL)
-   error ("Program has no interrupt map info. Load program first");
-    
- putpkt ("qInterruptMap");
- getpkt (&response, &gdb_rsp_ril_info_max_size , 0);
- PRINT_MSG;
-
-}
-
-
-void 
-q6interrupt_remap(char *args, int from_tty)
-{
-  char message[256] = {'0'};
-  char tmpbuf [25]  = {'0'};
-  int interruptNum, tokValue = 0; 
-  char* substr, *pTmp;
-  struct expression* expr;
-
-  if(current_q6_target == NULL)
-    error ("Cannot remap interrupts. Load program first.");
-
-
-  if (args == NULL)
-  {
-    error ("Interrupt ID not specified.");
-    return;
-  }
-
-  substr = strtok(args, " ");
-  if(substr != NULL)
-  {
-     sprintf(message, "qInterruptRemap,%s,", substr );
-
-     while ((substr=strtok(NULL, " ")) != NULL)
-     {
-
-        tokValue +=1;
-
-       /* parse user input and get decimal values, This
-        function does error checking on the value entered */
-
-
-      expr =  parse_expression (substr);
-
-      if(!expr) return;
-  
-      /* get the decimal value to be set */
-      interruptNum = expr->elts[2].longconst;
-      
-       /* Check if interrupt num specified lies in the valid range */ 
-       if((interruptNum <0)) /* || (interruptNum > MAX_INTERRUPT)) */
-         error ("Invalid Interrupt Number %d, set interrupts 0 - 32.",
-                interruptNum);
-       else if(tokValue >=2)
-         error("Invalid Interrupt remap command\nUsage:  remap <name> <value>");
-        
-        /* Construct the RSP */
-        sprintf(tmpbuf,"%x", interruptNum);
-        strcat(message,tmpbuf);         
-
-     }
-  }
- 
-  putpkt (message);
-  getpkt (&response, &gdb_rsp_ril_info_max_size , 0);
-
-}
-void 
-q6interrupt_reset (char *args, int from_tty)
-{
-  char message[256] = {'0'};
-  char tmpbuf [25]  = {'0'};
-  char *pintType[3] = {"both", "periodic", "pin"};
-  char *substr;
-  int interruptNum, nargs = 0; 
-  struct expression * expr;
-  
-  if(current_q6_target == NULL)
-    error ("Cannot reset interrupts. Load program first.");
-
-  if (args == NULL)
-    error ("Interrupt ID not specified");
-
-  substr = strtok(args, " ");
-  if(substr != NULL)
-  {
-      nargs +=1;
-      //interruptNum = strtol(substr,pTmp ,10);
-
-      if(nargs == 1)
-       { 
-          expr =  parse_expression (substr);
-          if(!expr)
-              return;
-          /* get the decimal value to be set */
-          interruptNum = expr->elts[2].longconst;
-
-          /* Check if interrupt num specified lies in the valid range */ 
-          if((interruptNum <0)) /* || (interruptNum > MAX_INTERRUPT)) */
-              error ("Invalid Interrupt Number %d, set interrupts 0 - 32.\n",
-                  interruptNum);
-          /* Construct the RSP */
-          sprintf(tmpbuf, "qInterruptReset,%x", interruptNum);
-          memset(message,0,strlen(message));
-          strcat (message,tmpbuf);
-       }
-        
-       /* get the type of interrupt to be cleared
-        * default = both */
-       while ((substr=strtok(NULL, " ")) != NULL)
-       {
-         nargs +=1;
-          
-         if(nargs > 2)
-           error ("Usage: reset-interrupt <number> [both] <periodic> <pin>.\n");
-           
-         /* Search for interrupt type to be cleared */
-         for(interruptNum=0; interruptNum < 3; interruptNum++)
-         {
-           if(strcmp(substr, pintType[interruptNum])==0)
-             break;
-         }
-         switch (interruptNum)
-         {
-           case 0:
-           case 1:
-           case 2:
-            sprintf(tmpbuf, ",%x", interruptNum);
-            strcat (message,tmpbuf);
-           break;
-
-           default:
-             error ("Invalid type '%s' specified for reset interrupt.\n",substr);
-             break;
-          }
-      }// while substr-strtok ..
-  } //if(substr != NULL)
-  else
-     error ("Usage: reset-interrupt <number> [both] <periodic> <pin>.\n");
-  
-  putpkt (message);
-  getpkt (&response, &gdb_rsp_ril_info_max_size , 0);
-
-}
-
-void 
-init_set_interruptmap(void)
-{
-
-  struct cmd_list_element *c;
-  c = add_com ("remap", no_class, q6interrupt_remap,
-	       "Remap an interrupt.");
-  set_cmd_completer (c, location_completer);
-}
-void 
-init_reset_interrupt(void)
-{
-
-  struct cmd_list_element *c;
-
- /* add_prefix_cmd ("reset", no_class, q6interrupt_reset,
-                  concat("Use 'reset interrupt' "\
-                  "to reset periodic/pin interrupts.", NULL),
-                  &resetlist, "reset ", 1, &cmdlist);
-  c = add_cmd ("interrupt", no_class, q6interrupt_reset,
-           "Usage: reset interrupt <number> [both] <periodic> <pin>.",
-           &resetlist);*/
-  
-  c = add_com ("reset-interrupt", no_class, q6interrupt_reset,
-	       "Reset an interrupt.\n"\
-           "Usage: reset-interrupt <number> [both] <periodic> <pin>."); 
-  set_cmd_completer (c, location_completer);
-}
-
-static void
-qdsp6_command (char *args, int from_tty)
-{
-  printf_unfiltered (_("\"q6\" prefix must be followed by the name of an QDSP6 command.\n"));
-  help_list (q6cmdlist, "q6 ", -1, gdb_stdout);
-}
-static void
-qdsp6_watch_command (char *args, int from_tty)
-{
-    char *substr;
-    long cycle = 0;
-    long interval = 0;
-    long address = 0;
-    long pagesize = 0;
-    char msg [80]  = {'0'};
-
-    substr = strtok(args, " \t\r\n");
-    if (substr != NULL)
-    {
-	if (!(strcmp (substr, "cycle")))
-	{
-	    if ((substr = strtok(NULL, " \t\r\n"))!=NULL)
-	    {
-		/* if not base 10 check for base 16 */
-		if ((cycle = strtol(substr, NULL, 10))==NULL)
-		  cycle = strtol(substr, NULL, 16);
-	    }
-	    if ((substr = strtok(NULL, " \t\r\n"))!=NULL)
-	    {
-		if ((interval = strtol(substr, NULL, 10))==NULL)
-		  interval = strtol(substr, NULL, 16);
-	    }
-
-	    sprintf(msg, "qRegWatch,%d,%x,%x", WATCHPOINT_PCYCLE,
-		    cycle, interval);
-	    putpkt (msg);
-  	    getpkt (&response, &gdb_rsp_ril_info_max_size , 0);
-	    
-	}
-	else if (!(strcmp (substr, "tlbmiss")))
-	{
-	    if ((substr = strtok(NULL, " \t\r\n"))!=NULL)
-	    {
-		if ((address = strtol(substr, NULL, 10))==NULL)
-		  address = strtol(substr, NULL, 16);
-	    }
-	    if ((substr = strtok(NULL, " \t\r\n"))!=NULL)
-	    {
-		if ((pagesize = strtol(substr, NULL, 10))==NULL)
-		  pagesize = strtol(substr, NULL, 16);
-	    }
-	    sprintf(msg, "qRegWatch,%d,%x,%x", WATCHPOINT_TLBMISS,
-		    address, pagesize);
-	    putpkt (msg);
-  	    getpkt (&response, &gdb_rsp_ril_info_max_size , 0);
-	}
-    }
-}
- 
-void 
-init_q6_commands (void)
-{
-  /* initialize the global registers */
-  init_globalregs();    
- 
-  /* initialize target args */
-  init_targetargs();
-
-  init_set_interrupt();
-  init_reset_interrupt();
-  init_set_interruptmap();
-
-  /* set mode for h/w debug only */
-  init_set_hwthread_debug_only_mode();
-
-}
-
 void
 _initialize_qdsp6_tdep (void)
 {
-
-  extern int remote_timeout;
-
-  /*Chain containing all defined set subcommands */
-  struct cmd_list_element *q6setlist = NULL;
-
   register_gdbarch_init (bfd_arch_qdsp6, qdsp6_gdbarch_init);
-
-  add_prefix_cmd ("q6", class_support, qdsp6_command,
-		  _("Various QDSP6 specific commands."),
-		  &q6cmdlist, "q6 ", 0, &cmdlist);
-
-  add_cmd ("watch", class_breakpoint, qdsp6_watch_command,
-_("set either a cycle count or tlbmiss breakpoint.\n\
-	q6 watch cycle <cycle count>\n\
-	q6 watch tlbmiss <32 bit addr> <page size in bits>\n"),
-	   &q6cmdlist);
-
-  /* info qdsp6-rtos */
-  add_info ("qdsp6-rtos", qdsp6_rtos_info_command,
-	    "QDSP6 RTOS information");
-
-  /* info pagetable */
-  add_info ("pagetable", qdsp6_pagetable_info_command,
-	    "Pagetable information");
-
-  /* info TLB */
-  add_info ("tlb", qdsp6_tlb_info_command,
-	    "TLB information");
-
-  /* info globalregs */
-  add_info ("globalregs", qdsp6_globalregs_info_command,
-	    "List of global registers and their contents");
-
-  /* thread details informatino */
-  add_info ("thread-details", qdsp6_thread_details_info_command,
-	    "Details information for a thread-id");
-
-  /* processor cycle count information */
-  add_info ("proc-cycles", qdsp6_proc_cycles_info_command,
-            "Processor cycle count");
-
-  /* processor cycle count information */
-  add_info ("thread-cycles", qdsp6_thread_cycles_info_command,
-            "Thread cycle count");
-      
-  /*Interrupt map  information */
-  add_info ("interrupt-map", qdsp6_interrupt_map_info_command,
-            "Interrupt map");
-              /*Qube msg channel information */
-  add_info ("msg-channels", qdsp6_msg_channels_info_command,
-            "RTOS Message Channels Info");
-            
-  /*Qube msg queue information */
-  add_info ("msg-queue", qdsp6_msg_queues_info_command,
-            "RTOS Message Queues Info");
-             
-   /*Qube timers information */
-  add_info ("timers", qdsp6_timers_info_command,
-            "RTOS Timers Info");
-            
-  /*Qube msg queue information */
-  add_info ("mutex", qdsp6_mutex_info_command,
-            "RTOS Mutex Info");
-            
-  init_q6_commands(); 
-
-/* Specific to our implementation, rumi and zebu can be slow. */
-  // XXX_SM: remote_timeout = 10; This should be part of the rumi target when done
-
- }
-
-/* Free resources allocated by qdsp6-tdep.c */
- void 
- free_q6alloc_mem(void)
- {
-   if(q6globalregsInfo != NULL)
-    free (q6globalregsInfo);
-        
-   if(q6Interrupt != NULL)
-    free (q6Interrupt);
-
-   if(current_q6_target != NULL)
-    xfree(current_q6_target);
-
- }
-
+}

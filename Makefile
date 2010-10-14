@@ -62,6 +62,7 @@ CONFIGURE_OPTIONS = --target=qdsp6 \
 build_win:
 	mkdir -p $@
 	cd $@ && \
+	HAVETCL=1 \
 	PATH=$(MINGW_GCC):$(PATH) \
 	CC=i386-pc-mingw32-gcc \
 	CC_FOR_TARGET=i386-pc-mingw32-gcc \
@@ -80,11 +81,32 @@ build_lnx:
 	mkdir -p $@
 	cd $@ && \
 	CFLAGS="$(BUILD_CFLAGS)" \
+	HAVETCL=1 \
 	MAKEINFO=$(MAKEINFO) \
 	ISS_DIR=$(ISS_DIR) \
 	../configure \
 		--with-python=$(PYTHON_INSTALL) \
 		$(CONFIGURE_OPTIONS)  && \
+	$(MAKE) -j $(JOBS) all
+
+build_native: 
+	mkdir -p $@
+	cd $@ &&  \
+	CC=qdsp6-gcc \
+	AS=qdsp6-as \
+	AR=qdsp6-ar \
+	LD=qdsp6-ld \
+	CFLAGS="$(BUILD_CFLAGS) -fno-short-enums" \
+	../configure \
+		--disable-nls \
+		--disable-werror \
+		--build=i686-linux \
+		--host=qdsp6-linux-uclibc \
+		--target=qdsp6-linux-uclibc \
+		--without-tcl --without-gas \
+		--without-ld \
+		--without-gprof \
+		--with-curses && \
 	$(MAKE) -j $(JOBS) all
 
 

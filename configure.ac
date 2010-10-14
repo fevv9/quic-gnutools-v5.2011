@@ -832,6 +832,10 @@ case "${target}" in
   powerpc-*-eabi* | powerpcle-*-eabi* | powerpc-*-rtems* )
     libgloss_dir=rs6000
     ;;
+  qdsp6-*-linux-*)
+    noconfigdirs="$noconfigdirs tcl ${libgcj}"
+    noconfigdirs="$noconfigdirs "
+    ;;
   qdsp6-*-*)
     noconfigdirs="$noconfigdirs ${libgcj}"
     noconfigdirs="$noconfigdirs "
