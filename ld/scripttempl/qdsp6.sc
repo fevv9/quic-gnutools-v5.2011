@@ -176,10 +176,10 @@ if test -z "${NO_SMALL_DATA}"; then
     *(.sbss.4${RELOCATING+ .sbss.4.* .gnu.linkonce.sb.4.*})
     *(.scommon.4${RELOCATING+ .scommon.4.*})
     *(.lit[a4]${RELOCATING+ .lit[a4].* .gnu.linkonce.l[a4].*})
-    *(.lit8${RELOCATING+ .lit8.* .gnu.linkonce.l8.*})
     *(.sdata.8${RELOCATING+ .sdata.8.* .gnu.linkonce.s.8.*})
     *(.sbss.8${RELOCATING+ .sbss.8.* .gnu.linkonce.sb.8.*})
     *(.scommon.8${RELOCATING+ .scommon.8.*})
+    *(.lit8${RELOCATING+ .lit8.* .gnu.linkonce.l8.*})
     *(.sdata.hot${RELOCATING+ .sdata.hot.* .gnu.linkonce.s.hot.*})
     *(.sdata${RELOCATING+ .sdata.* .gnu.linkonce.s.*})
   }"

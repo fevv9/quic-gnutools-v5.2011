@@ -3,7 +3,7 @@
 # This file is sourced from elf32.em, and defines extra
 # QDSP6-specific routines.
 
-cat >>e${EMULATION_NAME}.c <<EOF
+cat >>e${EMULATION_NAME}.c <<"EOF"
 
 #include "elf/internal.h"
 #include "elf/qdsp6.h"
