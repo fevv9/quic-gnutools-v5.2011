@@ -1217,7 +1217,7 @@ do_scrub_chars (int (*get) (char *, int), char *tostart, int tolen)
 	      break;
 	    }
 
-#ifdef TC_D10V
+#if defined (TC_D10V) || defined (TC_QDSP6)
 	  /* All insns end in a char for which LEX_IS_SYMBOL_COMPONENT is true.
 	     Trap is the only short insn that has a first operand that is
 	     neither register nor label.
