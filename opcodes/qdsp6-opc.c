@@ -1362,11 +1362,11 @@ qdsp6_opcode_init_tables
         {
           qdsp6_kext = insn;
           qdsp6_kext_mask = qdsp6_encode_mask (qdsp6_opcodes [i - 1].enc);
-          qdsp6_opcodes [i - 1].attributes |= PREFIX;
+          qdsp6_opcodes [i - 1].flags |= QDSP6_CODE_IS_PREFIX;
         }
 
       if (QDSP6_END_PACKET_GET (insn) == QDSP6_END_PAIR)
-        qdsp6_opcodes [i - 1].attributes |= DUPLEX;
+        qdsp6_opcodes [i - 1].flags |= QDSP6_CODE_IS_DUPLEX;
     }
 
 #if 0
@@ -1377,7 +1377,7 @@ qdsp6_opcode_init_tables
         size_t j;
 
         for (j = 0, op = opcode_map [i]; op; j++)
-          op = QDSP6_OPCODE_NEXT_ASM (op);
+          op = QDSP6_CODE_NEXT_ASM (op);
 
         printf ("#%02ld ('%c'): %02ld\t", i, (i % QDSP6_HASH_1) + 'a', j);
       }
@@ -1391,7 +1391,7 @@ qdsp6_opcode_init_tables
 
         printf ("#%02ld ('%c')\n", i, (i % QDSP6_HASH_1) + 'a');
 
-        for (j = 0, op = opcode_map [i]; op; j++, op = QDSP6_OPCODE_NEXT_ASM (op))
+        for (j = 0, op = opcode_map [i]; op; j++, op = QDSP6_CODE_NEXT_ASM (op))
           puts (op->syntax);
 
         puts ("");
@@ -1406,7 +1406,7 @@ int
 qdsp6_opcode_supported
 (const qdsp6_opcode *opcode)
 {
-  return (QDSP6_OPCODE_CPU (opcode->flags) <= cpu_type);
+  return (QDSP6_CODE_CPU (opcode->flags) <= cpu_type);
 }
 
 /* Return the first insn in the chain for assembling INSN.  */
@@ -1440,7 +1440,7 @@ qdsp6_lookup_insn
 
   for (opcode = qdsp6_opcode_lookup_dis (insn);
        opcode;
-       opcode = QDSP6_OPCODE_NEXT_DIS (opcode))
+       opcode = QDSP6_CODE_NEXT_DIS (opcode))
     {
       if (opcode->map)
         continue;
@@ -3006,7 +3006,7 @@ qdsp6_extract_predicate_operand
 
 /** Return the next stand-alone opcode.
 
-Function version of the macro QDSP6_OPCODE_NEXT_ASM.
+Function version of the macro QDSP6_CODE_NEXT_ASM.
 
 @param op The current opcode.
 */
