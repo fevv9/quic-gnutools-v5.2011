@@ -127,7 +127,8 @@
 /* Type to denote an QDSP6 instruction (at least a 32 bit unsigned int).  */
 typedef unsigned int qdsp6_insn;
 
-typedef struct _qdsp6_opcode {
+typedef struct _qdsp6_opcode
+{
   char *syntax;              /* syntax of insn  */
   char *enc;                 /* string representing the encoding */
   int flags;                 /* various flag bits  */
@@ -135,13 +136,16 @@ typedef struct _qdsp6_opcode {
 /* Values for `flags'.  */
 
 /* Return CPU number, given flag bits.  */
-#define QDSP6_OPCODE_CPU(bits) ((bits) & QDSP6_MACH_CPU_MASK)
-
+#define QDSP6_CODE_CPU(b) ((b) & QDSP6_MACH_CPU_MASK)
 /* Return MACH number, given flag bits.  */
-#define QDSP6_OPCODE_MACH(bits) ((bits) & QDSP6_MACH_MASK)
+#define QDSP6_CODE_MACH(b) ((b) & QDSP6_MACH_MASK)
 
-/* First opcode flag bit available after machine mask.  */
-#define QDSP6_OPCODE_FLAG_START (QDSP6_MACH_MASK + 1)
+  /* First opcode flag bit available after machine mask
+     (with room for machine/cpu).  */
+#define QDSP6_CODE_FLAG(f) ((f) << 8)
+
+#define QDSP6_CODE_IS_PREFIX (QDSP6_CODE_FLAG (0x0001))
+#define QDSP6_CODE_IS_DUPLEX (QDSP6_CODE_FLAG (0x0002))
 
 /* These values are used to optimize assembly and disassembly.  Each insn
    is on a list of related insns (same first letter for assembly, same
@@ -158,8 +162,8 @@ typedef struct _qdsp6_opcode {
 
  /* Macros to access `next_asm', `next_dis' so users needn't care about the
     underlying mechanism.  */
-#define QDSP6_OPCODE_NEXT_ASM(op) ((op)? (op)->next_asm: (op))
-#define QDSP6_OPCODE_NEXT_DIS(op) ((op)? (op)->next_dis: (op))
+#define QDSP6_CODE_NEXT_ASM(op) ((op)? (op)->next_asm: (op))
+#define QDSP6_CODE_NEXT_DIS(op) ((op)? (op)->next_dis: (op))
 
   unsigned int slot_mask;          /* Slots onto which the instruction can go */
 
@@ -215,9 +219,6 @@ typedef struct _qdsp6_opcode {
 #define A_STOREIMMED                    0x02000000
 #define A_RESTRICT_NOSLOT1_STORE        0x04000000
 #define MUST_EXTEND                     0x08000000
-  /* Internal */
-#define DUPLEX                          0x40000000
-#define PREFIX                          0x80000000
 
   /* If this opcode is mapped, then the function that performs the mapping */
   void *map;
