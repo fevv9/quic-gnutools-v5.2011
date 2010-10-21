@@ -77,7 +77,7 @@ build_win:
 		$(CONFIGURE_OPTIONS)  && \
 	PATH=$(MINGW_GCC):$(PATH) $(MAKE) -j $(JOBS) all
 
-build_lnx: 
+build_lnx:
 	mkdir -p $@
 	cd $@ && \
 	CFLAGS="$(BUILD_CFLAGS)" \
@@ -89,7 +89,7 @@ build_lnx:
 		$(CONFIGURE_OPTIONS)  && \
 	$(MAKE) -j $(JOBS) all
 
-build_native: 
+build_native:
 	mkdir -p $@
 	cd $@ &&  \
 	CC=qdsp6-gcc \
@@ -103,10 +103,104 @@ build_native:
 		--build=i686-linux \
 		--host=qdsp6-linux-uclibc \
 		--target=qdsp6-linux-uclibc \
-		--without-tcl --without-gas \
-		--without-ld \
-		--without-gprof \
+		--without-tcl \
+		--without-readline \
 		--with-curses && \
+	$(MAKE) -j $(JOBS) all
+
+build_cross_binutils:
+	mkdir -p $@
+	cd $@ &&  \
+	CFLAGS="$(BUILD_CFLAGS) -fno-short-enums" \
+	../configure \
+		--disable-nls \
+		--disable-werror \
+		--target=qdsp6-linux-uclibc \
+		--without-tcl \
+		--disable-libdecnumber \
+		--disable-readline \
+		--disable-gdb && \
+	$(MAKE) -j $(JOBS) all
+
+build_native_binutils:
+	mkdir -p $@
+	cd $@ &&  \
+	CC=qdsp6-gcc \
+	AS=qdsp6-as \
+	AR=qdsp6-ar \
+	LD=qdsp6-ld \
+	CFLAGS="$(BUILD_CFLAGS) -fno-short-enums" \
+	../configure \
+		--disable-nls \
+		--disable-werror \
+		--build=i686-linux \
+		--host=qdsp6-linux-uclibc \
+		--target=qdsp6-linux-uclibc \
+		--without-tcl \
+		--disable-libdecnumber \
+		--disable-readline \
+		--disable-gdb && \
+	$(MAKE) -j $(JOBS) all
+
+build_native_binutils_static:
+	mkdir -p $@
+	cd $@ &&  \
+	CC=qdsp6-gcc \
+	AS=qdsp6-as \
+	AR=qdsp6-ar \
+	LD=qdsp6-ld \
+	CFLAGS="$(BUILD_CFLAGS) -static -fno-short-enums" \
+	../configure \
+		--disable-nls \
+		--disable-werror \
+		--build=i686-linux \
+		--host=qdsp6-linux-uclibc \
+		--target=qdsp6-linux-uclibc \
+		--without-tcl \
+		--disable-libdecnumber \
+		--disable-readline \
+		--disable-gdb && \
+	$(MAKE) -j $(JOBS) all
+
+build_native_gdb:
+	mkdir -p $@
+	cd $@ &&  \
+	CC=qdsp6-gcc \
+	AS=qdsp6-as \
+	AR=qdsp6-ar \
+	LD=qdsp6-ld \
+	CFLAGS="$(BUILD_CFLAGS) -fno-short-enums" \
+	../configure \
+		--disable-nls \
+		--disable-werror \
+		--build=i686-linux \
+		--host=qdsp6-linux-uclibc \
+		--target=qdsp6-linux-uclibc \
+		--without-tcl \
+		--with-curses \
+		--disable-binutils \
+		--disable-gas \
+		--disable-gprof \
+		--disable-ld && \
+	$(MAKE) -j $(JOBS) all
+
+build_native_static:
+	mkdir -p $@
+	cd $@ &&  \
+	CC=qdsp6-gcc \
+	AS=qdsp6-as \
+	AR=qdsp6-ar \
+	LD=qdsp6-ld \
+	CFLAGS="$(BUILD_CFLAGS) -static -fno-short-enums" \
+	../configure \
+		--disable-nls \
+		--disable-werror \
+		--enable-static \
+		--build=i686-linux \
+		--host=qdsp6-linux-uclibc \
+		--target=qdsp6-linux-uclibc \
+		--with-curses \
+		--without-tcl && \
 	$(MAKE) -j $(JOBS) all
 
 
