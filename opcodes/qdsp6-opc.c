@@ -1365,8 +1365,23 @@ qdsp6_opcode_init_tables
           qdsp6_opcodes [i - 1].flags |= QDSP6_CODE_IS_PREFIX;
         }
 
+      if ((qdsp6_opcodes [i - 1].attributes & A_BRANCHADDER))
+        qdsp6_opcodes [i - 1].flags |= QDSP6_CODE_IS_BRANCH;
+
+      if ((qdsp6_opcodes [i - 1].attributes & A_RESTRICT_SINGLE_MEM_FIRST))
+        {
+          qdsp6_opcodes [i - 1].flags |= QDSP6_CODE_IS_MEMORY;
+
+          if ((qdsp6_opcodes [i - 1].attributes & A_STORE))
+            qdsp6_opcodes [i - 1].flags |= QDSP6_CODE_IS_STORE;
+          else
+            qdsp6_opcodes [i - 1].flags |= QDSP6_CODE_IS_LOAD;
+        }
+
       if (QDSP6_END_PACKET_GET (insn) == QDSP6_END_PAIR)
         qdsp6_opcodes [i - 1].flags |= QDSP6_CODE_IS_DUPLEX;
+      else if ((qdsp6_opcodes [i - 1].attributes & PACKED))
+        qdsp6_opcodes [i - 1].flags |= QDSP6_CODE_IS_COMPND;
     }
 
 #if 0

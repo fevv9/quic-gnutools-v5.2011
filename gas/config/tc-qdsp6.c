@@ -63,13 +63,8 @@
 #define MAX_MESSAGE           (66) /* Message limit. */
 #define MAX_DATA_ALIGNMENT    (16)
 #define MAX_DCFETCH           (2) /* DCFETCH in a packet. */
-/* Number of packets to look back at an .falign. */
-#define MAX_FALIGN_PACKETS    (1) /* Must be at least 1. */
-#if MAX_FALIGN_PACKETS < 1
-#error MAX_FALIGN_PACKETS must be at least 1.
-#endif
-/* Include the current packet. */
-#define MAX_PACKETS           (MAX_FALIGN_PACKETS + 1)
+#define MAX_PACKETS           (1)
+#define MAX_INSNS             (6)
 /* Per insn. */
 #define MAX_FIXUPS            (1)
 
@@ -169,8 +164,9 @@ typedef struct
     int opair;
     unsigned lineno;
     unsigned flags;
-    char padded;
+    char pad;
     char used;
+    char is_inner, is_outer;
     qdsp6_operand operand;
     expressionS exp;
     size_t fc;
@@ -184,7 +180,7 @@ typedef struct
   {
     struct
       {
-        qdsp6_packet_insn prefix, insn;
+        qdsp6_packet_insn insn, prefix;
       } left, right;
   } qdsp6_packet_pair;
 
@@ -213,11 +209,23 @@ typedef struct
     char faligned; /* Packet should be fetch-aligned. */
     char is_inner; /* Packet has :endloop0. */
     char is_outer; /* Packet has :endloop1. */
-    qdsp6_packet_insn prefixes [MAX_PACKET_INSNS]; /* k-extender insns. */
     qdsp6_packet_insn insns [MAX_PACKET_INSNS]; /* Insns. */
+    qdsp6_packet_insn prefixes [MAX_PACKET_INSNS]; /* k-extender insns. */
     qdsp6_packet_pair pairs [MAX_PACKET_INSNS]; /* Original paired prefix+insn. */
     int stats; /* Packet statistics. */
   } qdsp6_packet;
+
+/** Instruction queue for packet formation. */
+typedef struct _qdsp6_queue
+  {
+    size_t size;
+    qdsp6_packet_insn insns [MAX_INSNS]; /* Insns. */
+    qdsp6_packet_insn prefixes [MAX_INSNS]; /* k-extenders insns. */
+    qdsp6_packet_pair pairs [MAX_INSNS]; /* Original paired prefix+insn. */
+    char faligned; /* Fetch-align request. */
+    char is_inner; /* :endloop0 request. */
+    char is_outer; /* :endloop1 request. */
+  } qdsp6_queue;
 
 typedef struct qdsp6_frag_data
   {
@@ -238,7 +246,7 @@ enum _qdsp6_falign_counters
   {
     QDSP6_FALIGN_TOTAL,   /* # of .falign directives. */
     QDSP6_FALIGN_NEED,    /* ... which needed adjustments. */
-    QDSP6_FALIGN_PAD,     /* ... which padded previous packets. */
+    QDSP6_FALIGN_PAD,     /* ... which pad previous packets. */
     QDSP6_FALIGN_PACK,    /* ... which inserted new NOP packets. */
     QDSP6_FALIGN_FALIGN,  /* # of times that the history stopped due to a fetch-alignment. */
     QDSP6_FALIGN_FALIGN1, /* ... due to a single-insn fetch-alignment. */
@@ -263,8 +271,9 @@ enum _qdsp6_pairs_counters
 extern int qdsp6_get_mach (char *);
 extern void qdsp6_code_symbol (expressionS *);
 
-int qdsp6_assemble (qdsp6_packet *, char *, int, int);
-int qdsp6_assemble_pair (qdsp6_packet *, qdsp6_packet_insn *, qdsp6_packet_insn *);
+int qdsp6_assemble (qdsp6_packet_insn *, qdsp6_packet_insn *, char *str, int);
+int qdsp6_assemble_pair
+  (qdsp6_packet_pair *, qdsp6_packet_insn *, qdsp6_packet_insn *);
 void qdsp6_insert_operand (char *, const qdsp6_operand *, offsetT, fixS*);
 void qdsp6_common (int);
 void qdsp6_option (int);
@@ -281,9 +290,10 @@ int qdsp6_check_new_predicate (void);
 int qdsp6_pair_open (void);
 int qdsp6_pair_close (void);
 void qdsp6_insn_init (qdsp6_packet_insn *);
+char *qdsp6_insn_write
+  (qdsp6_insn, size_t, const qdsp6_operand *, expressionS *,
+   char *, size_t, fixS **, int);
 void qdsp6_packet_init (qdsp6_packet *);
-void qdsp6_packet_open (qdsp6_packet *);
-void qdsp6_packet_close (qdsp6_packet *);
 void qdsp6_packet_begin (qdsp6_packet *);
 void qdsp6_packet_end (qdsp6_packet *);
 void qdsp6_packet_end_inner (qdsp6_packet *);
@@ -308,10 +318,10 @@ int qdsp6_packet_cram
   (qdsp6_packet *, qdsp6_packet_insn *, const qdsp6_packet_insn *,
    const qdsp6_packet_pair *, int);
 size_t qdsp6_insert_nops (size_t);
+int qdsp6_packet_form (qdsp6_packet *, qdsp6_queue *);
+void qdsp6_queue_init (qdsp6_queue *);
+int qdsp6_queue_insert (qdsp6_queue *, qdsp6_packet_insn *, qdsp6_packet_insn *);
 int qdsp6_prefix_kext (qdsp6_packet_insn *, long);
-char *qdsp6_insn_write
-  (qdsp6_insn, size_t, const qdsp6_operand *, expressionS *,
-   char *, size_t, fixS **, int);
 char *qdsp6_parse_immediate
   (qdsp6_packet_insn *, qdsp6_packet_insn *, const qdsp6_operand *,
    char *, long *, char **);
@@ -332,6 +342,8 @@ int qdsp6_has_pair (const qdsp6_packet *);
 int qdsp6_has_duplex (const qdsp6_packet *);
 int qdsp6_has_duplex_hits
   (const qdsp6_packet *, const qdsp6_packet_insn *, size_t *);
+int qdsp6_has_duplex_clash
+  (const qdsp6_queue *, const qdsp6_packet_insn *);
 int qdsp6_has_rnew (const qdsp6_packet *, qdsp6_packet_insn **);
 int qdsp6_has_mem (const qdsp6_packet *);
 int qdsp6_has_store (const qdsp6_packet *);
@@ -579,13 +591,12 @@ static int qdsp6_no_dual_memory = FALSE;
 
 static int qdsp6_in_packet;
 
-qdsp6_packet qdsp6_packets [MAX_PACKETS]; /* Includes current packet. */
+qdsp6_packet qdsp6_apacket; /* Includes current packet. */
+qdsp6_queue qdsp6_aqueue;
 
 static int qdsp6_faligning; /* 1 => .falign next packet we see */
 static int qdsp6_falign_info; /* 1 => report statistics about .falign usage */
 static int qdsp6_falign_more; /* report more statistics about .falign. */
-static char *falign_file;
-static unsigned falign_line;
 
 static unsigned n_falign [QDSP6_FALIGN_COUNTERS]; /* .falign statistics. */
 static unsigned n_pairs  [QDSP6_PAIRS_COUNTERS];   /* Pairing statistics. */
@@ -773,23 +784,23 @@ md_show_usage (
   fprintf (stream,
 "\
 QDSP6 Options:\n\
-  -EB                      select big-endian output\n\
-  -EL                      select little-endian ouptut (default)\n\
-  -G SIZE                  small-data size limit (default is \"%d\")\n\
-  -march={v2|v3|v4}        assemble for the specified QDSP6 architecture\n\
-                           (default is \"v2\")\n\
-  -mcpu={v2|v3|v4}         equivalent to \"-march\"\n\
-  -m{v2|v3|v4}             equivalent to \"-march\"\n\
-  -mfalign-info            report \".falign\" statistics\n\
-  -mno-extender            disable the use of constant extenders\n\
-  -mno-jumps               disable automatic extension of branch instructions\n\
+  -EB                     select big-endian output\n\
+  -EL                     select little-endian ouptut (default)\n\
+  -G SIZE                 small-data size limit (default is \"%d\")\n\
+  -march={v2|v3|v4}       assemble for the specified QDSP6 architecture\n\
+                          (default is \"v2\")\n\
+  -mcpu={v2|v3|v4}        equivalent to \"-march\"\n\
+  -m{v2|v3|v4}            equivalent to \"-march\"\n\
+  -mfalign-info           report \".falign\" statistics\n\
+  -mno-extender           disable the use of constant extenders\n\
+  -mno-jumps              disable automatic extension of branch instructions\n\
   -mno-jumps-long         disable automatic extension of non-paired\n\
                           branch instructions\n\
-  -mno-pairing             disable pairing of instructions\n\
-  -mno-pairing-duplex      disable pairing to duplex instructions\n\
-  -mno-pairing-branch      disable pairing of branch instructions\n\
-  -mpairing-info           report instruction pairing statistics\n\
-  -msort-sda               enable sorting the small-data area (default)\n\
+  -mno-pairing            disable pairing of instructions\n\
+  -mno-pairing-branch     disable pairing of direct branch instructions\n\
+  -mno-pairing-duplex     disable pairing to duplex instructions\n\
+  -mpairing-info          report instruction pairing statistics\n\
+  -msort-sda              enable sorting the small-data area (default)\n\
 ",
            QDSP6_SMALL_GPSIZE);
 }
@@ -1843,7 +1854,7 @@ qdsp6_insn_init
 {
   memset (ainsn, 0, sizeof (*ainsn));
   *ainsn = qdsp6_nop_insn;
-  ainsn->padded = TRUE;
+  ainsn->pad = TRUE;
 }
 
 char*
@@ -1922,8 +1933,6 @@ qdsp6_falign
       qdsp6_faligning = qdsp6_fetch_align;
       n_falign [QDSP6_FALIGN_TOTAL]++;
     }
-
-  as_where (&falign_file, &falign_line);
 
   demand_empty_rest_of_line ();
 
@@ -2070,11 +2079,11 @@ qdsp6_has_duplex_hits
   /* Count number of memory ops in this packet. */
   for (i = 0; i < qdsp6_packet_count (apacket); i++)
     if (((apacket->insns [i].opcode->flags & QDSP6_CODE_IS_DUPLEX)
-         && (ainsn->opcode->slot_mask & QDSP6_SLOTS_DUPLEX)
-         && !(ainsn->opcode->slot_mask & ~QDSP6_SLOTS_DUPLEX))
+         && (ainsn->opcode->slots & QDSP6_SLOTS_DUPLEX)
+         && !(ainsn->opcode->slots & ~QDSP6_SLOTS_DUPLEX))
         || ((ainsn->opcode->flags & QDSP6_CODE_IS_DUPLEX)
-            && (apacket->insns [i].opcode->slot_mask & QDSP6_SLOTS_DUPLEX)
-            && !(apacket->insns [i].opcode->slot_mask & ~QDSP6_SLOTS_DUPLEX)))
+            && (apacket->insns [i].opcode->slots & QDSP6_SLOTS_DUPLEX)
+            && !(apacket->insns [i].opcode->slots & ~QDSP6_SLOTS_DUPLEX)))
       {
         if (which)
           {
@@ -2086,6 +2095,33 @@ qdsp6_has_duplex_hits
 
         return TRUE;
       }
+
+  return FALSE;
+}
+
+/** Check if queue has a duplex insn and if a new insn would conflict with it
+    or vice-versa.
+
+@param aqueue Queue to examine.
+@param ainsn Insn to consider.
+@return True if so.
+*/
+int
+qdsp6_has_duplex_clash
+(const qdsp6_queue *aqueue, const qdsp6_packet_insn *ainsn)
+{
+  size_t i;
+
+  /* Count number of memory ops in this packet. */
+  for (i = 0; i < aqueue->size; i++)
+    if (!aqueue->insns [i].pad && !ainsn->pad)
+      if (((aqueue->insns [i].opcode->flags & QDSP6_CODE_IS_DUPLEX)
+           && (ainsn->opcode->slots & QDSP6_SLOTS_DUPLEX)
+           && !(ainsn->opcode->slots & ~QDSP6_SLOTS_DUPLEX))
+          || ((ainsn->opcode->flags & QDSP6_CODE_IS_DUPLEX)
+              && (aqueue->insns [i].opcode->slots & QDSP6_SLOTS_DUPLEX)
+              && !(aqueue->insns [i].opcode->slots & ~QDSP6_SLOTS_DUPLEX)))
+        return TRUE;
 
   return FALSE;
 }
@@ -2230,7 +2266,7 @@ qdsp6_is_nop_keep
       if (found
 	  && (apacket->insns [next].opcode->attributes & A_RESTRICT_NOSLOT1))
         {
-              if ((apacket->insns [next].opcode->slot_mask & QDSP6_SLOTS_1))
+              if ((apacket->insns [next].opcode->slots & QDSP6_SLOTS_1))
                 return TRUE;
         }
     }
@@ -2252,7 +2288,8 @@ qdsp6_packet_insert
  const qdsp6_packet_insn *insn, const qdsp6_packet_insn *prefix,
  const qdsp6_packet_pair *pair, int pad)
 {
-  int prefixed = !pad && prefix && (prefix->opcode->attributes & A_IT_EXTENDER)
+  int prefixed = !pad && (insn->flags & QDSP6_INSN_IS_KXED)
+                 && prefix && (prefix->opcode->attributes & A_IT_EXTENDER)
                  ? 1: 0;
   int duplex   = (insn->opcode->flags & QDSP6_CODE_IS_DUPLEX)? 1: 0;
   int relax    = (insn->flags & QDSP6_INSN_IS_RELAX)? 1: 0;
@@ -2267,14 +2304,14 @@ qdsp6_packet_insert
       && (length + prefixed + relax < MAX_PACKET_INSNS))
     {
       packet->insns [qdsp6_packet_count (packet)] = *insn;
-      packet->insns [qdsp6_packet_count (packet)].padded = pad;
+      packet->insns [qdsp6_packet_count (packet)].pad = pad;
 
       if (prefixed)
         {
           packet->insns [qdsp6_packet_count (packet)].flags |= QDSP6_INSN_IS_KXED;
 
           packet->prefixes [qdsp6_packet_count (packet)] = *prefix;
-          packet->prefixes [qdsp6_packet_count (packet)].padded = pad;
+          packet->prefixes [qdsp6_packet_count (packet)].pad = pad;
           packet->prefixes [qdsp6_packet_count (packet)].lineno
             = packet->insns [qdsp6_packet_count (packet)].lineno;
 
@@ -2286,6 +2323,12 @@ qdsp6_packet_insert
           packet->pairs [qdsp6_packet_count (packet)].left  = pair->left;
           packet->pairs [qdsp6_packet_count (packet)].right = pair->right;
         }
+
+      packet->lineno = insn->lineno > packet->lineno
+                       ? insn->lineno: packet->lineno;
+
+      packet->is_inner |= insn->is_inner;
+      packet->is_outer |= insn->is_outer;
 
       packet->duplex += duplex;
       packet->relax  += relax;
@@ -2307,7 +2350,7 @@ qdsp6_packet_insert
 int
 qdsp6_packet_cram
 (qdsp6_packet *apacket,
- qdsp6_packet_insn *ainsn, const qdsp6_packet_insn *prefix,
+ qdsp6_packet_insn *ainsn, const qdsp6_packet_insn *aprefix,
  const qdsp6_packet_pair *pair, int pad)
 {
   qdsp6_packet packet;
@@ -2315,7 +2358,7 @@ qdsp6_packet_cram
   size_t i;
 
   /* Try to insert insn. */
-  if (qdsp6_packet_insert (apacket, ainsn, prefix, pair, pad))
+  if (qdsp6_packet_insert (apacket, ainsn, aprefix, pair, pad))
     return TRUE;
   else
     {
@@ -2325,21 +2368,21 @@ qdsp6_packet_cram
         {
           /* Remove branch relaxation if range has not been reduced
              by pairing. */
-      insn.relax          = QDSP6_RELAX_NONE;
-      insn.flags         &= ~QDSP6_INSN_IS_RELAX;
-      insn.operand.flags &= ~QDSP6_OPERAND_IS_RELAX;
+          insn.relax          = QDSP6_RELAX_NONE;
+          insn.flags         &= ~QDSP6_INSN_IS_RELAX;
+          insn.operand.flags &= ~QDSP6_OPERAND_IS_RELAX;
 
-          /* Try again. */
-      if (qdsp6_packet_insert (apacket, &insn, prefix, pair, pad))
-        {
-          *ainsn = insn;
-          return TRUE;
-        }
-        }
-
-          if (apacket->relax)
+              /* Try again. */
+          if (qdsp6_packet_insert (apacket, &insn, aprefix, pair, pad))
             {
-              packet = *apacket;
+              *ainsn = insn;
+              return TRUE;
+            }
+        }
+
+      if (apacket->relax)
+        {
+          packet = *apacket;
           /* Remove any branch relaxation if range has not been reduced
              by pairing. */
           for (i = packet.size - 1; i < packet.size; i--)
@@ -2353,13 +2396,13 @@ qdsp6_packet_cram
                     packet.relax--;
 
                 /* Try again. */
-                if (qdsp6_packet_insert (&packet, &insn, prefix, pair, pad))
+                if (qdsp6_packet_insert (&packet, &insn, aprefix, pair, pad))
                   {
                     *apacket = packet;
                     return TRUE;
                   }
               }
-                  }
+          }
 
       /* Remove branch relaxation. */
       insn.relax          = QDSP6_RELAX_NONE;
@@ -2367,7 +2410,7 @@ qdsp6_packet_cram
       insn.operand.flags &= ~QDSP6_OPERAND_IS_RELAX;
 
       /* Try again. */
-      if (qdsp6_packet_insert (apacket, &insn, prefix, pair, pad))
+      if (qdsp6_packet_insert (apacket, &insn, aprefix, pair, pad))
         {
           *ainsn = insn;
           return TRUE;
@@ -2387,7 +2430,7 @@ qdsp6_packet_cram
                 packet.relax--;
 
                 /* Try again. */
-              if (qdsp6_packet_insert (&packet, &insn, prefix, pair, pad))
+              if (qdsp6_packet_insert (&packet, &insn, aprefix, pair, pad))
                 {
                   *apacket = packet;
                   return TRUE;
@@ -2446,7 +2489,7 @@ qdsp6_packet_unfold
 
   for (i = 0; i < size; i++)
     {
-      if (apacket->insns [i].padded)
+      if (apacket->insns [i].pad)
         continue;
 
       if (apacket->insns [i].opcode->attributes & A_IT_EXTENDER)
@@ -2499,7 +2542,7 @@ qdsp6_packet_unfold
 
 /** Move prefixes inline with the insns.
 
-Assumes that the packet has already been shuffled and padded.
+Assumes that the packet has already been shuffled and pad.
 
 @param apacket Reference to a packet.
 */
@@ -2521,7 +2564,7 @@ qdsp6_packet_fold
   /* Merge the insn and the prefix arrays. */
   for (i = 0; i < size; i++)
     {
-      if (apacket->insns [i].padded && prefix)
+      if (apacket->insns [i].pad && prefix)
         {
           /* Skip a padding insn to make room for a prefix. */
           prefix--;
@@ -2569,7 +2612,7 @@ qdsp6_packet_fold
   apacket->prefix = 0;
 }
 
-/** Remove padded insns.
+/** Remove pad insns.
 
 Assumes that the packet is in its final form (no prefixes nor pairs).
 
@@ -2592,7 +2635,7 @@ qdsp6_packet_unpad
   /* Merge the insn and the prefix arrays. */
   for (i = 0; i < size; i++)
     {
-      if (apacket->insns [i].padded)
+      if (apacket->insns [i].pad)
         continue;
 
       if (apacket->insns [i].fc && apacket->insns [i].fix)
@@ -2652,7 +2695,7 @@ qdsp6_packet_write
       {
         num_nops++;
 
-        if (apacket->insns [i].padded)
+        if (apacket->insns [i].pad)
           num_padded_nops++;
       }
   max_skip = MIN (max_skip, MIN (num_nops, num_padded_nops));
@@ -2684,9 +2727,9 @@ qdsp6_packet_write
     {
       size_t size = qdsp6_packet_count (&frag_now->tc_frag_data->packet);
 
-      /* Skip the padded NOP, not every NOP. */
+      /* Skip the pad NOP, not every NOP. */
       if (max_skip
-	  && apacket->insns [i].padded
+	  && apacket->insns [i].pad
 	  && qdsp6_is_nop (apacket->insns [i].insn)
 	  && !qdsp6_is_nop_keep (apacket, i))
 	{
@@ -2707,7 +2750,7 @@ qdsp6_packet_write
           QDSP6_END_PACKET_SET (apacket->insns [i].insn, QDSP6_END_PACKET);
       /* Otherwise, leave the packet bits alone. */
 
-      apacket->insns [i].padded = FALSE;
+      apacket->insns [i].pad = FALSE;
       frag_now->tc_frag_data->packet.insns [size] = apacket->insns [i];
       qdsp6_insn_write (frag_now->tc_frag_data->packet.insns [size].insn,
                         frag_now->tc_frag_data->packet.insns [size].fc,
@@ -2734,7 +2777,158 @@ qdsp6_packet_write
   qdsp6_packet_init (apacket);
 }
 
-/* Create a BSS section in the global data area. */
+/** Form a packet from the previous few insns.
+*/
+int
+qdsp6_packet_form
+(qdsp6_packet *apacket, qdsp6_queue *aqueue)
+{
+  qdsp6_packet_insn insn, prefix;
+  qdsp6_packet_pair both;
+  size_t i, j, k;
+
+  if (qdsp6_pairing)
+    {
+      static const struct
+        {
+          unsigned in, out;
+        }
+      restrictions [] =
+        {
+          { 0, QDSP6_CODE_IS_DUPLEX },
+          { 0, 0 },
+        };
+
+      for (k = 0; k < sizeof (restrictions) / sizeof (*restrictions); k++)
+        {
+          for (j = 0; j < aqueue->size; j++)
+            {
+              if (aqueue->insns [j].used)
+                /* Skip an already used insn. */
+                continue;
+
+              both.left.insn   = aqueue->insns [j];
+              both.left.prefix = aqueue->prefixes [j];
+
+              for (i = j + 1; i < aqueue->size; i++)
+                {
+                  size_t m, n;
+
+                  if (/* Skip an already used insn. */
+                      aqueue->insns [i].used
+                      /* Skip restricted insns. */
+                      || (aqueue->insns [i].opcode->flags & restrictions [k].in))
+                    continue;
+
+                  both.right.insn   = aqueue->insns [i];
+                  both.right.prefix = aqueue->prefixes [i];
+
+                  if (qdsp6_assemble_pair (&both, &insn, &prefix)
+                      && !(insn.opcode->flags & restrictions [k].out))
+                    {
+                      /* Keep source order of certain insns. */
+                      if ((aqueue->insns [i].opcode->flags & QDSP6_CODE_IS_BRANCH)
+                          || (aqueue->insns [i].opcode->flags & QDSP6_CODE_IS_STORE))
+                        m = i, n = j;
+                      else
+                        m = j, n = i;
+
+                      aqueue->insns [m].used = aqueue->insns [n].used = TRUE;
+                      aqueue->insns [m].pad  = aqueue->insns [n].pad  = TRUE;
+
+                      if (!qdsp6_has_duplex_clash (aqueue, &insn))
+                        {
+                          /* Take pair if no clashes. */
+                          insn.used = TRUE;
+                          insn.pad  = FALSE;
+
+                          /* Replace insn with pair. */
+                          aqueue->insns [m]    = insn;
+                          aqueue->prefixes [m] = prefix;
+                          aqueue->pairs [m]    = both;
+
+                          n_pairs [QDSP6_PAIRS_TOTAL]++;
+                          break;
+                        }
+                      else
+                        {
+                          /* Keep the original insn otherwise. */
+                          aqueue->insns [m].used = aqueue->insns [n].used = FALSE;
+                          aqueue->insns [m].pad  = aqueue->insns [n].pad  = FALSE;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+  /* Form packet with surviving insns. */
+  qdsp6_packet_init (apacket);
+
+  apacket->is_inner = aqueue->is_inner;
+  apacket->is_outer = aqueue->is_outer;
+
+  for (i = 0; i < aqueue->size; i++)
+    {
+      if ((aqueue->insns [i].pad))
+        /* Skip an insn alredy inserted into the packet. */
+        continue;
+
+      if (!qdsp6_packet_cram (apacket,
+                              aqueue->insns + i, aqueue->prefixes + i,
+                              aqueue->pairs + i,
+                              FALSE))
+        {
+          as_bad_where (NULL, aqueue->insns [i].lineno,
+                        _("too many instructions in packet (maximum is %d)."),
+                        MAX_PACKET_INSNS);
+
+          qdsp6_queue_init (aqueue);
+          return FALSE;
+        }
+      else
+        /* Mark insn as inserted into packet. */
+        aqueue->insns [i].pad = TRUE;
+    }
+
+  qdsp6_queue_init (aqueue);
+  return TRUE;
+}
+
+/** Initialize insn queue.
+*/
+void
+qdsp6_queue_init
+(qdsp6_queue *aqueue)
+{
+  memset (aqueue, 0, sizeof (*aqueue));
+}
+
+/** Insert insn into queue.
+*/
+int
+qdsp6_queue_insert
+(qdsp6_queue *aqueue, qdsp6_packet_insn *ainsn, qdsp6_packet_insn *aprefix)
+{
+  if (aqueue->size < MAX_INSNS
+      && !ainsn->pad)
+    {
+      aqueue->insns    [aqueue->size] = *ainsn;
+      aqueue->prefixes [aqueue->size] = *aprefix;
+
+      aqueue->faligned  = qdsp6_faligning;
+      aqueue->is_inner |= ainsn->is_inner;
+      aqueue->is_outer |= ainsn->is_outer;
+
+      aqueue->size++;
+      return TRUE;
+    }
+
+  return FALSE;
+}
+
+/** Create a BSS section in the global data area.
+*/
 segT
 qdsp6_create_sbss_section
 (const char *name, flagword flags, unsigned int access)
@@ -3140,24 +3334,54 @@ qdsp6_gp_const_lookup
   return TRUE;
 }
 
-/* This routine is called for each instruction to be assembled. */
+/** This routine is called for each instruction to be assembled.
+*/
 void
 md_assemble
 (char *str)
 {
-  qdsp6_assemble (qdsp6_packets + 0, str, FALSE, FALSE);
+  qdsp6_packet_insn insn, prefix;
+
+  qdsp6_insn_init (&insn);
+  qdsp6_insn_init (&prefix);
+
+  if (qdsp6_assemble (&insn, &prefix, str, FALSE))
+    {
+      if (!qdsp6_queue_insert (&qdsp6_aqueue, &insn, &prefix))
+        {
+          int in_packet = qdsp6_in_packet;
+
+          if (qdsp6_packet_form (&qdsp6_apacket, &qdsp6_aqueue))
+            {
+              qdsp6_packet_end (&qdsp6_apacket);
+              qdsp6_packet_write (&qdsp6_apacket);
+            }
+          else
+            as_bad (_("too many instructions in packet."));
+
+          qdsp6_in_packet = in_packet;
+          qdsp6_queue_insert (&qdsp6_aqueue, &insn, &prefix);
+        }
+
+      if (!qdsp6_in_packet)
+        if (qdsp6_packet_form (&qdsp6_apacket, &qdsp6_aqueue))
+          {
+            qdsp6_packet_end (&qdsp6_apacket);
+            qdsp6_packet_write (&qdsp6_apacket);
+          }
+    }
 }
 
-/* This routine is called for each instruction to be assembled. */
+/** This routine is called for each instruction to be assembled.
+*/
 int
 qdsp6_assemble
-(qdsp6_packet *apacket, char *str, int padded, int pair)
+(qdsp6_packet_insn *ainsn, qdsp6_packet_insn *aprefix, char *str, int pair)
 {
   const qdsp6_opcode *opcode;
-  qdsp6_packet_insn prefix, insn;
   char *start, *syn;
-  int is_id, is_paired;
-  char *new_str, *mapped;
+  int is_id;
+  char *mapped;
   long op_val;
   char *op_str;
   qdsp6_operand_arg op_args [MAX_OPERANDS];
@@ -3175,23 +3399,21 @@ qdsp6_assemble
   /* Special handling of GP-related syntax:
      - Rd32 = CONST32(#imm) or Rd32 = CONST32(label)
      - Rdd32 = CONST64(#imm) or Rdd32 = CONST64(label) */
-  new_str = alloca (strlen (str) + QDSP6_MAPPED_LEN);
-  if (qdsp6_gp_const_lookup (str, new_str))
-    str = new_str;
-
-  qdsp6_insn_init (&prefix);
-  qdsp6_insn_init (&insn);
+  mapped = alloca (strlen (str) + QDSP6_MAPPED_LEN);
+  if (qdsp6_gp_const_lookup (str, mapped))
+    str = mapped;
 
   /* Keep looking until we find a match.  */
   start = str;
+  ainsn->source = NULL;
   for (opcode = qdsp6_opcode_lookup_asm (str);
        opcode;
        opcode = QDSP6_CODE_NEXT_ASM (opcode))
     {
-      if (insn.source)
+      if (ainsn->source)
         {
-          free (insn.source);
-          insn.source = NULL;
+          free (ainsn->source);
+          ainsn->source = NULL;
         }
 
       /* Is this opcode supported by the selected cpu?  */
@@ -3199,20 +3421,20 @@ qdsp6_assemble
 	continue;
 
       /* Initialize the tentative insn. */
-      qdsp6_insn_init (&prefix);
-      qdsp6_insn_init (&insn);
-      insn.opcode = opcode;
-      insn.source = strdup (start);
+      qdsp6_insn_init (aprefix);
+      qdsp6_insn_init (ainsn);
+      ainsn->opcode = opcode;
+      ainsn->source = strdup (start);
       /* Yank the packet termination out. */
-      if ((str = strchr (insn.source, PACKET_END)))
+      if ((str = strchr (ainsn->source, PACKET_END)))
         *str = 0;
 
       /* Scan the syntax string.  If it doesn't match, try the next one.  */
-      insn.insn = qdsp6_encode_opcode (insn.opcode->enc);
+      ainsn->insn = qdsp6_encode_opcode (ainsn->opcode->enc);
       is_id = 0;
       op_ndx = 0;
 
-      for (str = start, syn = insn.opcode->syntax;
+      for (str = start, syn = ainsn->opcode->syntax;
            *str && *syn; )
         {
           const qdsp6_operand *operand;
@@ -3232,7 +3454,7 @@ qdsp6_assemble
 		  else if (operand->flags & QDSP6_OPERAND_IS_IMMEDIATE)
 		    {
 		      str = qdsp6_parse_immediate
-			      (&insn, &prefix, operand, str, &op_val,
+			      (ainsn, aprefix, operand, str, &op_val,
                                !pair? &errmsg: NULL);
 		      if (!str)
 			goto NEXT_OPCODE;
@@ -3241,7 +3463,7 @@ qdsp6_assemble
                     {
                       int is_op;
 
-                      str = operand->parse (operand, &insn.insn, insn.opcode,
+                      str = operand->parse (operand, &ainsn->insn, ainsn->opcode,
                                             str, &op_val, &is_op,
                                             !pair? &errmsg: NULL);
                       if (!str)
@@ -3251,19 +3473,19 @@ qdsp6_assemble
                       if (is_op & QDSP6_OPERAND_IS_INVALID)
                         goto END_OPCODE;
                       else if (is_op & QDSP6_OPERAND_IS_PREDICATE
-                               && (insn.opcode->attributes & CONDITIONAL_EXEC))
+                               && (ainsn->opcode->attributes & CONDITIONAL_EXEC))
                         {
-                          insn.conditional = (insn.opcode->attributes
-                                              & (CONDITIONAL_EXEC
-                                                 | CONDITION_SENSE_INVERTED
-                                                 | CONDITION_DOTNEW));
-                          insn.predicate  = op_val;
+                          ainsn->conditional = (ainsn->opcode->attributes
+                                                & (CONDITIONAL_EXEC
+                                                   | CONDITION_SENSE_INVERTED
+                                                   | CONDITION_DOTNEW));
+                          ainsn->predicate  = op_val;
                         }
                       else if (is_op & QDSP6_OPERAND_IS_RNEW)
                         {
-                          insn.flags    |= QDSP6_INSN_IN_RNEW;
-                          insn.ioperand  = operand;
-                          insn.ireg      = op_val;
+                          ainsn->flags    |= QDSP6_INSN_IN_RNEW;
+                          ainsn->ioperand  = operand;
+                          ainsn->ireg      = op_val;
                         }
                     }
 
@@ -3325,16 +3547,13 @@ qdsp6_assemble
       /* If we're at the end of the syntax string, we're done.  */
       if ((!*str || *str == PACKET_END) && !*syn)
         {
-          char *cur_file;
-          unsigned int cur_line;
+          char *file;
+          unsigned lineno;
 
           if (!qdsp6_check_operand_args (op_args, op_ndx))
             goto NEXT_OPCODE;
 
-          /* Find where we are, will be used to dump to the dwarf2 debug info*/
-          as_where (&cur_file, &cur_line);
-
-          if (insn.opcode->map)
+          if (ainsn->opcode->map)
             {
               size_t l;
 
@@ -3342,38 +3561,24 @@ qdsp6_assemble
               mapped = alloca (l);
 
               /* Remap insn. */
-              ((qdsp6_mapping) insn.opcode->map) (mapped, l, op_args);
+              ((qdsp6_mapping) ainsn->opcode->map) (mapped, l, op_args);
 
               /* Concatenate the rest of the original insn
                  before assembling the remapped insn. */
               strncat (mapped, str, l - strlen (mapped) - 1);
-              return (qdsp6_assemble (apacket, mapped, padded, pair));
+              return (qdsp6_assemble (ainsn, aprefix, mapped, pair));
             }
 
-          /* TODO: Perform various error and warning tests.  */
+          as_where (&file, &lineno);
 
-          insn.used   = FALSE;
-          insn.padded = padded;
-          insn.lineno = cur_line;
-
-          is_paired = FALSE;
-          if (!pair && qdsp6_in_packet)
-            is_paired = qdsp6_assemble_pair (apacket, &insn, &prefix);
-
-          if (!is_paired && !qdsp6_packet_cram (apacket, &insn, &prefix, NULL, FALSE))
-            as_bad (_("too many instructions in packet (maximum is %d)."),
-                    MAX_PACKET_INSNS);
-
-          if (!pair && !qdsp6_in_packet)
-            {
-              qdsp6_packet_end (apacket);
-              qdsp6_packet_write (apacket);
-            }
+          ainsn->used   = FALSE;
+          ainsn->pad    = FALSE;
+          ainsn->lineno = lineno;
 
           while (ISSPACE (*str))
             ++str;
 
-          /* Check for the packet end string */
+          /* Check for the packet end string. */
           if (*str == PACKET_END)
             {
               str++;
@@ -3383,38 +3588,36 @@ qdsp6_assemble
                   as_warn (_("found `%c' before opening a packet."), PACKET_END);
                   return TRUE;
                 }
-
-              qdsp6_packet_end (apacket);
+              else
+                qdsp6_in_packet = FALSE;
 
               while (ISSPACE (*str))
                 ++str;
 
               /* Check for the end inner/outer modifiers.
                  Note that they can appear in any order. */
-              while (1)
+              while (TRUE)
                 {
                   if (!strncasecmp (str, PACKET_END_INNER,
                                     strlen (PACKET_END_INNER)))
                     {
-                      qdsp6_packet_end_inner (apacket);
+                      ainsn->is_inner = TRUE;
                       str += strlen (PACKET_END_INNER);
 
                       while (ISSPACE (*str))
                         ++str;
                     }
                   else if (!strncasecmp (str, PACKET_END_OUTER,
-			                  strlen (PACKET_END_OUTER)))
+			                 strlen (PACKET_END_OUTER)))
                     {
-                      qdsp6_packet_end_outer (apacket);
+                      ainsn->is_outer = TRUE;
                       str += strlen (PACKET_END_OUTER);
 
                       while (ISSPACE (*str))
                         ++str;
                     }
                   else
-                    {
-                      break;
-                    }
+                    break;
                 }
 
               if (!is_end_of_line [(unsigned char) *str])
@@ -3424,7 +3627,7 @@ qdsp6_assemble
                   else
                     return FALSE;
                 }
-              else if (!apacket->is_inner || !apacket->is_outer)
+              else if (!ainsn->is_inner || !ainsn->is_outer)
                 {
                   /* May need to lookahead in the input stream for
                      (more) inner/outer modifiers. */
@@ -3434,13 +3637,11 @@ qdsp6_assemble
                   --input_line_pointer;
 
                   if (inner)
-                    qdsp6_packet_end_inner (apacket);
+                    ainsn->is_inner = TRUE;
 
                   if (outer)
-                    qdsp6_packet_end_outer (apacket);
+                    ainsn->is_outer = TRUE;
                 }
-
-              qdsp6_packet_write (apacket);
             }
           else if (!is_end_of_line [(unsigned char) *str])
             {
@@ -3478,212 +3679,71 @@ qdsp6_assemble
 
 int
 qdsp6_assemble_pair
-(qdsp6_packet *apacket, qdsp6_packet_insn *ainsn, qdsp6_packet_insn *aprefix)
+(qdsp6_packet_pair *apair, qdsp6_packet_insn *ainsn, qdsp6_packet_insn *aprefix)
 {
-  /* Order of pairing restrictions to try. */
-  static const unsigned attr [] =
-    {
-      /* Refrain from relative branches as they may overflow. */
-      A_BRANCHADDER,
-      /* The last attempt is free for all. */
-      0
-    };
-  qdsp6_packet packet;
-  qdsp6_packet_insn insn, prefix;
-  qdsp6_packet_pair prepair;
-  char pair [QDSP6_MAPPED_LEN], unpair [QDSP6_MAPPED_LEN];
-  size_t i, j, k, a_duplex;
-  size_t is_duplex, is_prefix, are_stores;
-  int has_hits, has_ommited, has_room;
+  char *pair, *unpair;
+  int is_duplex, are_stores;
+  size_t l;
 
   /* Do nothing if pairing disabled. */
   if (!qdsp6_pairing)
     return FALSE;
 
-  a_duplex = MAX_PACKET_INSNS;
-  /* Break a previous duplex if it conflicts with other insns in the packet. */
-  if (qdsp6_has_duplex_hits (apacket, ainsn, &a_duplex))
+  /* Skip certain insns. */
+  if (/* Packed or duplex insns. */
+      ((apair->left.insn.opcode->attributes & PACKED)
+        || (apair->left.insn.opcode->flags & QDSP6_CODE_IS_DUPLEX)
+        || (apair->right.insn.opcode->attributes & PACKED)
+        || (apair->right.insn.opcode->flags & QDSP6_CODE_IS_DUPLEX))
+      /* Prefix insns. */
+      || ((apair->left.insn.opcode->flags & QDSP6_CODE_IS_PREFIX)
+          || (apair->right.insn.opcode->flags & QDSP6_CODE_IS_PREFIX))
+      /* Both extended insns. */
+      || ((apair->left.insn.flags & QDSP6_INSN_IS_KXED)
+          && (apair->right.insn.flags & QDSP6_INSN_IS_KXED))
+      /* Both insns have symbolic references. */
+      || (apair->left.insn.fc && apair->right.insn.fc)
+      /* Selectively, direct branch insns. */
+      || (!qdsp6_pairing_branch
+          && ((apair->left.insn.opcode->flags & QDSP6_CODE_IS_BRANCH)
+              || (apair->right.insn.opcode->flags & QDSP6_CODE_IS_BRANCH)))
+      /* Selectively, multiple memory operations. */
+      || (qdsp6_no_dual_memory
+          && (apair->left.insn.opcode->flags & QDSP6_CODE_IS_MEMORY)
+          && (apair->right.insn.opcode->flags & QDSP6_CODE_IS_MEMORY)))
+    return FALSE;
+
+  /* Memory operations must be paired in source order. */
+  are_stores = (apair->left.insn.opcode->flags & QDSP6_CODE_IS_STORE)
+                && (apair->right.insn.opcode->flags & QDSP6_CODE_IS_STORE);
+
+  /* Create a pair and its mirror. */
+  l = strlen (apair->left.insn.source) + strlen (apair->right.insn.source)
+      + sizeof (PACKET_PAIR) + 1;
+  pair = alloca (l);
+  unpair = alloca (l);
+
+  snprintf (pair, l, "%s%c%s",
+            apair->left.insn.source, PACKET_PAIR, apair->right.insn.source);
+  snprintf (unpair, l, "%s%c%s",
+            apair->right.insn.source, PACKET_PAIR, apair->left.insn.source);
+
+  if (qdsp6_assemble (ainsn, aprefix, pair, TRUE)
+      || (!are_stores && qdsp6_assemble (ainsn, aprefix, unpair, TRUE)))
     {
-      qdsp6_packet_init (&packet);
+      is_duplex = (ainsn->opcode->flags & QDSP6_CODE_IS_DUPLEX)? 1: 0;
 
-      for (i = 0; i < qdsp6_packet_count (apacket); i++)
-        {
-          if (i == a_duplex)
-            {
-              qdsp6_packet_insert
-                (&packet,
-                 &apacket->pairs [i].left.insn, &apacket->pairs [i].left.prefix, NULL,
-                 FALSE);
-              qdsp6_packet_insert
-                (&packet,
-                 &apacket->pairs [i].right.insn, &apacket->pairs [i].right.prefix, NULL,
-                 FALSE);
-            }
-          else
-            qdsp6_packet_insert
-              (&packet,
-               apacket->insns + i, apacket->prefixes + i, &apacket->pairs [i],
-               FALSE);
-        }
+      /* Abandon if the result is an unwanted duplex. */
+      if (!qdsp6_pairing_duplex && is_duplex)
+        return FALSE;
 
-      *apacket = packet;
+      ainsn->used   = FALSE;
+      ainsn->pad    = FALSE;
+      ainsn->lineno = apair->left.insn.lineno;
+      ainsn->flags |= QDSP6_INSN_IS_PAIR;
 
-      n_pairs [QDSP6_PAIRS_TOTAL]--;
-      n_pairs [QDSP6_PAIRS_UNDONE]++;
+      return TRUE;
     }
-
-  /* Go over the pairing restrictions. */
-  for (j = 0; j < sizeof (attr) / sizeof (*attr); j++)
-    /* Go over the previous insns. */
-    for (i = 0; i < qdsp6_packet_count (apacket); i++)
-      {
-        /* Skip certain insns. */
-        if (
-            /* After the restriction vector. */
-            ((ainsn->opcode->attributes & attr [j])
-             || (apacket->insns [i].opcode->attributes & attr [j]))
-            /* Packed or duplex insns. */
-            || ((apacket->insns [i].opcode->attributes & PACKED)
-                || (apacket->insns [i].opcode->flags & QDSP6_CODE_IS_DUPLEX))
-            /* Prefix insns. */
-            || (apacket->insns [i].opcode->flags & QDSP6_CODE_IS_PREFIX)
-            /* Extended insns. */
-            || ((ainsn->flags & QDSP6_INSN_IS_KXED)
-                && (apacket->insns [i].flags & QDSP6_INSN_IS_KXED))
-            /* If both insns have symbolic references. */
-            || (ainsn->fc && apacket->insns [i].fc)
-            /* Selectively, direct branch insns. */
-            || ((!qdsp6_pairing_branch
-                 && (ainsn->opcode->attributes & A_BRANCHADDER))
-                || (!qdsp6_pairing_branch
-                    && (apacket->insns [i].opcode->attributes & A_BRANCHADDER)))
-            /* Selectively, multiple memory operations. */
-            || (qdsp6_no_dual_memory
-                && (ainsn->opcode->attributes & A_RESTRICT_SINGLE_MEM_FIRST)
-                && (apacket->insns [i].opcode->attributes & A_RESTRICT_SINGLE_MEM_FIRST))
-           )
-          continue;
-
-        /* Skip certain combinations. */
-        /*
-        if ((ainsn->opcode->implicit & IMPLICIT_PC)
-            && (apacket->insns [i].opcode->implicit & IMPLICIT_PC))
-          continue;
-        */
-
-        if (strlen (apacket->insns [i].source) + 1 + strlen (ainsn->source)
-            >= sizeof (pair))
-          /* Skip a too long a pair. */
-          continue;
-
-        /* Memory operations must be paired in source order. */
-        are_stores = (ainsn->opcode->attributes & A_STORE)
-                      && (apacket->insns [i].opcode->attributes & A_STORE);
-
-        /* Create a pair and its mirror. */
-        snprintf (pair, sizeof (pair), "%s%c%s",
-                  apacket->insns [i].source, PACKET_PAIR, ainsn->source);
-        snprintf (unpair, sizeof (unpair), "%s%c%s",
-                  ainsn->source, PACKET_PAIR, apacket->insns [i].source);
-
-        prepair.left.prefix  = apacket->prefixes [i];
-        prepair.left.insn    = apacket->insns [i];
-        prepair.right.prefix = *aprefix;
-        prepair.right.insn   = *ainsn;
-
-        qdsp6_packet_init (&packet);
-        if (qdsp6_assemble (&packet, pair, FALSE, TRUE)
-            || (!are_stores && qdsp6_assemble (&packet, unpair, FALSE, TRUE)))
-          {
-            is_duplex = (packet.insns [0].opcode->flags & QDSP6_CODE_IS_DUPLEX)? 1: 0;
-            is_prefix = (packet.insns [0].flags & QDSP6_INSN_IS_KXED)? 1: 0;
-
-            /* Keep trying if the result is an unwanted duplex. */
-            if (!qdsp6_pairing_duplex && is_duplex)
-              continue;
-
-            /* Check for existing duplex insns. */
-            a_duplex = i;
-            if (is_duplex
-                && qdsp6_has_duplex_hits (apacket, packet.insns, &a_duplex))
-              continue;
-
-            insn   = packet.insns    [0];
-            prefix = packet.prefixes [0];
-
-            insn.flags |= QDSP6_INSN_IS_PAIR;
-
-            /* Set up the new packet. */
-            qdsp6_packet_init (&packet);
-            for (k = 0, has_hits = has_ommited = FALSE, has_room = TRUE;
-                 k < qdsp6_packet_count (apacket) && !has_hits && has_room;
-                 k++)
-              if (k == i)
-                {
-                  /* Maintain the order of branches if the pair has one. */
-                  if (!(apacket->insns [k].opcode->implicit & IMPLICIT_PC))
-                    {
-                      /* Ommit the paired insn. */
-                      has_ommited = TRUE;
-                      continue;
-                    }
-                  else
-                    {
-                      /* Insert pair. */
-                      a_duplex = i;
-                      if ((has_hits = qdsp6_has_duplex_hits
-                                        (&packet, &insn, &a_duplex)))
-                        /* Bail if the new pair causes conflicts. */
-                        break;
-                      else
-                        /* Insert pair instead. */
-                        has_room = qdsp6_packet_cram
-                                      (&packet, &insn, &prefix, &prepair, FALSE);
-                    }
-                }
-              else
-                {
-                  a_duplex = i;
-                  if ((has_hits = qdsp6_has_duplex_hits
-                                    (&packet, apacket->insns + k, &a_duplex)))
-                    /* Bail if the new pair causes conflicts. */
-                    break;
-                  else
-                    /* Insert original insn. */
-                    has_room = qdsp6_packet_cram
-                                  (&packet,
-                                  apacket->insns + k, apacket->prefixes + k,
-                                  apacket->pairs + k, FALSE);
-                }
-
-            if (has_hits || !has_room)
-              continue;
-
-            if (has_ommited)
-              {
-                a_duplex = i;
-                if (qdsp6_has_duplex_hits (&packet, &insn, &a_duplex))
-                  /* Bail if the new pair causes conflicts. */
-                  continue;
-                else
-                  /* Add paired insn after a previous branch. */
-                  if (!(has_room = qdsp6_packet_cram
-                                     (&packet, &insn, &prefix, &prepair, FALSE)))
-                    /* Bail if not enough room. */
-                    continue;
-              }
-
-            /* Override the old packet. */
-            *apacket = packet;
-
-            /* Cancel the original insn. */
-            qdsp6_insn_init (ainsn);
-            qdsp6_insn_init (aprefix);
-
-            n_pairs [QDSP6_PAIRS_TOTAL]++;
-            return TRUE;
-          }
-      }
 
   return FALSE;
 }
@@ -4240,7 +4300,7 @@ qdsp6_discard_dcfetch
                                   _("extra `dcfetch' removed."));
 
                     apacket->insns [i]        = qdsp6_nop_insn;
-                    apacket->insns [i].padded = TRUE;
+                    apacket->insns [i].pad = TRUE;
 
                     count++;
                   }
@@ -4258,7 +4318,7 @@ qdsp6_discard_dcfetch
                             _("`dcfetch' removed."));
 
               apacket->insns [i]        = qdsp6_nop_insn;
-              apacket->insns [i].padded = TRUE;
+              apacket->insns [i].pad = TRUE;
 
               number--;
               count++;
@@ -4308,7 +4368,7 @@ qdsp6_shuffle_packet
         }
 
       insns [i].ndx = ndx;
-      ndx += packet->insns [from].padded? 0: 1;
+      ndx += packet->insns [from].pad? 0: 1;
     }
 
   memcpy (packet->insns,    insns,    sizeof (packet->insns));
@@ -4326,7 +4386,7 @@ int
 qdsp6_shuffle_helper
 (qdsp6_packet *packet, size_t slot_num, size_t *shuffle)
 {
-  size_t ndx, slot_mask, temp_mask, store_mask;
+  size_t ndx, slots, temp_mask, store_mask;
   size_t *fromto, aux [MAX_PACKET_INSNS];
   qdsp6_packet_insn *inew = NULL;
   int single, prefix, rnew, store, nostore;
@@ -4347,7 +4407,7 @@ qdsp6_shuffle_helper
   rnew = qdsp6_has_rnew (packet, &inew);
 
   ndx       = MAX_PACKET_INSNS - slot_num - 1;
-  slot_mask = 1 << ndx;
+  slots = 1 << ndx;
 
   /* Choose from-to map. */
   if (shuffle)
@@ -4368,7 +4428,7 @@ qdsp6_shuffle_helper
        i < qdsp6_packet_count (packet) && !changed;
        i++)
     {
-      temp_mask = packet->insns [i].opcode->slot_mask;
+      temp_mask = packet->insns [i].opcode->slots;
 
       /* If there is only one memory insn, it requires ndx #0. */
       if (single
@@ -4393,7 +4453,7 @@ qdsp6_shuffle_helper
             temp_mask &= QDSP6_SLOTS_MEM1;
         }
 
-      if (!packet->insns [i].used && (temp_mask & slot_mask))
+      if (!packet->insns [i].used && (temp_mask & slots))
 	{
 	  /* Check for NOSLOT1 restriction. */
 	  if (ndx == 1
@@ -4455,24 +4515,24 @@ qdsp6_shuffle_prepare
   /* Reorder the instructions in the packet so that they start with
       slot #3 (index #0) instead of slot #0.
 
-      1 - Go through all non-padded instructions, find the highest slot each
+      1 - Go through all non-pad instructions, find the highest slot each
           insn can go to and put it in the corresponding position.  If an
           position is already assigned, then try the next one.  If all
           positions after the wanted one are taken, then try again from the
           beginning of the array.
 
-      2 - For all padded instructions, put them one by one starting from the
+      2 - For all pad instructions, put them one by one starting from the
           first available position (or higher slot). */
 
   /* Step 1. */
   for (i = 0; i < MAX_PACKET_INSNS; i++)
-    if (!apacket->insns [i].padded)
+    if (!apacket->insns [i].pad)
       {
         /* Find the highest ndx that this instruction can go to. */
         for (j = 0, found = FALSE;
               j < MAX_PACKET_INSNS && !found;
               j++)
-          if ((  apacket->insns [i].opcode->slot_mask
+          if ((  apacket->insns [i].opcode->slots
                 & (1 << (MAX_PACKET_INSNS - j - 1))))
             /* Try to allocate the ndx found or a lower one. */
             for (k = j;
@@ -4499,8 +4559,8 @@ qdsp6_shuffle_prepare
 
   /* Step 2. */
   for (i = 0; i < MAX_PACKET_INSNS; i++)
-    if (apacket->insns [i].padded)
-      /* Find the first unused position for this padded insn. */
+    if (apacket->insns [i].pad)
+      /* Find the first unused position for this pad insn. */
       for (j = 0; j < MAX_PACKET_INSNS; j++)
         if (fromto [j] >= MAX_PACKET_INSNS)
           {
@@ -5164,35 +5224,13 @@ qdsp6_packet_insns
   size_t i, n;
 
   for (i = n = 0; i < apacket->size; i++)
-    if (!apacket->insns [i].padded)
+    if (!apacket->insns [i].pad)
       n++;
 
   return (n);
 }
 
-void
-qdsp6_packet_open
-(qdsp6_packet *apacket)
-{
-  qdsp6_packet_begin (apacket);
-}
-
-void
-qdsp6_packet_close
-(qdsp6_packet *apacket)
-{
-  int inner, outer;
-
-  qdsp6_packet_end (apacket);
-
-  qdsp6_packet_end_lookahead (&inner, &outer);
-  if (inner)
-    qdsp6_packet_end_inner (apacket);
-  if (outer)
-    qdsp6_packet_end_outer (apacket);
-}
-
-  /* Used to handle packet begin/end syntax */
+/* Used to handle packet begin/end syntax */
 
 void
 qdsp6_packet_begin
@@ -5200,7 +5238,8 @@ qdsp6_packet_begin
 {
   if (qdsp6_in_packet)
     {
-      qdsp6_packet_close (apacket);
+      qdsp6_packet_form (apacket, &qdsp6_aqueue);
+      qdsp6_packet_end (apacket);
       qdsp6_packet_write (apacket);
     }
 
@@ -5215,35 +5254,61 @@ void
 qdsp6_packet_end
 (qdsp6_packet *apacket)
 {
-  char *file;
-  unsigned lineno;
   int n;
-
-  /* Grab line number. */
-  as_where (&file, &lineno);
-  apacket->lineno = lineno;
 
   /* Checking for multiple restrictions in packet. */
   qdsp6_packet_check (apacket);
 
+  qdsp6_in_packet = FALSE;
+
   // check for multiple writes to SR (implicit not allowed if explicit writes are present)
   if (numOfOvf && cArray [QDSP6_SR].used)
     {
-      as_bad (_("`OVF' bit in `SR' register cannot be set (implicitly or explicitly) more than once in packet."));
-      qdsp6_in_packet = FALSE;
+      as_bad_where (NULL, apacket->lineno,
+                    _("`OVF' bit in `SR' register cannot be set (implicitly or explicitly) more than once in packet."));
       return;
     }
 
   if (!qdsp6_check_new_predicate ())
+    return;
+
+  if (apacket->is_inner)
     {
-      qdsp6_in_packet = FALSE;
-      return;
+      /* Check whether registers updated by :endloop0 are updated in packet. */
+      if (cArray [QDSP6_P30].used | cArray [QDSP6_SR].used
+          | cArray [QDSP6_SA0].used | cArray [QDSP6_LC0].used | cArray [QDSP6_PC].used)
+        as_bad (_("packet marked with `:endloop0' cannot contain instructions that " \
+                  "modify registers `C4/P3:0', `C8/USR', `SA0', `LC0' or `PC'."));
+
+      /* Although it may be dangerous to modify P3 then, legacy code is full of this. */
+    /*
+      if (pArray [3])
+        as_warn (_("packet marked with `:endloop0' that contain instructions that " \
+                  "modify register `p3' may have undefined results if "
+                  "ending a pipelined loop."));
+    */
+
+      /* Check for a solo instruction in a packet with :endloop0. */
+      if (qdsp6_packet_check_solo (apacket))
+        as_bad (_("packet marked with `:endloop0' cannot contain a solo instruction."));
+    }
+
+  if (apacket->is_outer)
+    {
+      /* Check whether registers updated by :endloop1 are updated in packet. */
+      if (cArray [QDSP6_SA1].used | cArray [QDSP6_LC1].used | cArray [QDSP6_PC].used)
+        as_bad (_("packet marked with `:endloop1' cannot contain instructions that " \
+                  "modify registers `SA1', `LC1' or `PC'."));
+
+      /* Check for a solo instruction in a packet with :endloop1. */
+      if (qdsp6_packet_check_solo (apacket))
+        as_bad (_("packet marked with `:endloop1' cannot contain a solo instruction."));
     }
 
   if (numOfBranchAddrMax1 && numOfBranchAddr > 1)
     {
-      as_bad (_("loop setup and direct branch instructions cannot be in same packet."));
-      qdsp6_in_packet = FALSE;
+      as_bad_where (NULL, apacket->lineno,
+                    _("loop setup and direct branch instructions cannot be in same packet."));
       return;
     }
 
@@ -5252,31 +5317,32 @@ qdsp6_packet_end
       || (numOfBranchMax1 > 1 && numOfBranchMax1 > numOfBranchRelax)
       || (numOfBranchAddr > 1 && numOfBranchAddr > numOfBranchAddrRelax))
     {
-      as_bad (_("too many branches in packet."));
-      qdsp6_in_packet = FALSE;
+      as_bad_where (NULL, apacket->lineno,
+                    _("too many branches in packet."));
       return;
     }
 
   if (numOfBranchRelax2nd && numOfBranchRelax > numOfBranchRelax2nd)
     {
-      as_bad (_("unconditional branch cannot precede another branch in packet."));
-      qdsp6_in_packet = FALSE;
+      as_bad_where (NULL, apacket->lineno,
+                    _("unconditional branch cannot precede another branch in packet."));
       return;
     }
 
   if (!qdsp6_has_but_ax (apacket))
-    as_bad (_("instruction cannot appear in packet with other than A-type or X-type instructions."));
+    as_bad_where (NULL, apacket->lineno,
+                  _("instruction cannot appear in packet with other than A-type or X-type instructions."));
 
   n = qdsp6_has_mem (apacket);
   if ((qdsp6_no_dual_memory && n > 1) || n > 2)
-    as_bad (_("multiple memory operations in packet."));
+    as_bad_where (NULL, apacket->lineno,
+                  _("multiple memory operations in packet."));
 
   if (qdsp6_pairs_info && qdsp6_has_pair (apacket))
-    as_warn (_("instructions paired."));
+    as_bad_where (NULL, apacket->lineno,
+                  _("instructions paired."));
 
   qdsp6_shuffle_do (apacket);
-
-  qdsp6_in_packet = FALSE;
 }
 
 int
@@ -5301,7 +5367,7 @@ qdsp6_packet_end_inner
 (qdsp6_packet *apacket)
 {
   /* Check whether registers updated by :endloop0 are updated in packet. */
-  if (  cArray [QDSP6_P30].used | cArray [QDSP6_SR].used
+  if (cArray [QDSP6_P30].used | cArray [QDSP6_SR].used
       | cArray [QDSP6_SA0].used | cArray [QDSP6_LC0].used | cArray [QDSP6_PC].used)
     as_bad (_("packet marked with `:endloop0' cannot contain instructions that " \
               "modify registers `C4/P3:0', `C8/USR', `SA0', `LC0' or `PC'."));
@@ -5355,6 +5421,10 @@ qdsp6_packet_end_lookahead
   int inner = 0;
   int outer = 0;
 
+  *inner_p = FALSE;
+  *outer_p = FALSE;
+  return;
+
   for (;;)
     {
       if (input_line_pointer == buffer_limit)
@@ -5371,14 +5441,14 @@ qdsp6_packet_end_lookahead
           if (input_line_pointer [-1] == '\n')
             bump_line_counters ();
 
-          input_line_pointer += 1;
+          input_line_pointer++;
         }
       else if (*input_line_pointer == ' ')
         {
           if (input_line_pointer [-1] == '\n')
             bump_line_counters ();
 
-          input_line_pointer += 1;
+          input_line_pointer++;
         }
       else if (*input_line_pointer == '\0')
         {
@@ -5386,7 +5456,7 @@ qdsp6_packet_end_lookahead
           if (input_line_pointer [-1] == '\n')
             bump_line_counters ();
 
-          input_line_pointer += 1;
+          input_line_pointer++;
         }
       else if (!inner
                && !strncasecmp (input_line_pointer,
@@ -5439,20 +5509,53 @@ qdsp6_unrecognized_line
 
   if (*str == PACKET_BEGIN)
     {
+      str++;
       if (qdsp6_in_packet)
         as_warn (_("found `%c' inside a packet."), PACKET_BEGIN);
 
-      qdsp6_packet_open (qdsp6_packets + 0);
-
+      qdsp6_packet_begin (&qdsp6_apacket);
       return TRUE;
     }
   else if (*str == PACKET_END)
     {
+      str++;
       if (!qdsp6_in_packet)
         as_warn (_("found `%c' before opening a packet."), PACKET_END);
 
-      qdsp6_packet_close (qdsp6_packets + 0);
-      qdsp6_packet_write (qdsp6_packets + 0);
+      while (ISBLANK (*str))
+        str++;
+
+      if (!strncasecmp (str, PACKET_END_INNER, strlen (PACKET_END_INNER)))
+        {
+          qdsp6_aqueue.is_inner = TRUE;
+          input_line_pointer = str += strlen (PACKET_END_INNER);
+        }
+
+      while (ISBLANK (*str))
+        str++;
+
+      if (!strncasecmp (str, PACKET_END_OUTER, strlen (PACKET_END_OUTER)))
+        {
+          qdsp6_aqueue.is_outer = TRUE;
+          input_line_pointer = str += strlen (PACKET_END_OUTER);
+        }
+
+      while (ISBLANK (*str))
+        str++;
+
+      if (!strncasecmp (str, PACKET_END_INNER, strlen (PACKET_END_INNER)))
+        {
+          qdsp6_aqueue.is_inner = TRUE;
+          input_line_pointer = str += strlen (PACKET_END_INNER);
+        }
+
+      if (qdsp6_packet_form (&qdsp6_apacket, &qdsp6_aqueue))
+        {
+          qdsp6_packet_end (&qdsp6_apacket);
+          qdsp6_packet_write (&qdsp6_apacket);
+        }
+      else
+        qdsp6_in_packet = FALSE;
 
       return TRUE;
     }
@@ -5483,8 +5586,9 @@ qdsp6_cleanup
     {
       as_warn (_("reached end of file before closing a packet."));
 
-      qdsp6_packet_close (qdsp6_packets + 0);
-      qdsp6_packet_write (qdsp6_packets + 0);
+      qdsp6_packet_form (&qdsp6_apacket, &qdsp6_aqueue);
+      qdsp6_packet_end (&qdsp6_apacket);
+      qdsp6_packet_write (&qdsp6_apacket );
     }
 }
 
