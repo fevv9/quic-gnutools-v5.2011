@@ -69,3 +69,7 @@ AC_SUBST(pdfdir)
 
 AC_CONFIG_FILES([Makefile po/Makefile.in:po/Make-in])
 AC_OUTPUT
+
+#BUG 4536
+touch $srcdir/flat_bl.c
+
