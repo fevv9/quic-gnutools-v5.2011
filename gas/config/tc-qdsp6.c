@@ -22,10 +22,11 @@
    QDSP6 machine-specific port contributed by Qualcomm, Inc.
 */
 
+#include <assert.h>
+#include <inttypes.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <sys/param.h>
-#include <assert.h>
 #include "as.h"
 #include "dwarf2dbg.h"
 #include "elf/qdsp6.h"
@@ -1779,7 +1780,8 @@ qdsp6_parse_immediate
     }
   else if (exp.X_op == O_constant)
     {
-      value = exp.X_add_number;
+      /* Interpret value according to the 32-bit QDSP6 ISA */
+      value = (int32_t) exp.X_add_number;
 
       if (!qdsp6_encode_operand
              (operand, &insn->insn, insn->opcode,
