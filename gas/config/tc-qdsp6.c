@@ -2229,7 +2229,17 @@ qdsp6_has_but_ax
   for (i = axok = count = 0; i < qdsp6_packet_count (apacket); i++)
     {
       if (apacket->insns [i].opcode->attributes & A_RESTRICT_PACKET_AXOK)
-        axok++;
+        /* Check for special cases. */
+        if (!(apacket->insns [i].opcode->attributes & A_RESTRICT_PACKET_SOMEREGS_OK)
+            || ((apacket->insns [i].opcode->attributes & A_RESTRICT_PACKET_SOMEREGS_OK)
+                && ((qdsp6_if_arch_v3 ()
+                     && apacket->insns [i].oreg != 2  /* SSR */
+                     && apacket->insns [i].oreg != 21 /* TLBHI */
+                     && apacket->insns [i].oreg != 22 /* TLBLO */
+                     && apacket->insns [i].oreg != 23 /* TLBIDX */ )
+                    || (qdsp6_if_arch_v4 ()
+                        && apacket->insns [i].oreg != 6 /* SSR */ ))))
+          axok++;
 
       if (!(apacket->insns [i].opcode->attributes & PACKED)
           && (QDSP6_INSN_TYPE_A (apacket->insns [i].insn)
@@ -2385,23 +2395,23 @@ qdsp6_packet_cram
           packet = *apacket;
           /* Remove any branch relaxation if range has not been reduced
              by pairing. */
-          for (i = packet.size - 1; i < packet.size; i--)
-            if (!(packet.insns [i].flags & QDSP6_INSN_IS_PAIR)
-                && packet.insns [i].flags & QDSP6_INSN_IS_RELAX)
+          for (i = packet.size; i > 0; i--)
+            if (!(packet.insns [i - 1].flags & QDSP6_INSN_IS_PAIR)
+                && packet.insns [i - 1].flags & QDSP6_INSN_IS_RELAX)
                   {
-                    packet.insns [i].relax          = QDSP6_RELAX_NONE;
-                    packet.insns [i].flags         &= ~QDSP6_INSN_IS_RELAX;
-                    packet.insns [i].operand.flags &= ~QDSP6_OPERAND_IS_RELAX;
+                    packet.insns [i - 1].relax          = QDSP6_RELAX_NONE;
+                    packet.insns [i - 1].flags         &= ~QDSP6_INSN_IS_RELAX;
+                    packet.insns [i - 1].operand.flags &= ~QDSP6_OPERAND_IS_RELAX;
 
                     packet.relax--;
 
-                /* Try again. */
-                if (qdsp6_packet_insert (&packet, &insn, aprefix, pair, pad))
-                  {
-                    *apacket = packet;
-                    return TRUE;
+                    /* Try again. */
+                    if (qdsp6_packet_insert (&packet, &insn, aprefix, pair, pad))
+                      {
+                        *apacket = packet;
+                        return TRUE;
+                      }
                   }
-              }
           }
 
       /* Remove branch relaxation. */
@@ -2785,7 +2795,10 @@ qdsp6_packet_form
 {
   qdsp6_packet_insn insn, prefix;
   qdsp6_packet_pair both;
+  qdsp6_packet packet [2]; /* As many packets as restrictions. */
+  qdsp6_queue queue;
   size_t i, j, k;
+  int ok;
 
   if (qdsp6_pairing)
     {
@@ -2797,102 +2810,142 @@ qdsp6_packet_form
         {
           { 0, QDSP6_CODE_IS_DUPLEX },
           { 0, 0 },
-        };
+        }; /* As many restrictions as packets. */
 
-      for (k = 0; k < sizeof (restrictions) / sizeof (*restrictions); k++)
+      /* Form tentative packets according to restrictions. */
+      for (k = 0; k < 2; k++)
         {
-          for (j = 0; j < aqueue->size; j++)
+          queue = *aqueue;
+
+          for (j = 0; j < queue.size; j++)
             {
-              if (aqueue->insns [j].used)
+              if (queue.insns [j].used)
                 /* Skip an already used insn. */
                 continue;
 
-              both.left.insn   = aqueue->insns [j];
-              both.left.prefix = aqueue->prefixes [j];
+              both.left.insn   = queue.insns [j];
+              both.left.prefix = queue.prefixes [j];
 
-              for (i = j + 1; i < aqueue->size; i++)
+              for (i = j + 1; i < queue.size; i++)
                 {
                   size_t m, n;
 
                   if (/* Skip an already used insn. */
-                      aqueue->insns [i].used
+                      queue.insns [i].used
                       /* Skip restricted insns. */
-                      || (aqueue->insns [i].opcode->flags & restrictions [k].in))
+                      || (queue.insns [i].opcode->flags & restrictions [k].in))
                     continue;
 
-                  both.right.insn   = aqueue->insns [i];
-                  both.right.prefix = aqueue->prefixes [i];
+                  both.right.insn   = queue.insns [i];
+                  both.right.prefix = queue.prefixes [i];
 
                   if (qdsp6_assemble_pair (&both, &insn, &prefix)
                       && !(insn.opcode->flags & restrictions [k].out))
                     {
                       /* Keep source order of certain insns. */
-                      if ((aqueue->insns [i].opcode->flags & QDSP6_CODE_IS_BRANCH)
-                          || (aqueue->insns [i].opcode->flags & QDSP6_CODE_IS_STORE))
+                      if ((queue.insns [i].opcode->flags & QDSP6_CODE_IS_BRANCH)
+                          || (queue.insns [i].opcode->flags & QDSP6_CODE_IS_STORE))
                         m = i, n = j;
                       else
                         m = j, n = i;
 
-                      aqueue->insns [m].used = aqueue->insns [n].used = TRUE;
-                      aqueue->insns [m].pad  = aqueue->insns [n].pad  = TRUE;
+                      queue.insns [m].used = queue.insns [n].used = TRUE;
+                      queue.insns [m].pad  = queue.insns [n].pad  = TRUE;
 
-                      if (!qdsp6_has_duplex_clash (aqueue, &insn))
+                      if (!qdsp6_has_duplex_clash (&queue, &insn))
                         {
                           /* Take pair if no clashes. */
                           insn.used = TRUE;
                           insn.pad  = FALSE;
 
                           /* Replace insn with pair. */
-                          aqueue->insns [m]    = insn;
-                          aqueue->prefixes [m] = prefix;
-                          aqueue->pairs [m]    = both;
+                          queue.insns [m]    = insn;
+                          queue.prefixes [m] = prefix;
+                          queue.pairs [m]    = both;
 
-                          n_pairs [QDSP6_PAIRS_TOTAL]++;
                           break;
                         }
                       else
                         {
                           /* Keep the original insn otherwise. */
-                          aqueue->insns [m].used = aqueue->insns [n].used = FALSE;
-                          aqueue->insns [m].pad  = aqueue->insns [n].pad  = FALSE;
+                          queue.insns [m].used = queue.insns [n].used = FALSE;
+                          queue.insns [m].pad  = queue.insns [n].pad  = FALSE;
                         }
                     }
                 }
             }
+
+          /* Form packet with surviving insns. */
+          qdsp6_packet_init (packet + k);
+          packet [k].is_inner = queue.is_inner;
+          packet [k].is_outer = queue.is_outer;
+
+          for (ok = TRUE, i = 0; i < queue.size; i++)
+            {
+              if ((queue.insns [i].pad))
+                /* Skip an insn alredy inserted into the packet. */
+                continue;
+
+              if (!qdsp6_packet_cram (packet + k,
+                                      queue.insns + i, queue.prefixes + i,
+                                      queue.pairs + i,
+                                      FALSE))
+                {
+                  qdsp6_packet_init (packet + k);
+                  ok = FALSE;
+                  break;
+                }
+              else
+                /* Mark insn as inserted into packet. */
+                queue.insns [i].pad = TRUE;
+            }
         }
+
+      for (k = 0; k < 2; k++)
+        if (!apacket->size
+            || (packet [k].size && packet [k].size < apacket->size))
+          /* Pick a valid, smaller packet. */
+          *apacket = packet [k];
     }
-
-  /* Form packet with surviving insns. */
-  qdsp6_packet_init (apacket);
-
-  apacket->is_inner = aqueue->is_inner;
-  apacket->is_outer = aqueue->is_outer;
-
-  for (i = 0; i < aqueue->size; i++)
+  else
     {
-      if ((aqueue->insns [i].pad))
-        /* Skip an insn alredy inserted into the packet. */
-        continue;
+      queue = *aqueue;
 
-      if (!qdsp6_packet_cram (apacket,
-                              aqueue->insns + i, aqueue->prefixes + i,
-                              aqueue->pairs + i,
-                              FALSE))
+      qdsp6_packet_init (apacket);
+      apacket->is_inner = queue.is_inner;
+      apacket->is_outer = queue.is_outer;
+
+      for (ok = TRUE, i = 0; i < queue.size; i++)
         {
-          as_bad_where (NULL, aqueue->insns [i].lineno,
-                        _("too many instructions in packet (maximum is %d)."),
-                        MAX_PACKET_INSNS);
+          if ((queue.insns [i].pad))
+            /* Skip an insn alredy inserted into the packet. */
+            continue;
 
-          qdsp6_queue_init (aqueue);
-          return FALSE;
+          if (!qdsp6_packet_cram (apacket,
+                                  queue.insns + i, queue.prefixes + i,
+                                  queue.pairs + i,
+                                  FALSE))
+            {
+              ok = FALSE;
+              break;
+            }
+          else
+            /* Mark insn as inserted into packet. */
+            queue.insns [i].pad = TRUE;
         }
-      else
-        /* Mark insn as inserted into packet. */
-        aqueue->insns [i].pad = TRUE;
     }
+
+  if (!ok)
+    {
+      as_bad_where (NULL, queue.insns [i].lineno,
+                    _("too many instructions in packet (maximum is %d)."),
+                    MAX_PACKET_INSNS);
+    }
+
+  n_pairs [QDSP6_PAIRS_TOTAL] += apacket->duplex;
 
   qdsp6_queue_init (aqueue);
-  return TRUE;
+  return (ok);
 }
 
 /** Initialize insn queue.
@@ -5088,7 +5141,12 @@ qdsp6_packet_check
                               arrayPtr = cArray;
                             }
                           else if (operand->flags & QDSP6_OPERAND_IS_SYSTEM)
-                            arrayPtr = sArray;
+                            {
+                              arrayPtr = sArray;
+                              /* Record which register is changed. */
+                              ainsn->oreg = reg_num;
+                              ainsn->opair = (operand->flags & QDSP6_OPERAND_IS_PAIR);
+                            }
                           else if (operand->flags & QDSP6_OPERAND_IS_GUEST)
                             arrayPtr = guArray;
                           else
@@ -5098,10 +5156,10 @@ qdsp6_packet_check
                               if (!(ainsn->flags & QDSP6_INSN_OUT_RNEW)
                                   && !(operand->flags & QDSP6_OPERAND_IS_MODIFIED))
                                 {
-                                  /* Record the first modified GPR. */
+                                  /* Record which register is changed. */
                                   ainsn->flags |= QDSP6_INSN_OUT_RNEW;
-                                  ainsn->oreg   = reg_num;
-                                  ainsn->opair  = (operand->flags & QDSP6_OPERAND_IS_PAIR);
+                                  ainsn->oreg = reg_num;
+                                  ainsn->opair = (operand->flags & QDSP6_OPERAND_IS_PAIR);
                                 }
                             }
                         }

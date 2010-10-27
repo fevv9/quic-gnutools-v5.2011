@@ -196,10 +196,10 @@ typedef struct _qdsp6_opcode
 #define A_IT_NOP                        0x00000001
 #define A_RESTRICT_NOSRMOVE             0x00000002
 #define A_RESTRICT_LOOP_LA              0x00000004
-#define A_NOTE_LA_RESTRICT              0x00000004
+#define A_NOTE_LA_RESTRICT              A_RESTRICT_LOOP_LA
 #define A_RESTRICT_COF_MAX1             0x00000008
 #define A_RESTRICT_NOPACKET             0x00000010
-#define A_NOTE_NOPACKET                 0x00000010
+#define A_NOTE_NOPACKET                 A_RESTRICT_NOPACKET
 #define A_RESTRICT_NOSLOT1              0x00000020
 #define A_RESTRICT_NOCOF                0x00000040
 #define A_COF                           0x00000080
@@ -207,32 +207,32 @@ typedef struct _qdsp6_opcode
 #define A_BRANCHADDER                   0x00000200
 #define A_RESTRICT_SINGLE_MEM_FIRST     0x00000400
 #define CONDITIONAL_EXEC                0x00000800
-#define A_CONDEXEC                      0x00000800
-#define A_NOTE_CONDITIONAL              0x00000800
+#define A_CONDEXEC                      CONDITIONAL_EXEC
+#define A_NOTE_CONDITIONAL              CONDITIONAL_EXEC
 #define CONDITION_SENSE_INVERTED        0x00001000
 #define CONDITION_DOTNEW                0x00002000
-#define A_DOTNEW                        0x00002000
+#define A_DOTNEW                        CONDITION_DOTNEW
 #define A_RESTRICT_PREFERSLOT0          0x00004000
 #define A_RESTRICT_LATEPRED             0x00008000
-#define A_NOTE_LATEPRED                 0x00008000
+#define A_NOTE_LATEPRED                 A_RESTRICT_LATEPRED
   /* V3 */
 #define A_RESTRICT_PACKET_AXOK          0x00010000
-#define A_NOTE_AXOK                     0x00010000
-#define A_RELAX_COF_1ST                 0x00020000
-#define A_RELAX_COF_2ND                 0x00040000
+#define A_NOTE_AXOK                     A_RESTRICT_PACKET_AXOK
+#define A_RESTRICT_PACKET_SOMEREGS_OK   0x00020000
+#define A_RELAX_COF_1ST                 0x00040000
+#define A_RELAX_COF_2ND                 0x00080000
   /* V4 */
-#define PACKED                          0x00080000
-#define A_IT_EXTENDER                   0x00100000
-#define EXTENDABLE_LOWER_CASE_IMMEDIATE 0x00200000
-#define EXTENDABLE_UPPER_CASE_IMMEDIATE 0x00400000
-#define A_RESTRICT_SLOT0ONLY            0x00800000
-#define A_STORE                         0x01000000
-#define A_STOREIMMED                    0x02000000
-#define A_RESTRICT_NOSLOT1_STORE        0x04000000
-#define MUST_EXTEND                     0x08000000
-#define A_MUST_EXTEND                   0x08000000
+#define PACKED                          0x00100000
+#define A_IT_EXTENDER                   0x00200000
+#define EXTENDABLE_LOWER_CASE_IMMEDIATE 0x00400000
+#define EXTENDABLE_UPPER_CASE_IMMEDIATE 0x00800000
+#define A_RESTRICT_SLOT0ONLY            0x01000000
+#define A_STORE                         0x02000000
+#define A_STOREIMMED                    0x04000000
+#define A_RESTRICT_NOSLOT1_STORE        0x08000000
+#define MUST_EXTEND                     0x10000000
+#define A_MUST_EXTEND                   MUST_EXTEND
   /* Yet unused */
-#define A_RESTRICT_PACKET_SOMEREGS_OK   0x00000000
 #define A_GUEST                         0x00000000
 #define A_NOTE_GUEST                    0x00000000
 #define A_EXTENDABLE                    0x00000000
@@ -449,6 +449,7 @@ extern qdsp6_insn qdsp6_nop, qdsp6_kext;
 #define qdsp6_if_arch_v3() (qdsp6_if_arch (QDSP6_MACH_V3)) /** < V3 */
 #define qdsp6_if_arch_v4() (qdsp6_if_arch (QDSP6_MACH_V4)) /** < V4 */
 
+extern int qdsp6_arch (void);
 extern int qdsp6_if_arch (int);
 extern int qdsp6_if_arch_kext (void);
 extern int qdsp6_if_arch_pairs (void);

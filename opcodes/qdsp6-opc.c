@@ -814,38 +814,38 @@ static qdsp6_reg qdsp6_supervisor_regs [] =
   {"s1",            1, QDSP6_V4_AND_UP | QDSP6_REG_IS_READWRITE},
 
   /* Legacy system register map */
-  {"sgp",           0, QDSP6_V2_AND_UP | QDSP6_REG_IS_READWRITE},
+  {"sgp",           0, QDSP6_V2_AND_V3 | QDSP6_REG_IS_READWRITE},
   {"sgpr1",         1, 0},			// ****** reserved ****** enabled for DSP team
-  {"ssr",           2, QDSP6_V2_AND_UP | QDSP6_REG_IS_READWRITE},
-  {"imask",         3, QDSP6_V2_AND_UP | QDSP6_REG_IS_READWRITE},
-  {"badva",         4, QDSP6_V2_AND_UP | QDSP6_REG_IS_READWRITE},
-  {"elr",           5, QDSP6_V2_AND_UP | QDSP6_REG_IS_READWRITE},
+  {"ssr",           2, QDSP6_V2_AND_V3 | QDSP6_REG_IS_READWRITE},
+  {"imask",         3, QDSP6_V2_AND_V3 | QDSP6_REG_IS_READWRITE},
+  {"badva",         4, QDSP6_V2_AND_V3 | QDSP6_REG_IS_READWRITE},
+  {"elr",           5, QDSP6_V2_AND_V3 | QDSP6_REG_IS_READWRITE},
   {"tid",           6, QDSP6_V2_AND_V3 | QDSP6_REG_IS_READWRITE},
   {"evb",          16, QDSP6_V2_AND_UP | QDSP6_REG_IS_READWRITE},
-  {"ipend",        17, QDSP6_V2_AND_UP | QDSP6_REG_IS_READONLY},
+  {"ipend",        17, QDSP6_V2_AND_V3 | QDSP6_REG_IS_READONLY},
   {"syscfg",       18, QDSP6_V2_AND_UP | QDSP6_REG_IS_READWRITE},
   {"modectl",      19, QDSP6_V2_AND_UP | QDSP6_REG_IS_READONLY},
-  {"rev",          20, QDSP6_V2_AND_UP | QDSP6_REG_IS_READONLY},
+  {"rev",          20, QDSP6_V2_AND_V3 | QDSP6_REG_IS_READONLY},
   {"tlbhi",        21, QDSP6_V2_AND_V3 | QDSP6_REG_IS_READWRITE},
   {"tlblo",        22, QDSP6_V2_AND_V3 | QDSP6_REG_IS_READWRITE},
   {"tlbidx",       23, QDSP6_V2_AND_V3 | QDSP6_REG_IS_READWRITE},
-  {"diag",         24, QDSP6_V2_AND_UP | QDSP6_REG_IS_READWRITE},
-  {"iad",          25, QDSP6_V2_AND_UP | QDSP6_REG_IS_READONLY},
-  {"iel",          26, QDSP6_V2_AND_UP | QDSP6_REG_IS_READWRITE},
-  {"iahl",         27, QDSP6_V2_AND_UP | QDSP6_REG_IS_READWRITE},
-  {"pcyclehi",     30, QDSP6_V2_AND_UP | QDSP6_REG_IS_READWRITE},
-  {"pcyclelo",     31, QDSP6_V2_AND_UP | QDSP6_REG_IS_READWRITE},
+  {"diag",         24, QDSP6_V2_AND_V3 | QDSP6_REG_IS_READWRITE},
+  {"iad",          25, QDSP6_V2_AND_V3 | QDSP6_REG_IS_READONLY},
+  {"iel",          26, QDSP6_V2_AND_V3 | QDSP6_REG_IS_READWRITE},
+  {"iahl",         27, QDSP6_V2_AND_V3 | QDSP6_REG_IS_READWRITE},
+  {"pcyclehi",     30, QDSP6_V2_AND_V3 | QDSP6_REG_IS_READWRITE},
+  {"pcyclelo",     31, QDSP6_V2_AND_V3 | QDSP6_REG_IS_READWRITE},
   {"isdbst",       32, QDSP6_V2_AND_UP | QDSP6_REG_IS_READONLY},
   {"isdbcfg0",     33, QDSP6_V2_AND_UP | QDSP6_REG_IS_READWRITE},
   {"isdbcfg1",     34, QDSP6_V2_AND_UP | QDSP6_REG_IS_READWRITE},
-  {"brkptpc0",     35, QDSP6_V2_AND_UP | QDSP6_REG_IS_READWRITE},
-  {"brkptcfg0",    36, QDSP6_V2_AND_UP | QDSP6_REG_IS_READWRITE},
-  {"brkptpc1",     37, QDSP6_V2_AND_UP | QDSP6_REG_IS_READWRITE},
-  {"brkptcfg1",    38, QDSP6_V2_AND_UP | QDSP6_REG_IS_READWRITE},
-  {"isdbmbxin",    39, QDSP6_V2_AND_UP | QDSP6_REG_IS_READONLY},
-  {"isdbmbxout",   40, QDSP6_V2_AND_UP | QDSP6_REG_IS_READWRITE},
-  {"isdben",       41, QDSP6_V2_AND_UP | QDSP6_REG_IS_READWRITE},
-  {"isdbgpr",      42, QDSP6_V2_AND_UP | QDSP6_REG_IS_READWRITE},
+  {"brkptpc0",     35, QDSP6_V2_AND_V3 | QDSP6_REG_IS_READWRITE},
+  {"brkptcfg0",    36, QDSP6_V2_AND_V3 | QDSP6_REG_IS_READWRITE},
+  {"brkptpc1",     37, QDSP6_V2_AND_V3 | QDSP6_REG_IS_READWRITE},
+  {"brkptcfg1",    38, QDSP6_V2_AND_V3 | QDSP6_REG_IS_READWRITE},
+  {"isdbmbxin",    39, QDSP6_V2_AND_V3 | QDSP6_REG_IS_READONLY},
+  {"isdbmbxout",   40, QDSP6_V2_AND_V3 | QDSP6_REG_IS_READWRITE},
+  {"isdben",       41, QDSP6_V2_AND_V3 | QDSP6_REG_IS_READWRITE},
+  {"isdbgpr",      42, QDSP6_V2_AND_V3 | QDSP6_REG_IS_READWRITE},
   {"pmucnt0",      48, QDSP6_V3_AND_UP | QDSP6_REG_IS_READWRITE},
   {"pmucnt1",      49, QDSP6_V3_AND_UP | QDSP6_REG_IS_READWRITE},
   {"pmucnt2",      50, QDSP6_V3_AND_UP | QDSP6_REG_IS_READWRITE},
@@ -1209,12 +1209,22 @@ qdsp6_hash_icode
 static int cpu_type;
 static int cpu_flag;
 
-/* Return nonzero if we are assembling for V1 */
+/** Return current architecture.
+*/
+int
+qdsp6_arch
+(void)
+{
+  return (cpu_type);
+}
+
+/** Return nonzero if we are assembling for specified architecture.
+*/
 int
 qdsp6_if_arch
 (int arch)
 {
-  return (cpu_type == arch);
+  return (qdsp6_arch () == arch);
 }
 
 /** Query support for immediate extender by the current architecture.
