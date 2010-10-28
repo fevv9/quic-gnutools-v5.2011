@@ -29,7 +29,7 @@
 #include "safe-ctype.h"
 #include "libiberty.h"
 
-static long qdsp6_extend (long *, unsigned, int);
+static long qdsp6_extend (long *, unsigned, int ATTRIBUTE_UNUSED);
 static char *qdsp6_parse_reg
   (const qdsp6_operand *, qdsp6_insn *, const qdsp6_opcode *,
    char *, long *, int *, char **);
@@ -1019,7 +1019,7 @@ An extended value is made up by the extra bits required by immediate extension
 */
 long
 qdsp6_extend
-(long *value, unsigned bits, int is_signed)
+(long *value, unsigned bits, int is_signed ATTRIBUTE_UNUSED)
 {
   long xvalue = 0;
 
@@ -1032,8 +1032,10 @@ qdsp6_extend
       xvalue = *value &  (~0L << 6);
       *value = *value & ~(~0L << 6);
 
+      /*
       if (is_signed && *value > (1L << (bits - 1)))
         *value -= (1L << bits);
+      */
     }
 
   return (xvalue);
@@ -1607,8 +1609,7 @@ qdsp6_encode_operand
   if (!is_x)
     value.s >>= operand->shift_count;
 
-  /* We'll read the encoding string backwards
-     and put the LSB of the value in each time */
+  /* Read the encoding string backwards and put a bit in each time. */
   for (i = len - 1; i >= 0; i--)
     if (!ISSPACE (opcode->enc [i]))
       {
@@ -2682,19 +2683,18 @@ qdsp6_dis_operand
       if (operand->flags & QDSP6_OPERAND_PC_RELATIVE)
         {
           xed = FALSE;
-
           value  -= paddr;
           value >>= operand->shift_count;
+          value  &= ~(~0 << 6);
           value  += xvalue + paddr;
         }
       else
         {
           xed = TRUE;
-
           value >>= operand->shift_count;
+          value  &= ~(~0 << 6);
           value  += xvalue;
         }
-
       xer = xvalue = 0;
     }
 
