@@ -327,12 +327,12 @@ DATA_ALIGNMENT=${DATA_ALIGNMENT_N}
 case "${target_alias}" in
   qdsp6*-linux*)
     ;;
-  *)
+  qdsp6*)
     LD_FLAG=tcm
     DATA_ALIGNMENT=${DATA_ALIGNMENT_}
     EMBEDDED=yes
     ( echo "/* Script for -tcm: normal executables using TCM */"
-      TCM=" "
+      TCM=yes
       . ${CUSTOMIZER_SCRIPT}
       . ${srcdir}/scripttempl/${SCRIPT_NAME}.sc
     ) | sed -e '/^ *$/d;s/[ 	]*$//' > ldscripts/${EMULATION_NAME}.tcm
