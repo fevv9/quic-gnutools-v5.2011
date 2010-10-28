@@ -3306,8 +3306,8 @@ qdsp6_gp_const_lookup
       re_ok = TRUE;
     }
 
-  /* Get the left and right-side expressions and
-     distinguish between CONST32 and CONST64. */
+  /* Get the left and right-side expressions and distinguish between
+     CONST32 and CONST64. */
   if (!(er_re = xregexec (&re_c32, str, 2, rm_right, 0)))
     {
       if (rm_right [1].rm_so < 0 || rm_right [1].rm_eo < 0
@@ -3338,6 +3338,9 @@ qdsp6_gp_const_lookup
   else
     return FALSE;
 
+  if (!qdsp6_gp_size)
+    as_warn (_("using `CONST%d' with \"-G%d\"."), size * 8, qdsp6_gp_size);
+
   /* Parse right-side expression. */
   save = input_line_pointer;
   input_line_pointer = str + rm_right [1].rm_so;
@@ -3347,11 +3350,12 @@ qdsp6_gp_const_lookup
       input_line_pointer = str + rm_right [2].rm_so;
       seg = expression(&exp1);
     }
-  else {
-    exp1.X_op = O_absent;
-    exp1.X_add_symbol = exp1.X_op_symbol = NULL;
-    exp1.X_add_number = 0;
-  }
+  else
+    {
+      exp1.X_op = O_absent;
+      exp1.X_add_symbol = exp1.X_op_symbol = NULL;
+      exp1.X_add_number = 0;
+    }
   input_line_pointer = save;
 
   /* 64-bit literals must be constants. */
@@ -3360,14 +3364,15 @@ qdsp6_gp_const_lookup
       as_bad (_("64-bit expression `%.*s' is not constant."),
               rm_right [1].rm_eo - rm_right [1].rm_so,
               str + rm_right [1].rm_so);
-
       return FALSE;
     }
+
   if (num_args == 2 && size != 8)
     {
-      as_bad (_("2 arguments allowed only with CONST64."));
+      as_bad (_("two arguments allowed only with `CONST64'."));
+      return FALSE;
     }
-  /* If both args are constants, then create a single experssion ((exp)<<32)|exp1 */
+  /* If both args are constants, then create a single experssion ((exp)<<32)|exp1. */
   if (num_args == 2 && size == 8 && exp.X_op == O_constant && exp1.X_op == O_constant)
     {
       exp.X_add_number = ((exp.X_add_number << 32) | exp1.X_add_number);
