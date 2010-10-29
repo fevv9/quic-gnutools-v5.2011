@@ -943,7 +943,12 @@ qdsp6_elf_reloc_type_lookup
 
   for (i = ARRAY_SIZE (qdsp6_reloc_map); i--;)
     if (qdsp6_reloc_map [i].bfd_reloc_val == code)
-      return (qdsp6_elf_howto_table + qdsp6_reloc_map [i].elf_reloc_val);
+      {
+        reloc_howto_type *elf_relo =
+          qdsp6_elf_howto_table + qdsp6_reloc_map[i].elf_reloc_val;
+        assert(elf_relo->type == qdsp6_reloc_map[i].elf_reloc_val);
+        return elf_relo;
+      }
 
   return NULL;
 }
