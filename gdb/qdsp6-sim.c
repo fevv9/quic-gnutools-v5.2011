@@ -535,7 +535,7 @@ qdsp6_global_regnum_from_name(char *regname, int *index)
   if(regname == NULL)
     return -1;
 
-  while (globalRegSetInfo[i++].reg_name != NULL)
+  while (globalRegSetInfo[i].reg_name != NULL)
   {
     if ((regname != NULL)                    && 
 	(len == strlen (globalRegSetInfo[i].reg_name)) && 
@@ -544,6 +544,7 @@ qdsp6_global_regnum_from_name(char *regname, int *index)
         regnum =  globalRegSetInfo[i].index ;
         break;
     }
+    i++;
   }
 
   *index = i ;
