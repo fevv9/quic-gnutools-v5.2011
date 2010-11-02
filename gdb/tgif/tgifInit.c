@@ -166,6 +166,7 @@ int Tgif_Init ( void ) {
 
   char PathString[MAXPATHSTRING] = {'0'};
   char temp[MAXPATHSTRING]       = {'0'};
+  char *pathstring = NULL;
   
     //printf("\nIn  Tgif_Init.\n");
     /* Create Tcl Interpreter.*/
@@ -182,7 +183,16 @@ int Tgif_Init ( void ) {
 #else
     /* Get the path where qdsp6-gdb executable resides */ 
     snprintf(temp, sizeof(temp),"/proc/self/exe");
-    realpath(temp, PathString);
+    pathstring = realpath(temp, NULL);
+    if (pathstring && (strlen (pathstring) < MAXPATHSTRING)) {
+        strcpy (PathString, pathstring);
+        free (pathstring);
+    }
+    else {
+        fprintf(stderr, "Unable to find path to init.tcl\n");
+        free (pathstring);
+        return TCL_ERROR;
+    }
 
     /* Get the absolute path of tcl8.4 libraries */
     strcat(PathString, "/../../lib/tcl84");
