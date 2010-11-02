@@ -127,7 +127,8 @@
 /* Type to denote an QDSP6 instruction (at least a 32 bit unsigned int).  */
 typedef unsigned int qdsp6_insn;
 
-typedef struct _qdsp6_opcode {
+typedef struct _qdsp6_opcode
+{
   char *syntax;              /* syntax of insn  */
   char *enc;                 /* string representing the encoding */
   int flags;                 /* various flag bits  */
@@ -135,13 +136,21 @@ typedef struct _qdsp6_opcode {
 /* Values for `flags'.  */
 
 /* Return CPU number, given flag bits.  */
-#define QDSP6_OPCODE_CPU(bits) ((bits) & QDSP6_MACH_CPU_MASK)
-
+#define QDSP6_CODE_CPU(b) ((b) & QDSP6_MACH_CPU_MASK)
 /* Return MACH number, given flag bits.  */
-#define QDSP6_OPCODE_MACH(bits) ((bits) & QDSP6_MACH_MASK)
+#define QDSP6_CODE_MACH(b) ((b) & QDSP6_MACH_MASK)
 
-/* First opcode flag bit available after machine mask.  */
-#define QDSP6_OPCODE_FLAG_START (QDSP6_MACH_MASK + 1)
+  /* First opcode flag bit available after machine mask
+     (with room for machine/cpu).  */
+#define QDSP6_CODE_FLAG(f) ((f) << 8)
+
+#define QDSP6_CODE_IS_PREFIX (QDSP6_CODE_FLAG (0x0001))
+#define QDSP6_CODE_IS_DUPLEX (QDSP6_CODE_FLAG (0x0002))
+#define QDSP6_CODE_IS_COMPND (QDSP6_CODE_FLAG (0x0004))
+#define QDSP6_CODE_IS_BRANCH (QDSP6_CODE_FLAG (0x0008))
+#define QDSP6_CODE_IS_MEMORY (QDSP6_CODE_FLAG (0x0010))
+#define QDSP6_CODE_IS_LOAD   (QDSP6_CODE_FLAG (0x0020))
+#define QDSP6_CODE_IS_STORE  (QDSP6_CODE_FLAG (0x0040))
 
 /* These values are used to optimize assembly and disassembly.  Each insn
    is on a list of related insns (same first letter for assembly, same
@@ -158,10 +167,10 @@ typedef struct _qdsp6_opcode {
 
  /* Macros to access `next_asm', `next_dis' so users needn't care about the
     underlying mechanism.  */
-#define QDSP6_OPCODE_NEXT_ASM(op) ((op)? (op)->next_asm: (op))
-#define QDSP6_OPCODE_NEXT_DIS(op) ((op)? (op)->next_dis: (op))
+#define QDSP6_CODE_NEXT_ASM(op) ((op)? (op)->next_asm: (op))
+#define QDSP6_CODE_NEXT_DIS(op) ((op)? (op)->next_dis: (op))
 
-  unsigned int slot_mask;          /* Slots onto which the instruction can go */
+  unsigned int slots;          /* Slots onto which the instruction can go */
 
   unsigned int implicit;   /* specifies implicit register writes */
 
@@ -187,8 +196,10 @@ typedef struct _qdsp6_opcode {
 #define A_IT_NOP                        0x00000001
 #define A_RESTRICT_NOSRMOVE             0x00000002
 #define A_RESTRICT_LOOP_LA              0x00000004
+#define A_NOTE_LA_RESTRICT              A_RESTRICT_LOOP_LA
 #define A_RESTRICT_COF_MAX1             0x00000008
 #define A_RESTRICT_NOPACKET             0x00000010
+#define A_NOTE_NOPACKET                 A_RESTRICT_NOPACKET
 #define A_RESTRICT_NOSLOT1              0x00000020
 #define A_RESTRICT_NOCOF                0x00000040
 #define A_COF                           0x00000080
@@ -196,28 +207,100 @@ typedef struct _qdsp6_opcode {
 #define A_BRANCHADDER                   0x00000200
 #define A_RESTRICT_SINGLE_MEM_FIRST     0x00000400
 #define CONDITIONAL_EXEC                0x00000800
+#define A_CONDEXEC                      CONDITIONAL_EXEC
+#define A_NOTE_CONDITIONAL              CONDITIONAL_EXEC
 #define CONDITION_SENSE_INVERTED        0x00001000
 #define CONDITION_DOTNEW                0x00002000
+#define A_DOTNEW                        CONDITION_DOTNEW
 #define A_RESTRICT_PREFERSLOT0          0x00004000
 #define A_RESTRICT_LATEPRED             0x00008000
+#define A_NOTE_LATEPRED                 A_RESTRICT_LATEPRED
   /* V3 */
 #define A_RESTRICT_PACKET_AXOK          0x00010000
-#define A_RESTRICT_PACKET_SOMEREGS_OK   0x00000000
-#define A_RELAX_COF_1ST                 0x00020000
-#define A_RELAX_COF_2ND                 0x00040000
+#define A_NOTE_AXOK                     A_RESTRICT_PACKET_AXOK
+#define A_RESTRICT_PACKET_SOMEREGS_OK   0x00020000
+#define A_RELAX_COF_1ST                 0x00040000
+#define A_RELAX_COF_2ND                 0x00080000
   /* V4 */
-#define PACKED                          0x00080000
-#define A_IT_EXTENDER                   0x00100000
-#define EXTENDABLE_LOWER_CASE_IMMEDIATE 0x00200000
-#define EXTENDABLE_UPPER_CASE_IMMEDIATE 0x00400000
-#define A_RESTRICT_SLOT0ONLY            0x00800000
-#define A_STORE                         0x01000000
-#define A_STOREIMMED                    0x02000000
-#define A_RESTRICT_NOSLOT1_STORE        0x04000000
-#define MUST_EXTEND                     0x08000000
-  /* Internal */
-#define DUPLEX                          0x40000000
-#define PREFIX                          0x80000000
+#define PACKED                          0x00100000
+#define A_IT_EXTENDER                   0x00200000
+#define EXTENDABLE_LOWER_CASE_IMMEDIATE 0x00400000
+#define EXTENDABLE_UPPER_CASE_IMMEDIATE 0x00800000
+#define A_RESTRICT_SLOT0ONLY            0x01000000
+#define A_STORE                         0x02000000
+#define A_STOREIMMED                    0x04000000
+#define A_RESTRICT_NOSLOT1_STORE        0x08000000
+#define MUST_EXTEND                     0x10000000
+#define A_MUST_EXTEND                   MUST_EXTEND
+  /* Yet unused */
+#define A_GUEST                         0x00000000
+#define A_NOTE_GUEST                    0x00000000
+#define A_EXTENDABLE                    0x00000000
+#define A_EXT_LOWER_IMMED               0x00000000
+#define A_EXT_UPPER_IMMED               0x00000000
+#define A_ARCHV2                        0x00000000
+#define A_ARCHV3                        0x00000000
+#define A_CRSLOT23                      0x00000000
+#define A_NOTE_CRSLOT23                 0x00000000
+#define A_MEMSIZE_1B                    0x00000000
+#define A_MEMSIZE_2B                    0x00000000
+#define A_MEMSIZE_4B                    0x00000000
+#define A_MEMSIZE_8B                    0x00000000
+#define A_MEMLIKE                       0x00000000
+#define A_IMPLICIT_WRITES_SP            0x00000000
+#define A_IMPLICIT_READS_SP             0x00000000
+#define A_IMPLICIT_READS_LR             0x00000000
+#define A_IMPLICIT_WRITES_LR            0x00000000
+#define A_IMPLICIT_WRITES_FP            0x00000000
+#define A_IMPLICIT_READS_FP             0x00000000
+#define A_IMPLICIT_READS_PC             0x00000000
+#define A_IMPLICIT_WRITES_PC            0x00000000
+#define A_IMPLICIT_READS_GP             0x00000000
+#define A_IMPLICIT_READS_CS             0x00000000
+#define A_IMPLICIT_READS_P0             0x00000000
+#define A_IMPLICIT_WRITES_P0            0x00000000
+#define A_IMPLICIT_READS_P1             0x00000000
+#define A_IMPLICIT_WRITES_P1            0x00000000
+#define A_IMPLICIT_WRITES_P3            0x00000000
+#define A_IMPLICIT_WRITES_SRBIT         0x00000000
+#define A_IMPLICIT_WRITES_LC0           0x00000000
+#define A_IMPLICIT_WRITES_LC1           0x00000000
+#define A_IMPLICIT_WRITES_SA0           0x00000000
+#define A_IMPLICIT_WRITES_SA1           0x00000000
+#define A_JUMP                          0x00000000
+#define A_CJUMP                         0x00000000
+#define A_NEWCMPJUMP                    0x00000000
+#define A_DIRECT                        0x00000000
+#define A_INDIRECT                      0x00000000
+#define A_CALL                          0x00000000
+#define A_ROPS_2                        0x00000000
+#define A_ROPS_3                        0x00000000
+#define A_MEMOP                         0x00000000
+#define A_LOAD                          0x00000000
+#define A_NVSTORE                       0x00000000
+#define A_DOTOLD                        0x00000000
+#define A_COMMUTES                      0x00000000
+#define A_PRIV                          0x00000000
+#define A_NOTE_PRIV                     0x00000000
+#define A_SATURATE                      0x00000000
+#define A_USATURATE                     0x00000000
+#define A_NOTE_SR_OVF_WHEN_SATURATING   0x00000000
+#define A_BIDIRSHIFTL                   0x00000000
+#define A_BIDIRSHIFTR                   0x00000000
+#define A_NOTE_OOBVSHIFT                0X00000000
+#define A_ICOP                          0x00000000
+#define A_INTRINSIC_RETURNS_UNSIGNED    0x00000000
+#define A_CIRCADDR                      0x00000000
+#define A_BREVADDR                      0x00000000
+#define A_IT_MPY                        0x00000000
+#define A_IT_MPY_32                     0x00000000
+#define A_NOTE_SPECIALGROUPING          0x00000000
+#define A_NOTE_PACKET_PC                0x00000000
+#define A_NOTE_PACKET_NPC               0x00000000
+#define A_NOTE_RELATIVE_ADDRESS         0x00000000
+#define A_EXCEPTION_SWI                 0x00000000
+#define A_NOTE_NEWVAL_SLOT0             0x00000000
+#define A_DOTNEWVALUE                   0x00000000
 
   /* If this opcode is mapped, then the function that performs the mapping */
   void *map;
@@ -275,16 +358,7 @@ typedef struct _qdsp6_operand
 /* Format string and alternate format string for disassembly. */
   char *dis_fmt, *alt_fmt;
 
-/* Parse function.
-   This is used by the assembler to parse.
-
-   If successful, insert the bits into the instruction and
-   return the pointer to the next character of the input.
-   Otherwise, return NULL;
-
-   If there is a problem, the function will set *errmsg.
- */
-
+/* Function used to change the original insn into another semantically equivalent. */
   char *(*parse) (const struct _qdsp6_operand *, qdsp6_insn *,
                   const qdsp6_opcode *, char *, long *, int *, char **);
 } qdsp6_operand;
@@ -375,6 +449,7 @@ extern qdsp6_insn qdsp6_nop, qdsp6_kext;
 #define qdsp6_if_arch_v3() (qdsp6_if_arch (QDSP6_MACH_V3)) /** < V3 */
 #define qdsp6_if_arch_v4() (qdsp6_if_arch (QDSP6_MACH_V4)) /** < V4 */
 
+extern int qdsp6_arch (void);
 extern int qdsp6_if_arch (int);
 extern int qdsp6_if_arch_kext (void);
 extern int qdsp6_if_arch_pairs (void);

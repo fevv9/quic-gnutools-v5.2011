@@ -980,9 +980,7 @@ qdsp6_elf_reloc_name_lookup
 {
   unsigned int i;
 
-  for (i = 0;
-       i < sizeof (qdsp6_elf_howto_table) /  sizeof (qdsp6_elf_howto_table [0]);
-       i++)
+  for (i = 0; i < ARRAY_SIZE (qdsp6_elf_howto_table); i++)
     if (qdsp6_elf_howto_table [i].name
         && !strcasecmp (qdsp6_elf_howto_table [i].name, r_name))
     return (qdsp6_elf_howto_table + i);
@@ -1000,7 +998,8 @@ qdsp6_info_to_howto_rel
 
   r_type = ELF32_R_TYPE (dst->r_info);
   BFD_ASSERT (r_type < (unsigned int) R_QDSP6_max);
-  cache_ptr->howto = &qdsp6_elf_howto_table [r_type];
+
+  cache_ptr->howto = qdsp6_elf_howto_table + r_type;
 }
 
 /* Set the right machine number for an QDSP6 ELF file.  */
@@ -1040,7 +1039,7 @@ qdsp6_elf_object_p
 	}
     }
 
-  return bfd_default_set_arch_mach (abfd, bfd_arch_qdsp6, mach);
+  return (bfd_default_set_arch_mach (abfd, bfd_arch_qdsp6, mach));
 }
 
 /* The final processing done just before writing out an QDSP6 ELF object file.
@@ -1523,7 +1522,7 @@ qdsp6_elf_add_symbol_hook
       switch (sym->st_shndx)
         {
           case SHN_COMMON:
-            /* Common symbols less than or equal to -G are automatically
+            /* Common symbols less than the GP size are automatically
                treated as SHN_QDSP6S_SCOMMON symbols.  */
             /* FIXME: For now, the SDA is not supported in a DSO. */
             if (sym->st_size > elf_gp_size (abfd)
@@ -1580,8 +1579,8 @@ qdsp6_elf_symbol_processing
   switch (elfsym->internal_elf_sym.st_shndx)
     {
     case SHN_COMMON:
-      /* Common symbols less than or equal to -G are automatically
-          treated as SHN_QDSP6S_SCOMMON symbols.  */
+      /* Common symbols less than the GP size are automatically
+	 treated as SHN_QDSP6S_SCOMMON symbols.  */
       if (asym->value > elf_gp_size (abfd))
         break;
 
@@ -1635,7 +1634,6 @@ qdsp6_elf_symbol_processing
           asym->section = scom_section;
           asym->value = elfsym->internal_elf_sym.st_size;
         }
-
       break;
     }
 }
@@ -2341,14 +2339,16 @@ qdsp6_elf_relocate_section
       asection *sreloc = NULL;
       const char *name = NULL;
 
-      if ((r_type = ELF32_R_TYPE (rel->r_info)) >= R_QDSP6_max)
+      r_type = ELF32_R_TYPE (rel->r_info);
+      r_symndx = ELF32_R_SYM (rel->r_info);
+
+      if (r_type >= R_QDSP6_max)
 	{
 	  bfd_set_error (bfd_error_bad_value);
 	  return FALSE;
 	}
-
-      howto = qdsp6_elf_howto_table + ELF32_R_TYPE (rel->r_info);
-      r_symndx = ELF32_R_SYM (rel->r_info);
+      else
+        howto = qdsp6_elf_howto_table + r_type;
 
       if (r_symndx < symtab_hdr->sh_info)
 	{
@@ -4171,7 +4171,7 @@ qdsp6_elf_size_dynamic_sections
 	  if (!s)
 	    abort ();
 	  s->size = sizeof (ELF_DYNAMIC_INTERPRETER);
-	  s->contents = (void *) ELF_DYNAMIC_INTERPRETER;
+	  s->contents = (bfd_byte *) ELF_DYNAMIC_INTERPRETER;
 	}
     }
 
@@ -4189,7 +4189,7 @@ qdsp6_elf_size_dynamic_sections
 	{
 	  qdsp6_dyn_reloc *p;
 
-	  for (p = *((qdsp6_dyn_reloc **) &elf_section_data (s)->local_dynrel);
+	  for (p = ((qdsp6_dyn_reloc *) elf_section_data (s)->local_dynrel);
 	       p;
 	       p = p->next)
 	    {

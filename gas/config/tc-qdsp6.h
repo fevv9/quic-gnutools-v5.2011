@@ -88,6 +88,9 @@ qdsp6_cons_fix_new PARAMS ((struct frag *, int, int, struct expressionS *));
 #define tc_symbol_chars qdsp6_symbol_chars
 extern const char qdsp6_symbol_chars [];
 
+#define tc_parallel_separator_chars qdsp6_parallel_separator_chars
+extern const char qdsp6_parallel_separator_chars [];
+
 /* Actually a pointer to a qdsp6_operand. */
 #define TC_FIX_TYPE PTR
 #define TC_INIT_FIX_DATA(F) ((F)->tc_fix_data = NULL)
@@ -105,12 +108,6 @@ extern void qdsp6_frag_init (fragS *, fragS *);
 
 /* Values passed to md_apply_fix3 don't include the symbol value.  */
 #define MD_APPLY_SYM_VALUE(FIX) 0
-
-/* ELF wants global symbols left alone, so let the default be assumed. */
-/* #define EXTERN_FORCE_RELOC 1 */
-
-#define tc_parallel_separator_chars qdsp6_parallel_separator_chars
-extern const char qdsp6_parallel_separator_chars [];
 
 #define tc_unrecognized_line(ch) qdsp6_unrecognized_line (ch)
 extern int qdsp6_unrecognized_line (int ch);

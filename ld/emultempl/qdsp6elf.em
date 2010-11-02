@@ -111,8 +111,8 @@ PARSE_AND_LIST_ARGS_CASES=$'
           in_bfd = bfd_openr (optarg, NULL);
           if (in_bfd == NULL)
             {
-              einfo(_("%P%F: Cannot read file `%s\'\\n"), optarg);
-              xexit(1);
+              einfo (_("%P%F: Cannot read file `%s\'\\n"), optarg);
+              xexit (1);
             }
 
           if (bfd_check_format_matches (in_bfd, bfd_object, &matching))

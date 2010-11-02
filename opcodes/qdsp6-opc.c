@@ -29,7 +29,7 @@
 #include "safe-ctype.h"
 #include "libiberty.h"
 
-static long qdsp6_extend (long *, unsigned, int);
+static long qdsp6_extend (long *, unsigned, int ATTRIBUTE_UNUSED);
 static char *qdsp6_parse_reg
   (const qdsp6_operand *, qdsp6_insn *, const qdsp6_opcode *,
    char *, long *, int *, char **);
@@ -854,38 +854,38 @@ static qdsp6_reg qdsp6_supervisor_regs [] =
   {"s1",            1, QDSP6_V4_AND_UP | QDSP6_REG_IS_READWRITE},
 
   /* Legacy system register map */
-  {"sgp",           0, QDSP6_V2_AND_UP | QDSP6_REG_IS_READWRITE},
+  {"sgp",           0, QDSP6_V2_AND_V3 | QDSP6_REG_IS_READWRITE},
   {"sgpr1",         1, 0},			// ****** reserved ****** enabled for DSP team
-  {"ssr",           2, QDSP6_V2_AND_UP | QDSP6_REG_IS_READWRITE},
-  {"imask",         3, QDSP6_V2_AND_UP | QDSP6_REG_IS_READWRITE},
-  {"badva",         4, QDSP6_V2_AND_UP | QDSP6_REG_IS_READWRITE},
-  {"elr",           5, QDSP6_V2_AND_UP | QDSP6_REG_IS_READWRITE},
+  {"ssr",           2, QDSP6_V2_AND_V3 | QDSP6_REG_IS_READWRITE},
+  {"imask",         3, QDSP6_V2_AND_V3 | QDSP6_REG_IS_READWRITE},
+  {"badva",         4, QDSP6_V2_AND_V3 | QDSP6_REG_IS_READWRITE},
+  {"elr",           5, QDSP6_V2_AND_V3 | QDSP6_REG_IS_READWRITE},
   {"tid",           6, QDSP6_V2_AND_V3 | QDSP6_REG_IS_READWRITE},
   {"evb",          16, QDSP6_V2_AND_UP | QDSP6_REG_IS_READWRITE},
-  {"ipend",        17, QDSP6_V2_AND_UP | QDSP6_REG_IS_READONLY},
+  {"ipend",        17, QDSP6_V2_AND_V3 | QDSP6_REG_IS_READONLY},
   {"syscfg",       18, QDSP6_V2_AND_UP | QDSP6_REG_IS_READWRITE},
   {"modectl",      19, QDSP6_V2_AND_UP | QDSP6_REG_IS_READONLY},
-  {"rev",          20, QDSP6_V2_AND_UP | QDSP6_REG_IS_READONLY},
+  {"rev",          20, QDSP6_V2_AND_V3 | QDSP6_REG_IS_READONLY},
   {"tlbhi",        21, QDSP6_V2_AND_V3 | QDSP6_REG_IS_READWRITE},
   {"tlblo",        22, QDSP6_V2_AND_V3 | QDSP6_REG_IS_READWRITE},
   {"tlbidx",       23, QDSP6_V2_AND_V3 | QDSP6_REG_IS_READWRITE},
-  {"diag",         24, QDSP6_V2_AND_UP | QDSP6_REG_IS_READWRITE},
-  {"iad",          25, QDSP6_V2_AND_UP | QDSP6_REG_IS_READONLY},
-  {"iel",          26, QDSP6_V2_AND_UP | QDSP6_REG_IS_READWRITE},
-  {"iahl",         27, QDSP6_V2_AND_UP | QDSP6_REG_IS_READWRITE},
-  {"pcyclehi",     30, QDSP6_V2_AND_UP | QDSP6_REG_IS_READWRITE},
-  {"pcyclelo",     31, QDSP6_V2_AND_UP | QDSP6_REG_IS_READWRITE},
+  {"diag",         24, QDSP6_V2_AND_V3 | QDSP6_REG_IS_READWRITE},
+  {"iad",          25, QDSP6_V2_AND_V3 | QDSP6_REG_IS_READONLY},
+  {"iel",          26, QDSP6_V2_AND_V3 | QDSP6_REG_IS_READWRITE},
+  {"iahl",         27, QDSP6_V2_AND_V3 | QDSP6_REG_IS_READWRITE},
+  {"pcyclehi",     30, QDSP6_V2_AND_V3 | QDSP6_REG_IS_READWRITE},
+  {"pcyclelo",     31, QDSP6_V2_AND_V3 | QDSP6_REG_IS_READWRITE},
   {"isdbst",       32, QDSP6_V2_AND_UP | QDSP6_REG_IS_READONLY},
   {"isdbcfg0",     33, QDSP6_V2_AND_UP | QDSP6_REG_IS_READWRITE},
   {"isdbcfg1",     34, QDSP6_V2_AND_UP | QDSP6_REG_IS_READWRITE},
-  {"brkptpc0",     35, QDSP6_V2_AND_UP | QDSP6_REG_IS_READWRITE},
-  {"brkptcfg0",    36, QDSP6_V2_AND_UP | QDSP6_REG_IS_READWRITE},
-  {"brkptpc1",     37, QDSP6_V2_AND_UP | QDSP6_REG_IS_READWRITE},
-  {"brkptcfg1",    38, QDSP6_V2_AND_UP | QDSP6_REG_IS_READWRITE},
-  {"isdbmbxin",    39, QDSP6_V2_AND_UP | QDSP6_REG_IS_READONLY},
-  {"isdbmbxout",   40, QDSP6_V2_AND_UP | QDSP6_REG_IS_READWRITE},
-  {"isdben",       41, QDSP6_V2_AND_UP | QDSP6_REG_IS_READWRITE},
-  {"isdbgpr",      42, QDSP6_V2_AND_UP | QDSP6_REG_IS_READWRITE},
+  {"brkptpc0",     35, QDSP6_V2_AND_V3 | QDSP6_REG_IS_READWRITE},
+  {"brkptcfg0",    36, QDSP6_V2_AND_V3 | QDSP6_REG_IS_READWRITE},
+  {"brkptpc1",     37, QDSP6_V2_AND_V3 | QDSP6_REG_IS_READWRITE},
+  {"brkptcfg1",    38, QDSP6_V2_AND_V3 | QDSP6_REG_IS_READWRITE},
+  {"isdbmbxin",    39, QDSP6_V2_AND_V3 | QDSP6_REG_IS_READONLY},
+  {"isdbmbxout",   40, QDSP6_V2_AND_V3 | QDSP6_REG_IS_READWRITE},
+  {"isdben",       41, QDSP6_V2_AND_V3 | QDSP6_REG_IS_READWRITE},
+  {"isdbgpr",      42, QDSP6_V2_AND_V3 | QDSP6_REG_IS_READWRITE},
   {"pmucnt0",      48, QDSP6_V3_AND_UP | QDSP6_REG_IS_READWRITE},
   {"pmucnt1",      49, QDSP6_V3_AND_UP | QDSP6_REG_IS_READWRITE},
   {"pmucnt2",      50, QDSP6_V3_AND_UP | QDSP6_REG_IS_READWRITE},
@@ -1059,7 +1059,7 @@ An extended value is made up by the extra bits required by immediate extension
 */
 long
 qdsp6_extend
-(long *value, unsigned bits, int is_signed)
+(long *value, unsigned bits, int is_signed ATTRIBUTE_UNUSED)
 {
   long xvalue = 0;
 
@@ -1072,8 +1072,10 @@ qdsp6_extend
       xvalue = *value &  (~0L << 6);
       *value = *value & ~(~0L << 6);
 
+      /*
       if (is_signed && *value > (1L << (bits - 1)))
         *value -= (1L << bits);
+      */
     }
 
   return (xvalue);
@@ -1249,12 +1251,22 @@ qdsp6_hash_icode
 static int cpu_type;
 static int cpu_flag;
 
-/* Return nonzero if we are assembling for V1 */
+/** Return current architecture.
+*/
+int
+qdsp6_arch
+(void)
+{
+  return (cpu_type);
+}
+
+/** Return nonzero if we are assembling for specified architecture.
+*/
 int
 qdsp6_if_arch
 (int arch)
 {
-  return (cpu_type == arch);
+  return (qdsp6_arch () == arch);
 }
 
 /** Query support for immediate extender by the current architecture.
@@ -1402,11 +1414,26 @@ qdsp6_opcode_init_tables
         {
           qdsp6_kext = insn;
           qdsp6_kext_mask = qdsp6_encode_mask (qdsp6_opcodes [i - 1].enc);
-          qdsp6_opcodes [i - 1].attributes |= PREFIX;
+          qdsp6_opcodes [i - 1].flags |= QDSP6_CODE_IS_PREFIX;
+        }
+
+      if ((qdsp6_opcodes [i - 1].attributes & A_BRANCHADDER))
+        qdsp6_opcodes [i - 1].flags |= QDSP6_CODE_IS_BRANCH;
+
+      if ((qdsp6_opcodes [i - 1].attributes & A_RESTRICT_SINGLE_MEM_FIRST))
+        {
+          qdsp6_opcodes [i - 1].flags |= QDSP6_CODE_IS_MEMORY;
+
+          if ((qdsp6_opcodes [i - 1].attributes & A_STORE))
+            qdsp6_opcodes [i - 1].flags |= QDSP6_CODE_IS_STORE;
+          else
+            qdsp6_opcodes [i - 1].flags |= QDSP6_CODE_IS_LOAD;
         }
 
       if (QDSP6_END_PACKET_GET (insn) == QDSP6_END_PAIR)
-        qdsp6_opcodes [i - 1].attributes |= DUPLEX;
+        qdsp6_opcodes [i - 1].flags |= QDSP6_CODE_IS_DUPLEX;
+      else if ((qdsp6_opcodes [i - 1].attributes & PACKED))
+        qdsp6_opcodes [i - 1].flags |= QDSP6_CODE_IS_COMPND;
     }
 
 #if 0
@@ -1417,7 +1444,7 @@ qdsp6_opcode_init_tables
         size_t j;
 
         for (j = 0, op = opcode_map [i]; op; j++)
-          op = QDSP6_OPCODE_NEXT_ASM (op);
+          op = QDSP6_CODE_NEXT_ASM (op);
 
         printf ("#%02ld ('%c'): %02ld\t", i, (i % QDSP6_HASH_1) + 'a', j);
       }
@@ -1431,7 +1458,7 @@ qdsp6_opcode_init_tables
 
         printf ("#%02ld ('%c')\n", i, (i % QDSP6_HASH_1) + 'a');
 
-        for (j = 0, op = opcode_map [i]; op; j++, op = QDSP6_OPCODE_NEXT_ASM (op))
+        for (j = 0, op = opcode_map [i]; op; j++, op = QDSP6_CODE_NEXT_ASM (op))
           puts (op->syntax);
 
         puts ("");
@@ -1446,7 +1473,7 @@ int
 qdsp6_opcode_supported
 (const qdsp6_opcode *opcode)
 {
-  return (QDSP6_OPCODE_CPU (opcode->flags) <= cpu_type);
+  return (QDSP6_CODE_CPU (opcode->flags) <= cpu_type);
 }
 
 /* Return the first insn in the chain for assembling INSN.  */
@@ -1480,7 +1507,7 @@ qdsp6_lookup_insn
 
   for (opcode = qdsp6_opcode_lookup_dis (insn);
        opcode;
-       opcode = QDSP6_OPCODE_NEXT_DIS (opcode))
+       opcode = QDSP6_CODE_NEXT_DIS (opcode))
     {
       if (opcode->map)
         continue;
@@ -1622,8 +1649,7 @@ qdsp6_encode_operand
   if (!is_x)
     value.s >>= operand->shift_count;
 
-  /* We'll read the encoding string backwards
-     and put the LSB of the value in each time */
+  /* Read the encoding string backwards and put a bit in each time. */
   for (i = len - 1; i >= 0; i--)
     if (!ISSPACE (opcode->enc [i]))
       {
@@ -2697,19 +2723,18 @@ qdsp6_dis_operand
       if (operand->flags & QDSP6_OPERAND_PC_RELATIVE)
         {
           xed = FALSE;
-
           value  -= paddr;
           value >>= operand->shift_count;
+          value  &= ~(~0 << 6);
           value  += xvalue + paddr;
         }
       else
         {
           xed = TRUE;
-
           value >>= operand->shift_count;
+          value  &= ~(~0 << 6);
           value  += xvalue;
         }
-
       xer = xvalue = 0;
     }
 
@@ -3064,7 +3089,7 @@ qdsp6_extract_predicate_operand
 
 /** Return the next stand-alone opcode.
 
-Function version of the macro QDSP6_OPCODE_NEXT_ASM.
+Function version of the macro QDSP6_CODE_NEXT_ASM.
 
 @param op The current opcode.
 */
