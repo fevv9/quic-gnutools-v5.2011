@@ -788,6 +788,21 @@ static reloc_howto_type qdsp6_elf_howto_table [] =
 	 0x00c03fff,		/* dst_mask  */
 	 FALSE),		/* pcrel_offset  */
 
+  /* 32 bit offset from GOT. */
+  HOWTO (R_QDSP6_GOTOFF_32,     /* type  */
+         0,                     /* rightshift  */
+         2,                     /* size (0 = byte, 1 = short, 2 = long)  */
+         32,                    /* bitsize  */
+         FALSE,                 /* pc_relative  */
+         0,                     /* bitpos  */
+         complain_overflow_bitfield, /* complain_on_overflow  */
+         qdsp6_elf_reloc,       /* special_function  */
+         "R_QDSP6_GOTOFF_32",   /* name  */
+         FALSE,                 /* partial_inplace  */
+         0,                     /* src_mask  */
+         0xffffffff,            /* dst_mask  */
+         FALSE),                /* pcrel_offset  */
+
   /* Low 16 bits of a 32 bit offset of a GOT entry. */
   HOWTO (R_QDSP6_GOT_LO16,	/* type  */
 	 0,			/* rightshift  */
@@ -818,50 +833,35 @@ static reloc_howto_type qdsp6_elf_howto_table [] =
 	 0x00c03fff,		/* dst_mask  */
 	 FALSE),		/* pcrel_offset  */
 
-  /* 16 bit offset of a GOT entry. */
-  HOWTO (R_QDSP6_GOT_16,	/* type  */
-	 0,			/* rightshift  */
-	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
-	 16,			/* bitsize  */
-	 FALSE,			/* pc_relative  */
-	 0,			/* bitpos  */
-	 complain_overflow_bitfield, /* complain_on_overflow  */
-	 qdsp6_elf_reloc,	/* special_function  */
-	 "R_QDSP6_GOT_16",	/* name  */
-	 FALSE,			/* partial_inplace  */
-	 0,			/* src_mask  */
-	 0x00c03fff,		/* dst_mask  */
-	 FALSE),		/* pcrel_offset  */
-
-  /* 32 bit offset from GOT. */
-  HOWTO (R_QDSP6_GOTOFF_32,	/* type  */
-	 0,			/* rightshift  */
-	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
-	 32,			/* bitsize  */
-	 FALSE,			/* pc_relative  */
-	 0,			/* bitpos  */
-	 complain_overflow_bitfield, /* complain_on_overflow  */
-	 qdsp6_elf_reloc,	/* special_function  */
-	 "R_QDSP6_GOTOFF_32",	/* name  */
-	 FALSE,			/* partial_inplace  */
-	 0,			/* src_mask  */
-	 0xffffffff,		/* dst_mask  */
-	 FALSE),		/* pcrel_offset  */
-
   /* 32 bit offset of a GOT entry. */
-  HOWTO (R_QDSP6_GOT_32,	/* type  */
-	 0,			/* rightshift  */
-	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
-	 32,			/* bitsize  */
-	 FALSE,			/* pc_relative  */
-	 0,			/* bitpos  */
-	 complain_overflow_bitfield, /* complain_on_overflow  */
-	 qdsp6_elf_reloc,	/* special_function  */
-	 "R_QDSP6_GOT_32",	/* name  */
-	 FALSE,			/* partial_inplace  */
-	 0,			/* src_mask  */
-	 0xffffffff,		/* dst_mask  */
-	 FALSE),		/* pcrel_offset  */
+  HOWTO (R_QDSP6_GOT_32,        /* type  */
+         0,                     /* rightshift  */
+         2,                     /* size (0 = byte, 1 = short, 2 = long)  */
+         32,                    /* bitsize  */
+         FALSE,                 /* pc_relative  */
+         0,                     /* bitpos  */
+         complain_overflow_bitfield, /* complain_on_overflow  */
+         qdsp6_elf_reloc,       /* special_function  */
+         "R_QDSP6_GOT_32",      /* name  */
+         FALSE,                 /* partial_inplace  */
+         0,                     /* src_mask  */
+         0xffffffff,            /* dst_mask  */
+         FALSE),                /* pcrel_offset  */
+
+  /* 16 bit offset of a GOT entry. */
+  HOWTO (R_QDSP6_GOT_16,        /* type  */
+         0,                     /* rightshift  */
+         2,                     /* size (0 = byte, 1 = short, 2 = long)  */
+         16,                    /* bitsize  */
+         FALSE,                 /* pc_relative  */
+         0,                     /* bitpos  */
+         complain_overflow_bitfield, /* complain_on_overflow  */
+         qdsp6_elf_reloc,       /* special_function  */
+         "R_QDSP6_GOT_16",      /* name  */
+         FALSE,                 /* partial_inplace  */
+         0,                     /* src_mask  */
+         0x00c03fff,            /* dst_mask  */
+         FALSE),                /* pcrel_offset  */
 
 };
 
@@ -1549,7 +1549,7 @@ qdsp6_elf_add_symbol_hook
           case SHN_QDSP6_SCOMMON_2:
           case SHN_QDSP6_SCOMMON_4:
           case SHN_QDSP6_SCOMMON_8:
-            if (!info->shared)
+            if (info->executable)
               {
                 /* Common symbols less than or equal to -G are placed in .scommon. */
                 *secp = bfd_make_section_old_way
@@ -1689,13 +1689,13 @@ qdsp6_elf_section_from_bfd_section
 
   if (CONST_STRNEQ (name, qdsp6_scom_name [0]))
     {
-      if (CONST_STRNEQ (name, qdsp6_scom_name [SHN_QDSP6_SCOMMON_8 - SHN_QDSP6_SCOMMON]))
+      if (!strcmp (name, qdsp6_scom_name [SHN_QDSP6_SCOMMON_8 - SHN_QDSP6_SCOMMON]))
         *retval = SHN_QDSP6_SCOMMON_8;
-      else if (CONST_STRNEQ (name, qdsp6_scom_name [SHN_QDSP6_SCOMMON_4 - SHN_QDSP6_SCOMMON]))
+      else if (!strcmp (name, qdsp6_scom_name [SHN_QDSP6_SCOMMON_4 - SHN_QDSP6_SCOMMON]))
         *retval = SHN_QDSP6_SCOMMON_4;
-      else if (CONST_STRNEQ (name, qdsp6_scom_name [SHN_QDSP6_SCOMMON_2 - SHN_QDSP6_SCOMMON]))
+      else if (!strcmp (name, qdsp6_scom_name [SHN_QDSP6_SCOMMON_2 - SHN_QDSP6_SCOMMON]))
         *retval = SHN_QDSP6_SCOMMON_2;
-      else if (CONST_STRNEQ (name, qdsp6_scom_name [SHN_QDSP6_SCOMMON_1 - SHN_QDSP6_SCOMMON]))
+      else if (!strcmp (name, qdsp6_scom_name [SHN_QDSP6_SCOMMON_1 - SHN_QDSP6_SCOMMON]))
         *retval = SHN_QDSP6_SCOMMON_1;
       else
         *retval = SHN_QDSP6_SCOMMON;
@@ -1720,15 +1720,15 @@ qdsp6_elf_link_output_symbol_hook
   /* FIXME: For now the SDA is not supported in a DSO. */
   if (sym->st_shndx == SHN_COMMON
       && CONST_STRNEQ (input_sec->name, qdsp6_scom_name [0])
-      && !info->shared)
+      && info->executable)
     {
-      if (CONST_STRNEQ (name, qdsp6_scom_name [SHN_QDSP6_SCOMMON_8 - SHN_QDSP6_SCOMMON]))
+      if (!strcmp (name, qdsp6_scom_name [SHN_QDSP6_SCOMMON_8 - SHN_QDSP6_SCOMMON]))
         sym->st_shndx = SHN_QDSP6_SCOMMON_8;
-      else if (CONST_STRNEQ (name, qdsp6_scom_name [SHN_QDSP6_SCOMMON_4 - SHN_QDSP6_SCOMMON]))
+      else if (!strcmp (name, qdsp6_scom_name [SHN_QDSP6_SCOMMON_4 - SHN_QDSP6_SCOMMON]))
         sym->st_shndx = SHN_QDSP6_SCOMMON_4;
-      else if (CONST_STRNEQ (name, qdsp6_scom_name [SHN_QDSP6_SCOMMON_2 - SHN_QDSP6_SCOMMON]))
+      else if (!strcmp (name, qdsp6_scom_name [SHN_QDSP6_SCOMMON_2 - SHN_QDSP6_SCOMMON]))
         sym->st_shndx = SHN_QDSP6_SCOMMON_2;
-      else if (CONST_STRNEQ (name, qdsp6_scom_name [SHN_QDSP6_SCOMMON_1 - SHN_QDSP6_SCOMMON]))
+      else if (!strcmp (name, qdsp6_scom_name [SHN_QDSP6_SCOMMON_1 - SHN_QDSP6_SCOMMON]))
         sym->st_shndx = SHN_QDSP6_SCOMMON_1;
       else
         sym->st_shndx = SHN_QDSP6_SCOMMON;
@@ -2498,7 +2498,7 @@ qdsp6_elf_relocate_section
 	  /* This can happen if we get a link error with the input ELF
 	     variant mismatching the output variant.  Emit an error so
 	     it's noticed if it happens elsewhere.  */
-	  if (!htab->elf.sgot)
+	  if (!htab->elf.sgotplt)
 	    {
 	      (*_bfd_error_handler)
 		(_("%B: relocation %s for symbol `%s\' in section `%A\' " \
@@ -2640,7 +2640,8 @@ qdsp6_elf_relocate_section
 	     We always want the start of entire GOT section, or wherever
 	     _GLOBAL_OFFSET_TABLE_ is, not the position after the reserved
 	     header.  */
-	  relocation -= htab->elf.sgot->output_section->vma;
+	  relocation -= htab->elf.sgotplt->output_section->vma
+	              + htab->elf.sgotplt->output_offset;
 	  break;
 
         case R_QDSP6_PLT_B22_PCREL:
@@ -3129,7 +3130,7 @@ qdsp6_elf_check_relocs
         case R_QDSP6_GOTOFF_LO16:
         case R_QDSP6_GOTOFF_HI16:
         case R_QDSP6_GOTOFF_32:
-	  if (!htab->elf.sgot)
+	  if (!htab->elf.sgotplt)
 	    {
 	      /* Create the GOT. */
 	      if (!htab->elf.dynobj)
@@ -3659,13 +3660,13 @@ qdsp6_elf_finish_dynamic_sections
 	      continue;
 
 	    case DT_PLTGOT:
-	      /* FIXME: shout output_offset be added here? */
-	      dyn.d_un.d_ptr = htab->elf.sgot->output_section->vma;
+	      dyn.d_un.d_ptr = htab->elf.sgotplt->output_section->vma
+	                     + htab->elf.sgotplt->output_offset;
 	      break;
 
 	    case DT_JMPREL:
-	      /* FIXME: shout output_offset be added here? */
-	      dyn.d_un.d_ptr = htab->elf.srelplt->output_section->vma;
+	      dyn.d_un.d_ptr = htab->elf.srelplt->output_section->vma
+	                     + htab->elf.srelplt->output_offset;
 	      break;
 
 	    case DT_PLTRELSZ:
@@ -3913,21 +3914,15 @@ qdsp6_elf_adjust_dynamic_symbol
       h->needs_copy = 1;
     }
 
-  if (!h->size)
+  /* If a symbol has no size and does not require a PLT entry, R_QDSP6_COPY
+     would probably do the wrong thing. */
+  if (!h->size
+      && !h->needs_plt)
     {
       (*_bfd_error_handler) (_("warning: size of dynamic symbol `%s' is zero"),
 			     h->root.root.string);
       return TRUE;
     }
-
-  /* If a symbol is larger than the size supported by R_QDSP6_COPY and does not
-     require a PLT entry, then we are probably about to do the wrong thing: we
-     are probably going to create a relocation for atoo large a variable. */
-  if (h->size > 4
-      && !h->needs_plt)
-    (*_bfd_error_handler)
-      (_("warning: size of dynamic symbol `%s' is larger than 4 bytes"),
-       h->root.root.string);
 
   /* Choose the proper section.  */
   s = h->size <= elf_gp_size (htab->elf.dynobj)
@@ -4176,7 +4171,7 @@ qdsp6_elf_size_dynamic_sections
 	  if (!s)
 	    abort ();
 	  s->size = sizeof (ELF_DYNAMIC_INTERPRETER);
-	  s->contents = ELF_DYNAMIC_INTERPRETER;
+	  s->contents = (void *) ELF_DYNAMIC_INTERPRETER;
 	}
     }
 
@@ -4236,25 +4231,6 @@ qdsp6_elf_size_dynamic_sections
   /* Allocate global symbol's PLT and GOT entries, as well as space for global
      symbols dynamic relocations.  */
   elf_link_hash_traverse (&htab->elf, qdsp6_allocate_dynrel, (PTR) info);
-
-  /* FIXME: not doing this right now; wait until porting to main-line.
-     Besides, need to understand how it could affect the dynamic linker. */
-  if (FALSE && elf_hash_table (info)->dynamic_sections_created)
-    {
-      /* If the GOT is larger than 32KB, move _GLOBAL_OFFSET_TABLE_ by as much,
-         so that R_QDSP6_GOT_16 relocations have a greater chance of working. */
-      if (htab->elf.sgot->size >= 0x8000
-	  && !elf_hash_table (info)->hgot->root.u.def.value)
-	elf_hash_table (info)->hgot->root.u.def.value = 0x8000;
-      /* FIXME: or... */
-      /* Move _GLOBAL_OFFSET_TABLE_ to slightly beyond the middle of the GOT,
-         so that R_QDSP6_GOT_16 relocations have a greater chance of working. */
-      if (htab->elf.sgot->size
-	  && !elf_hash_table (info)->hgot->root.u.def.value)
-	elf_hash_table (info)->hgot->root.u.def.value
-	  = (htab->elf.sgot->size
-	     + htab->elf.sgot->size % (GOT_ENTRY_SIZE * 2)) / 2;
-    }
 
   /* check_relocs and adjust_dynamic_symbol have determined the sizes of the
      various dynamic sections.  Allocate memory for them.  */
@@ -4472,7 +4448,9 @@ qdsp6_elf_hash_symbol
 #define TARGET_BIG_NAME				"elf32-bigqdsp6"
 #define ELF_ARCH				bfd_arch_qdsp6
 #define ELF_MACHINE_CODE			EM_QDSP6
+#define ELF_MINPAGESIZE				0x1000
 #define ELF_MAXPAGESIZE				0x1000
+#define ELF_COMMONPAGESIZE			0x1000
 
 #define elf_backend_may_use_rel_p		0
 #define	elf_backend_may_use_rela_p		1
