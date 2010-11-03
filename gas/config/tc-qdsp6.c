@@ -196,6 +196,7 @@ enum _qdsp6_insn_flag
     QDSP6_INSN_IS_RELAX = 0x04, /* Insn will be relaxed. */
     QDSP6_INSN_IN_RNEW  = 0x08, /* Insn has an operand of type R.NEW. */
     QDSP6_INSN_OUT_RNEW = 0x10, /* Insn produces a result GPR. */
+    QDSP6_INSN_IS_PAIR  = 0x20, /* Insn is paired. */
   };
 
 /** Packet house keeping. */
@@ -484,7 +485,9 @@ struct option md_longopts [] =
     { "mno-pairing-duplex", no_argument, NULL, OPTION_QDSP6_MNO_PAIRING_2 },
 #define OPTION_QDSP6_MNO_JUMPS (OPTION_MD_BASE + 17)
     { "mno-jumps", no_argument, NULL, OPTION_QDSP6_MNO_JUMPS },
-#define OPTION_QDSP6_MNO_FALIGN (OPTION_MD_BASE + 18)
+#define OPTION_QDSP6_MNO_JUMPS_LONG (OPTION_MD_BASE + 18)
+    { "mno-jumps-long", no_argument, NULL, OPTION_QDSP6_MNO_JUMPS_LONG },
+#define OPTION_QDSP6_MNO_FALIGN (OPTION_MD_BASE + 19)
     { "mno-falign", no_argument, NULL, OPTION_QDSP6_MNO_FALIGN },
   };
 size_t md_longopts_size = sizeof (md_longopts);
@@ -512,12 +515,26 @@ typedef enum _qdsp6_relax_state
 
 /* Encode relax state from relocation type. */
 #define ENCODE_RELAX(R) \
-  ({qdsp6_relax_state r;\
-    if ((R) == BFD_RELOC_QDSP6_B9_PCREL) \
-      r = QDSP6_RELAX_B9; \
-    else \
-      r = QDSP6_RELAX_NONE; \
-    r;})
+  ({\
+     qdsp6_relax_state r;\
+     \
+     if (qdsp6_relax) \
+       { \
+         if ((R) == BFD_RELOC_QDSP6_B7_PCREL && qdsp6_relax_long) \
+           r = QDSP6_RELAX_B7; \
+         else if ((R) == BFD_RELOC_QDSP6_B9_PCREL) \
+           r = QDSP6_RELAX_B9; \
+         else if ((R) == BFD_RELOC_QDSP6_B13_PCREL && qdsp6_relax_long) \
+           r = QDSP6_RELAX_B13; \
+         else if ((R) == BFD_RELOC_QDSP6_B15_PCREL && qdsp6_relax_long) \
+           r = QDSP6_RELAX_B15; \
+         else \
+           r = QDSP6_RELAX_NONE; \
+       } \
+     else \
+       r = QDSP6_RELAX_NONE; \
+     r;\
+  })
 
 #define QDSP6_RANGE(B) (~(~0L << ((B) - 1)) \
                         & -(2 * MAX_PACKET_INSNS * QDSP6_INSN_LEN))
@@ -561,7 +578,8 @@ static int qdsp6_extender = TRUE;
 static int qdsp6_pairing  = TRUE,
            qdsp6_pairing_branch = TRUE,
            qdsp6_pairing_duplex = TRUE;
-static int qdsp6_relax = TRUE;
+static int qdsp6_relax = TRUE,
+           qdsp6_relax_long = TRUE;
 static int qdsp6_sort_sda = TRUE;
 static int qdsp6_fetch_align = TRUE;
 
@@ -746,6 +764,10 @@ md_parse_option
       qdsp6_relax = FALSE;
       break;
 
+    case OPTION_QDSP6_MNO_JUMPS_LONG:
+      qdsp6_relax_long = FALSE;
+      break;
+
     case OPTION_QDSP6_MNO_FALIGN:
       qdsp6_fetch_align = FALSE;
       break;
@@ -774,6 +796,8 @@ QDSP6 Options:\n\
   -mfalign-info           report \".falign\" statistics\n\
   -mno-extender           disable the use of constant extenders\n\
   -mno-jumps              disable automatic extension of branch instructions\n\
+  -mno-jumps-long         disable automatic extension of non-paired\n\
+                          branch instructions\n\
   -mno-pairing            disable pairing of instructions\n\
   -mno-pairing-duplex     disable pairing to duplex instructions\n\
   -mno-pairing-branch     disable pairing of branch instructions\n\
@@ -1548,6 +1572,7 @@ qdsp6_init
       qdsp6_pairing_branch &= qdsp6_pairing;
       qdsp6_pairing_duplex &= qdsp6_pairing;
       qdsp6_relax          &= qdsp6_extender & qdsp6_pairing_branch;
+      qdsp6_relax_long     &= qdsp6_relax;
 
       /* Tell `.option' it's too late.  */
       cpu_tables_init_p = TRUE;
@@ -1680,7 +1705,7 @@ qdsp6_parse_immediate
   const qdsp6_operand *operandx;
   long value = 0;
   long xvalue = 0;
-  int is_x = FALSE, may_x;
+  int is_x = FALSE, is_may_x = FALSE, is_not_x = FALSE;
   int is_relax = FALSE;
   int is_lo16 = FALSE, is_hi16 = FALSE;
   char *pic_line;
@@ -1689,31 +1714,34 @@ qdsp6_parse_immediate
   /* We only have the mandatory '#' for immediates that are NOT pc relative */
   if (*str == '#')
     {
-      /* Skip over the 1st '#' */
+      is_not_x = (operand->flags & QDSP6_OPERAND_PC_RELATIVE);
       str++;
       if (*str == '#')
         {
-          /* Skip over the 2nd '#' */
-          str++;
           is_x = (qdsp6_extender);
+          str++;
         }
       else
-        is_x = (insn->opcode->attributes & MUST_EXTEND);
+        {
+          is_x = (insn->opcode->attributes & MUST_EXTEND);
+        }
+      is_not_x = is_not_x && !is_x;
     }
   else if (!(operand->flags & QDSP6_OPERAND_PC_RELATIVE))
     return NULL;
 
-  may_x = (((insn->opcode->attributes & EXTENDABLE_LOWER_CASE_IMMEDIATE)
-            && ISLOWER (operand->enc_letter))
-           || ((insn->opcode->attributes & EXTENDABLE_UPPER_CASE_IMMEDIATE)
-               && ISUPPER (operand->enc_letter)));
+  is_may_x = (((insn->opcode->attributes & EXTENDABLE_LOWER_CASE_IMMEDIATE)
+               && ISLOWER (operand->enc_letter))
+              || ((insn->opcode->attributes & EXTENDABLE_UPPER_CASE_IMMEDIATE)
+                  && ISUPPER (operand->enc_letter)));
 
-  is_relax = qdsp6_relax && may_x && ENCODE_RELAX (operand->reloc_type);
+  is_relax = ENCODE_RELAX (operand->reloc_type)
+             && !is_not_x && (is_x || is_may_x);
 
   if (is_x && !insn->opcode->map)
     {
       /* Check if the operand can truly be extended. */
-      if (!may_x)
+      if (!is_may_x)
         {
           if (errmsg)
             *errmsg = _("operand cannot be extended.");
@@ -2086,7 +2114,7 @@ qdsp6_has_duplex
 
   /* Count number of duplex insns in this packet. */
   for (i = count = 0; i < qdsp6_packet_count (apacket); i++)
-    if (apacket->insns [i].opcode->attributes & DUPLEX)
+    if (apacket->insns [i].opcode->flags & QDSP6_CODE_IS_DUPLEX)
       count++;
 
   return (count);
@@ -2108,10 +2136,10 @@ qdsp6_has_duplex_hits
 
   /* Count number of memory ops in this packet. */
   for (i = 0; i < qdsp6_packet_count (apacket); i++)
-    if (((apacket->insns [i].opcode->attributes & DUPLEX)
+    if (((apacket->insns [i].opcode->flags & QDSP6_CODE_IS_DUPLEX)
          && (ainsn->opcode->slot_mask & QDSP6_SLOTS_DUPLEX)
          && !(ainsn->opcode->slot_mask & ~QDSP6_SLOTS_DUPLEX))
-        || ((ainsn->opcode->attributes & DUPLEX)
+        || ((ainsn->opcode->flags & QDSP6_CODE_IS_DUPLEX)
             && (apacket->insns [i].opcode->slot_mask & QDSP6_SLOTS_DUPLEX)
             && !(apacket->insns [i].opcode->slot_mask & ~QDSP6_SLOTS_DUPLEX)))
       {
@@ -2293,7 +2321,7 @@ qdsp6_packet_insert
 {
   int prefixed = !pad && prefix && (prefix->opcode->attributes & A_IT_EXTENDER)
                  ? 1: 0;
-  int duplex   = (insn->opcode->attributes & DUPLEX)? 1: 0;
+  int duplex   = (insn->opcode->flags & QDSP6_CODE_IS_DUPLEX)? 1: 0;
   int relax    = (insn->flags & QDSP6_INSN_IS_RELAX)? 1: 0;
   int size     = pad? qdsp6_packet_count (packet): qdsp6_packet_slots (packet);
   int length   = pad? qdsp6_packet_count (packet): qdsp6_packet_length (packet);
@@ -2351,6 +2379,7 @@ qdsp6_packet_cram
 {
   qdsp6_packet packet;
   qdsp6_packet_insn insn;
+  size_t i;
 
   /* Try to insert insn. */
   if (qdsp6_packet_insert (apacket, ainsn, prefix, pair, pad))
@@ -2359,44 +2388,78 @@ qdsp6_packet_cram
     {
       insn = *ainsn;
 
+      if (!(insn.flags & QDSP6_INSN_IS_PAIR))
+        {
+          /* Remove branch relaxation if range has not been reduced
+             by pairing. */
+          insn.relax          = QDSP6_RELAX_NONE;
+          insn.flags         &= ~QDSP6_INSN_IS_RELAX;
+          insn.operand.flags &= ~QDSP6_OPERAND_IS_RELAX;
+
+          /* Try again. */
+          if (qdsp6_packet_insert (apacket, &insn, prefix, pair, pad))
+            {
+              *ainsn = insn;
+              return TRUE;
+            }
+        }
+
+      if (apacket->relax)
+        {
+          packet = *apacket;
+          /* Remove any branch relaxation if range has not been reduced
+             by pairing. */
+          for (i = packet.size - 1; i < packet.size; i--)
+            if (!(packet.insns [i].flags & QDSP6_INSN_IS_PAIR)
+                && packet.insns [i].flags & QDSP6_INSN_IS_RELAX)
+              {
+                packet.insns [i].relax          = QDSP6_RELAX_NONE;
+                packet.insns [i].flags         &= ~QDSP6_INSN_IS_RELAX;
+                packet.insns [i].operand.flags &= ~QDSP6_OPERAND_IS_RELAX;
+
+                packet.relax--;
+
+                /* Try again. */
+                if (qdsp6_packet_insert (&packet, &insn, prefix, pair, pad))
+                  {
+                    *apacket = packet;
+                    return TRUE;
+                  }
+              }
+        }
+
+      /* Remove branch relaxation. */
       insn.relax          = QDSP6_RELAX_NONE;
       insn.flags         &= ~QDSP6_INSN_IS_RELAX;
       insn.operand.flags &= ~QDSP6_OPERAND_IS_RELAX;
 
-      /* Try again, but without branch relaxation. */
+      /* Try again. */
       if (qdsp6_packet_insert (apacket, &insn, prefix, pair, pad))
         {
           *ainsn = insn;
           return TRUE;
         }
-      else
+
+      if (apacket->relax)
         {
-          if (apacket->relax)
-            {
-              size_t i;
+          packet = *apacket;
+          /* Remove any branch relaxation. */
+          for (i = packet.size - 1; i < packet.size; i--)
+            if (packet.insns [i].flags & QDSP6_INSN_IS_RELAX)
+              {
+                packet.insns [i].relax          = QDSP6_RELAX_NONE;
+                packet.insns [i].flags         &= ~QDSP6_INSN_IS_RELAX;
+                packet.insns [i].operand.flags &= ~QDSP6_OPERAND_IS_RELAX;
 
-              packet = *apacket;
-              /* Remove all branch relaxations. */
-              for (i = 0; i < packet.size; i++)
-                if (packet.insns [i].flags & QDSP6_INSN_IS_RELAX)
+                packet.relax--;
+
+                /* Try again. */
+                if (qdsp6_packet_insert (&packet, &insn, prefix, pair, pad))
                   {
-                    packet.insns [i].relax          = QDSP6_RELAX_NONE;
-                    packet.insns [i].flags         &= ~QDSP6_INSN_IS_RELAX;
-                    packet.insns [i].operand.flags &= ~QDSP6_OPERAND_IS_RELAX;
-
-                    packet.relax--;
+                    *apacket = packet;
+                    return TRUE;
                   }
-
-              /* Sanity check. */
-              assert (!packet.relax);
-
-              /* Try again, but without any branch relaxation. */
-              if (qdsp6_packet_insert (&packet, &insn, prefix, pair, pad))
-                {
-                  *apacket = packet;
-                  return TRUE;
-                }
-            }
+              }
         }
     }
 
@@ -3190,7 +3253,7 @@ qdsp6_assemble
   start = str;
   for (opcode = qdsp6_opcode_lookup_asm (str);
        opcode;
-       opcode = QDSP6_OPCODE_NEXT_ASM (opcode))
+       opcode = QDSP6_CODE_NEXT_ASM (opcode))
     {
       if (insn.source)
         {
@@ -3548,9 +3611,9 @@ qdsp6_assemble_pair
              || (apacket->insns [i].opcode->attributes & attr [j]))
             /* Packed or duplex insns. */
             || ((apacket->insns [i].opcode->attributes & PACKED)
-                || (apacket->insns [i].opcode->attributes & DUPLEX))
+                || (apacket->insns [i].opcode->flags & QDSP6_CODE_IS_DUPLEX))
             /* Prefix insns. */
-            || (apacket->insns [i].opcode->attributes & PREFIX)
+            || (apacket->insns [i].opcode->flags & QDSP6_CODE_IS_PREFIX)
             /* Extended insns. */
             || ((ainsn->flags & QDSP6_INSN_IS_KXED)
                 && (apacket->insns [i].flags & QDSP6_INSN_IS_KXED))
@@ -3599,7 +3662,7 @@ qdsp6_assemble_pair
         if (qdsp6_assemble (&packet, pair, FALSE, TRUE)
             || (!are_stores && qdsp6_assemble (&packet, unpair, FALSE, TRUE)))
           {
-            is_duplex = (packet.insns [0].opcode->attributes & DUPLEX)? 1: 0;
+            is_duplex = (packet.insns [0].opcode->flags & QDSP6_CODE_IS_DUPLEX)? 1: 0;
             is_prefix = (packet.insns [0].flags & QDSP6_INSN_IS_KXED)? 1: 0;
 
             /* Keep trying if the result is an unwanted duplex. */
@@ -3614,9 +3677,11 @@ qdsp6_assemble_pair
 
             insn   = packet.insns    [0];
             prefix = packet.prefixes [0];
-            qdsp6_packet_init (&packet);
+
+            insn.flags |= QDSP6_INSN_IS_PAIR;
 
             /* Set up the new packet. */
+            qdsp6_packet_init (&packet);
             for (k = 0, has_hits = has_ommited = FALSE, has_room = TRUE;
                  k < qdsp6_packet_count (apacket) && !has_hits && has_room;
                  k++)
@@ -3851,10 +3916,10 @@ qdsp6_common
         new_sec = bfd_com_section_ptr;
       else
         {
-          new_sec = // &qdsp6_scom_section;
+          new_sec =
             qdsp6_create_scom_section (SMALL_COM_SECTION,
-                                          SEC_ALLOC | SEC_IS_COMMON
-                                        | SEC_DATA | SEC_SMALL_DATA,
+                                       SEC_ALLOC | SEC_IS_COMMON
+                                       | SEC_DATA | SEC_SMALL_DATA,
                                        qdsp6_sort_sda? access: 0);
           assert (new_sec);
         }
@@ -4817,7 +4882,7 @@ qdsp6_find_insn
   const qdsp6_opcode *opcode = qdsp6_opcode_lookup_asm (insn);
 
   /* Keep looking until we find a match.  */
-  for (; opcode != NULL; opcode = QDSP6_OPCODE_NEXT_ASM (opcode))
+  for (; opcode != NULL; opcode = QDSP6_CODE_NEXT_ASM (opcode))
     if (!strncasecmp (opcode->syntax, insn, strlen (insn)))
       break;
 
@@ -5094,13 +5159,10 @@ qdsp6_packet_check
       if ((ainsn->opcode->attributes & A_RESTRICT_LOOP_LA))
         numOfLoopMax1++;
 
-      /* Check for attributes. */
-      if ((ainsn->opcode->attributes)
-          && (ainsn->opcode->attributes & A_RESTRICT_NOSRMOVE))
+      if ((ainsn->opcode->attributes & A_RESTRICT_NOSRMOVE))
         numOfOvf = TRUE;
 
-      if ((ainsn->opcode->attributes)
-          && (ainsn->opcode->attributes & DUPLEX))
+      if ((ainsn->opcode->flags & QDSP6_CODE_IS_DUPLEX))
         binsn = &apacket->pairs [i].left.insn;
       else
         binsn = ainsn;
@@ -5282,8 +5344,7 @@ qdsp6_packet_check
             }
 
           /* If a pair, move to the righthand insn. */
-          if ((ainsn->opcode->attributes)
-              && (ainsn->opcode->attributes & DUPLEX)
+          if ((ainsn->opcode->flags & QDSP6_CODE_IS_DUPLEX)
               && binsn != &apacket->pairs [i].right.insn)
             binsn = &apacket->pairs [i].right.insn;
           else
