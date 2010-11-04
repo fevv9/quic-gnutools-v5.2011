@@ -297,8 +297,6 @@ char *qdsp6_insn_write
 void qdsp6_packet_init (qdsp6_packet *);
 void qdsp6_packet_begin (qdsp6_packet *);
 void qdsp6_packet_end (qdsp6_packet *);
-void qdsp6_packet_end_inner (qdsp6_packet *);
-void qdsp6_packet_end_outer (qdsp6_packet *);
 void qdsp6_packet_end_lookahead (int *inner_p, int *);
 void qdsp6_packet_check (qdsp6_packet *);
 void qdsp6_packet_unfold (qdsp6_packet *);
@@ -350,6 +348,7 @@ int qdsp6_has_mem (const qdsp6_packet *);
 int qdsp6_has_store (const qdsp6_packet *);
 int qdsp6_has_store_not (const qdsp6_packet *);
 int qdsp6_has_but_ax (const qdsp6_packet *);
+int qdsp6_has_solo (const qdsp6_packet *);
 addressT qdsp6_frag_fix_addr (void);
 int qdsp6_is_nop_keep (const qdsp6_packet *, int);
 int qdsp6_find_noslot1 (const qdsp6_packet *, size_t);
@@ -360,7 +359,6 @@ void qdsp6_check_predicate (int, const qdsp6_opcode *);
 void qdsp6_check_implicit
   (const qdsp6_opcode *, unsigned int, int, qdsp6_reg_score *, const char *);
 void qdsp6_check_implicit_predicate (const qdsp6_opcode *, unsigned int, int);
-int qdsp6_packet_check_solo (const qdsp6_packet *);
 int qdsp6_relax_branch (fragS *);
 int qdsp6_relax_falign (fragS *);
 long qdsp6_relax_branch_try (fragS *, segT, long);
@@ -1101,6 +1099,7 @@ qdsp6_relax_falign
       qdsp6_shuffle_prepare (&packet);
       if (qdsp6_shuffle_helper (&packet, 0, NULL))
         {
+          /* Padding resulted in a well-formed packet. */
           qdsp6_packet_fold (&packet);
           qdsp6_packet_unpad (&packet);
           after = packet.size;
@@ -1127,6 +1126,8 @@ qdsp6_relax_falign
         }
       else
         {
+          /* In order to avoid a malformed packet, convert the padding into a
+             padding packet. */
           qdsp6_packet_fold (&packet);
           after = apacket->size;
 
@@ -1155,34 +1156,34 @@ qdsp6_relax_falign
   apacket->dpkt = apacket->ddpkt = 0;
 
   /* Collect .falign stats. */
-    {
-      /* Find packet requesting .falign. */
-      for (previous = fragP, fpacket = NULL;
-          previous
-          && previous->tc_frag_data
-          && (fpacket = &previous->tc_frag_data->packet)
-          && !fpacket->faligned;
-          previous = previous->tc_frag_data->previous)
-        ;
+  {
+    /* Find packet requesting .falign. */
+    for (previous = fragP, fpacket = NULL;
+         previous
+         && previous->tc_frag_data
+         && (fpacket = &previous->tc_frag_data->packet)
+         && !fpacket->faligned;
+         previous = previous->tc_frag_data->previous)
+      ;
 
-      if (fpacket)
-        {
-        if ((pad || pkt)
-            && !(fpacket->stats & QDSP6_STATS_FALIGN)
-            && (fpacket->stats |= QDSP6_STATS_FALIGN))
-            n_falign [QDSP6_FALIGN_NEED]++;
+    if (fpacket)
+      {
+      if ((pad || pkt)
+          && !(fpacket->stats & QDSP6_STATS_FALIGN)
+          && (fpacket->stats |= QDSP6_STATS_FALIGN))
+          n_falign [QDSP6_FALIGN_NEED]++;
 
-        if (pad
-            && !(fpacket->stats & QDSP6_STATS_PAD)
-            && (fpacket->stats |= QDSP6_STATS_PAD))
-            n_falign [QDSP6_FALIGN_PAD]++;
+      if (pad
+          && !(fpacket->stats & QDSP6_STATS_PAD)
+          && (fpacket->stats |= QDSP6_STATS_PAD))
+          n_falign [QDSP6_FALIGN_PAD]++;
 
-        if (pkt
-            && !(fpacket->stats & QDSP6_STATS_PACK)
-            && (fpacket->stats |= QDSP6_STATS_PACK))
-            n_falign [QDSP6_FALIGN_PACK]++;
-        }
-    }
+      if (pkt
+          && !(fpacket->stats & QDSP6_STATS_PACK)
+          && (fpacket->stats |= QDSP6_STATS_PACK))
+          n_falign [QDSP6_FALIGN_PACK]++;
+      }
+  }
 
   return TRUE;
 }
@@ -1263,7 +1264,7 @@ qdsp6_relax_falign_try
                     next = 0;
 
                   room = MAX_PACKET_INSNS - MAX (size, next);
-                  if (room)
+                  if (room && !qdsp6_has_solo (zpacket))
                     {
                       zpacket->ddpad += MIN (left, room);
                       left           -= MIN (left, room);
@@ -5354,7 +5355,7 @@ qdsp6_packet_end
     */
 
       /* Check for a solo instruction in a packet with :endloop0. */
-      if (qdsp6_packet_check_solo (apacket))
+      if (qdsp6_has_solo (apacket))
         as_bad (_("packet marked with `:endloop0' cannot contain a solo instruction."));
     }
 
@@ -5366,7 +5367,7 @@ qdsp6_packet_end
                   "modify registers `SA1', `LC1' or `PC'."));
 
       /* Check for a solo instruction in a packet with :endloop1. */
-      if (qdsp6_packet_check_solo (apacket))
+      if (qdsp6_has_solo (apacket))
         as_bad (_("packet marked with `:endloop1' cannot contain a solo instruction."));
     }
 
@@ -5411,7 +5412,7 @@ qdsp6_packet_end
 }
 
 int
-qdsp6_packet_check_solo
+qdsp6_has_solo
 (const qdsp6_packet *apacket)
 {
   int solo;
@@ -5423,51 +5424,6 @@ qdsp6_packet_check_solo
       solo = TRUE;
 
   return (solo);
-}
-
-/** Validate end of inner loop packet.
-*/
-void
-qdsp6_packet_end_inner
-(qdsp6_packet *apacket)
-{
-  /* Check whether registers updated by :endloop0 are updated in packet. */
-  if (cArray [QDSP6_P30].used | cArray [QDSP6_SR].used
-      | cArray [QDSP6_SA0].used | cArray [QDSP6_LC0].used | cArray [QDSP6_PC].used)
-    as_bad (_("packet marked with `:endloop0' cannot contain instructions that " \
-              "modify registers `C4/P3:0', `C8/USR', `SA0', `LC0' or `PC'."));
-
-  /* Although it may be dangerous to modify P3 then, legacy code is full of this. */
-/*
-  if (pArray [3])
-    as_warn (_("packet marked with `:endloop0' that contain instructions that " \
-               "modify register `p3' may have undefined results if "
-               "ending a pipelined loop."));
-*/
-
-  /* Check for a solo instruction in a packet with :endloop0. */
-  if (qdsp6_packet_check_solo (apacket))
-    as_bad (_("packet marked with `:endloop0' cannot contain a solo instruction."));
-
-  apacket->is_inner = TRUE;
-}
-
-/** Validate end of outer loop packet.
-*/
-void
-qdsp6_packet_end_outer
-(qdsp6_packet *apacket)
-{
-  /* Check whether registers updated by :endloop1 are updated in packet. */
-  if (cArray [QDSP6_SA1].used | cArray [QDSP6_LC1].used | cArray [QDSP6_PC].used)
-    as_bad (_("packet marked with `:endloop1' cannot contain instructions that " \
-              "modify registers `SA1', `LC1' or `PC'."));
-
-  /* Check for a solo instruction in a packet with :endloop1. */
-  if (qdsp6_packet_check_solo (apacket))
-    as_bad (_("packet marked with `:endloop1' cannot contain a solo instruction."));
-
-  apacket->is_outer = TRUE;
 }
 
 /*
