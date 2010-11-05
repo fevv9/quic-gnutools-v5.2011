@@ -945,6 +945,9 @@ EOF
     parisc64:Linux:*:* | hppa64:Linux:*:*)
 	echo hppa64-unknown-linux-gnu
 	exit ;;
+    qdsp6:Linux:*:*)
+    	echo qdsp6-unknown-linux-gnu
+	exit ;;
     s390:Linux:*:* | s390x:Linux:*:*)
 	echo ${UNAME_MACHINE}-ibm-linux
 	exit ;;
