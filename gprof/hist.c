@@ -44,6 +44,9 @@ static int cmp_time (const PTR, const PTR);
 
 /* Declarations of automatically generated functions to output blurbs.  */
 extern void flat_blurb (FILE * fp);
+#ifdef HEXAGON_SIM
+extern void hexagon_blurb (FILE *fp);
+#endif
 
 static histogram *find_histogram (bfd_vma lowpc, bfd_vma highpc);
 static histogram *find_histogram_for_pc (bfd_vma pc);
@@ -824,7 +827,11 @@ hist_print ()
       if (print_descriptions)
 	{
 	  printf (_("\n\n\nflat profile:\n"));
+#ifdef HEXAGON_SIM
+	  hexagon_blurb (stdout);
+#else
 	  flat_blurb (stdout);
+#endif
 	}
     }
   else
@@ -903,7 +910,11 @@ hist_print ()
   free (time_sorted_syms);
 
   if (print_descriptions && !bsd_style_output)
+#ifdef HEXAGON_SIM
+    hexagon_blurb (stdout);
+#else
     flat_blurb (stdout);
+#endif
 }
 
 int

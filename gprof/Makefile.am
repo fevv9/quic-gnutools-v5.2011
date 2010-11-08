@@ -26,7 +26,7 @@ bin_PROGRAMS = gprof
 sources = basic_blocks.c call_graph.c cg_arcs.c cg_dfn.c \
 	cg_print.c corefile.c gmon_io.c gprof.c hertz.c hist.c source.c \
 	search_list.c symtab.c sym_ids.c utils.c \
-	i386.c alpha.c vax.c tahoe.c sparc.c mips.c
+	i386.c alpha.c vax.c tahoe.c sparc.c mips.c hexagon.c
 gprof_SOURCES = $(sources) flat_bl.c bsd_callg_bl.c fsf_callg_bl.c
 gprof_DEPENDENCIES = ../bfd/libbfd.la ../libiberty/libiberty.a ../opcodes/libopcodes.a $(LIBINTL_DEP)
 gprof_LDADD = ../bfd/libbfd.la ../libiberty/libiberty.a  ../opcodes/libopcodes.a $(LIBINTL) $(EXPLIBS)
@@ -47,7 +47,7 @@ diststuff: $(BUILT_SOURCES) info $(man_MANS)
 .m.c:
 	awk -f $(srcdir)/gen-c-prog.awk > ./$*.c \
 	    FUNCTION=`(echo $*|sed -e 's,.*/,,g' -e 's/_bl//')`_blurb \
-	    FILE=$*.m $(srcdir)/$*.m
+	    FILE=$*.m $(srcdir)$*.m
 
 POTFILES = $(sources) $(noinst_HEADERS)
 po/POTFILES.in: @MAINT@ Makefile
