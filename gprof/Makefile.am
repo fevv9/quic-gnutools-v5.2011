@@ -47,7 +47,7 @@ diststuff: $(BUILT_SOURCES) info $(man_MANS)
 .m.c:
 	awk -f $(srcdir)/gen-c-prog.awk > ./$*.c \
 	    FUNCTION=`(echo $*|sed -e 's,.*/,,g' -e 's/_bl//')`_blurb \
-	    FILE=$*.m $(srcdir)$*.m
+	    FILE=$*.m $(srcdir)/$*.m
 
 POTFILES = $(sources) $(noinst_HEADERS)
 po/POTFILES.in: @MAINT@ Makefile
