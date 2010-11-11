@@ -3,15 +3,34 @@
 # This file is sourced from elf32.em, and defines extra
 # QDSP6-specific routines.
 
-cat >>e${EMULATION_NAME}.c <<"EOF"
+case "${target_alias}" in
+  qdsp6*-linux*)
+    QDSP6_IS_LINUX=" "
+    # The SDA is not supported in Linux.
+    QDSP6_LINUX_G_SWITCH=$'
+      else
+        {
+          g_switch_value = 0;
+          einfo (_("%P: small data size reset to zero\\n"));
+        }
+    '
+    # The TCM is not supported in Linux.
+    QDSP6_LINUX_USE_TCM=$'
+      else
+        einfo (_("%P%F: `-tcm\\\' not supported\\n"));
+    '
+    ;;
+  qdsp6*)
+    ;;
+esac
+
+cat >>e${EMULATION_NAME}.c <<EOF
 
 #include "elf/internal.h"
 #include "elf/qdsp6.h"
 #include "elf-bfd.h"
 
 #define EMUL_QDSP6
-
-static void qdsp6_after_parse PARAMS ((void));
 
 static char* qdsp6_arch_name;
 static int qdsp6_cmdline_set_arch;
@@ -40,27 +59,46 @@ qdsp6_after_parse (void)
     link_info.qdsp6_trampolines = command_line.relax = !link_info.relocatable;
 
   /* It likely does not make sense to have a DSO using the TCM. */
-  if (config.use_tcm && link_info.shared)
-    einfo (_("%P%F: `-tcm\' not supported with `-shared\'\n"));
-
-  /* For now, the SDA is not supported in a DSO. */
-  if (g_switch_value && link_info.shared)
+  if (config.use_tcm)
     {
-      g_switch_value = 0;
-      einfo (_("%P: small data size set to zero with `-shared\'\n"));
+      if (link_info.shared)
+        einfo (_("%P%F: \`-tcm\' not supported with \`-shared\'\\n"));
+      ${QDSP6_LINUX_USE_TCM}
     }
 
-  after_parse_default();
+  if (g_switch_value)
+    {
+      /* The compiler doesn't set up the GP register, which precludes the SDA
+         in some situations. */
+      if (link_info.shared)
+        {
+          g_switch_value = 0;
+          einfo (_("%P: small data size set to zero with \`-shared\'\\n"));
+        }
+      ${QDSP6_LINUX_G_SWITCH}
+    }
+
+  after_parse_default ();
+}
+
+EOF
+
+test -n "$QDSP6_IS_LINUX" && cat >>e${EMULATION_NAME}.c <<EOF
+
+static void
+qdsp6_before_parse (void)
+{
+  gld${EMULATION_NAME}_before_parse ();
+
+  /* Default to no SDA. */
+  g_switch_value = 0;
 }
 
 EOF
 
 # Put these extra routines in ld_${EMULATION_NAME}_emulation
-
 LDEMUL_AFTER_PARSE=qdsp6_after_parse
-
-# Define some shell vars to insert bits of code into the standard elf
-# parse_args and list_options functions.
+test -n "$QDSP6_IS_LINUX" && LDEMUL_BEFORE_PARSE=qdsp6_before_parse
 
 # QDSP6 option values (between 300 and 399).
 PARSE_AND_LIST_PROLOGUE=$'
@@ -91,7 +129,11 @@ PARSE_AND_LIST_OPTIONS=$'
   fprintf (file, _("  --march={v2|v3|v4}          Link for the specified QDSP6 architecture\\n"));
   fprintf (file, _("  --mcpu={v2|v3|v4}           Equivalent to `--march\'\\n"));
   fprintf (file, _("  -m{v2|v3|v4}                Equivalent to `--march\'\\n"));
+'
+test -z "$QDSP6_IS_LINUX" && PARSE_AND_LIST_OPTIONS=$PARSE_AND_LIST_OPTIONS$'
   fprintf (file, _("  --tcm                       Use the TCM\\n"));
+'
+PARSE_AND_LIST_OPTIONS=$PARSE_AND_LIST_OPTIONS$'
   fprintf (file, _("  --trampolines[={yes|no}]    Add trampolines when necessary (default)\\n"));
 '
 
@@ -211,4 +253,5 @@ PARSE_AND_LIST_ARGS_CASES=$'
         }
       break;
 '
+
 source_em ${srcdir}/emultempl/needrelax.em

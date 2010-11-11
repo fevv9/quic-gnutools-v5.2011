@@ -18,14 +18,15 @@ NOP=0x00c0007f
 # Largest cache-line size
 ALIGNMENT=64 # L2
 SBSS_START_SYMBOLS="PROVIDE (${USER_LABEL_PREFIX}__sbss_start = .);
-PROVIDE (${USER_LABEL_PREFIX}___sbss_start = .);"
+    PROVIDE (${USER_LABEL_PREFIX}___sbss_start = .);"
 SBSS_END_SYMBOLS="PROVIDE (${USER_LABEL_PREFIX}__sbss_end = .);
-PROVIDE (${USER_LABEL_PREFIX}___sbss_end = .);"
+    PROVIDE (${USER_LABEL_PREFIX}___sbss_end = .);"
 SDATA_START_SYMBOLS="__default_sda_base__ = .;
-PROVIDE (_SDA_BASE_ = .);"
+    PROVIDE (_SDA_BASE_ = .);"
 
 case "$target" in
   qdsp6*-linux*)
+    NO_SMALL_DATA=yes
     TEXT_START_ADDR="CONSTANT (MAXPAGESIZE)"
     ;;
   *)
