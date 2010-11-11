@@ -101,8 +101,8 @@ test -z "${ETEXT_NAME}" && ETEXT_NAME=${USER_LABEL_PREFIX}etext
 test -n "$CREATE_SHLIB$CREATE_PIE" && test -n "$SHLIB_DATA_ADDR" && COMMONPAGESIZE=""
 test -z "$CREATE_SHLIB$CREATE_PIE" && test -n "$DATA_ADDR" && COMMONPAGESIZE=""
 test -n "$RELRO_NOW" && unset SEPARATE_GOTPLT
-test -z "$ATTRS_SECTIONS" && ATTRS_SECTIONS=".gnu.attributes 0 : { KEEP (*(.gnu.attributes)) }"
-DATA_SEGMENT_ALIGN="ALIGN(${SEGMENT_SIZE}) + (. & (${MAXPAGESIZE} - 1))"
+test -z "$ATTRS_SECTIONS" && ATTRS_SECTIONS=".gnu.attributes 0 :  { KEEP (*(.gnu.attributes)) }"
+DATA_SEGMENT_ALIGN="ALIGN (${SEGMENT_SIZE}) + (. & (${MAXPAGESIZE} - 1))"
 DATA_SEGMENT_RELRO_END=""
 DATA_SEGMENT_END=""
 if test -n "${COMMONPAGESIZE}"; then
@@ -112,11 +112,11 @@ if test -n "${COMMONPAGESIZE}"; then
 fi
 if test -z "${INITIAL_READONLY_SECTIONS}${CREATE_SHLIB}"; then
   INITIAL_READONLY_SECTIONS=".interp       ${RELOCATING-0} : ${TCM+AT (__ebi_pa_start__ + ADDR (.interp) - __ebi_va_start__)}
-                             { *(.interp) }"
+                     { *(.interp) }"
 fi
 if test -z "$PLT"; then
   IPLT=".iplt         ${RELOCATING-0} : ${TCM+AT (__ebi_pa_start__ + ADDR (.iplt) - __ebi_va_start__)} { *(.iplt) }"
-  PLT=".plt          ${RELOCATING-0} :  ${TCM+AT (__ebi_pa_start__ + ADDR (.plt) - __ebi_va_start__)} { *(.plt)${IREL_IN_PLT+ *(.iplt)} }
+  PLT=".plt          ${RELOCATING-0} : ${TCM+AT (__ebi_pa_start__ + ADDR (.plt) - __ebi_va_start__)} { *(.plt)${IREL_IN_PLT+ *(.iplt)} }
   ${IREL_IN_PLT-$IPLT}"
 fi
 test -n "${DATA_PLT-${BSS_PLT-text}}" && TEXT_PLT=yes
@@ -141,8 +141,8 @@ RODATA=".rodata       ${RELOCATING-0} : ${TCM+AT (__ebi_pa_start__ + ADDR (.roda
           *(.rodata.hot .rodata.hot.* .gnu.linkonce.r.hot.*)
           *(.rodata${RELOCATING+ .rodata.* .gnu.linkonce.r.*})
         }"
-DATARELRO=".data.rel.ro : { *(.data.rel.ro.local* .gnu.linkonce.d.rel.ro.local.*) *(.data.rel.ro* .gnu.linkonce.d.rel.ro.*) }"
-DISCARDED="/DISCARD/ : { *(.note.GNU-stack) *(.gnu_debuglink) *(.gnu.lto_*) }"
+DATARELRO=".data.rel.ro    :  { *(.data.rel.ro.local* .gnu.linkonce.d.rel.ro.local.*) *(.data.rel.ro* .gnu.linkonce.d.rel.ro.*) }"
+DISCARDED="/DISCARD/       :  { *(.note.GNU-stack) *(.gnu_debuglink) *(.gnu.lto_*) }"
 if test -z "${NO_SMALL_DATA}"; then
   SBSS="
   ${RELOCATING+. = ALIGN (${ALIGNMENT});}
@@ -229,14 +229,14 @@ test "${LARGE_SECTIONS}" = "yes" && OTHER_BSS_SECTIONS="
     *(LARGE_COMMON)
   }"
 test "${LARGE_SECTIONS}" = "yes" && LARGE_SECTIONS="
-  .lrodata ${RELOCATING-0} ${RELOCATING+ALIGN(${MAXPAGESIZE}) + (. & (${MAXPAGESIZE} - 1))} : ${TCM+AT (__ebi_pa_start__ + ADDR (.lrodata) - __ebi_va_start__)}
+  .lrodata ${RELOCATING-0} ${RELOCATING+ALIGN (${MAXPAGESIZE}) + (. & (${MAXPAGESIZE} - 1))} : ${TCM+AT (__ebi_pa_start__ + ADDR (.lrodata) - __ebi_va_start__)}
   {
     *(.lrodata${RELOCATING+ .lrodata.* .gnu.linkonce.lr.*})
   }
-  .ldata ${RELOCATING-0} ${RELOCATING+ALIGN(${MAXPAGESIZE}) + (. & (${MAXPAGESIZE} - 1))} : ${TCM+AT (__ebi_pa_start__ + ADDR (.ldata) - __ebi_va_start__)}
+  .ldata ${RELOCATING-0} ${RELOCATING+ALIGN (${MAXPAGESIZE}) + (. & (${MAXPAGESIZE} - 1))} : ${TCM+AT (__ebi_pa_start__ + ADDR (.ldata) - __ebi_va_start__)}
   {
     *(.ldata${RELOCATING+ .ldata.* .gnu.linkonce.l.*})
-    ${RELOCATING+. = ALIGN(. != 0 ? ${ALIGNMENT} : 1);}
+    ${RELOCATING+. = ALIGN (. != 0 ? ${ALIGNMENT} : 1);}
   }"
 CTOR=".ctors        ${CONSTRUCTING-0} :  ${TCM+AT (__ebi_pa_start__ + ADDR (.ctors) - __ebi_va_start__)}
   {
@@ -294,7 +294,7 @@ TCM_ADDRESS=0xd8000000 # Physical address of the TCM.
 
 # EBI is the default memory bus, so just define those sections that don't fit the default code and data sections.
 EBI_CODE="
-    . = ALIGN (DEFINED (EBI_CODE_CACHED_ALIGN)? EBI_CODE_CACHED_ALIGN : ${ALIGNMENT});
+    . = ALIGN (DEFINED (EBI_CODE_CACHED_ALIGN) ? EBI_CODE_CACHED_ALIGN : ${ALIGNMENT});
 
     *(.ebi_code_cached${RELOCATING+ .ebi_code_cached.*})
     *(.ebi_code_cached_wb${RELOCATING+ .ebi_code_cached_wb.*})
@@ -302,7 +302,7 @@ EBI_CODE="
     *(.ebi_code_uncached${RELOCATING+ .ebi_code_uncached.*})"
 
 EBI_DATA="
-  . = ALIGN (DEFINED (EBI_DATA_CACHED_ALIGN)? EBI_DATA_CACHED_ALIGN : ${MAXPAGESIZE});
+  . = ALIGN (DEFINED (EBI_DATA_CACHED_ALIGN) ? EBI_DATA_CACHED_ALIGN : ${MAXPAGESIZE});
 
   .ebi_data_cached : AT (__ebi_pa_start__ + ADDR (.ebi_data_cached) - __ebi_va_start__)
   {
@@ -311,21 +311,21 @@ EBI_DATA="
   } :DATA"
 
 EBI_DATA_WT="
-  . = ALIGN (DEFINED (EBI_DATA_CACHED_WT_ALIGN)? EBI_DATA_CACHED_WT_ALIGN : ${MAXPAGESIZE});
+  . = ALIGN (DEFINED (EBI_DATA_CACHED_WT_ALIGN) ? EBI_DATA_CACHED_WT_ALIGN : ${MAXPAGESIZE});
 
   .ebi_data_cached_wt : AT (__ebi_pa_start__ + ADDR (.ebi_data_cached_wt) - __ebi_va_start__)
   { *(.ebi_data_cached_wt${RELOCATING+ .ebi_data_cached_wt.*}) } :EBI_DATA_WT"
 
 EBI_DATA_UN="
-  . = ALIGN (DEFINED (EBI_DATA_UNCACHED_ALIGN)? EBI_DATA_UNCACHED_ALIGN : ${MAXPAGESIZE});
+  . = ALIGN (DEFINED (EBI_DATA_UNCACHED_ALIGN) ? EBI_DATA_UNCACHED_ALIGN : ${MAXPAGESIZE});
 
   .ebi_data_uncached : AT (__ebi_pa_start__ + ADDR (.ebi_data_uncached) - __ebi_va_start__)
   { *(.ebi_data_uncached${RELOCATING+ .ebi_data_uncached.*}) } :EBI_DATA_UN"
 
 # SMI sections.
 SMI_CODE="
-  . = ALIGN (DEFINED (SMI_CODE_CACHED_ALIGN)? SMI_CODE_CACHED_ALIGN : ${MAXPAGESIZE});
-  . = ALIGN (DEFINED (SMI_CODE_UNCACHED_ALIGN)? SMI_CODE_UNCACHED_ALIGN : ${MAXPAGESIZE});
+  . = ALIGN (DEFINED (SMI_CODE_CACHED_ALIGN) ? SMI_CODE_CACHED_ALIGN : ${MAXPAGESIZE});
+  . = ALIGN (DEFINED (SMI_CODE_UNCACHED_ALIGN) ? SMI_CODE_UNCACHED_ALIGN : ${MAXPAGESIZE});
 
   .smi_code_cached : AT (__smi_pa_start__ + ADDR (.smi_code_cached) - __smi_va_start__)
   {
@@ -336,8 +336,8 @@ SMI_CODE="
   } :SMI_CODE =${NOP-0}"
 
 SMI_DATA="
-  . = ALIGN (DEFINED (SMI_DATA_CACHED_ALIGN)? SMI_DATA_CACHED_ALIGN : ${MAXPAGESIZE});
-  . = ALIGN (DEFINED (SMI_DATA_CACHED_WB_ALIGN)? SMI_DATA_CACHED_WB_ALIGN : ${MAXPAGESIZE});
+  . = ALIGN (DEFINED (SMI_DATA_CACHED_ALIGN) ? SMI_DATA_CACHED_ALIGN : ${MAXPAGESIZE});
+  . = ALIGN (DEFINED (SMI_DATA_CACHED_WB_ALIGN) ? SMI_DATA_CACHED_WB_ALIGN : ${MAXPAGESIZE});
 
   .smi_data_cached : AT (__smi_pa_start__ + ADDR (.smi_data_cached) - __smi_va_start__)
   {
@@ -346,21 +346,21 @@ SMI_DATA="
   } :SMI_DATA"
 
 SMI_DATA_WT="
-  . = ALIGN (DEFINED (SMI_DATA_CACHED_WT_ALIGN)? SMI_DATA_CACHED_WT_ALIGN : ${MAXPAGESIZE});
+  . = ALIGN (DEFINED (SMI_DATA_CACHED_WT_ALIGN) ? SMI_DATA_CACHED_WT_ALIGN : ${MAXPAGESIZE});
 
   .smi_data_cached_wt : AT (__smi_pa_start__ + ADDR (.smi_data_cached_wt) - __smi_va_start__)
   { *(.smi_data_cached_wt${RELOCATING+ .smi_data_cached_wt.*}) } :SMI_DATA_WT"
 
 SMI_DATA_UN="
-  . = ALIGN (DEFINED (SMI_DATA_UNCACHED_ALIGN)? SMI_DATA_UNCACHED_ALIGN : ${MAXPAGESIZE});
+  . = ALIGN (DEFINED (SMI_DATA_UNCACHED_ALIGN) ? SMI_DATA_UNCACHED_ALIGN : ${MAXPAGESIZE});
 
   .smi_data_uncached : AT (__smi_pa_start__ + ADDR (.smi_data_uncached) - __smi_va_start__)
   { *(.smi_data_uncached${RELOCATING+ .smi_data_uncached.*}) } :SMI_DATA_UN"
 
 # TCM sections.
 TCM_CODE="
-  . = ALIGN (DEFINED (TCM_CODE_CACHED_ALIGN)? TCM_CODE_CACHED_ALIGN : ${MAXPAGESIZE});
-  . = ALIGN (DEFINED (TCM_CODE_UNCACHED_ALIGN)? TCM_CODE_UNCACHED_ALIGN : ${MAXPAGESIZE});
+  . = ALIGN (DEFINED (TCM_CODE_CACHED_ALIGN) ? TCM_CODE_CACHED_ALIGN : ${MAXPAGESIZE});
+  . = ALIGN (DEFINED (TCM_CODE_UNCACHED_ALIGN) ? TCM_CODE_UNCACHED_ALIGN : ${MAXPAGESIZE});
 
   .tcm_code_cached : AT (__tcm_pa_start__ + ADDR (.tcm_code_cached) - __tcm_va_start__)
   {
@@ -371,8 +371,8 @@ TCM_CODE="
   } :TCM_CODE =${NOP-0}"
 
 TCM_DATA="
-  . = ALIGN (DEFINED (TCM_DATA_CACHED_ALIGN)? TCM_DATA_CACHED_ALIGN : ${MAXPAGESIZE});
-  . = ALIGN (DEFINED (TCM_DATA_CACHED_WB_ALIGN)? TCM_DATA_CACHED_WB_ALIGN : ${MAXPAGESIZE});
+  . = ALIGN (DEFINED (TCM_DATA_CACHED_ALIGN) ? TCM_DATA_CACHED_ALIGN : ${MAXPAGESIZE});
+  . = ALIGN (DEFINED (TCM_DATA_CACHED_WB_ALIGN) ? TCM_DATA_CACHED_WB_ALIGN : ${MAXPAGESIZE});
 
   .tcm_data_cached : AT (__tcm_pa_start__ + ADDR (.tcm_data_cached) - __tcm_va_start__)
   {
@@ -381,13 +381,13 @@ TCM_DATA="
   } :TCM_DATA"
 
 TCM_DATA_WT="
-  . = ALIGN (DEFINED (TCM_DATA_CACHED_WT_ALIGN)? TCM_DATA_CACHED_WT_ALIGN : ${MAXPAGESIZE});
+  . = ALIGN (DEFINED (TCM_DATA_CACHED_WT_ALIGN) ? TCM_DATA_CACHED_WT_ALIGN : ${MAXPAGESIZE});
 
   .tcm_data_cached_wt : AT (__tcm_pa_start__ + ADDR (.tcm_data_cached_wt) - __tcm_va_start__)
   { *(.tcm_data_cached_wt${RELOCATING+ .tcm_data_cached_wt.*}) } :TCM_DATA_WT"
 
 TCM_DATA_UN="
-  . = ALIGN (DEFINED (TCM_DATA_UNCACHED_ALIGN)? TCM_DATA_UNCACHED_ALIGN : ${MAXPAGESIZE});
+  . = ALIGN (DEFINED (TCM_DATA_UNCACHED_ALIGN) ? TCM_DATA_UNCACHED_ALIGN : ${MAXPAGESIZE});
 
   .tcm_data_uncached : AT (__tcm_pa_start__ + ADDR (.tcm_data_uncached) - __tcm_va_start__)
   { *(.tcm_data_uncached${RELOCATING+ .tcm_data_uncached.*}) } :TCM_DATA_UN"
@@ -445,14 +445,14 @@ SECTIONS
   ${CREATE_PIE+${RELOCATING+. = ${SHLIB_TEXT_START_ADDR} + SIZEOF_HEADERS;}}
 
 /* Start EBI memory. */
-  ${TCM+__ebi_va_start__ = ALIGN ((DEFINED (EBI_VA_START)? EBI_VA_START : .), ${MAXPAGESIZE});}
-  ${TCM+__ebi_pa_start__ = ALIGN ((DEFINED (EBI_PA_START)? EBI_PA_START : .), ${MAXPAGESIZE});}
+  ${TCM+__ebi_va_start__ = ALIGN ((DEFINED (EBI_VA_START) ? EBI_VA_START : .), ${MAXPAGESIZE});}
+  ${TCM+__ebi_pa_start__ = ALIGN ((DEFINED (EBI_PA_START) ? EBI_PA_START : .), ${MAXPAGESIZE});}
 
   ${TCM+. = __ebi_va_start__;}
   ${TCM+__ebi_start = __ebi_pa_start__;}
 
   ${INITIAL_READONLY_SECTIONS}
-  .note.gnu.build-id : { *(.note.gnu.build-id) }
+  .note.gnu.build-id :  { *(.note.gnu.build-id) }
 EOF
 
 test -n "${RELOCATING+0}" || unset NON_ALLOC_DYN
@@ -537,8 +537,8 @@ fi
 
 cat <<EOF
 /* Code starts. */
-  ${RELOCATING+. = ALIGN (DEFINED (TEXTALIGN)? (TEXTALIGN * 1K) : ${MAXPAGESIZE});}
-  ${TCM+. = ALIGN (DEFINED (EBI_CODE_CACHED_ALIGN)? EBI_CODE_CACHED_ALIGN : ${MAXPAGESIZE});}
+  ${RELOCATING+. = ALIGN (DEFINED (TEXTALIGN) ? (TEXTALIGN * 1K) : ${MAXPAGESIZE});}
+  ${TCM+. = ALIGN (DEFINED (EBI_CODE_CACHED_ALIGN) ? EBI_CODE_CACHED_ALIGN : ${MAXPAGESIZE});}
 
   ${TCM+.BOOTUP : "{}" :BOOTUP}
 
@@ -581,14 +581,14 @@ cat <<EOF
   ${RELOCATING+PROVIDE (${ETEXT_NAME} = .);}
 
 /* Constants start. */
-  ${RELOCATING+. = ALIGN (DEFINED (RODATAALIGN)? (RODATAALIGN * 1K) : ${MAXPAGESIZE});}
-  ${TCM+. = ALIGN (DEFINED (EBI_DATA_CACHED_ALIGN)? EBI_DATA_CACHED_ALIGN : ${MAXPAGESIZE});}
+  ${RELOCATING+. = ALIGN (DEFINED (RODATAALIGN) ? (RODATAALIGN * 1K) : ${MAXPAGESIZE});}
+  ${TCM+. = ALIGN (DEFINED (EBI_DATA_CACHED_ALIGN) ? EBI_DATA_CACHED_ALIGN : ${MAXPAGESIZE});}
 
   ${TCM+.CONST : "{}" :CONST}
 
   ${WRITABLE_RODATA-${RODATA}}
   .rodata1      ${RELOCATING-0} : ${TCM+AT (__ebi_pa_start__ + ADDR (.rodata1) - __ebi_va_start__)} { *(.rodata1) }
-  .eh_frame_hdr : ${TCM+AT (__ebi_pa_start__ + ADDR (.eh_frame_hdr) - __ebi_va_start__)} { *(.eh_frame_hdr) }
+  .eh_frame_hdr   : ${TCM+AT (__ebi_pa_start__ + ADDR (.eh_frame_hdr) - __ebi_va_start__)} { *(.eh_frame_hdr) }
   .eh_frame     ${RELOCATING-0} : ${TCM+AT (__ebi_pa_start__ + ADDR (.eh_frame) - __ebi_va_start__)} ONLY_IF_RO { KEEP (*(.eh_frame)) }
   .gcc_except_table ${RELOCATING-0} : ${TCM+AT (__ebi_pa_start__ + ADDR (.gcc_except_table) - __ebi_va_start__)} ONLY_IF_RO { *(.gcc_except_table .gcc_except_table.*) }
   ${OTHER_READONLY_SECTIONS}
@@ -600,8 +600,8 @@ cat <<EOF
   ${CREATE_SHLIB+${RELOCATING+. = ${SHLIB_DATA_ADDR-${DATA_SEGMENT_ALIGN}};}}
   ${CREATE_PIE+${RELOCATING+. = ${SHLIB_DATA_ADDR-${DATA_SEGMENT_ALIGN}};}}
 
-  ${RELOCATING+. = ALIGN (DEFINED (DATAALIGN)? (DATAALIGN * 1K) : ${MAXPAGESIZE});}
-  ${TCM+. = ALIGN (DEFINED (EBI_DATA_CACHED_ALIGN)? EBI_DATA_CACHED_ALIGN : ${MAXPAGESIZE});}
+  ${RELOCATING+. = ALIGN (DEFINED (DATAALIGN) ? (DATAALIGN * 1K) : ${MAXPAGESIZE});}
+  ${TCM+. = ALIGN (DEFINED (EBI_DATA_CACHED_ALIGN) ? EBI_DATA_CACHED_ALIGN : ${MAXPAGESIZE});}
 
   ${TCM+.DATA : "{}" :DATA}
 
@@ -675,21 +675,22 @@ cat <<EOF
    /* Align here to ensure that the .bss section occupies space up to
       _end.  Align after .bss to ensure correct alignment even if the
       .bss section disappears because there are no input sections. */
-   ${RELOCATING+. = ALIGN(. != 0 ? ${ALIGNMENT} : 1);}
+   ${RELOCATING+. = ALIGN (. != 0 ? ${ALIGNMENT} : 1);}
   }
   ${OTHER_BSS_SECTIONS}
-  ${RELOCATING+. = ALIGN(${ALIGNMENT});}
+  ${RELOCATING+. = ALIGN (${ALIGNMENT});}
   ${RELOCATING+${OTHER_BSS_END_SYMBOLS}}
   ${RELOCATING+${END_SYMBOLS-${USER_LABEL_PREFIX}_end = .;}}
   ${LARGE_SECTIONS}
   ${TCM+${EBI_DATA_WT}
   ${EBI_DATA_UN}}
 
+${NO_SMALL_DATA-
 /* Small data start. */
-  ${RELOCATING+. = ALIGN (DEFINED (DATAALIGN)? (DATAALIGN * 1K) : 512K);}
-  ${TCM+. = ALIGN (DEFINED (EBI_DATA_CACHED_ALIGN)? EBI_DATA_CACHED_ALIGN : 512K);}
-
+  ${RELOCATING+. = ALIGN (DEFINED (DATAALIGN) ? (DATAALIGN * 1K) : 512K);}
+  ${TCM+. = ALIGN (DEFINED (EBI_DATA_CACHED_ALIGN) ? EBI_DATA_CACHED_ALIGN : 512K);}
   ${TCM+.SDATA : "{}" :SDATA}
+}
 
   ${SDATA}
   ${SMALL_DATA_CTOR+${RELOCATING+${CTOR}}}
@@ -699,7 +700,7 @@ cat <<EOF
   ${SDATA_GOT+${OTHER_GOT_SECTIONS}}
   ${OTHER_SDATA_SECTIONS}
   ${SBSS}
-  ${RELOCATING+. = ALIGN(${ALIGNMENT});}
+  ${RELOCATING+. = ALIGN (${ALIGNMENT});}
   ${RELOCATING+${OTHER_END_SYMBOLS}}
   ${RELOCATING+${END_SYMBOLS-PROVIDE (${USER_LABEL_PREFIX}end = .);}}
   ${RELOCATING+${DATA_SEGMENT_END}}
@@ -724,8 +725,8 @@ cat <<EOF
   ${TCM+__ebi_end = __ebi_pa_start__ + . - __ebi_va_start__;}
 
 ${TCM+/* Start SMI memory. */}
-  ${TCM+__smi_va_start__ = ALIGN ((DEFINED (SMI_VA_START)? SMI_VA_START : .), ${MAXPAGESIZE});}
-  ${TCM+__smi_pa_start__ = ALIGN ((DEFINED (SMI_PA_START)? SMI_PA_START : .), ${MAXPAGESIZE});}
+  ${TCM+__smi_va_start__ = ALIGN ((DEFINED (SMI_VA_START) ? SMI_VA_START : .), ${MAXPAGESIZE});}
+  ${TCM+__smi_pa_start__ = ALIGN ((DEFINED (SMI_PA_START) ? SMI_PA_START : .), ${MAXPAGESIZE});}
 
   ${TCM+. = __smi_va_start__;}
   ${TCM+__smi_start = __smi_pa_start__;}
@@ -738,8 +739,8 @@ ${TCM+/* Start SMI memory. */}
   ${TCM+__smi_end = __smi_pa_start__ + . - __smi_va_start__;}
 
 ${TCM+/* Start TCM memory. */}
-  ${TCM+__tcm_va_start__ = ALIGN ((DEFINED (TCM_VA_START)? TCM_VA_START : ${TCM_ADDRESS-0xd8000000}), ${MAXPAGESIZE});}
-  ${TCM+__tcm_pa_start__ = ALIGN ((DEFINED (TCM_PA_START)? TCM_PA_START : ${TCM_ADDRESS-0xd8000000}), ${MAXPAGESIZE});}
+  ${TCM+__tcm_va_start__ = ALIGN ((DEFINED (TCM_VA_START) ? TCM_VA_START : ${TCM_ADDRESS-0xd8000000}), ${MAXPAGESIZE});}
+  ${TCM+__tcm_pa_start__ = ALIGN ((DEFINED (TCM_PA_START) ? TCM_PA_START : ${TCM_ADDRESS-0xd8000000}), ${MAXPAGESIZE});}
 
   ${TCM+. = __tcm_va_start__;}
   ${TCM+__tcm_start = __tcm_pa_start__;}
@@ -752,49 +753,49 @@ ${TCM+/* Start TCM memory. */}
   ${TCM+__tcm_end = __tcm_pa_start__ + . - __tcm_va_start__;}
 
   /* Stabs debugging sections.  */
-  .stab          0 : { *(.stab) }
-  .stabstr       0 : { *(.stabstr) }
-  .stab.excl     0 : { *(.stab.excl) }
-  .stab.exclstr  0 : { *(.stab.exclstr) }
-  .stab.index    0 : { *(.stab.index) }
-  .stab.indexstr 0 : { *(.stab.indexstr) }
+  .stab          0 :  { *(.stab) }
+  .stabstr       0 :  { *(.stabstr) }
+  .stab.excl     0 :  { *(.stab.excl) }
+  .stab.exclstr  0 :  { *(.stab.exclstr) }
+  .stab.index    0 :  { *(.stab.index) }
+  .stab.indexstr 0 :  { *(.stab.indexstr) }
 
-  .comment       0 : { *(.comment) }
+  .comment       0 :  { *(.comment) }
 
   /* DWARF debug sections.
      Symbols in the DWARF debugging sections are relative to the beginning
      of the section so we begin them at 0.  */
 
   /* DWARF 1 */
-  .debug          0 : { *(.debug) }
-  .line           0 : { *(.line) }
+  .debug          0 :  { *(.debug) }
+  .line           0 :  { *(.line) }
 
   /* GNU DWARF 1 extensions */
-  .debug_srcinfo  0 : { *(.debug_srcinfo) }
-  .debug_sfnames  0 : { *(.debug_sfnames) }
+  .debug_srcinfo  0 :  { *(.debug_srcinfo) }
+  .debug_sfnames  0 :  { *(.debug_sfnames) }
 
   /* DWARF 1.1 and DWARF 2 */
-  .debug_aranges  0 : { *(.debug_aranges) }
-  .debug_pubnames 0 : { *(.debug_pubnames) }
+  .debug_aranges  0 :  { *(.debug_aranges) }
+  .debug_pubnames 0 :  { *(.debug_pubnames) }
 
   /* DWARF 2 */
-  .debug_info     0 : { *(.debug_info${RELOCATING+ .gnu.linkonce.wi.*}) }
-  .debug_abbrev   0 : { *(.debug_abbrev) }
-  .debug_line     0 : { *(.debug_line) }
-  .debug_frame    0 : { *(.debug_frame) }
-  .debug_str      0 : { *(.debug_str) }
-  .debug_loc      0 : { *(.debug_loc) }
-  .debug_macinfo  0 : { *(.debug_macinfo) }
+  .debug_info     0 :  { *(.debug_info${RELOCATING+ .gnu.linkonce.wi.*}) }
+  .debug_abbrev   0 :  { *(.debug_abbrev) }
+  .debug_line     0 :  { *(.debug_line) }
+  .debug_frame    0 :  { *(.debug_frame) }
+  .debug_str      0 :  { *(.debug_str) }
+  .debug_loc      0 :  { *(.debug_loc) }
+  .debug_macinfo  0 :  { *(.debug_macinfo) }
 
   /* SGI/MIPS DWARF 2 extensions */
-  .debug_weaknames 0 : { *(.debug_weaknames) }
-  .debug_funcnames 0 : { *(.debug_funcnames) }
-  .debug_typenames 0 : { *(.debug_typenames) }
-  .debug_varnames  0 : { *(.debug_varnames) }
+  .debug_weaknames 0 :  { *(.debug_weaknames) }
+  .debug_funcnames 0 :  { *(.debug_funcnames) }
+  .debug_typenames 0 :  { *(.debug_typenames) }
+  .debug_varnames  0 :  { *(.debug_varnames) }
 
   /* DWARF 3 */
-  .debug_pubtypes 0 : { *(.debug_pubtypes) }
-  .debug_ranges   0 : { *(.debug_ranges) }
+  .debug_pubtypes 0 :  { *(.debug_pubtypes) }
+  .debug_ranges   0 :  { *(.debug_ranges) }
 
   ${TINY_DATA_SECTION}
   ${TINY_BSS_SECTION}
