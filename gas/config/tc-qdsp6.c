@@ -306,8 +306,6 @@ char *qdsp6_insn_write
 void qdsp6_packet_init (qdsp6_packet *);
 void qdsp6_packet_begin (qdsp6_packet *);
 void qdsp6_packet_end (qdsp6_packet *);
-void qdsp6_packet_end_inner (qdsp6_packet *);
-void qdsp6_packet_end_outer (qdsp6_packet *);
 void qdsp6_packet_end_lookahead (int *inner_p, int *);
 void qdsp6_packet_check (qdsp6_packet *);
 void qdsp6_packet_unfold (qdsp6_packet *);
@@ -335,7 +333,7 @@ int qdsp6_prefix_kext (qdsp6_packet_insn *, long);
 char *qdsp6_parse_immediate
   (qdsp6_packet_insn *, qdsp6_packet_insn *, const qdsp6_operand *,
    char *, long *, char **);
-static char *qdsp6_parse_pic (qdsp6_pic_type *);
+static char *qdsp6_parse_pic (qdsp6_pic_type *, char **);
 int qdsp6_gp_const_lookup (char *str, char *);
 segT qdsp6_create_sbss_section (const char *, flagword, unsigned int);
 segT qdsp6_create_scom_section (const char *, flagword, unsigned int);
@@ -360,6 +358,7 @@ int qdsp6_has_mem (const qdsp6_packet *);
 int qdsp6_has_store (const qdsp6_packet *);
 int qdsp6_has_store_not (const qdsp6_packet *);
 int qdsp6_has_but_ax (const qdsp6_packet *);
+int qdsp6_has_solo (const qdsp6_packet *);
 int qdsp6_is_nop_keep (const qdsp6_packet *, int);
 int qdsp6_find_noslot1 (const qdsp6_packet *, size_t);
 void qdsp6_check_register
@@ -369,7 +368,6 @@ void qdsp6_check_predicate (int, const qdsp6_opcode *);
 void qdsp6_check_implicit
   (const qdsp6_opcode *, unsigned int, int, qdsp6_reg_score *, const char *);
 void qdsp6_check_implicit_predicate (const qdsp6_opcode *, unsigned int, int);
-int qdsp6_packet_check_solo (const qdsp6_packet *);
 int qdsp6_relax_branch (fragS *);
 int qdsp6_relax_falign (fragS *);
 long qdsp6_relax_branch_try (fragS *, segT, long);
@@ -1114,6 +1112,7 @@ qdsp6_relax_falign
       qdsp6_shuffle_prepare (&packet);
       if (qdsp6_shuffle_helper (&packet, 0, NULL))
         {
+          /* Padding resulted in a well-formed packet. */
           qdsp6_packet_fold (&packet);
           qdsp6_packet_unpad (&packet);
           after = packet.size;
@@ -1140,6 +1139,8 @@ qdsp6_relax_falign
         }
       else
         {
+          /* In order to avoid a malformed packet, convert the padding into a
+             padding packet. */
           qdsp6_packet_fold (&packet);
           after = apacket->size;
 
@@ -1276,7 +1277,7 @@ qdsp6_relax_falign_try
                     next = 0;
 
                   room = MAX_PACKET_INSNS - MAX (size, next);
-                  if (room)
+                  if (room && !qdsp6_has_solo (zpacket))
                     {
                       zpacket->ddpad += MIN (left, room);
                       left           -= MIN (left, room);
@@ -1721,7 +1722,7 @@ qdsp6_parse_immediate
   int is_relax = FALSE;
   int is_lo16 = FALSE, is_hi16 = FALSE;
   char *pic_line;
-  qdsp6_pic_type pic_type = PIC_NONE;
+  qdsp6_pic_type pic_type;
 
   /* We only have the mandatory '#' for immediates that are NOT pc relative */
   if (*str == '#')
@@ -1784,15 +1785,19 @@ qdsp6_parse_immediate
     }
 
   hold = input_line_pointer;
-  input_line_pointer = str;
+    {
+      input_line_pointer = str;
 
-  pic_line = qdsp6_parse_pic (&pic_type);
-  if (pic_line)
-    input_line_pointer = pic_line;
+      pic_type = PIC_NONE;
+      pic_line = qdsp6_parse_pic (&pic_type, &str);
+      if (pic_line)
+        input_line_pointer = pic_line;
 
-  expression (&exp);
+      expression (&exp);
 
-  str = input_line_pointer;
+      if (!pic_line)
+        str = input_line_pointer;
+    }
   input_line_pointer = hold;
 
   if (pic_type == PIC_GOT)
@@ -3572,7 +3577,7 @@ qdsp6_assemble
 		  else if (operand->flags & QDSP6_OPERAND_IS_IMMEDIATE)
 		    {
 		      str = qdsp6_parse_immediate
-			      (ainsn, aprefix, operand, str, &op_val,
+			      (ainsn, aprefix, operand, op_str, &op_val,
                                !pair? &errmsg: NULL);
 		      if (!str)
 			goto NEXT_OPCODE;
@@ -3609,6 +3614,7 @@ qdsp6_assemble
 
                   /* Store the operand value in case the insn is an alias. */
                   assert (op_ndx < MAX_OPERANDS);
+                  assert (str);
 
                   op_args [op_ndx].operand = operand;
                   op_args [op_ndx].value = op_val;
@@ -4268,14 +4274,14 @@ qdsp6_got_frag
 
 static char *
 qdsp6_parse_pic
-(qdsp6_pic_type *gottype)
+(qdsp6_pic_type *type, char **extra)
 {
   static const struct
     {
       const char *str;
-      const qdsp6_pic_type gottype;
+      const qdsp6_pic_type type;
     }
-  gotrel [] =
+  pic [] =
     {
       { "GOTOFF", PIC_GOTOFF },
       { "GOT", PIC_GOT },
@@ -4288,40 +4294,42 @@ qdsp6_parse_pic
     if (is_end_of_line [(unsigned char) *cp])
       return NULL;
 
-  for (j = 0; j < ARRAY_SIZE (gotrel); j++)
+  for (j = 0; j < ARRAY_SIZE (pic); j++)
     {
       size_t len;
 
-      len = strlen (gotrel [j].str);
-      if (!(strncasecmp (cp + 1, gotrel [j].str, len)))
+      len = strlen (pic [j].str);
+      if (!(strncasecmp (cp + 1, pic [j].str, len)))
 	{
           ptrdiff_t before, after;
-          char *tmpbuf, *past;
-
-          /* Replace the relocation token with ' ', so that
-              errors like foo@GOTOFF1 will be detected.  */
+          char *tmp, *past;
 
           /* The length of the before part of our input line.  */
           before = cp - input_line_pointer;
 
-          /* The after part goes from after the relocation token until
-              (and including) an end_of_line char.  Don't use strlen
-              here as the end_of_line char may not be a NUL.  */
+          /* The after part goes from after the picocation token until
+             (and including) an end_of_line char.  Don't use strlen
+             here as the end_of_line char may not be a NUL.  */
           past = cp + 1 + len;
           for (cp = past; !is_end_of_line [(unsigned char) *cp]; cp++)
             ;
           after = cp - past;
 
           /* Allocate and form string.  */
-          tmpbuf = xmalloc (before + after + 2);
+          tmp = xmalloc (before + after + 2);
 
-          memcpy (tmpbuf, input_line_pointer, before);
-          tmpbuf [before] = ' ';
-          memcpy (tmpbuf + before + 1, past, after);
-          tmpbuf [before + after + 1] = '\0';
+          strncpy (tmp, input_line_pointer, before);
+          /* Replace the '@' with ' ', so that errors like "foo@GOTOFF1"
+             will be detected.  */
+          tmp [before] = ' ';
+          strncpy (tmp + before + 1, past, after);
+          tmp [before + after + 1] = '\0';
 
-          *gottype = gotrel [j].gottype;
-          return (tmpbuf);
+          *type = pic [j].type;
+          if (extra)
+            *extra = past;
+
+          return (tmp);
 	}
     }
 
@@ -4349,10 +4357,9 @@ qdsp6_cons_fix_new
 
         case 4:
 	  {
-	    expressionS exptmp;
-	    char *save;
-	    char *picptr;
-	    qdsp6_pic_type pic;
+	    expressionS tmp;
+	    char *save, *pic_line;
+	    qdsp6_pic_type pictype;
 
             r_type = BFD_RELOC_32;
 
@@ -4360,16 +4367,16 @@ qdsp6_cons_fix_new
 	    if (!(strncmp (save, "@GOT", 4)))
               {
                 /* Handle GOT and PLT expressions. */
-                picptr = qdsp6_parse_pic (&pic);
-                if (picptr)
+                pic_line = qdsp6_parse_pic (&pictype, NULL);
+                if (pic_line)
                   {
-                    input_line_pointer = picptr;
-                    expression (&exptmp);
-                    exp->X_add_number += exptmp.X_add_number;
+                    input_line_pointer = pic_line;
+                    expression (&tmp);
+                    exp->X_add_number += tmp.X_add_number;
 
-                    if (pic == PIC_GOTOFF)
+                    if (pictype == PIC_GOTOFF)
                       r_type = BFD_RELOC_32_GOTOFF;
-                    else if (pic == PIC_GOT)
+                    else if (pictype == PIC_GOT)
                       r_type = BFD_RELOC_QDSP6_GOT_32;
                   }
 
@@ -5589,7 +5596,7 @@ qdsp6_packet_end
     */
 
       /* Check for a solo instruction in a packet with :endloop0. */
-      if (qdsp6_packet_check_solo (apacket))
+      if (qdsp6_has_solo (apacket))
         as_bad (_("packet marked with `:endloop0' cannot contain a solo instruction."));
     }
 
@@ -5601,7 +5608,7 @@ qdsp6_packet_end
                   "modify registers `SA1', `LC1' or `PC'."));
 
       /* Check for a solo instruction in a packet with :endloop1. */
-      if (qdsp6_packet_check_solo (apacket))
+      if (qdsp6_has_solo (apacket))
         as_bad (_("packet marked with `:endloop1' cannot contain a solo instruction."));
     }
 
@@ -5646,7 +5653,7 @@ qdsp6_packet_end
 }
 
 int
-qdsp6_packet_check_solo
+qdsp6_has_solo
 (const qdsp6_packet *apacket)
 {
   int solo;
@@ -5658,51 +5665,6 @@ qdsp6_packet_check_solo
       solo = TRUE;
 
   return (solo);
-}
-
-/** Validate end of inner loop packet.
-*/
-void
-qdsp6_packet_end_inner
-(qdsp6_packet *apacket)
-{
-  /* Check whether registers updated by :endloop0 are updated in packet. */
-  if (cArray [QDSP6_P30].used | cArray [QDSP6_SR].used
-      | cArray [QDSP6_SA0].used | cArray [QDSP6_LC0].used | cArray [QDSP6_PC].used)
-    as_bad (_("packet marked with `:endloop0' cannot contain instructions that " \
-              "modify registers `C4/P3:0', `C8/USR', `SA0', `LC0' or `PC'."));
-
-  /* Although it may be dangerous to modify P3 then, legacy code is full of this. */
-/*
-  if (pArray [3])
-    as_warn (_("packet marked with `:endloop0' that contain instructions that " \
-               "modify register `p3' may have undefined results if "
-               "ending a pipelined loop."));
-*/
-
-  /* Check for a solo instruction in a packet with :endloop0. */
-  if (qdsp6_packet_check_solo (apacket))
-    as_bad (_("packet marked with `:endloop0' cannot contain a solo instruction."));
-
-  apacket->is_inner = TRUE;
-}
-
-/** Validate end of outer loop packet.
-*/
-void
-qdsp6_packet_end_outer
-(qdsp6_packet *apacket)
-{
-  /* Check whether registers updated by :endloop1 are updated in packet. */
-  if (cArray [QDSP6_SA1].used | cArray [QDSP6_LC1].used | cArray [QDSP6_PC].used)
-    as_bad (_("packet marked with `:endloop1' cannot contain instructions that " \
-              "modify registers `SA1', `LC1' or `PC'."));
-
-  /* Check for a solo instruction in a packet with :endloop1. */
-  if (qdsp6_packet_check_solo (apacket))
-    as_bad (_("packet marked with `:endloop1' cannot contain a solo instruction."));
-
-  apacket->is_outer = TRUE;
 }
 
 /*
