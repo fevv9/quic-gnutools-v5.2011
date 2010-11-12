@@ -5898,6 +5898,10 @@ dynamic_section_qdsp6_val (Elf_Internal_Dyn * entry)
     case DT_QDSP6_VER:
       print_vma (entry->d_un.d_ptr, UNSIGNED);
       break;
+
+    default:
+      print_vma (entry->d_un.d_ptr, PREFIX_HEX);
+      break;
     }
   putchar ('\n');
 }
