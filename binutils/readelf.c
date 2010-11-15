@@ -132,7 +132,7 @@
 #include "elf/pj.h"
 #include "elf/ppc.h"
 #include "elf/ppc64.h"
-#include "elf/qdsp6.h"
+#include "elf/hexagon.h"
 #include "elf/s390.h"
 #include "elf/score.h"
 #include "elf/sh.h"
@@ -608,7 +608,7 @@ guess_is_rela (unsigned int e_machine)
     case EM_NIOS32:
     case EM_PPC64:
     case EM_PPC:
-    case EM_QDSP6:
+    case EM_HEXAGON:
     case EM_S390:
     case EM_S390_OLD:
     case EM_SH:
@@ -1221,8 +1221,8 @@ dump_relocations (FILE * file,
 	  rtype = elf_microblaze_reloc_type (type);
 	  break;
 
-	case EM_QDSP6:
-	  rtype = elf_qdsp6_reloc_type (type);
+	case EM_HEXAGON_:
+	  rtype = elf_hexagon_reloc_type (type);
 	  break;
 	}
 
@@ -1575,12 +1575,12 @@ get_ia64_dynamic_type (unsigned long type)
 }
 
 static const char *
-get_qdsp6_dynamic_type (unsigned long type)
+get_hexagon_dynamic_type (unsigned long type)
 {
   switch (type)
     {
-    case DT_QDSP6_SYMSZ: return "QDSP6_SYMSZ";
-    case DT_QDSP6_VER:   return "QDSP6_VER";
+    case DT_HEXAGON_SYMSZ: return "HEXAGON_SYMSZ";
+    case DT_HEXAGON_VER:   return "HEXAGON_VER";
     default:
       return NULL;
     }
@@ -1719,8 +1719,8 @@ get_dynamic_type (unsigned long type)
 	    case EM_IA_64:
 	      result = get_ia64_dynamic_type (type);
 	      break;
-            case EM_QDSP6:
-              result = get_qdsp6_dynamic_type (type);
+            case EM_HEXAGON_:
+              result = get_hexagon_dynamic_type (type);
               break;
 	    case EM_ALPHA:
 	      result = get_alpha_dynamic_type (type);
@@ -1911,7 +1911,7 @@ get_machine_name (unsigned e_machine)
     case EM_CR16_OLD:		return "National Semiconductor's CR16";
     case EM_MICROBLAZE:		return "Xilinx MicroBlaze";
     case EM_MICROBLAZE_OLD:	return "Xilinx MicroBlaze";
-    case EM_QDSP6:		return "Qualcomm QDSP6";
+    case EM_HEXAGON_:		return "Qualcomm HEXAGON";
     default:
       snprintf (buff, sizeof (buff), _("<unknown>: 0x%x"), e_machine);
       return buff;
@@ -2457,13 +2457,13 @@ get_machine_flags (unsigned e_flags, unsigned e_machine)
 	    strcat (buf, ", G-Float");
 	  break;
 
-        case EM_QDSP6:
-          switch (EF_QDSP6_MACH_VER (e_flags))
+        case EM_HEXAGON_:
+          switch (EF_HEXAGON_MACH_VER (e_flags))
             {
-	      case EF_QDSP6_MACH_V1: strcat (buf, ", V1"); break;
-	      case EF_QDSP6_MACH_V2: strcat (buf, ", V2"); break;
-	      case EF_QDSP6_MACH_V3: strcat (buf, ", V3"); break;
-	      case EF_QDSP6_MACH_V4: strcat (buf, ", V4"); break;
+	      case EF_HEXAGON_MACH_V1: strcat (buf, ", V1"); break;
+	      case EF_HEXAGON_MACH_V2: strcat (buf, ", V2"); break;
+	      case EF_HEXAGON_MACH_V3: strcat (buf, ", V3"); break;
+	      case EF_HEXAGON_MACH_V4: strcat (buf, ", V4"); break;
             }
           break;
 
@@ -2585,14 +2585,14 @@ get_ia64_segment_type (unsigned long type)
 }
 
 static const char *
-get_qdsp6_segment_type
+get_hexagon_segment_type
 (unsigned long type)
 {
   switch (type)
     {
-      /* PT_QDSP6_EBI, as the default memory type, is the same as PT_LOAD. */
-      case PT_QDSP6_SMI:       return "QDSP6_SMI";
-      case PT_QDSP6_TCM:       return "QDSP6_TCM";
+      /* PT_HEXAGON_EBI, as the default memory type, is the same as PT_LOAD. */
+      case PT_HEXAGON_SMI:       return "HEXAGON_SMI";
+      case PT_HEXAGON_TCM:       return "HEXAGON_TCM";
     }
 
   return NULL;
@@ -2637,8 +2637,8 @@ get_segment_type (unsigned long p_type)
 	    case EM_PARISC:
 	      result = get_parisc_segment_type (p_type);
 	      break;
-	    case EM_QDSP6:
-	      result = get_qdsp6_segment_type (p_type);
+	    case EM_HEXAGON_:
+	      result = get_hexagon_segment_type (p_type);
 	      break;
 	    case EM_IA_64:
 	      result = get_ia64_segment_type (p_type);
@@ -5886,16 +5886,16 @@ dynamic_section_ia64_val (Elf_Internal_Dyn * entry)
 }
 
 static void
-dynamic_section_qdsp6_val (Elf_Internal_Dyn * entry)
+dynamic_section_hexagon_val (Elf_Internal_Dyn * entry)
 {
   switch (entry->d_tag)
     {
-    case DT_QDSP6_SYMSZ:
+    case DT_HEXAGON_SYMSZ:
       print_vma (entry->d_un.d_ptr, UNSIGNED);
       printf (" (bytes)");
       break;
 
-    case DT_QDSP6_VER:
+    case DT_HEXAGON_VER:
       print_vma (entry->d_un.d_ptr, UNSIGNED);
       break;
 
@@ -6587,8 +6587,8 @@ process_dynamic_section (FILE * file)
 		case EM_IA_64:
 		  dynamic_section_ia64_val (entry);
 		  break;
-                case EM_QDSP6:
-                  dynamic_section_qdsp6_val (entry);
+                case EM_HEXAGON_:
+                  dynamic_section_hexagon_val (entry);
                   break;
 		default:
 		  print_vma (entry->d_un.d_val, PREFIX_HEX);
@@ -8125,8 +8125,8 @@ is_32bit_abs_reloc (unsigned int reloc_type)
       return reloc_type == 1; /* R_PPC64_ADDR32.  */
     case EM_PPC:
       return reloc_type == 1; /* R_PPC_ADDR32.  */
-    case EM_QDSP6:
-      return reloc_type == 6; /* R_QDSP6_32.  */
+    case EM_HEXAGON_:
+      return reloc_type == 6; /* R_HEXAGON_32.  */
     case EM_S370:
       return reloc_type == 1; /* R_I370_ADDR31.  */
     case EM_S390_OLD:
