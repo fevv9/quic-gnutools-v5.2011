@@ -1800,12 +1800,16 @@ qdsp6_parse_immediate
     }
   input_line_pointer = hold;
 
+  operandx = NULL;
   if (pic_type == PIC_GOT)
-    operand = qdsp6_operand_find (operand, "got");
+    operandx = qdsp6_operand_find (operand, "got");
   else if (pic_type == PIC_GOTOFF)
-    operand = qdsp6_operand_find (operand, "gotoff");
+    operandx = qdsp6_operand_find (operand, "gotoff");
   else if (pic_type == PIC_PLT)
-    operand = qdsp6_operand_find (operand, "plt");
+    operandx = qdsp6_operand_find (operand, "plt");
+  if (operandx)
+    /* Get new PIC operand. */
+    operand = operandx;
 
   if (is_lo16 || is_hi16)
     {
@@ -4307,7 +4311,7 @@ qdsp6_parse_pic
           /* The length of the before part of our input line.  */
           before = cp - input_line_pointer;
 
-          /* The after part goes from after the picocation token until
+          /* The after part goes from after the relocation token until
              (and including) an end_of_line char.  Don't use strlen
              here as the end_of_line char may not be a NUL.  */
           past = cp + 1 + len;
