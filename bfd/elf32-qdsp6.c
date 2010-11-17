@@ -47,11 +47,14 @@
    section.  */
 #define ELF_DYNAMIC_INTERPRETER "/lib/ld.so"
 
+/* The size in insns of an entry in the PLT, per the QDSP6 ABI. */
+#define PLT_ENTRY_LENGTH (6)
 /* The size in bytes of an entry in the PLT, per the QDSP6 ABI. */
-#define PLT_ENTRY_SIZE (6 * sizeof (qdsp6_insn))
+#define PLT_ENTRY_SIZE (PLT_ENTRY_LENGTH * sizeof (qdsp6_insn))
 /* The size of the PLT first few entries reserved for the dynamic linker,
    per the QDSP6 ABI. */
 #define PLT_RESERVED_ENTRIES (4)
+#define PLT_INITIAL_ENTRY_LENGTH (PLT_ENTRY_LENGTH * PLT_RESERVED_ENTRIES)
 #define PLT_INITIAL_ENTRY_SIZE (PLT_ENTRY_SIZE * PLT_RESERVED_ENTRIES)
 
 /* The size in bytes of an entry in the GOT, per the QDSP6 ABI. */
@@ -189,28 +192,50 @@ static const qdsp6_trampoline qdsp6_trampolines [] =
 
 /* Reserved entry that is placed at the start of the PLT, used for lazy
    binding. */
-static const qdsp6_insn qdsp6_plt_initial_entry [] =
+static const qdsp6_insn qdsp6_plt_initial_entry [PLT_INITIAL_ENTRY_LENGTH] =
   {
-    0x6a09c00c, /* r12 = pc                                             */
-    0x918cc11c, /* r28 = memw (r12 + #32)    # offset of @PLT from GOT  */
-    0xf33ccc1c, /* r28 = sub (r12, r28)      # address of GOT           */
-    0xf32c4f0d, /* { r13 = sub (r15, r12)    # offset of @PLT           */
-    0xf33c4e0e, /*   r14 = sub (r14, r28)    # offset of @GOT           */
-    0x919c404f, /*   r15 = memw (r28 + #8)   # object ID at GOT [2]     */
-    0x919cc02b, /*   r11 = memw (r28 + #4) } # dynamic link at GOT [1]  */
-    0x528bc000, /* jumpr r11                 # call it                  */
-    0x00000000, /* .word @GOTOFF                                        */
+#ifdef QDSP6_OLD_PLT_ENTRY
+    0x6a09c00c, /* r12 = pc                                            */
+    0x918cc11c, /* r28 = memw (r12 + #32)    # offset of @PLT from GOT */
+    0xf33ccc1c, /* r28 = sub (r12, r28)      # address of GOT          */
+    0xf32c4f0d, /* { r13 = sub (r15, r12)    # offset of @PLT from PLT */
+    0xf33c4e0e, /*   r14 = sub (r14, r28)    # offset of @GOT from GOT */
+    0x919c404f, /*   r15 = memw (r28 + #8)   # object ID at GOT [2]    */
+    0x919cc02b, /*   r11 = memw (r28 + #4) } # dynamic link at GOT [1] */
+    0x528bc000, /* jumpr r11                 # call it                 */
+    0x00000000, /* .word GOTOFF                                        */
+#else
+    0x6a09400c, /*  { r12 = pc                # address of PLT          */
+    0x723cc000, /*    r28.h = #hi (PLT@GOTOFF) }                        */
+    0x713cc000, /*  r28.l = #lo (PLT@GOTOFF)  # offset of PLT from GOT  */
+    0xf33ccc1c, /*  r28 = sub (r12, r28)      # address of GOT          */
+    0xf33c4e0e, /*  { r14 = sub (r14, r28)    # offset of @GOT from GOT */
+    0x919cc04f, /*    r15 = memw (r28 + #8) } # object ID at GOT [2]    */
+    0xbfee7e0d, /*  { r13 = add (r14, #-16)                             */
+    0x919cc03c, /*    r28 = memw (r28 + #4) } # dynamic link at GOT [1] */
+    0x8c0d420d, /*  { r13 = asr (r13, #2)     # index of @PLT           */
+    0x529cc000, /*    jumpr r28 }             # call dynamic link       */
+#endif
   };
 
 /* Default PLT entry */
-static const qdsp6_insn qdsp6_plt_entry [] =
+static const qdsp6_insn qdsp6_plt_entry [PLT_ENTRY_LENGTH] =
   {
-    0x6a09c00f, /* r15 = pc                                               */
+#ifdef QDSP6_OLD_PLT_ENTRY
+    0x6a09c00f, /* r15 = pc                    # address of @PLT          */
     0x918fc0bc, /* r28 = memw (r15 + #20)      # offset of @GOT from @PLT */
     0xf30fdc0e, /* r14 = add (r15, r28)        # address of @GOT          */
     0x918ec01c, /* r28 = memw (r14)            # contents of @GOT         */
     0x529cc000, /* jumpr r28                   # call it                  */
     0x00000000, /* .word @GOT - @PLT                                      */
+#else
+    0x6a09400f, /* { r15 = pc                  # address of @PLT          */
+    0x723cc000, /*   r28.h = #hi (@GOT - @PLT) }                          */
+    0x713cc000, /* r28.l = #lo (@GOT - @PLT)   # offset of @GOT from @PLT */
+    0xf30fdc0e, /* r14 = add (r15, r28)        # address of @GOT          */
+    0x918ec01c, /* r28 = memw (r14)            # contents of @GOT         */
+    0x529cc000, /* jumpr r28                   # call it                  */
+#endif
   };
 
 static reloc_howto_type qdsp6_elf_howto_table [] =
@@ -3463,8 +3488,27 @@ qdsp6_elf_finish_dynamic_symbol
       /* Initialize the PLT entry. */
       memcpy (htab->elf.splt->contents + h->plt.offset,
               qdsp6_plt_entry, sizeof (qdsp6_plt_entry));
-      /* Its last word contains the difference between the address of
+      /* A couple of insns contain the difference between the address of
          its corresponding GOT entry and the address of the PLT entry. */
+      qdsp6_reloc_operand
+        (qdsp6_elf_howto_table + R_QDSP6_HI16,
+         (qdsp6_insn *) (htab->elf.splt->contents + h->plt.offset
+                         + 1 * sizeof (*qdsp6_plt_entry)),
+         htab->elf.sgotplt->output_section->vma + htab->elf.sgotplt->output_offset
+         + got_offset
+         - htab->elf.splt->output_section->vma - htab->elf.splt->output_offset
+         - h->plt.offset,
+         NULL);
+      qdsp6_reloc_operand
+        (qdsp6_elf_howto_table + R_QDSP6_LO16,
+         (qdsp6_insn *) (htab->elf.splt->contents + h->plt.offset
+                         + 2 * sizeof (*qdsp6_plt_entry)),
+         htab->elf.sgotplt->output_section->vma + htab->elf.sgotplt->output_offset
+         + got_offset
+         - htab->elf.splt->output_section->vma - htab->elf.splt->output_offset
+         - h->plt.offset,
+         NULL);
+/*
       bfd_put_32 (obfd,
                   htab->elf.sgotplt->output_section->vma
                   + htab->elf.sgotplt->output_offset
@@ -3474,6 +3518,7 @@ qdsp6_elf_finish_dynamic_symbol
                   - h->plt.offset,
                   htab->elf.splt->contents + h->plt.offset
                   + sizeof (qdsp6_plt_entry) - sizeof (*qdsp6_plt_entry));
+*/
 
       /* Intialize the GOT entry corresponding to this PLT entry to initially
          point to the 0th PLT entry, which marshalls the dynamic linker
@@ -3704,8 +3749,27 @@ qdsp6_elf_finish_dynamic_sections
              resolve symbols used by the other PLT entries. */
 	  memcpy (htab->elf.splt->contents, qdsp6_plt_initial_entry,
 	          sizeof (qdsp6_plt_initial_entry));
-	  /* Its last word contains the difference between the address of the
+	  /* A couple of insns contain the difference between the address of the
 	     PLT and of the GOT. */
+          qdsp6_reloc_operand
+            (qdsp6_elf_howto_table + R_QDSP6_HI16,
+            (qdsp6_insn *) (htab->elf.splt->contents
+                            + 1 * sizeof (*qdsp6_plt_initial_entry)),
+            htab->elf.splt->output_section->vma
+            + htab->elf.splt->output_offset
+            - htab->elf.sgotplt->output_section->vma
+            - htab->elf.sgotplt->output_offset,
+            NULL);
+          qdsp6_reloc_operand
+            (qdsp6_elf_howto_table + R_QDSP6_LO16,
+            (qdsp6_insn *) (htab->elf.splt->contents
+                            + 2 * sizeof (*qdsp6_plt_initial_entry)),
+            htab->elf.splt->output_section->vma
+            + htab->elf.splt->output_offset
+            - htab->elf.sgotplt->output_section->vma
+            - htab->elf.sgotplt->output_offset,
+            NULL);
+/*
 	  bfd_put_32 (obfd,
 		      htab->elf.splt->output_section->vma
 		      + htab->elf.splt->output_offset
@@ -3714,6 +3778,7 @@ qdsp6_elf_finish_dynamic_sections
 		      htab->elf.splt->contents
 		      + sizeof (qdsp6_plt_initial_entry)
 		      - sizeof (*qdsp6_plt_initial_entry));
+*/
 
 	  elf_section_data (htab->elf.splt->output_section)->this_hdr.sh_entsize
 	    = PLT_ENTRY_SIZE;
