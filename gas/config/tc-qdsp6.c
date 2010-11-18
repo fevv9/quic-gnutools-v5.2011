@@ -1584,7 +1584,7 @@ qdsp6_init
       qdsp6_pairing        &= qdsp6_if_arch_pairs ();
       qdsp6_pairing_branch &= qdsp6_pairing;
       qdsp6_pairing_duplex &= qdsp6_pairing;
-      qdsp6_relax          &= qdsp6_extender & qdsp6_pairing_branch;
+      qdsp6_relax          &= qdsp6_extender;
       qdsp6_relax_long     &= qdsp6_relax;
 
       /* Tell `.option' it's too late.  */
@@ -1718,16 +1718,21 @@ qdsp6_parse_immediate
   const qdsp6_operand *operandx;
   long value = 0;
   long xvalue = 0;
-  int is_x = FALSE, is_may_x = FALSE, is_not_x = FALSE;
+  int is_may_x = FALSE, is_x = FALSE, is_lbs = FALSE;
   int is_relax = FALSE;
   int is_lo16 = FALSE, is_hi16 = FALSE;
   char *pic_line;
   qdsp6_pic_type pic_type;
 
-  /* We only have the mandatory '#' for immediates that are NOT pc relative */
+  is_may_x = (((insn->opcode->attributes & EXTENDABLE_LOWER_CASE_IMMEDIATE)
+               && ISLOWER (operand->enc_letter))
+              || ((insn->opcode->attributes & EXTENDABLE_UPPER_CASE_IMMEDIATE)
+                  && ISUPPER (operand->enc_letter)));
+
+  /* We only have the mandatory '#' for immediates that are NOT PC-relative */
   if (*str == '#')
     {
-      is_not_x = (operand->flags & QDSP6_OPERAND_PC_RELATIVE);
+      is_lbs = (operand->flags & QDSP6_OPERAND_PC_RELATIVE);
       str++;
       if (*str == '#')
         {
@@ -1736,20 +1741,15 @@ qdsp6_parse_immediate
         }
       else
         {
-          is_x = (insn->opcode->attributes & MUST_EXTEND);
+          is_x = (qdsp6_extender) && (insn->opcode->attributes & MUST_EXTEND);
         }
-      is_not_x = is_not_x && !is_x;
+      is_lbs = is_lbs && !is_x;
     }
   else if (!(operand->flags & QDSP6_OPERAND_PC_RELATIVE))
     return NULL;
 
-  is_may_x = (((insn->opcode->attributes & EXTENDABLE_LOWER_CASE_IMMEDIATE)
-               && ISLOWER (operand->enc_letter))
-              || ((insn->opcode->attributes & EXTENDABLE_UPPER_CASE_IMMEDIATE)
-                  && ISUPPER (operand->enc_letter)));
-
-  is_relax = ENCODE_RELAX (operand->reloc_type)
-             && !is_not_x && (is_x || is_may_x);
+  is_relax = is_may_x && !is_x && !is_lbs
+             && ENCODE_RELAX (operand->reloc_type);
 
   if (is_x && !insn->opcode->map)
     {
