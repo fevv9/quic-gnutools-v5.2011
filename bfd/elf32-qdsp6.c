@@ -194,17 +194,6 @@ static const qdsp6_trampoline qdsp6_trampolines [] =
    binding. */
 static const qdsp6_insn qdsp6_plt_initial_entry [PLT_INITIAL_ENTRY_LENGTH] =
   {
-#ifdef QDSP6_OLD_PLT_ENTRY
-    0x6a09c00c, /* r12 = pc                                            */
-    0x918cc11c, /* r28 = memw (r12 + #32)    # offset of @PLT from GOT */
-    0xf33ccc1c, /* r28 = sub (r12, r28)      # address of GOT          */
-    0xf32c4f0d, /* { r13 = sub (r15, r12)    # offset of @PLT from PLT */
-    0xf33c4e0e, /*   r14 = sub (r14, r28)    # offset of @GOT from GOT */
-    0x919c404f, /*   r15 = memw (r28 + #8)   # object ID at GOT [2]    */
-    0x919cc02b, /*   r11 = memw (r28 + #4) } # dynamic link at GOT [1] */
-    0x528bc000, /* jumpr r11                 # call it                 */
-    0x00000000, /* .word GOTOFF                                        */
-#else
     0x6a09400c, /*  { r12 = pc                # address of PLT          */
     0x723cc000, /*    r28.h = #hi (PLT@GOTOFF) }                        */
     0x713cc000, /*  r28.l = #lo (PLT@GOTOFF)  # offset of PLT from GOT  */
@@ -215,27 +204,17 @@ static const qdsp6_insn qdsp6_plt_initial_entry [PLT_INITIAL_ENTRY_LENGTH] =
     0x919cc03c, /*    r28 = memw (r28 + #4) } # dynamic link at GOT [1] */
     0x8c0d420d, /*  { r13 = asr (r13, #2)     # index of @PLT           */
     0x529cc000, /*    jumpr r28 }             # call dynamic link       */
-#endif
   };
 
 /* Default PLT entry */
 static const qdsp6_insn qdsp6_plt_entry [PLT_ENTRY_LENGTH] =
   {
-#ifdef QDSP6_OLD_PLT_ENTRY
-    0x6a09c00f, /* r15 = pc                    # address of @PLT          */
-    0x918fc0bc, /* r28 = memw (r15 + #20)      # offset of @GOT from @PLT */
-    0xf30fdc0e, /* r14 = add (r15, r28)        # address of @GOT          */
-    0x918ec01c, /* r28 = memw (r14)            # contents of @GOT         */
-    0x529cc000, /* jumpr r28                   # call it                  */
-    0x00000000, /* .word @GOT - @PLT                                      */
-#else
     0x6a09400f, /* { r15 = pc                  # address of @PLT          */
     0x723cc000, /*   r28.h = #hi (@GOT - @PLT) }                          */
     0x713cc000, /* r28.l = #lo (@GOT - @PLT)   # offset of @GOT from @PLT */
     0xf30fdc0e, /* r14 = add (r15, r28)        # address of @GOT          */
     0x918ec01c, /* r28 = memw (r14)            # contents of @GOT         */
     0x529cc000, /* jumpr r28                   # call it                  */
-#endif
   };
 
 static reloc_howto_type qdsp6_elf_howto_table [] =
