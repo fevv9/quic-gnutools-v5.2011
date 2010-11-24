@@ -706,7 +706,7 @@ static reloc_howto_type hexagon_elf_howto_table [] =
 	 FALSE,			/* partial_inplace  */
 	 0,			/* src_mask  */
 	 0xffffffff,		/* dst_mask  */
-	 FALSE),		/* pcrel_offset  */
+	 TRUE),			/* pcrel_offset  */
 
   /* Copy initial value from copy in DSO. */
   HOWTO (R_HEXAGON_COPY,		/* type  */
