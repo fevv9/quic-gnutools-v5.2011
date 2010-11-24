@@ -2229,20 +2229,16 @@ qdsp6_elf_relax_section (bfd *input_bfd,
           /* Check if the target is beyond reach. */
           ioffset = abs ((to + to_base) - (from + at_base));
           if ((is_def && (((rtype == R_QDSP6_B22_PCREL)
-                                 && QDSP6_TRAMPLINE_NEEDED (ioffset, 24))
-                             || ((rtype == R_QDSP6_B15_PCREL)
-                                 && QDSP6_TRAMPLINE_NEEDED (ioffset, 17))
-                             || ((rtype == R_QDSP6_B13_PCREL)
-                                 && QDSP6_TRAMPLINE_NEEDED (ioffset, 15))
-                             || ((rtype == R_QDSP6_B9_PCREL)
-                                 && QDSP6_TRAMPLINE_NEEDED (ioffset, 11))))
+                           && QDSP6_TRAMPLINE_NEEDED (ioffset, 24))
+                          || ((rtype == R_QDSP6_B15_PCREL)
+                              && QDSP6_TRAMPLINE_NEEDED (ioffset, 17))
+                          || ((rtype == R_QDSP6_B13_PCREL)
+                              && QDSP6_TRAMPLINE_NEEDED (ioffset, 15))
+                          || ((rtype == R_QDSP6_B9_PCREL)
+                              && QDSP6_TRAMPLINE_NEEDED (ioffset, 11))))
               || !is_def)
 	    {
               /* Try to add a trampoline. */
-/*
-              printf ("Trampoline required at: %s (%s+0x%lx) for `%s'\n",
-                      input_bfd->filename, isec->name, at, h->root.root.string);
-*/
 
               /* Allocate new contents. */
               contents = elf_section_data (isec)->this_hdr.contents;
@@ -2287,7 +2283,7 @@ qdsp6_elf_relax_section (bfd *input_bfd,
                   t_at = isec_size;
 
                   if (((rtype == R_QDSP6_B22_PCREL)
-                          && QDSP6_TRAMPLINE_NEEDED (t_at - from, 23))
+                       && QDSP6_TRAMPLINE_NEEDED (t_at - from, 23))
                       || ((rtype == R_QDSP6_B15_PCREL)
                           && QDSP6_TRAMPLINE_NEEDED (t_at - from, 16))
                       || ((rtype == R_QDSP6_B13_PCREL)

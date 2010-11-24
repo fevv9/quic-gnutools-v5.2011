@@ -201,6 +201,7 @@ typedef struct _qdsp6_opcode
 #define A_RESTRICT_NOPACKET             0x00000010
 #define A_NOTE_NOPACKET                 A_RESTRICT_NOPACKET
 #define A_RESTRICT_NOSLOT1              0x00000020
+#define A_NOTE_NOSLOT1                  A_RESTRICT_NOSLOT1
 #define A_RESTRICT_NOCOF                0x00000040
 #define A_COF                           0x00000080
 #define A_RESTRICT_BRANCHADDER_MAX1     0x00000100
