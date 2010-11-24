@@ -119,7 +119,7 @@ ALL_MACHINES = \
 	cpu-pj.lo \
 	cpu-plugin.lo \
 	cpu-powerpc.lo \
-	cpu-qdsp6.lo \
+	cpu-hexagon.lo \
 	cpu-rs6000.lo \
 	cpu-s390.lo \
 	cpu-score.lo \
@@ -191,7 +191,7 @@ ALL_MACHINES_CFILES = \
 	cpu-pj.c \
 	cpu-plugin.c \
 	cpu-powerpc.c \
-	cpu-qdsp6.c \
+	cpu-hexagon.c \
 	cpu-rs6000.c \
 	cpu-s390.c \
 	cpu-score.c \
@@ -309,7 +309,7 @@ BFD32_BACKENDS = \
 	elf32-or32.lo \
 	elf32-pj.lo \
 	elf32-ppc.lo \
-	elf32-qdsp6.lo \
+	elf32-hexagon.lo \
 	elf32-s390.lo \
 	elf32-sh-symbian.lo \
 	elf32-sh.lo \
@@ -493,7 +493,7 @@ BFD32_BACKENDS_CFILES = \
 	elf32-or32.c \
 	elf32-pj.c \
 	elf32-ppc.c \
-	elf32-qdsp6.c \
+	elf32-hexagon.c \
 	elf32-s390.c \
 	elf32-sh-symbian.c \
 	elf32-sh.c \

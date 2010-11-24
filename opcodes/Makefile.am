@@ -61,7 +61,7 @@ HFILES = \
 	microblaze-opc.h \
 	mt-desc.h mt-opc.h \
 	openrisc-desc.h openrisc-opc.h \
-        qdsp6.h \
+        hexagon.h \
 	score-opc.h \
 	sh-opc.h \
 	sh64-opc.h \
@@ -189,8 +189,8 @@ TARGET_LIBOPCODES_CFILES = \
 	pj-opc.c \
 	ppc-dis.c \
 	ppc-opc.c \
-	qdsp6-dis.c \
-	qdsp6-opc.c \
+	hexagon-dis.c \
+	hexagon-opc.c \
 	s390-dis.c \
 	s390-opc.c \
 	score-dis.c \

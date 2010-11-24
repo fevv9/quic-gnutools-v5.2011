@@ -1903,11 +1903,11 @@ enum bfd_architecture
 #define bfd_mach_ppc_7400      7400
 #define bfd_mach_ppc_e500      500
 #define bfd_mach_ppc_e500mc    5001
-  bfd_arch_qdsp6,    /* Qualcomm QDSP6 */
-#define bfd_mach_qdsp6        1
-#define bfd_mach_qdsp6_v2     2
-#define bfd_mach_qdsp6_v3     3
-#define bfd_mach_qdsp6_v4     4
+  bfd_arch_hexagon,    /* Qualcomm HEXAGON */
+#define bfd_mach_hexagon        1
+#define bfd_mach_hexagon_v2     2
+#define bfd_mach_hexagon_v3     3
+#define bfd_mach_hexagon_v4     4
   bfd_arch_rs6000,    /* IBM RS/6000 */
 #define bfd_mach_rs6k          6000
 #define bfd_mach_rs6k_rs1      6001
@@ -4597,77 +4597,77 @@ value in a word.  The relocation is relative offset from  */
 the dynamic object into the runtime process image.  */
   BFD_RELOC_MICROBLAZE_COPY,
 
-/* QDSP6 relocation with 32 bits shifted right by 6.  */
-  BFD_RELOC_QDSP6_32_6_X,
+/* HEXAGON relocation with 32 bits shifted right by 6.  */
+  BFD_RELOC_HEXAGON_32_6_X,
 
-/* QDSP6 basic signed relocations extended by BFD_RELOC_QDSP6_32_6_X, holding
+/* HEXAGON basic signed relocations extended by BFD_RELOC_HEXAGON_32_6_X, holding
 the lower 6 bits.  */
-  BFD_RELOC_QDSP6_16_X,
-  BFD_RELOC_QDSP6_12_X,
-  BFD_RELOC_QDSP6_11_X,
-  BFD_RELOC_QDSP6_10_X,
-  BFD_RELOC_QDSP6_9_X,
-  BFD_RELOC_QDSP6_8_X,
-  BFD_RELOC_QDSP6_7_X,
-  BFD_RELOC_QDSP6_6_X,
+  BFD_RELOC_HEXAGON_16_X,
+  BFD_RELOC_HEXAGON_12_X,
+  BFD_RELOC_HEXAGON_11_X,
+  BFD_RELOC_HEXAGON_10_X,
+  BFD_RELOC_HEXAGON_9_X,
+  BFD_RELOC_HEXAGON_8_X,
+  BFD_RELOC_HEXAGON_7_X,
+  BFD_RELOC_HEXAGON_6_X,
 
-/* QDSP6 PC-relative relocation with 32-bit signed offset.  */
-  BFD_RELOC_QDSP6_32_PCREL,
+/* HEXAGON PC-relative relocation with 32-bit signed offset.  */
+  BFD_RELOC_HEXAGON_32_PCREL,
 
-/* QDSP6 PC-relative relocations with 24, 17, 15, 11 or 9-bit signed offset
+/* HEXAGON PC-relative relocations with 24, 17, 15, 11 or 9-bit signed offset
 shifted right by 1.  */
-  BFD_RELOC_QDSP6_B22_PCREL,
-  BFD_RELOC_QDSP6_B15_PCREL,
-  BFD_RELOC_QDSP6_B13_PCREL,
-  BFD_RELOC_QDSP6_B9_PCREL,
-  BFD_RELOC_QDSP6_B7_PCREL,
+  BFD_RELOC_HEXAGON_B22_PCREL,
+  BFD_RELOC_HEXAGON_B15_PCREL,
+  BFD_RELOC_HEXAGON_B13_PCREL,
+  BFD_RELOC_HEXAGON_B9_PCREL,
+  BFD_RELOC_HEXAGON_B7_PCREL,
 
-/* QDSP6 PC-relative relocations with 23-bit signed offset
+/* HEXAGON PC-relative relocations with 23-bit signed offset
 shifted right by 1 to a PLT entry.  */
-  BFD_RELOC_QDSP6_PLT_B22_PCREL,
+  BFD_RELOC_HEXAGON_PLT_B22_PCREL,
 
-/* QDSP6 PC-relative relocations with 32-bit signed offset shifted right by 6.  */
-  BFD_RELOC_QDSP6_B32_PCREL_X,
+/* HEXAGON PC-relative relocations with 32-bit signed offset shifted right by 6.  */
+  BFD_RELOC_HEXAGON_B32_PCREL_X,
 
-/* QDSP6 PC-relative relocations extended by BFD_RELOC_QDSP6_B32_PCREL_X,
+/* HEXAGON PC-relative relocations extended by BFD_RELOC_HEXAGON_B32_PCREL_X,
 holding the lower 6 bits shifted right by 1.  */
-  BFD_RELOC_QDSP6_B22_PCREL_X,
-  BFD_RELOC_QDSP6_B15_PCREL_X,
-  BFD_RELOC_QDSP6_B13_PCREL_X,
-  BFD_RELOC_QDSP6_B9_PCREL_X,
-  BFD_RELOC_QDSP6_B7_PCREL_X,
+  BFD_RELOC_HEXAGON_B22_PCREL_X,
+  BFD_RELOC_HEXAGON_B15_PCREL_X,
+  BFD_RELOC_HEXAGON_B13_PCREL_X,
+  BFD_RELOC_HEXAGON_B9_PCREL_X,
+  BFD_RELOC_HEXAGON_B7_PCREL_X,
 
-/* QDSP6 relocations for the lower and the higher 16 bits of a 32-bit address,
+/* HEXAGON relocations for the lower and the higher 16 bits of a 32-bit address,
 applied to individual instructions or to a pair of instructions.  */
-  BFD_RELOC_QDSP6_LO16,
-  BFD_RELOC_QDSP6_HI16,
-  BFD_RELOC_QDSP6_HL16,
+  BFD_RELOC_HEXAGON_LO16,
+  BFD_RELOC_HEXAGON_HI16,
+  BFD_RELOC_HEXAGON_HL16,
 
-/* QDSP6 GOT-relative relocations for the lower and the higher 16 bits and
+/* HEXAGON GOT-relative relocations for the lower and the higher 16 bits and
 all 32 bits of a 32-bit address.  */
-  BFD_RELOC_QDSP6_GOTOFF_LO16,
-  BFD_RELOC_QDSP6_GOTOFF_HI16,
-  BFD_RELOC_QDSP6_GOTOFF_32,
+  BFD_RELOC_HEXAGON_GOTOFF_LO16,
+  BFD_RELOC_HEXAGON_GOTOFF_HI16,
+  BFD_RELOC_HEXAGON_GOTOFF_32,
 
-/* QDSP6 GOT-relative relocations for the lower and the higher 16 bits,
+/* HEXAGON GOT-relative relocations for the lower and the higher 16 bits,
 all 32 bits and the signed lower 16 bits of a signed 32-bit offset.  */
-  BFD_RELOC_QDSP6_GOT_LO16,
-  BFD_RELOC_QDSP6_GOT_HI16,
-  BFD_RELOC_QDSP6_GOT_32,
-  BFD_RELOC_QDSP6_GOT_16,
+  BFD_RELOC_HEXAGON_GOT_LO16,
+  BFD_RELOC_HEXAGON_GOT_HI16,
+  BFD_RELOC_HEXAGON_GOT_32,
+  BFD_RELOC_HEXAGON_GOT_16,
 
-/* QDSP6 GP-relative relocations with 16, 17, 18 or 19-bit unsigned offset
+/* HEXAGON GP-relative relocations with 16, 17, 18 or 19-bit unsigned offset
 shifted right by the access size.  */
-  BFD_RELOC_QDSP6_GPREL16_0,
-  BFD_RELOC_QDSP6_GPREL16_1,
-  BFD_RELOC_QDSP6_GPREL16_2,
-  BFD_RELOC_QDSP6_GPREL16_3,
+  BFD_RELOC_HEXAGON_GPREL16_0,
+  BFD_RELOC_HEXAGON_GPREL16_1,
+  BFD_RELOC_HEXAGON_GPREL16_2,
+  BFD_RELOC_HEXAGON_GPREL16_3,
 
-/* QDSP6 relocations for dynamic linking support.  */
-  BFD_RELOC_QDSP6_GLOB_DAT,
-  BFD_RELOC_QDSP6_COPY,
-  BFD_RELOC_QDSP6_JMP_SLOT,
-  BFD_RELOC_QDSP6_RELATIVE,
+/* HEXAGON relocations for dynamic linking support.  */
+  BFD_RELOC_HEXAGON_GLOB_DAT,
+  BFD_RELOC_HEXAGON_COPY,
+  BFD_RELOC_HEXAGON_JMP_SLOT,
+  BFD_RELOC_HEXAGON_RELATIVE,
   BFD_RELOC_UNUSED };
 typedef enum bfd_reloc_code_real bfd_reloc_code_real_type;
 reloc_howto_type *bfd_reloc_type_lookup

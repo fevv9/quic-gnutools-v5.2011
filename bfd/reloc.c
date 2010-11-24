@@ -5261,128 +5261,128 @@ ENUMDOC
   the dynamic object into the runtime process image.
 
 ENUM
-  BFD_RELOC_QDSP6_32_6_X
+  BFD_RELOC_HEXAGON_32_6_X
 ENUMDOC
-  QDSP6 relocation with 32 bits shifted right by 6.
+  HEXAGON relocation with 32 bits shifted right by 6.
 
 ENUM
-  BFD_RELOC_QDSP6_16_X
+  BFD_RELOC_HEXAGON_16_X
 ENUMX
-  BFD_RELOC_QDSP6_12_X
+  BFD_RELOC_HEXAGON_12_X
 ENUMX
-  BFD_RELOC_QDSP6_11_X
+  BFD_RELOC_HEXAGON_11_X
 ENUMX
-  BFD_RELOC_QDSP6_10_X
+  BFD_RELOC_HEXAGON_10_X
 ENUMX
-  BFD_RELOC_QDSP6_9_X
+  BFD_RELOC_HEXAGON_9_X
 ENUMX
-  BFD_RELOC_QDSP6_8_X
+  BFD_RELOC_HEXAGON_8_X
 ENUMX
-  BFD_RELOC_QDSP6_7_X
+  BFD_RELOC_HEXAGON_7_X
 ENUMX
-  BFD_RELOC_QDSP6_6_X
+  BFD_RELOC_HEXAGON_6_X
 ENUMDOC
-  QDSP6 basic signed relocations extended by BFD_RELOC_QDSP6_32_6_X, holding
+  HEXAGON basic signed relocations extended by BFD_RELOC_HEXAGON_32_6_X, holding
   the lower 6 bits.
 
 ENUM
-  BFD_RELOC_QDSP6_32_PCREL
+  BFD_RELOC_HEXAGON_32_PCREL
 ENUMDOC
-  QDSP6 PC-relative relocation with 32-bit signed offset.
+  HEXAGON PC-relative relocation with 32-bit signed offset.
 
 ENUM
-  BFD_RELOC_QDSP6_B22_PCREL
+  BFD_RELOC_HEXAGON_B22_PCREL
 ENUMX
-  BFD_RELOC_QDSP6_B15_PCREL
+  BFD_RELOC_HEXAGON_B15_PCREL
 ENUMX
-  BFD_RELOC_QDSP6_B13_PCREL
+  BFD_RELOC_HEXAGON_B13_PCREL
 ENUMX
-  BFD_RELOC_QDSP6_B9_PCREL
+  BFD_RELOC_HEXAGON_B9_PCREL
 ENUMX
-  BFD_RELOC_QDSP6_B7_PCREL
+  BFD_RELOC_HEXAGON_B7_PCREL
 ENUMDOC
-  QDSP6 PC-relative relocations with 24, 17, 15, 11 or 9-bit signed offset
+  HEXAGON PC-relative relocations with 24, 17, 15, 11 or 9-bit signed offset
   shifted right by 1.
 
 ENUM
-  BFD_RELOC_QDSP6_PLT_B22_PCREL
+  BFD_RELOC_HEXAGON_PLT_B22_PCREL
 ENUMDOC
-  QDSP6 PC-relative relocations with 23-bit signed offset
+  HEXAGON PC-relative relocations with 23-bit signed offset
   shifted right by 1 to a PLT entry.
 
 ENUM
-  BFD_RELOC_QDSP6_B32_PCREL_X
+  BFD_RELOC_HEXAGON_B32_PCREL_X
 ENUMDOC
-  QDSP6 PC-relative relocations with 32-bit signed offset shifted right by 6.
+  HEXAGON PC-relative relocations with 32-bit signed offset shifted right by 6.
 
 ENUM
-  BFD_RELOC_QDSP6_B22_PCREL_X
+  BFD_RELOC_HEXAGON_B22_PCREL_X
 ENUMX
-  BFD_RELOC_QDSP6_B15_PCREL_X
+  BFD_RELOC_HEXAGON_B15_PCREL_X
 ENUMX
-  BFD_RELOC_QDSP6_B13_PCREL_X
+  BFD_RELOC_HEXAGON_B13_PCREL_X
 ENUMX
-  BFD_RELOC_QDSP6_B9_PCREL_X
+  BFD_RELOC_HEXAGON_B9_PCREL_X
 ENUMX
-  BFD_RELOC_QDSP6_B7_PCREL_X
+  BFD_RELOC_HEXAGON_B7_PCREL_X
 ENUMDOC
-  QDSP6 PC-relative relocations extended by BFD_RELOC_QDSP6_B32_PCREL_X,
+  HEXAGON PC-relative relocations extended by BFD_RELOC_HEXAGON_B32_PCREL_X,
   holding the lower 6 bits shifted right by 1.
 
 ENUM
-  BFD_RELOC_QDSP6_LO16
+  BFD_RELOC_HEXAGON_LO16
 ENUMX
-  BFD_RELOC_QDSP6_HI16
+  BFD_RELOC_HEXAGON_HI16
 ENUMX
-  BFD_RELOC_QDSP6_HL16
+  BFD_RELOC_HEXAGON_HL16
 ENUMDOC
-  QDSP6 relocations for the lower and the higher 16 bits of a 32-bit address,
+  HEXAGON relocations for the lower and the higher 16 bits of a 32-bit address,
   applied to individual instructions or to a pair of instructions.
 
 ENUM
-  BFD_RELOC_QDSP6_GOTOFF_LO16
+  BFD_RELOC_HEXAGON_GOTOFF_LO16
 ENUMX
-  BFD_RELOC_QDSP6_GOTOFF_HI16
+  BFD_RELOC_HEXAGON_GOTOFF_HI16
 ENUMX
-  BFD_RELOC_QDSP6_GOTOFF_32
+  BFD_RELOC_HEXAGON_GOTOFF_32
 ENUMDOC
-  QDSP6 GOT-relative relocations for the lower and the higher 16 bits and
+  HEXAGON GOT-relative relocations for the lower and the higher 16 bits and
   all 32 bits of a 32-bit address.
 
 ENUM
-  BFD_RELOC_QDSP6_GOT_LO16
+  BFD_RELOC_HEXAGON_GOT_LO16
 ENUMX
-  BFD_RELOC_QDSP6_GOT_HI16
+  BFD_RELOC_HEXAGON_GOT_HI16
 ENUMX
-  BFD_RELOC_QDSP6_GOT_32
+  BFD_RELOC_HEXAGON_GOT_32
 ENUMX
-  BFD_RELOC_QDSP6_GOT_16
+  BFD_RELOC_HEXAGON_GOT_16
 ENUMDOC
-  QDSP6 GOT-relative relocations for the lower and the higher 16 bits,
+  HEXAGON GOT-relative relocations for the lower and the higher 16 bits,
   all 32 bits and the signed lower 16 bits of a signed 32-bit offset.
 
 ENUM
-  BFD_RELOC_QDSP6_GPREL16_0
+  BFD_RELOC_HEXAGON_GPREL16_0
 ENUMX
-  BFD_RELOC_QDSP6_GPREL16_1
+  BFD_RELOC_HEXAGON_GPREL16_1
 ENUMX
-  BFD_RELOC_QDSP6_GPREL16_2
+  BFD_RELOC_HEXAGON_GPREL16_2
 ENUMX
-  BFD_RELOC_QDSP6_GPREL16_3
+  BFD_RELOC_HEXAGON_GPREL16_3
 ENUMDOC
-  QDSP6 GP-relative relocations with 16, 17, 18 or 19-bit unsigned offset
+  HEXAGON GP-relative relocations with 16, 17, 18 or 19-bit unsigned offset
   shifted right by the access size.
 
 ENUM
-  BFD_RELOC_QDSP6_GLOB_DAT
+  BFD_RELOC_HEXAGON_GLOB_DAT
 ENUMX
-  BFD_RELOC_QDSP6_COPY
+  BFD_RELOC_HEXAGON_COPY
 ENUMX
-  BFD_RELOC_QDSP6_JMP_SLOT
+  BFD_RELOC_HEXAGON_JMP_SLOT
 ENUMX
-  BFD_RELOC_QDSP6_RELATIVE
+  BFD_RELOC_HEXAGON_RELATIVE
 ENUMDOC
-  QDSP6 relocations for dynamic linking support.
+  HEXAGON relocations for dynamic linking support.
 
 ENDSENUM
   BFD_RELOC_UNUSED

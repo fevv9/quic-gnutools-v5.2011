@@ -325,9 +325,9 @@ DATA_ALIGNMENT=${DATA_ALIGNMENT_N}
 ) | sed -e '/^ *$/d;s/[ 	]*$//' > ldscripts/${EMULATION_NAME}.xbn
 
 case "${target_alias}" in
-  qdsp6*-linux*)
+  hexagon*-linux*)
     ;;
-  qdsp6*)
+  hexagon*)
     LD_FLAG=tcm
     DATA_ALIGNMENT=${DATA_ALIGNMENT_}
     EMBEDDED=yes

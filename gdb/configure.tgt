@@ -389,12 +389,12 @@ powerpc*-*-*)
 	fi
 	;;
 
-qdsp6*-*-linux*)
-	gdb_target_obs="qdsp6-tdep.o"
+hexagon*-*-linux*)
+	gdb_target_obs="hexagon-tdep.o"
 	;;
 
-qdsp6-*-*)
-	gdb_target_obs="qdsp6-tdep.o qdsp6-sim.o"
+hexagon-*-*)
+	gdb_target_obs="hexagon-tdep.o hexagon-sim.o"
 	;;
 
 s390*-*-*)

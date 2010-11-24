@@ -413,7 +413,7 @@ CFLAGS = @CFLAGS@
 # Set by configure, for e.g. expat.
 INTERNAL_CPPFLAGS = @CPPFLAGS@
 
-QDSP6_CFLAGS = -I$(srcdir)/../../include/arch -I$(srcdir)/../tcl/generic
+HEXAGON_CFLAGS = -I$(srcdir)/../../include/arch -I$(srcdir)/../tcl/generic
 
 # Need to pass this to testsuite for "make check".  Probably should be
 # consistent with top-level Makefile.in and gdb/testsuite/Makefile.in
@@ -426,7 +426,7 @@ INTERNAL_CFLAGS_BASE = \
 	$(GDB_CFLAGS) $(OPCODES_CFLAGS) $(READLINE_CFLAGS) \
 	$(BFD_CFLAGS) $(INCLUDE_CFLAGS) $(LIBDECNUMBER_CFLAGS) \
 	$(INTL_CFLAGS) $(INCGNU) $(ENABLE_CFLAGS) $(INTERNAL_CPPFLAGS) \
-	$(QDSP6_CFLAGS)
+	$(HEXAGON_CFLAGS)
 INTERNAL_WARN_CFLAGS = $(INTERNAL_CFLAGS_BASE) $(GDB_WARN_CFLAGS)
 INTERNAL_CFLAGS = $(INTERNAL_WARN_CFLAGS) $(GDB_WERROR_CFLAGS)
 
@@ -537,7 +537,7 @@ ALL_TARGET_OBS = \
 	mt-tdep.o \
 	nto-tdep.o \
 	ppc-linux-tdep.o ppcnbsd-tdep.o ppcobsd-tdep.o ppc-sysv-tdep.o \
-	qdsp6-linux-tdep.o qdsp6-tdep.o qdsp6-sim.o \
+	hexagon-linux-tdep.o hexagon-tdep.o hexagon-sim.o \
 	rs6000-aix-tdep.o rs6000-tdep.o \
 	s390-tdep.o \
 	score-tdep.o \
@@ -771,7 +771,7 @@ m68k-tdep.h spu-tdep.h jv-lang.h environ.h solib-irix.h amd64-tdep.h \
 doublest.h regset.h hppa-tdep.h ppc-linux-tdep.h rs6000-tdep.h \
 gdb_locale.h gdb_dirent.h arch-utils.h trad-frame.h gnu-nat.h \
 language.h nbsd-tdep.h wrapper.h solib-svr4.h macroexp.h ui-file.h \
-qdsp6-sim.h regcache.h gdb_string.h tracepoint.h i386-tdep.h \
+hexagon-sim.h regcache.h gdb_string.h tracepoint.h i386-tdep.h \
 inf-child.h p-lang.h event-top.h gdbtypes.h scm-tags.h user-regs.h \
 regformats/regdef.h config/alpha/nm-osf3.h  config/i386/nm-i386gnu.h \
 config/i386/nm-fbsd.h config/i386/nm-i386sol2.h config/i386/nm-linux.h \
@@ -1479,7 +1479,7 @@ ALLDEPFILES = \
 	ppcnbsd-nat.c ppcnbsd-tdep.c \
 	ppcobsd-nat.c ppcobsd-tdep.c \
 	procfs.c \
-	qdsp6-tdep.c qdsp6-linux-tdep.c qdsp6-sim.c \
+	hexagon-tdep.c hexagon-linux-tdep.c hexagon-sim.c \
 	rs6000-aix-tdep.o rs6000-tdep.o \
 	remote-m32r-sdi.c remote-mips.c \
 	remote-sim.c \

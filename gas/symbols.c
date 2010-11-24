@@ -3185,7 +3185,7 @@ symbol_relc_make_expr (expressionS * exp)
 
 #endif
 
-#ifdef TC_QDSP6
+#ifdef TC_HEXAGON
 void
 symbol_adjust_value (sym, delta)
      symbolS *sym;

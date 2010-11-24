@@ -1,0 +1,36 @@
+SCRIPT_NAME=hexagon
+ARCH=hexagon
+MACHINE=
+TEMPLATE_NAME=elf32
+EXTRA_EM_FILE=hexagonelf
+OUTPUT_FORMAT="elf32-littlehexagon"
+LITTLE_OUTPUT_FORMAT="elf32-littlehexagon"
+BIG_OUTPUT_FORMAT="elf32-bighexagon"
+MAXPAGESIZE="CONSTANT (MAXPAGESIZE)"
+NONPAGED_TEXT_START_ADDR=0
+ENTRY=start
+DATA_GOT=yes
+SEPARATE_GOTPLT=0
+GENERATE_SHLIB_SCRIPT=yes
+GENERATE_COMBRELOC_SCRIPT=yes
+# HEXAGON V2 NOP
+NOP=0x00c0007f
+# Largest cache-line size
+ALIGNMENT=64 # L2
+SBSS_START_SYMBOLS="PROVIDE (${USER_LABEL_PREFIX}__sbss_start = .);
+PROVIDE (${USER_LABEL_PREFIX}___sbss_start = .);"
+SBSS_END_SYMBOLS="PROVIDE (${USER_LABEL_PREFIX}__sbss_end = .);
+PROVIDE (${USER_LABEL_PREFIX}___sbss_end = .);"
+SDATA_START_SYMBOLS="__default_sda_base__ = .;
+PROVIDE (_SDA_BASE_ = .);"
+
+case "$target" in
+  hexagon_*-linux*)
+    TEXT_START_ADDR="CONSTANT (MAXPAGESIZE)"
+    ;;
+  *)
+    EMBEDDED=yes
+    OTHER_EXCLUDE_FILES=fini.o
+    TEXT_START_ADDR=0
+    ;;
+esac

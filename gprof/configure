@@ -5160,7 +5160,7 @@ fi
 
 
 HEXAGON_SIM=
-if test "$target" == "qdsp6-unknown-none"; then
+if test "$target" == "hexagon-unknown-none"; then
 HEXAGON_SIM=1
 cat >>confdefs.h <<_ACEOF
 #define HEXAGON_SIM 1

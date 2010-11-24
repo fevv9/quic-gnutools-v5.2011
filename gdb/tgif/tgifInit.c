@@ -181,7 +181,7 @@ int Tgif_Init ( void ) {
     strcat(temp, "/../../lib/tcl84");
     strcpy(PathString, lrealpath(temp));
 #else
-    /* Get the path where qdsp6-gdb executable resides */ 
+    /* Get the path where hexagon-gdb executable resides */ 
     snprintf(temp, sizeof(temp),"/proc/self/exe");
     pathstring = realpath(temp, NULL);
     if (pathstring && (strlen (pathstring) < MAXPATHSTRING)) {
@@ -342,7 +342,7 @@ Tgif_execute_command (char *cmd, int from_tty) {
     /* reset tcl gdb display flag */
     tcl_setInteractive(0);
 
-    /* change back to qdsp6-gdb prompt */
+    /* change back to hexagon-gdb prompt */
     set_prompt (DEFAULT_PROMPT);
 
 	return (1);

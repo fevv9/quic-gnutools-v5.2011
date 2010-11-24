@@ -6742,18 +6742,18 @@ fi
 
 
 
-if test "$ac_cv_env_target_alias_value" = "qdsp6"; then
+if test "$ac_cv_env_target_alias_value" = "hexagon"; then
 
 $as_echo "#define TCL_PROMPT \"% \"" >>confdefs.h
 
 
-$as_echo "#define DEFAULT_PROMPT \"(qdsp6-gdb) \"" >>confdefs.h
+$as_echo "#define DEFAULT_PROMPT \"(hexagon-gdb) \"" >>confdefs.h
 
 
 $as_echo "#define HAVE_TCL 1" >>confdefs.h
 
 
-$as_echo "#define QDSP6 1" >>confdefs.h
+$as_echo "#define HEXAGON 1" >>confdefs.h
 
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for dlopen in -ldl" >&5
 $as_echo_n "checking for dlopen in -ldl... " >&6; }
@@ -6859,7 +6859,7 @@ fi
 
 # The TCL cannot be disabled yet, but may be in the future.
 
-if test $ac_cv_env_target_alias_value = qdsp6; then
+if test $ac_cv_env_target_alias_value = hexagon; then
 # Enable TCL.
 # Check whether --enable-gdbtgif was given.
 if test "${enable_gdbtgif+set}" = set; then :

@@ -478,7 +478,7 @@ catch_exceptions_with_msg (struct ui_out *uiout,
   volatile struct gdb_exception exception;
   volatile int val = 0;
 #ifdef HAVE_TCL
-  extern int Q6_tcl_fe_state;
+  extern int HEXAGON_tcl_fe_state;
 #endif
   TRY_CATCH (exception, mask)
     {
@@ -500,12 +500,12 @@ catch_exceptions_with_msg (struct ui_out *uiout,
 	    *gdberrmsg = NULL;
 	}
 #ifdef HAVE_TCL
-      if (Q6_tcl_fe_state == 1)
+      if (HEXAGON_tcl_fe_state == 1)
         {
           extern int is_breakpoint_callbk;
           if (is_breakpoint_callbk == 1)
             {
-              printf_filtered ("QDSP6: Error in callback function commands !\n");
+              printf_filtered ("HEXAGON: Error in callback function commands !\n");
               quit_force ((char *)0, 0);
             }
         }

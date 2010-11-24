@@ -230,11 +230,11 @@ DESCRIPTION
 .#define bfd_mach_ppc_7400	7400
 .#define bfd_mach_ppc_e500      500
 .#define bfd_mach_ppc_e500mc    5001
-.  bfd_arch_qdsp6,    {* Qualcomm QDSP6 *}
-.#define bfd_mach_qdsp6        1
-.#define bfd_mach_qdsp6_v2     2
-.#define bfd_mach_qdsp6_v3     3
-.#define bfd_mach_qdsp6_v4     4
+.  bfd_arch_hexagon,    {* Qualcomm HEXAGON *}
+.#define bfd_mach_hexagon        1
+.#define bfd_mach_hexagon_v2     2
+.#define bfd_mach_hexagon_v3     3
+.#define bfd_mach_hexagon_v4     4
 .  bfd_arch_rs6000,    {* IBM RS/6000 *}
 .#define bfd_mach_rs6k		6000
 .#define bfd_mach_rs6k_rs1	6001
@@ -517,7 +517,7 @@ extern const bfd_arch_info_type bfd_pj_arch;
 extern const bfd_arch_info_type bfd_plugin_arch;
 extern const bfd_arch_info_type bfd_powerpc_archs[];
 #define bfd_powerpc_arch bfd_powerpc_archs[0]
-extern const bfd_arch_info_type bfd_qdsp6_arch;
+extern const bfd_arch_info_type bfd_hexagon_arch;
 extern const bfd_arch_info_type bfd_rs6000_arch;
 extern const bfd_arch_info_type bfd_s390_arch;
 extern const bfd_arch_info_type bfd_score_arch;
@@ -591,7 +591,7 @@ static const bfd_arch_info_type * const bfd_archures_list[] =
     &bfd_or32_arch,
     &bfd_pdp11_arch,
     &bfd_powerpc_arch,
-    &bfd_qdsp6_arch,
+    &bfd_hexagon_arch,
     &bfd_rs6000_arch,
     &bfd_s390_arch,
     &bfd_score_arch,

@@ -42,7 +42,7 @@
 /* Define to BFD's default target vector. */
 #undef DEFAULT_BFD_VEC
 
-/* Define if qdsp6 is the target. */
+/* Define if hexagon is the target. */
 #undef DEFAULT_PROMPT
 
 /* Define to 1 if translation of program messages to the user's native
@@ -530,7 +530,7 @@
 /* Define to 1 if you have the <sys/wait.h> header file. */
 #undef HAVE_SYS_WAIT_H
 
-/* Define if qdsp6 is the target. */
+/* Define if hexagon is the target. */
 #undef HAVE_TCL
 
 /* Define to 1 if you have the <termios.h> header file. */
@@ -656,8 +656,8 @@
    'ptrdiff_t'. */
 #undef PTRDIFF_T_SUFFIX
 
-/* Define if qdsp6 is the target. */
-#undef QDSP6
+/* Define if hexagon is the target. */
+#undef HEXAGON
 
 /* Relocated directory for source files. */
 #undef RELOC_SRCDIR
@@ -706,7 +706,7 @@
    moved. */
 #undef SYSTEM_GDBINIT_RELOCATABLE
 
-/* Define if qdsp6 is the target. */
+/* Define if hexagon is the target. */
 #undef TCL_PROMPT
 
 /* Define if <thread_db.h> has the TD_NOTALLOC error code. */

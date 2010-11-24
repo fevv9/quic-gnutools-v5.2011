@@ -70,7 +70,7 @@
 #define ARCH_pdp11
 #define ARCH_pj
 #define ARCH_powerpc
-#define ARCH_qdsp6
+#define ARCH_hexagon
 #define ARCH_rs6000
 #define ARCH_s390
 #define ARCH_score
@@ -345,9 +345,9 @@ disassembler (abfd)
 	disassemble = print_insn_little_powerpc;
       break;
 #endif
-#ifdef ARCH_qdsp6
-    case bfd_arch_qdsp6:
-      disassemble = qdsp6_get_disassembler (abfd);
+#ifdef ARCH_hexagon
+    case bfd_arch_hexagon:
+      disassemble = hexagon_get_disassembler (abfd);
       break;
 #endif
 #ifdef ARCH_rs6000

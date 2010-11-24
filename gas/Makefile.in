@@ -550,7 +550,7 @@ TARGET_CPU_CFILES = \
 	config/tc-pdp11.c \
 	config/tc-pj.c \
 	config/tc-ppc.c \
-	config/tc-qdsp6.c \
+	config/tc-hexagon.c \
 	config/tc-s390.c \
 	config/tc-score.c \
 	config/tc-sh.c \
@@ -613,7 +613,7 @@ TARGET_CPU_HFILES = \
 	config/tc-pdp11.h \
 	config/tc-pj.h \
 	config/tc-ppc.h \
-	config/tc-qdsp6.h \
+	config/tc-hexagon.h \
 	config/tc-s390.h \
 	config/tc-score.h \
 	config/tc-sh.h \
@@ -993,7 +993,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tc-pdp11.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tc-pj.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tc-ppc.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tc-qdsp6.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tc-hexagon.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tc-s390.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tc-score.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tc-sh.Po@am__quote@
@@ -1651,19 +1651,19 @@ tc-ppc.obj: config/tc-ppc.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o tc-ppc.obj `if test -f 'config/tc-ppc.c'; then $(CYGPATH_W) 'config/tc-ppc.c'; else $(CYGPATH_W) '$(srcdir)/config/tc-ppc.c'; fi`
 
-tc-qdsp6.o: config/tc-qdsp6.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT tc-qdsp6.o -MD -MP -MF $(DEPDIR)/tc-qdsp6.Tpo -c -o tc-qdsp6.o `test -f 'config/tc-qdsp6.c' || echo '$(srcdir)/'`config/tc-qdsp6.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/tc-qdsp6.Tpo $(DEPDIR)/tc-qdsp6.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='config/tc-qdsp6.c' object='tc-qdsp6.o' libtool=no @AMDEPBACKSLASH@
+tc-hexagon.o: config/tc-hexagon.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT tc-hexagon.o -MD -MP -MF $(DEPDIR)/tc-hexagon.Tpo -c -o tc-hexagon.o `test -f 'config/tc-hexagon.c' || echo '$(srcdir)/'`config/tc-hexagon.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/tc-hexagon.Tpo $(DEPDIR)/tc-hexagon.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='config/tc-hexagon.c' object='tc-hexagon.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o tc-qdsp6.o `test -f 'config/tc-qdsp6.c' || echo '$(srcdir)/'`config/tc-qdsp6.c
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o tc-hexagon.o `test -f 'config/tc-hexagon.c' || echo '$(srcdir)/'`config/tc-hexagon.c
 
-tc-qdsp6.obj: config/tc-qdsp6.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT tc-qdsp6.obj -MD -MP -MF $(DEPDIR)/tc-qdsp6.Tpo -c -o tc-qdsp6.obj `if test -f 'config/tc-qdsp6.c'; then $(CYGPATH_W) 'config/tc-qdsp6.c'; else $(CYGPATH_W) '$(srcdir)/config/tc-qdsp6.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/tc-qdsp6.Tpo $(DEPDIR)/tc-qdsp6.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='config/tc-qdsp6.c' object='tc-qdsp6.obj' libtool=no @AMDEPBACKSLASH@
+tc-hexagon.obj: config/tc-hexagon.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT tc-hexagon.obj -MD -MP -MF $(DEPDIR)/tc-hexagon.Tpo -c -o tc-hexagon.obj `if test -f 'config/tc-hexagon.c'; then $(CYGPATH_W) 'config/tc-hexagon.c'; else $(CYGPATH_W) '$(srcdir)/config/tc-hexagon.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/tc-hexagon.Tpo $(DEPDIR)/tc-hexagon.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='config/tc-hexagon.c' object='tc-hexagon.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o tc-qdsp6.obj `if test -f 'config/tc-qdsp6.c'; then $(CYGPATH_W) 'config/tc-qdsp6.c'; else $(CYGPATH_W) '$(srcdir)/config/tc-qdsp6.c'; fi`
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o tc-hexagon.obj `if test -f 'config/tc-hexagon.c'; then $(CYGPATH_W) 'config/tc-hexagon.c'; else $(CYGPATH_W) '$(srcdir)/config/tc-hexagon.c'; fi`
 
 tc-s390.o: config/tc-s390.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT tc-s390.o -MD -MP -MF $(DEPDIR)/tc-s390.Tpo -c -o tc-s390.o `test -f 'config/tc-s390.c' || echo '$(srcdir)/'`config/tc-s390.c

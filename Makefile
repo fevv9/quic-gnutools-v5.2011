@@ -1,5 +1,5 @@
 #
-# Makefile to build binutils for the QDSP6.
+# Makefile to build binutils for the HEXAGON.
 #
 
 dirs = build_win build_lnx 
@@ -8,9 +8,9 @@ dirs = build_win build_lnx
 BS=$(shell uname)
 
 ifeq "$(BS)" "Linux"
-DESTDIR=/usr/local/qdsp6/gnu
+DESTDIR=/usr/local/hexagon/gnu
 else
-DESTDIR=/usr/local/qdsp6-mingw/gnu
+DESTDIR=/usr/local/hexagon-mingw/gnu
 endif
 
 ifdef DEBUG
@@ -52,7 +52,7 @@ help:
 
 install: $(PREFIX)
 
-CONFIGURE_OPTIONS = --target=qdsp6 \
+CONFIGURE_OPTIONS = --target=hexagon \
 		    --disable-nls \
 		    --enable-bfd-assembler \
 		    --disable-multilib \
@@ -72,8 +72,8 @@ build_win:
 	../configure \
 		--with-python=/prj/dsp/qdsp6/austin/builds/hexbuild/python/Python26 \
 		--x-includes=../win \
-  		--host=i386-pc-mingw32 \
-  		--build=i686-linux \
+		--host=i386-pc-mingw32 \
+		--build=i686-linux \
 		$(CONFIGURE_OPTIONS)  && \
 	PATH=$(MINGW_GCC):$(PATH) $(MAKE) -j $(JOBS) all
 
@@ -92,17 +92,17 @@ build_lnx:
 build_native:
 	mkdir -p $@
 	cd $@ &&  \
-	CC=qdsp6-gcc \
-	AS=qdsp6-as \
-	AR=qdsp6-ar \
-	LD=qdsp6-ld \
+	CC=hexagon-gcc \
+	AS=hexagon-as \
+	AR=hexagon-ar \
+	LD=hexagon-ld \
 	CFLAGS="$(BUILD_CFLAGS) -fno-short-enums" \
 	../configure \
 		--disable-nls \
 		--disable-werror \
 		--build=i686-linux \
-		--host=qdsp6-linux-uclibc \
-		--target=qdsp6-linux-uclibc \
+		--host=hexagon-linux-uclibc \
+		--target=hexagon-linux-uclibc \
 		--without-tcl \
 		--without-readline \
 		--with-curses && \
@@ -115,7 +115,7 @@ build_cross_binutils:
 	../configure \
 		--disable-nls \
 		--disable-werror \
-		--target=qdsp6-linux-uclibc \
+		--target=hexagon-linux-uclibc \
 		--without-tcl \
 		--disable-libdecnumber \
 		--disable-readline \
@@ -125,17 +125,17 @@ build_cross_binutils:
 build_native_binutils:
 	mkdir -p $@
 	cd $@ &&  \
-	CC=qdsp6-gcc \
-	AS=qdsp6-as \
-	AR=qdsp6-ar \
-	LD=qdsp6-ld \
+	CC=hexagon-gcc \
+	AS=hexagon-as \
+	AR=hexagon-ar \
+	LD=hexagon-ld \
 	CFLAGS="$(BUILD_CFLAGS) -fno-short-enums" \
 	../configure \
 		--disable-nls \
 		--disable-werror \
 		--build=i686-linux \
-		--host=qdsp6-linux-uclibc \
-		--target=qdsp6-linux-uclibc \
+		--host=hexagon-linux-uclibc \
+		--target=hexagon-linux-uclibc \
 		--without-tcl \
 		--disable-libdecnumber \
 		--disable-readline \
@@ -145,17 +145,17 @@ build_native_binutils:
 build_native_binutils_static:
 	mkdir -p $@
 	cd $@ &&  \
-	CC=qdsp6-gcc \
-	AS=qdsp6-as \
-	AR=qdsp6-ar \
-	LD=qdsp6-ld \
+	CC=hexagon-gcc \
+	AS=hexagon-as \
+	AR=hexagon-ar \
+	LD=hexagon-ld \
 	CFLAGS="$(BUILD_CFLAGS) -static -fno-short-enums" \
 	../configure \
 		--disable-nls \
 		--disable-werror \
 		--build=i686-linux \
-		--host=qdsp6-linux-uclibc \
-		--target=qdsp6-linux-uclibc \
+		--host=hexagon-linux-uclibc \
+		--target=hexagon-linux-uclibc \
 		--without-tcl \
 		--disable-libdecnumber \
 		--disable-readline \
@@ -165,17 +165,17 @@ build_native_binutils_static:
 build_native_gdb:
 	mkdir -p $@
 	cd $@ &&  \
-	CC=qdsp6-gcc \
-	AS=qdsp6-as \
-	AR=qdsp6-ar \
-	LD=qdsp6-ld \
+	CC=hexagon-gcc \
+	AS=hexagon-as \
+	AR=hexagon-ar \
+	LD=hexagon-ld \
 	CFLAGS="$(BUILD_CFLAGS) -fno-short-enums" \
 	../configure \
 		--disable-nls \
 		--disable-werror \
 		--build=i686-linux \
-		--host=qdsp6-linux-uclibc \
-		--target=qdsp6-linux-uclibc \
+		--host=hexagon-linux-uclibc \
+		--target=hexagon-linux-uclibc \
 		--without-tcl \
 		--with-curses \
 		--disable-binutils \
@@ -187,18 +187,18 @@ build_native_gdb:
 build_native_static:
 	mkdir -p $@
 	cd $@ &&  \
-	CC=qdsp6-gcc \
-	AS=qdsp6-as \
-	AR=qdsp6-ar \
-	LD=qdsp6-ld \
+	CC=hexagon-gcc \
+	AS=hexagon-as \
+	AR=hexagon-ar \
+	LD=hexagon-ld \
 	CFLAGS="$(BUILD_CFLAGS) -static -fno-short-enums" \
 	../configure \
 		--disable-nls \
 		--disable-werror \
 		--enable-static \
 		--build=i686-linux \
-		--host=qdsp6-linux-uclibc \
-		--target=qdsp6-linux-uclibc \
+		--host=hexagon-linux-uclibc \
+		--target=hexagon-linux-uclibc \
 		--with-curses \
 		--without-tcl && \
 	$(MAKE) -j $(JOBS) all

@@ -1,0 +1,13 @@
+#!/bin/bash
+
+#
+# gdb uses files from binutils, so create symbolic links
+#
+RC=i386-pc-mingw32-windres \
+RANLIB=i386-pc-mingw32-ranlib \
+AR=i386-pc-mingw32-ar \
+`dirname $0`/configure  \
+--build=i686-pc-linux-gnu  \
+--host=i386-pc-mingw32  
+
+

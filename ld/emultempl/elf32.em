@@ -1879,12 +1879,12 @@ fragment <<EOF
     return
 EOF
 sed $sc ldscripts/${EMULATION_NAME}.xu			>> e${EMULATION_NAME}.c
-if [ "${ARCH}" = "qdsp6" ]; then
+if [ "${ARCH}" = "hexagon" ]; then
   case ${target} in
     *-linux*)
       ;;
     *)
-      echo '  ; else if (config.use_tcm) return'              >> e${EMULATION_NAME}.c
+      echo '  ; else if (config.use_tcm) return ""'              >> e${EMULATION_NAME}.c
       sed $sc ldscripts/${EMULATION_NAME}.tcm                 >> e${EMULATION_NAME}.c
       ;;
   esac
@@ -1939,7 +1939,7 @@ fragment <<EOF
 {
   *isfile = 1;
 
-#ifdef EMUL_QDSP6
+#ifdef EMUL_HEXAGON
   if (config.use_tcm)
     return "ldscripts/${EMULATION_NAME}.tcm";
   else

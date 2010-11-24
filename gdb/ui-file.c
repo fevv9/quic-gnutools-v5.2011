@@ -212,10 +212,10 @@ void
 fputs_unfiltered (const char *buf, struct ui_file *file)
 {
 #ifdef HAVE_TCL
-  extern int Q6_tcl_fe_state;
+  extern int HEXAGON_tcl_fe_state;
   extern void Tgif_puts_hook (const char *linebuffer, struct ui_file *stream);
 
-  if (Q6_tcl_fe_state == 1)
+  if (HEXAGON_tcl_fe_state == 1)
     Tgif_puts_hook(buf, file);
   else
     file->to_fputs (buf, file);

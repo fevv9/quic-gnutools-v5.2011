@@ -91,7 +91,7 @@ echo '  ; else if (!config.text_read_only) return'     >> e${EMULATION_NAME}.c
 sed $sc ldscripts/${EMULATION_NAME}.xbn                >> e${EMULATION_NAME}.c
 echo '  ; else if (!config.magic_demand_paged) return' >> e${EMULATION_NAME}.c
 sed $sc ldscripts/${EMULATION_NAME}.xn                 >> e${EMULATION_NAME}.c
-if [ "${ARCH}" = "qdsp6" ]; then
+if [ "${ARCH}" = "hexagon" ]; then
 echo '  ; else if (config.use_tcm) return'             >> e${EMULATION_NAME}.c
 sed $sc ldscripts/${EMULATION_NAME}.tcm                >> e${EMULATION_NAME}.c
 fi
@@ -114,7 +114,7 @@ fragment <<EOF
     return "ldscripts/${EMULATION_NAME}.xbn";
   else if (!config.magic_demand_paged)
     return "ldscripts/${EMULATION_NAME}.xn";
-#ifdef EMUL_QDSP6
+#ifdef EMUL_HEXAGON
   else if (config.use_tcm)
     return "ldscripts/${EMULATION_NAME}.tcm";
 #endif

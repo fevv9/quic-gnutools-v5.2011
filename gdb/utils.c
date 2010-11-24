@@ -1974,8 +1974,8 @@ prompt_for_continue (void)
   char cont_prompt[120];
 
 #ifdef HAVE_TCL
-  extern int Q6_tcl_fe_state;
-  if ((Q6_tcl_fe_state == 1) && (!isInteractive())) {
+  extern int HEXAGON_tcl_fe_state;
+  if ((HEXAGON_tcl_fe_state == 1) && (!isInteractive())) {
     return;
   }
 #endif
@@ -2293,8 +2293,8 @@ int
 fputc_unfiltered (int c, struct ui_file *stream)
 {
 #ifdef HAVE_TCL
-  extern int Q6_tcl_fe_state;
-  if (Q6_tcl_fe_state == 1)
+  extern int HEXAGON_tcl_fe_state;
+  if (HEXAGON_tcl_fe_state == 1)
     {
       char buf[2];
       buf[0] = c;

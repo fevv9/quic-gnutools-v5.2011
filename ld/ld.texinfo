@@ -31,7 +31,7 @@
 @set MSP430
 @set POWERPC
 @set POWERPC64
-@set QDSP6
+@set HEXAGON
 @set Renesas
 @set SPU
 @set TICOFF
@@ -157,8 +157,8 @@ in the section entitled ``GNU Free Documentation License''.
 @ifset POWERPC64
 * PowerPC64 ELF64::             ld and PowerPC64 64-bit ELF Support
 @end ifset
-@ifset QDSP6
-* QDSP6::			ld and the QDSP6 family
+@ifset HEXAGON
+* HEXAGON::			ld and the HEXAGON family
 @end ifset
 @ifset SPU
 * SPU ELF::			ld and SPU ELF Support
@@ -5736,8 +5736,8 @@ functionality are not listed.
 @ifset POWERPC64
 * PowerPC64 ELF64::		@command{ld} and PowerPC64 64-bit ELF Support
 @end ifset
-@ifset QDSP6
-* QDSP6::			@command{ld} and the QDSP6 family
+@ifset HEXAGON
+* HEXAGON::			@command{ld} and the HEXAGON family
 @end ifset
 @ifset SPU
 * SPU ELF::			@command{ld} and SPU ELF Support
@@ -6464,42 +6464,42 @@ Use this option to turn off this feature.
 @end ifclear
 @end ifset
 
-@ifset QDSP6
+@ifset HEXAGON
 @ifclear GENERIC
 @raisesections
 @end ifclear
 
-@node QDSP6
-@section @command{ld} and the QDSP6 family
+@node HEXAGON
+@section @command{ld} and the HEXAGON family
 
-@cindex QDSP6 options
+@cindex HEXAGON options
 @table @option
 
-@cindex Link for the QDSP6 V2 architecture
+@cindex Link for the HEXAGON V2 architecture
 @kindex -mv2
 @item -mv2
-Link for the QDSP6 V2 architecture.  Equivalent to @code{--march=qdsp6v2}.
+Link for the HEXAGON V2 architecture.  Equivalent to @code{--march=hexagonv2}.
 
-@cindex Link for the QDSP6 V3 architecture
+@cindex Link for the HEXAGON V3 architecture
 @kindex -mv3
 @item -mv3
-Link for the QDSP6 V3 architecture.  Equivalent to @code{--march=qdsp6v3}.
+Link for the HEXAGON V3 architecture.  Equivalent to @code{--march=hexagonv3}.
 
-@cindex Link for the QDSP6 V4 architecture
+@cindex Link for the HEXAGON V4 architecture
 @kindex -mv4
 @item -mv4
-Link for the QDSP6 V4 architecture.  Equivalent to @code{--march=qdsp6v4}.
+Link for the HEXAGON V4 architecture.  Equivalent to @code{--march=hexagonv4}.
 
 @cindex Link for the specified architecture
 @kindex --march=@var{architecture}
 @item --march=@var{architecture}
-Link for the specified QDSP6 architecture.  By default, the linker will use the
+Link for the specified HEXAGON architecture.  By default, the linker will use the
 architecture of input objects to determine the architecture of the output object
 based on several criteria, such as ABI and binary compatibility, as well as when
 to reject input objects.  By using this option, it is possible to
 guarantee the architecture of the output object.
 The following architecture names are valid:
-@code{qdsp6v2}, @code{qdsp6v3} and @code{qdsp6v4}.
+@code{hexagonv2}, @code{hexagonv3} and @code{hexagonv4}.
 
 @cindex Link for the specified architecture
 @kindex --mcpu=@var{architecture}

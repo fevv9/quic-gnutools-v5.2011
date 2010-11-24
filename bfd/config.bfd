@@ -1192,9 +1192,9 @@ case "${targ}" in
     targ_selvecs="bfd_powerpcle_pei_vec bfd_powerpc_pei_vec bfd_powerpcle_pe_vec bfd_powerpc_pe_vec"
     ;;
 
-  qdsp6-*-*)
-    targ_defvec=bfd_elf32_littleqdsp6_vec
-    targ_selvecs=bfd_elf32_bigqdsp6_vec
+  hexagon-*-*)
+    targ_defvec=bfd_elf32_littlehexagon_vec
+    targ_selvecs=bfd_elf32_bighexagon_vec
     want64=true
     ;;
 

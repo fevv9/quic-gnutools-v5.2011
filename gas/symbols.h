@@ -208,6 +208,6 @@ void symbol_set_obj (symbolS *, OBJ_SYMFIELD_TYPE *);
 TC_SYMFIELD_TYPE *symbol_get_tc (symbolS *);
 void symbol_set_tc (symbolS *, TC_SYMFIELD_TYPE *);
 #endif
-#ifdef TC_QDSP6
+#ifdef TC_HEXAGON
 extern void symbol_adjust_value (symbolS *, int);
 #endif

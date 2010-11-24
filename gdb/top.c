@@ -721,17 +721,17 @@ execute_command_tcl (p, from_tty)
 
 int execute_command (char *p, int from_tty)
 {
-   extern int Q6_tcl_fe_state;
+   extern int HEXAGON_tcl_fe_state;
 
-/* Q6_tcl_fe_state == 0 means the TCL front end is disabled (default)
-   Q6_tcl_fe_state == 1 means the TCL front end is enabled
+/* HEXAGON_tcl_fe_state == 0 means the TCL front end is disabled (default)
+   HEXAGON_tcl_fe_state == 1 means the TCL front end is enabled
    from the gdb promt say: set tclfe on/off to switch between */
    
-    if ((Q6_tcl_fe_state == 0) || (Q6_tcl_fe_state == 1))
-        return exec_cmd_func[Q6_tcl_fe_state](p, from_tty);
+    if ((HEXAGON_tcl_fe_state == 0) || (HEXAGON_tcl_fe_state == 1))
+        return exec_cmd_func[HEXAGON_tcl_fe_state](p, from_tty);
     else
     {
-        error ("Command execution func ptr index is corrupt. Should be 0 or 1, not: %d\n", Q6_tcl_fe_state);
+        error ("Command execution func ptr index is corrupt. Should be 0 or 1, not: %d\n", HEXAGON_tcl_fe_state);
        return 0;
     }
 
@@ -756,7 +756,7 @@ command_loop (void)
   extern int display_time;
   extern int display_space;
 #ifdef HAVE_TCL
-  extern int Q6_tcl_fe_state;
+  extern int HEXAGON_tcl_fe_state;
 #endif
 
   while (instream && !feof (instream))
@@ -789,7 +789,7 @@ command_loop (void)
       execute_command (command, instream == stdin);
 
 #ifdef HAVE_TCL
-      if (Q6_tcl_fe_state == 1)
+      if (HEXAGON_tcl_fe_state == 1)
         bpstat_do_actions ();
 #else
       /* Do any commands attached to breakpoint we are stopped at.  */

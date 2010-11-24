@@ -1,0 +1,97 @@
+
+/* BFD support for the HEXAGON processor
+   Copyright 1994, 1995, 1997, 2001, 2002 Free Software Foundation, Inc.
+   Contributed by Doug Evans (dje@cygnus.com).
+
+This file is part of BFD, the Binary File Descriptor library.
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.  */
+
+#include "bfd.h"
+#include "sysdep.h"
+#include "libbfd.h"
+
+static const bfd_arch_info_type *hexagon_bfd_compatible
+  (const bfd_arch_info_type *a, const bfd_arch_info_type *b);
+
+#define HEXAGON(MACH, NAME, DEFAULT, NEXT) \
+  {					 \
+    32,	/* 32 bits in a word  */	 \
+    32,	/* 32 bits in an address  */	 \
+    8,	/* 8 bits in a byte  */		 \
+    bfd_arch_hexagon,			 \
+    MACH,				 \
+    "hexagon",				 \
+    NAME,				 \
+    4, /* section alignment power  */	 \
+    DEFAULT,				 \
+    hexagon_bfd_compatible,		 \
+    bfd_default_scan,			 \
+    NEXT,				 \
+  }
+
+static const bfd_arch_info_type hexagon_arch_info [] =
+{
+  /* These are the other supported ISAs. */
+  HEXAGON (bfd_mach_hexagon_v3, "hexagonv3", FALSE, hexagon_arch_info + 1),
+  HEXAGON (bfd_mach_hexagon_v4, "hexagonv4", FALSE, hexagon_arch_info + 2),
+  HEXAGON (bfd_mach_hexagon,   "hexagon",   FALSE, NULL)
+};
+
+/* This is the default ISA. */
+const bfd_arch_info_type bfd_hexagon_arch =
+  HEXAGON (bfd_mach_hexagon_v2, "hexagonv2", TRUE, hexagon_arch_info + 0);
+
+/* Utility routines.  */
+int hexagon_get_mach PARAMS ((char *));
+
+/** Given CPU type, return its bfd_mach_hexagon_* value.
+
+@param name CPU type.
+@return bfd_mach_hexagon_* value if successful or -1 otherwise.
+*/
+int
+hexagon_get_mach
+(char *name)
+{
+  const bfd_arch_info_type *p;
+
+  for (p = &bfd_hexagon_arch; p != NULL; p = p->next)
+    if (!strcmp (name, p->printable_name))
+      return p->mach;
+
+  return -1;
+}
+
+static const bfd_arch_info_type *
+hexagon_bfd_compatible
+(const bfd_arch_info_type *a, const bfd_arch_info_type *b)
+{
+  if (a->arch != bfd_arch_hexagon || b->arch != bfd_arch_hexagon)
+    return NULL;
+
+  /* V1 is not compatible with anything else. */
+  if (   (a->mach == bfd_mach_hexagon || b->mach == bfd_mach_hexagon)
+      && a->mach != b->mach)
+    return NULL;
+
+  /* The V2 ABI was superseded by the V3 ABI. */
+  if (   (a->mach == bfd_mach_hexagon_v2 || b->mach == bfd_mach_hexagon_v2)
+      && a->mach != b->mach)
+    return NULL;
+
+  /* Return the most recent one. */
+  return (a->mach > b->mach? a: b);
+}

@@ -199,7 +199,7 @@ ALL_EMULATIONS = \
 	eelf32mcore.o \
 	eelf32mep.o \
 	eelf32mb_linux.o \
- 	eelf32microblaze.o \
+	eelf32microblaze.o \
 	eelf32mipswindiss.o \
 	eelf32mt.o \
 	eelf32openrisc.o \
@@ -210,7 +210,7 @@ ALL_EMULATIONS = \
 	eelf32ppcsim.o \
 	eelf32ppcwindiss.o \
 	eelf32ppcvxworks.o \
-	eelf32qdsp6.o \
+	eelf32hexagon.o \
 	eelf32vax.o \
         eelf32xc16x.o \
         eelf32xc16xl.o \
@@ -816,10 +816,10 @@ eelf32mcore.c: $(srcdir)/emulparams/elf32mcore.sh \
 eelf32mep.c: $(srcdir)/emulparams/elf32mep.sh \
   $(srcdir)/emultempl/elf32.em $(srcdir)/scripttempl/mep.sc ${GEN_DEPENDS}
 	${GENSCRIPTS} elf32mep "$(tdir_mep)"
-eqdsp6elf.c: $(srcdir)/emulparams/qdsp6elf.sh \
-  $(srcdir)/emultempl/elf32.em $(srcdir)/emultempl/qdsp6elf.em \
-  $(srcdir)/scripttempl/qdsp6.sc ${GEN_DEPENDS}
-	${GENSCRIPTS} qdsp6elf "$(tdir_qdsp6elf)"
+ehexagonelf.c: $(srcdir)/emulparams/hexagonelf.sh \
+  $(srcdir)/emultempl/elf32.em $(srcdir)/emultempl/hexagonelf.em \
+  $(srcdir)/scripttempl/hexagon.sc ${GEN_DEPENDS}
+	${GENSCRIPTS} hexagonelf "$(tdir_hexagonelf)"
 em32relf.c: $(srcdir)/emulparams/m32relf.sh \
   $(ELF_DEPS) $(srcdir)/scripttempl/elf.sc ${GEN_DEPENDS}
 	${GENSCRIPTS} m32relf "$(tdir_m32r)"

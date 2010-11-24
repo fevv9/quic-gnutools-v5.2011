@@ -47,7 +47,7 @@
 #ifdef HAVE_TCL
 #include "tgif/tgif.h"
 extern int need_concatenation;
-extern int Q6_tcl_fe_state;
+extern int HEXAGON_tcl_fe_state;
 #endif
 
 /* Definition of struct thread_info exported to gdbthread.h */
@@ -1034,7 +1034,7 @@ thread_apply_all_command (char *cmd, int from_tty)
   old_chain = make_cleanup_restore_current_thread ();
 
 #ifdef HAVE_TCL
-  if (Q6_tcl_fe_state == 1)
+  if (HEXAGON_tcl_fe_state == 1)
     need_concatenation = 1;
 #endif
 
@@ -1050,7 +1050,7 @@ thread_apply_all_command (char *cmd, int from_tty)
 	printf_filtered (_("\nThread %d (%s):\n"),
 			 tp->num, target_pid_to_str (inferior_ptid));
 #ifdef HAVE_TCL
-	if (Q6_tcl_fe_state == 1)
+	if (HEXAGON_tcl_fe_state == 1)
 	  Execute(cmd);
         else
 	  execute_command (cmd, from_tty);
@@ -1061,7 +1061,7 @@ thread_apply_all_command (char *cmd, int from_tty)
       }
 
 #ifdef HAVE_TCL
-  if (Q6_tcl_fe_state == 1)
+  if (HEXAGON_tcl_fe_state == 1)
     need_concatenation = 0;
     Print_If_Needed();
 #endif

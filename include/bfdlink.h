@@ -351,7 +351,7 @@ struct bfd_link_info
      --dynamic-list command line options.  */
   unsigned int dynamic: 1;
   /* TRUE (default) if trampolines are enabled. */
-  unsigned int qdsp6_trampolines: 1;
+  unsigned int hexagon_trampolines: 1;
 
   /* Non-NULL if .note.gnu.build-id section should be created.  */
   char *emit_note_gnu_build_id;

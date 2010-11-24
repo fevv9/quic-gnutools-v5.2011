@@ -158,9 +158,9 @@ char original_case_string[128];
 
 static char *buffer;	/* 1st char of each buffer of lines is here.  */
 static char *buffer_limit;	/*->1 + last char in buffer.  */
-#ifdef TC_QDSP6
+#ifdef TC_HEXAGON
 /*
- * XXX_SM: qdsp6_packet_end_lookahead needs bufferlimit
+ * XXX_SM: hexagon_packet_end_lookahead needs bufferlimit
  * XXX_SM: I'm kinda on the fence about this one seems eaisier just to
  * make buffer_limit global but I will resist doing that for now.
  */

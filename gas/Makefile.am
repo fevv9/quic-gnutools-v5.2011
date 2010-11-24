@@ -284,7 +284,7 @@ TARGET_CPU_CFILES = \
 	config/tc-pdp11.c \
 	config/tc-pj.c \
 	config/tc-ppc.c \
-	config/tc-qdsp6.c \
+	config/tc-hexagon.c \
 	config/tc-s390.c \
 	config/tc-score.c \
 	config/tc-sh.c \
@@ -347,7 +347,7 @@ TARGET_CPU_HFILES = \
 	config/tc-pdp11.h \
 	config/tc-pj.h \
 	config/tc-ppc.h \
-	config/tc-qdsp6.h \
+	config/tc-hexagon.h \
 	config/tc-s390.h \
 	config/tc-score.h \
 	config/tc-sh.h \

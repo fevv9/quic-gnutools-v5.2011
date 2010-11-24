@@ -500,7 +500,7 @@ powerpc-*-aix*)		targ_emul=aixppc ;;
 powerpc-*-beos*)	targ_emul=aixppc ;;
 powerpc-*-windiss*)	targ_emul=elf32ppcwindiss ;;
 powerpc-*-lynxos*)	targ_emul=ppclynx ;;
-qdsp6-*-*)		targ_emul=qdsp6elf ;;
+hexagon-*-*)		targ_emul=hexagonelf ;;
 rs6000-*-aix[5-9]*)	targ_emul=aix5rs6 ;;
 rs6000-*-aix*)		targ_emul=aixrs6
 			;;

@@ -1664,9 +1664,9 @@ start_remote (int from_tty)
   init_wait_for_inferior ();
 
   inferior = current_inferior ();
-#ifdef QDSP6
-  extern char *current_q6_target;
-  if (current_q6_target) /* QUALCOMM: otherwise first breakpoints are
+#ifdef HEXAGON
+  extern char *current_hexagon_target;
+  if (current_hexagon_target) /* QUALCOMM: otherwise first breakpoints are
                             quiet and that bothers the testsuite */
     inferior->stop_soon = NO_STOP_QUIETLY;
   else

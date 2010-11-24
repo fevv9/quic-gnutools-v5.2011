@@ -1221,7 +1221,7 @@ dump_relocations (FILE * file,
 	  rtype = elf_microblaze_reloc_type (type);
 	  break;
 
-	case EM_HEXAGON_:
+	case EM_HEXAGON:
 	  rtype = elf_hexagon_reloc_type (type);
 	  break;
 	}
@@ -1719,7 +1719,7 @@ get_dynamic_type (unsigned long type)
 	    case EM_IA_64:
 	      result = get_ia64_dynamic_type (type);
 	      break;
-            case EM_HEXAGON_:
+            case EM_HEXAGON:
               result = get_hexagon_dynamic_type (type);
               break;
 	    case EM_ALPHA:
@@ -1911,7 +1911,7 @@ get_machine_name (unsigned e_machine)
     case EM_CR16_OLD:		return "National Semiconductor's CR16";
     case EM_MICROBLAZE:		return "Xilinx MicroBlaze";
     case EM_MICROBLAZE_OLD:	return "Xilinx MicroBlaze";
-    case EM_HEXAGON_:		return "Qualcomm HEXAGON";
+    case EM_HEXAGON:		return "Qualcomm HEXAGON";
     default:
       snprintf (buff, sizeof (buff), _("<unknown>: 0x%x"), e_machine);
       return buff;
@@ -2457,7 +2457,7 @@ get_machine_flags (unsigned e_flags, unsigned e_machine)
 	    strcat (buf, ", G-Float");
 	  break;
 
-        case EM_HEXAGON_:
+        case EM_HEXAGON:
           switch (EF_HEXAGON_MACH_VER (e_flags))
             {
 	      case EF_HEXAGON_MACH_V1: strcat (buf, ", V1"); break;
@@ -2637,7 +2637,7 @@ get_segment_type (unsigned long p_type)
 	    case EM_PARISC:
 	      result = get_parisc_segment_type (p_type);
 	      break;
-	    case EM_HEXAGON_:
+	    case EM_HEXAGON:
 	      result = get_hexagon_segment_type (p_type);
 	      break;
 	    case EM_IA_64:
@@ -6587,7 +6587,7 @@ process_dynamic_section (FILE * file)
 		case EM_IA_64:
 		  dynamic_section_ia64_val (entry);
 		  break;
-                case EM_HEXAGON_:
+                case EM_HEXAGON:
                   dynamic_section_hexagon_val (entry);
                   break;
 		default:
@@ -8125,7 +8125,7 @@ is_32bit_abs_reloc (unsigned int reloc_type)
       return reloc_type == 1; /* R_PPC64_ADDR32.  */
     case EM_PPC:
       return reloc_type == 1; /* R_PPC_ADDR32.  */
-    case EM_HEXAGON_:
+    case EM_HEXAGON:
       return reloc_type == 6; /* R_HEXAGON_32.  */
     case EM_S370:
       return reloc_type == 1; /* R_I370_ADDR31.  */

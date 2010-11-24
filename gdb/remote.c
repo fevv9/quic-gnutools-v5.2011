@@ -2822,7 +2822,7 @@ remote_open (char *name, int from_tty)
   remote_open_1 (name, from_tty, &remote_ops, 0);
 }
 
-#ifdef QDSP6
+#ifdef HEXAGON
 /* XXX_SM Needed for clean startup of simulator */
 /* Some targets are only capable of doing downloads, and afterwards
    they switch to the remote serial protocol.  This function provides
@@ -6856,7 +6856,7 @@ remote_insert_breakpoint (struct gdbarch *gdbarch,
       p = rs->buf;
 
       *(p++) = 'Z';
-#ifdef QDSP6
+#ifdef HEXAGON
       *(p++) = '1'; /* XXX_SM:FIXME Hack for simulator was '0' */
 #else
       *(p++) = '0';
@@ -6897,7 +6897,7 @@ remote_remove_breakpoint (struct gdbarch *gdbarch,
       char *p = rs->buf;
 
       *(p++) = 'z';
-#ifdef QDSP6
+#ifdef HEXAGON
       *(p++) = '1'; /* XXX_SM:FIXME Hack for simulator was '0' */
 #else
       *(p++) = '0';
@@ -8870,7 +8870,7 @@ Specify the serial device it is connected to\n\
   remote_ops.to_terminal_ours = remote_terminal_ours;
   remote_ops.to_supports_non_stop = remote_supports_non_stop;
   remote_ops.to_supports_multi_process = remote_supports_multi_process;
-#ifdef QDSP6
+#ifdef HEXAGON
   remote_ops.to_create_inferior = extended_remote_create_inferior;
 #endif
 }

@@ -47,7 +47,7 @@ m68*)			gdb_host_cpu=m68k ;;
 m88*)			gdb_host_cpu=m88k ;;
 mips*)			gdb_host_cpu=mips ;;
 powerpc* | rs6000)	gdb_host_cpu=powerpc ;;
-qdsp6*)			gdb_host_cpu=qdsp6 ;;
+hexagon*)			gdb_host_cpu=hexagon ;;
 sparcv9 | sparc64)	gdb_host_cpu=sparc ;;
 s390*)			gdb_host_cpu=s390 ;;
 sh*)			gdb_host_cpu=sh ;;
@@ -137,7 +137,7 @@ powerpc64-*-linux*)     gdb_host=ppc64-linux
                         fi
 			;;
 
-qdsp6*-*-linux*)	gdb_host=linux ;;
+hexagon*-*-linux*)	gdb_host=linux ;;
 
 s390*-*-*)		gdb_host=s390 ;;
 

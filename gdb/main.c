@@ -98,8 +98,8 @@ static void print_gdb_help (struct ui_file *);
 
 extern char *external_editor_command;
 
-#ifdef QDSP6
-extern int Q6_tcl_fe_state;
+#ifdef HEXAGON
+extern int HEXAGON_tcl_fe_state;
 #endif
 
 /* Relocate a file or directory.  PROGNAME is the name by which gdb
@@ -415,8 +415,8 @@ captured_main (void *data)
       {"version", no_argument, &print_version, 1},
       {"x", required_argument, 0, 'x'},
       {"ex", required_argument, 0, 'X'},
-#ifdef QDSP6
-      {"tclfe", no_argument, &Q6_tcl_fe_state, 1},
+#ifdef HEXAGON
+      {"tclfe", no_argument, &HEXAGON_tcl_fe_state, 1},
 #endif
 #ifdef GDBTK
       {"tclcommand", required_argument, 0, 'z'},
