@@ -1718,7 +1718,7 @@ qdsp6_parse_immediate
   const qdsp6_operand *operandx;
   long value = 0;
   long xvalue = 0;
-  int is_may_x = FALSE, is_x = FALSE, is_lbs = FALSE;
+  int is_may_x = FALSE, is_x = FALSE, is_hash = FALSE;
   int is_relax = FALSE;
   int is_lo16 = FALSE, is_hi16 = FALSE;
   char *pic_line;
@@ -1732,7 +1732,7 @@ qdsp6_parse_immediate
   /* We only have the mandatory '#' for immediates that are NOT PC-relative */
   if (*str == '#')
     {
-      is_lbs = (operand->flags & QDSP6_OPERAND_PC_RELATIVE);
+      is_hash = (operand->flags & QDSP6_OPERAND_PC_RELATIVE);
       str++;
       if (*str == '#')
         {
@@ -1743,12 +1743,12 @@ qdsp6_parse_immediate
         {
           is_x = (qdsp6_extender) && (insn->opcode->attributes & MUST_EXTEND);
         }
-      is_lbs = is_lbs && !is_x;
+      is_hash = is_hash && !is_x;
     }
   else if (!(operand->flags & QDSP6_OPERAND_PC_RELATIVE))
     return NULL;
 
-  is_relax = is_may_x && !is_x && !is_lbs
+  is_relax = is_may_x && !is_x && !is_hash
              && ENCODE_RELAX (operand->reloc_type);
 
   if (is_x && !insn->opcode->map)
@@ -3755,21 +3755,6 @@ qdsp6_assemble
                   else
                     return FALSE;
                 }
-              else if (!ainsn->is_inner || !ainsn->is_outer)
-                {
-                  /* May need to lookahead in the input stream for
-                     (more) inner/outer modifiers. */
-                  int inner, outer;
-
-                  qdsp6_packet_end_lookahead (&inner, &outer); /* may make 'str' invalid */
-                  --input_line_pointer;
-
-                  if (inner)
-                    ainsn->is_inner = TRUE;
-
-                  if (outer)
-                    ainsn->is_outer = TRUE;
-                }
             }
           else if (!is_end_of_line [(unsigned char) *str])
             {
@@ -5669,96 +5654,6 @@ qdsp6_has_solo
       solo = TRUE;
 
   return (solo);
-}
-
-/*
- * At the end of a packet, look ahead in the input stream
- * for any :endloop0 or :endloop1 directives associated with
- * the packet. Stop when we see something that isn't one
- * of those directives, whitespace, or newline. Handle newlines
- * properly.
- *
- */
-void
-qdsp6_packet_end_lookahead
-(int *inner_p, int *outer_p)
-{
-  char *buffer_limit = get_buffer_limit ();
-  int inner = 0;
-  int outer = 0;
-
-  *inner_p = FALSE;
-  *outer_p = FALSE;
-  return;
-
-  for (;;)
-    {
-      if (input_line_pointer == buffer_limit)
-        {
-          /* reached the end of this buffer, get a new one? */
-          buffer_limit = input_scrub_next_buffer (&input_line_pointer);
-	  put_buffer_limit (buffer_limit);
-
-          if (buffer_limit == 0)
-            break;
-        }
-      else if (*input_line_pointer == '\n')
-        {
-          if (input_line_pointer [-1] == '\n')
-            bump_line_counters ();
-
-          input_line_pointer++;
-        }
-      else if (*input_line_pointer == ' ')
-        {
-          if (input_line_pointer [-1] == '\n')
-            bump_line_counters ();
-
-          input_line_pointer++;
-        }
-      else if (*input_line_pointer == '\0')
-        {
-          /* if we're called from md_assemble() we may still be on the \0 terminator */
-          if (input_line_pointer [-1] == '\n')
-            bump_line_counters ();
-
-          input_line_pointer++;
-        }
-      else if (!inner
-               && !strncasecmp (input_line_pointer,
-                                PACKET_END_INNER, strlen (PACKET_END_INNER)))
-        {
-          if (input_line_pointer [-1] == '\n')
-            bump_line_counters ();
-
-          input_line_pointer += strlen (PACKET_END_INNER);
-          inner = 1;
-
-          if (outer)
-            break;
-        }
-      else if (!outer
-               && !strncasecmp (input_line_pointer,
-                                PACKET_END_OUTER, strlen (PACKET_END_OUTER)))
-        {
-          if (input_line_pointer [-1] == '\n')
-            bump_line_counters ();
-
-          input_line_pointer += strlen (PACKET_END_OUTER);
-          outer = 1;
-
-          if (inner)
-            break;
-        }
-      else
-        {
-          /*if (input_line_pointer[-1] == '\n') bump_line_counters();*/
-          break;
-        }
-    }
-
-  *inner_p = inner;
-  *outer_p = outer;
 }
 
 /* Called by the assembler parser when it can't recognize a line ...
