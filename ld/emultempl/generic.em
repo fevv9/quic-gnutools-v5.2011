@@ -110,13 +110,6 @@ fragment <<EOF
     return "ldscripts/${EMULATION_NAME}.xbn";
   else if (!config.magic_demand_paged)
     return "ldscripts/${EMULATION_NAME}.xn";
-<<<<<<< HEAD
-#ifdef EMUL_HEXAGON
-  else if (config.use_tcm)
-    return "ldscripts/${EMULATION_NAME}.tcm";
-#endif
-=======
->>>>>>> Remove dead code.
   else
     return "ldscripts/${EMULATION_NAME}.x";
 }
