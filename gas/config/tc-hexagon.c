@@ -1,4 +1,4 @@
-/* tc-hexagon.c -- Assembler for the HEXAGON
+/* tc-hexagon.c -- Assembler for Hexagon
    Copyright 1994, 1995, 1997, 1999, 2000, 2001, 2002, 2006-2008
    Free Software Foundation, Inc.
 
@@ -19,7 +19,7 @@
    Software Foundation, 59 Temple Place - Suite 330, Boston, MA
    02111-1307, USA.
 
-   HEXAGON machine-specific port contributed by Qualcomm, Inc.
+   Hexagon machine-specific port contributed by Qualcomm, Inc.
 */
 
 #include <assert.h>
@@ -74,7 +74,7 @@
 #define HEXAGON_DCFETCH     "dcfetch"
 #define HEXAGON_DCFETCH_LEN (sizeof (HEXAGON_DCFETCH) - 1)
 
-/* HEXAGON CR aliases. */
+/* Hexagon CR aliases. */
 #define HEXAGON_SA0 0
 #define HEXAGON_LC0 1
 #define HEXAGON_SA1 2
@@ -86,7 +86,7 @@
 #define HEXAGON_PC  9
 #define HEXAGON_GP 10
 
-/* HEXAGON GPR aliases. */
+/* Hexagon GPR aliases. */
 #define HEXAGON_SP 29
 #define HEXAGON_FP 30
 #define HEXAGON_LR 31
@@ -273,7 +273,7 @@ typedef enum _hexagon_pic_type
   {
     PIC_NONE = 0,
     PIC_GOT,
-    PIC_GOTOFF,
+    PIC_GOTREL,
     PIC_PLT
   } hexagon_pic_type;
 
@@ -306,7 +306,6 @@ char *hexagon_insn_write
 void hexagon_packet_init (hexagon_packet *);
 void hexagon_packet_begin (hexagon_packet *);
 void hexagon_packet_end (hexagon_packet *);
-void hexagon_packet_end_lookahead (int *inner_p, int *);
 void hexagon_packet_check (hexagon_packet *);
 void hexagon_packet_unfold (hexagon_packet *);
 void hexagon_packet_fold (hexagon_packet *);
@@ -630,15 +629,15 @@ static int numOfLoopMax1;
 
 struct hexagon_march
   {
-	char *march_name_fe, *march_short_fe;
+	char *march_name_fe, *march_alt_fe, *march_short_fe;
 	unsigned int march_name_be;
   };
 
 static struct hexagon_march hexagon_marchs [] =
   {
-    {"hexagonv2", "v2", bfd_mach_hexagon_v2},
-    {"hexagonv3", "v3", bfd_mach_hexagon_v3},
-    {"hexagonv4", "v4", bfd_mach_hexagon_v4},
+    {"hexagonv2", "qdsp6v2", "v2", bfd_mach_hexagon_v2},
+    {"hexagonv3", "qdsp6v3", "v3", bfd_mach_hexagon_v3},
+    {"hexagonv4", "qdsp6v4", "v4", bfd_mach_hexagon_v4},
   };
 
 static size_t hexagon_marchs_size =
@@ -707,6 +706,7 @@ md_parse_option
             /* -march and- mcpu options. */
             for (i = 0; i < hexagon_marchs_size; i++)
               if (!strcmp (arg, hexagon_marchs [i].march_name_fe)
+                  || !strcmp (arg, hexagon_marchs [i].march_alt_fe)
                   || !strcmp (arg, hexagon_marchs [i].march_short_fe))
                 {
                   temp_hexagon_mach_type = hexagon_marchs [i].march_name_be;
@@ -795,11 +795,11 @@ md_show_usage (
 {
   fprintf (stream,
 "\
-HEXAGON Options:\n\
+Hexagon Options:\n\
   -EB                     select big-endian output\n\
   -EL                     select little-endian ouptut (default)\n\
   -G SIZE                 small-data size limit (default is \"%d\")\n\
-  -march={v2|v3|v4}       assemble for the specified HEXAGON architecture\n\
+  -march={v2|v3|v4}       assemble for the specified Hexagon architecture\n\
                           (default is \"v2\")\n\
   -mcpu={v2|v3|v4}        equivalent to \"-march\"\n\
   -m{v2|v3|v4}            equivalent to \"-march\"\n\
@@ -850,7 +850,7 @@ md_begin ()
 
   if (!hexagon_if_arch_v1 ())
     {
-      /* HEXAGON V2 */
+      /* Hexagon V2 */
       applicable = bfd_applicable_section_flags (stdoutput);
 
       /* Create the sdata section. */
@@ -885,7 +885,7 @@ md_begin ()
       hexagon_scom_symbol.section         = &hexagon_scom_section;
     }
   else
-    /* HEXAGON V1 */
+    /* Hexagon V1 */
     hexagon_gp_size = 0;
 
   /* Set the GP size. */
@@ -1541,8 +1541,8 @@ hexagon_fix_adjustable (fixS *fixP)
     {
     case BFD_RELOC_HEXAGON_PLT_B22_PCREL:
     case BFD_RELOC_32_PCREL:
-    case BFD_RELOC_HEXAGON_GOTOFF_HI16:
-    case BFD_RELOC_HEXAGON_GOTOFF_LO16:
+    case BFD_RELOC_HEXAGON_GOTREL_HI16:
+    case BFD_RELOC_HEXAGON_GOTREL_LO16:
     case BFD_RELOC_32_GOTOFF:
     case BFD_RELOC_HEXAGON_GOT_HI16:
     case BFD_RELOC_HEXAGON_GOT_LO16:
@@ -1718,7 +1718,7 @@ hexagon_parse_immediate
   const hexagon_operand *operandx;
   long value = 0;
   long xvalue = 0;
-  int is_may_x = FALSE, is_x = FALSE, is_lbs = FALSE;
+  int is_may_x = FALSE, is_x = FALSE, is_hash = FALSE;
   int is_relax = FALSE;
   int is_lo16 = FALSE, is_hi16 = FALSE;
   char *pic_line;
@@ -1732,7 +1732,7 @@ hexagon_parse_immediate
   /* We only have the mandatory '#' for immediates that are NOT PC-relative */
   if (*str == '#')
     {
-      is_lbs = (operand->flags & HEXAGON_OPERAND_PC_RELATIVE);
+      is_hash = (operand->flags & HEXAGON_OPERAND_PC_RELATIVE);
       str++;
       if (*str == '#')
         {
@@ -1743,12 +1743,12 @@ hexagon_parse_immediate
         {
           is_x = (hexagon_extender) && (insn->opcode->attributes & MUST_EXTEND);
         }
-      is_lbs = is_lbs && !is_x;
+      is_hash = is_hash && !is_x;
     }
   else if (!(operand->flags & HEXAGON_OPERAND_PC_RELATIVE))
     return NULL;
 
-  is_relax = is_may_x && !is_x && !is_lbs
+  is_relax = is_may_x && !is_x && !is_hash
              && ENCODE_RELAX (operand->reloc_type);
 
   if (is_x && !insn->opcode->map)
@@ -1762,7 +1762,7 @@ hexagon_parse_immediate
         }
     }
 
-  /* HEXAGON TODO: Allow white space between lo/hi and the paren */
+  /* Hexagon TODO: Allow white space between lo/hi and the paren */
   if (TOLOWER (str [0]) == 'l' && TOLOWER (str [1]) == 'o' && str [2] == '(')
     {
       /* Make sure we have a corresponding lo16 operand */
@@ -1803,8 +1803,8 @@ hexagon_parse_immediate
   operandx = NULL;
   if (pic_type == PIC_GOT)
     operandx = hexagon_operand_find (operand, "got");
-  else if (pic_type == PIC_GOTOFF)
-    operandx = hexagon_operand_find (operand, "gotoff");
+  else if (pic_type == PIC_GOTREL)
+    operandx = hexagon_operand_find (operand, "gotrel");
   else if (pic_type == PIC_PLT)
     operandx = hexagon_operand_find (operand, "plt");
   if (operandx)
@@ -1847,7 +1847,7 @@ hexagon_parse_immediate
     }
   else if (exp.X_op == O_constant)
     {
-      /* Interpret value according to the 32-bit HEXAGON ISA */
+      /* Interpret value according to the 32-bit Hexagon ISA */
       value = (int32_t) exp.X_add_number;
 
       if (!hexagon_encode_operand
@@ -1982,7 +1982,7 @@ hexagon_insn_write
   if (pc % HEXAGON_INSN_LEN)
     as_warn (_("current location is not %d-byte aligned."), HEXAGON_INSN_LEN);
 
-  /* HEXAGON insns will never have more than 1 fixup? */
+  /* Hexagon insns will never have more than 1 fixup? */
   if (fixSP)
     *fixSP = fixP;
 
@@ -3755,21 +3755,6 @@ hexagon_assemble
                   else
                     return FALSE;
                 }
-              else if (!ainsn->is_inner || !ainsn->is_outer)
-                {
-                  /* May need to lookahead in the input stream for
-                     (more) inner/outer modifiers. */
-                  int inner, outer;
-
-                  hexagon_packet_end_lookahead (&inner, &outer); /* may make 'str' invalid */
-                  --input_line_pointer;
-
-                  if (inner)
-                    ainsn->is_inner = TRUE;
-
-                  if (outer)
-                    ainsn->is_outer = TRUE;
-                }
             }
           else if (!is_end_of_line [(unsigned char) *str])
             {
@@ -4287,7 +4272,8 @@ hexagon_parse_pic
     }
   pic [] =
     {
-      { "GOTOFF", PIC_GOTOFF },
+      { "GOTREL", PIC_GOTREL },
+      { "GOTOFF", PIC_GOTREL },
       { "GOT", PIC_GOT },
       { "PLT", PIC_PLT }
     };
@@ -4378,7 +4364,7 @@ hexagon_cons_fix_new
                     expression (&tmp);
                     exp->X_add_number += tmp.X_add_number;
 
-                    if (pictype == PIC_GOTOFF)
+                    if (pictype == PIC_GOTREL)
                       r_type = BFD_RELOC_32_GOTOFF;
                     else if (pictype == PIC_GOT)
                       r_type = BFD_RELOC_HEXAGON_GOT_32;
@@ -5669,96 +5655,6 @@ hexagon_has_solo
       solo = TRUE;
 
   return (solo);
-}
-
-/*
- * At the end of a packet, look ahead in the input stream
- * for any :endloop0 or :endloop1 directives associated with
- * the packet. Stop when we see something that isn't one
- * of those directives, whitespace, or newline. Handle newlines
- * properly.
- *
- */
-void
-hexagon_packet_end_lookahead
-(int *inner_p, int *outer_p)
-{
-  char *buffer_limit = get_buffer_limit ();
-  int inner = 0;
-  int outer = 0;
-
-  *inner_p = FALSE;
-  *outer_p = FALSE;
-  return;
-
-  for (;;)
-    {
-      if (input_line_pointer == buffer_limit)
-        {
-          /* reached the end of this buffer, get a new one? */
-          buffer_limit = input_scrub_next_buffer (&input_line_pointer);
-	  put_buffer_limit (buffer_limit);
-
-          if (buffer_limit == 0)
-            break;
-        }
-      else if (*input_line_pointer == '\n')
-        {
-          if (input_line_pointer [-1] == '\n')
-            bump_line_counters ();
-
-          input_line_pointer++;
-        }
-      else if (*input_line_pointer == ' ')
-        {
-          if (input_line_pointer [-1] == '\n')
-            bump_line_counters ();
-
-          input_line_pointer++;
-        }
-      else if (*input_line_pointer == '\0')
-        {
-          /* if we're called from md_assemble() we may still be on the \0 terminator */
-          if (input_line_pointer [-1] == '\n')
-            bump_line_counters ();
-
-          input_line_pointer++;
-        }
-      else if (!inner
-               && !strncasecmp (input_line_pointer,
-                                PACKET_END_INNER, strlen (PACKET_END_INNER)))
-        {
-          if (input_line_pointer [-1] == '\n')
-            bump_line_counters ();
-
-          input_line_pointer += strlen (PACKET_END_INNER);
-          inner = 1;
-
-          if (outer)
-            break;
-        }
-      else if (!outer
-               && !strncasecmp (input_line_pointer,
-                                PACKET_END_OUTER, strlen (PACKET_END_OUTER)))
-        {
-          if (input_line_pointer [-1] == '\n')
-            bump_line_counters ();
-
-          input_line_pointer += strlen (PACKET_END_OUTER);
-          outer = 1;
-
-          if (inner)
-            break;
-        }
-      else
-        {
-          /*if (input_line_pointer[-1] == '\n') bump_line_counters();*/
-          break;
-        }
-    }
-
-  *inner_p = inner;
-  *outer_p = outer;
 }
 
 /* Called by the assembler parser when it can't recognize a line ...
