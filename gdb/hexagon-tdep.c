@@ -1189,6 +1189,7 @@ hexagon_push_dummy_call (struct gdbarch *gdbarch, struct value *function,
 	    regnum++;
 
           regcache_cooked_write (regcache, regnum, contents);
+          regcache_cooked_write (regcache, regnum+1, contents+4);
           regnum += n_regs;
 	}
 
