@@ -1,5 +1,5 @@
 
-/* HEXAGON ELF support for BFD.
+/* Hexagon ELF support for BFD.
    Copyright 1995, 1997, 1998, 2000, 2001 Free Software Foundation, Inc.
 
 This file is part of BFD, the Binary File Descriptor library.
@@ -18,7 +18,7 @@ You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.  */
 
-/* This file holds definitions specific to the HEXAGON ELF ABI.  */
+/* This file holds definitions specific to the Hexagon ELF ABI.  */
 
 #ifndef _ELF_HEXAGON_H
 #define _ELF_HEXAGON_H
@@ -71,9 +71,9 @@ START_RELOC_NUMBERS (elf_hexagon_reloc_type)
   RELOC_NUMBER (R_HEXAGON_JMP_SLOT,      34)
   RELOC_NUMBER (R_HEXAGON_RELATIVE,      35)
   RELOC_NUMBER (R_HEXAGON_PLT_B22_PCREL, 36)
-  RELOC_NUMBER (R_HEXAGON_GOTOFF_LO16,   37)
-  RELOC_NUMBER (R_HEXAGON_GOTOFF_HI16,   38)
-  RELOC_NUMBER (R_HEXAGON_GOTOFF_32,     39)
+  RELOC_NUMBER (R_HEXAGON_GOTREL_LO16,   37)
+  RELOC_NUMBER (R_HEXAGON_GOTREL_HI16,   38)
+  RELOC_NUMBER (R_HEXAGON_GOTREL_32,     39)
   RELOC_NUMBER (R_HEXAGON_GOT_LO16,      40)
   RELOC_NUMBER (R_HEXAGON_GOT_HI16,      41)
   RELOC_NUMBER (R_HEXAGON_GOT_32,        42)
@@ -88,7 +88,7 @@ END_RELOC_NUMBERS (R_HEXAGON_max)
 
 /* Processor-specific flags for the ELF header e_flags field.  */
 
-/* Four bit HEXAGON machine type field.  */
+/* Four-bit machine type field.  */
 #define EF_HEXAGON_MACH 0x0f
 /* Limit to 16 CPU types for now. */
 #define EF_HEXAGON_MACH_VER(e_flags) ((e_flags) & EF_HEXAGON_MACH)

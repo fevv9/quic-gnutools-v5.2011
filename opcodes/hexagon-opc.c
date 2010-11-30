@@ -1,5 +1,5 @@
 
-/* Opcode table for the HEXAGON.
+/* Opcode table for the Hexagon.
    Copyright 2004
    Free Software Foundation, Inc.
 
@@ -84,7 +84,7 @@ int hexagon_verify_hw;
 hexagon_insn hexagon_nop, hexagon_kext;
 static hexagon_insn hexagon_nop_mask, hexagon_kext_mask;
 
-/* Various types of HEXAGON operands */
+/* Various types of Hexagon operands */
 const hexagon_operand hexagon_operands [] =
 {
   { "Rs32",       5, 's', 0,
@@ -604,8 +604,8 @@ const hexagon_operand hexagon_operands [] =
     BFD_RELOC_HEXAGON_GOT_LO16, BFD_RELOC_NONE, BFD_RELOC_NONE,
     HEXAGON_OPERAND_IS_IMMEDIATE | HEXAGON_OPERAND_IS_LO16,
     "#%u", "#0x%04x", NULL },
-  { "#u16_lo16gotoff", 16, 'i', 0,
-    BFD_RELOC_HEXAGON_GOTOFF_LO16, BFD_RELOC_NONE, BFD_RELOC_NONE,
+  { "#u16_lo16gotrel", 16, 'i', 0,
+    BFD_RELOC_HEXAGON_GOTREL_LO16, BFD_RELOC_NONE, BFD_RELOC_NONE,
     HEXAGON_OPERAND_IS_IMMEDIATE | HEXAGON_OPERAND_IS_LO16,
     "#%u", "#0x%04x", NULL },
   { "#u16_hi16", 16, 'i', 0,
@@ -616,8 +616,8 @@ const hexagon_operand hexagon_operands [] =
     BFD_RELOC_HEXAGON_GOT_HI16, BFD_RELOC_NONE, BFD_RELOC_NONE,
     HEXAGON_OPERAND_IS_IMMEDIATE | HEXAGON_OPERAND_IS_HI16,
     "#%u", "#0x%04x", NULL },
-  { "#u16_hi16gotoff", 16, 'i', 0,
-    BFD_RELOC_HEXAGON_GOTOFF_HI16, BFD_RELOC_NONE, BFD_RELOC_NONE,
+  { "#u16_hi16gotrel", 16, 'i', 0,
+    BFD_RELOC_HEXAGON_GOTREL_HI16, BFD_RELOC_NONE, BFD_RELOC_NONE,
     HEXAGON_OPERAND_IS_IMMEDIATE | HEXAGON_OPERAND_IS_HI16,
     "#%u", "#0x%04x", NULL },
   { "#s16_lo16", 16, 'i', 0,
@@ -628,8 +628,8 @@ const hexagon_operand hexagon_operands [] =
     BFD_RELOC_HEXAGON_GOT_LO16, BFD_RELOC_NONE, BFD_RELOC_NONE,
     HEXAGON_OPERAND_IS_IMMEDIATE | HEXAGON_OPERAND_IS_SIGNED | HEXAGON_OPERAND_IS_LO16,
     "#%d", NULL, NULL },
-  { "#s16_lo16gotoff", 16, 'i', 0,
-    BFD_RELOC_HEXAGON_GOTOFF_LO16, BFD_RELOC_NONE, BFD_RELOC_NONE,
+  { "#s16_lo16gotrel", 16, 'i', 0,
+    BFD_RELOC_HEXAGON_GOTREL_LO16, BFD_RELOC_NONE, BFD_RELOC_NONE,
     HEXAGON_OPERAND_IS_IMMEDIATE | HEXAGON_OPERAND_IS_SIGNED | HEXAGON_OPERAND_IS_LO16,
     "#%d", NULL, NULL },
   { "#s16_hi16", 16, 'i', 0,
@@ -640,8 +640,8 @@ const hexagon_operand hexagon_operands [] =
     BFD_RELOC_HEXAGON_GOT_HI16, BFD_RELOC_NONE, BFD_RELOC_NONE,
     HEXAGON_OPERAND_IS_IMMEDIATE | HEXAGON_OPERAND_IS_SIGNED | HEXAGON_OPERAND_IS_HI16,
     "#%d", NULL, NULL },
-  { "#s16_hi16gotoff", 16, 'i', 0,
-    BFD_RELOC_HEXAGON_GOTOFF_HI16, BFD_RELOC_NONE, BFD_RELOC_NONE,
+  { "#s16_hi16gotrel", 16, 'i', 0,
+    BFD_RELOC_HEXAGON_GOTREL_HI16, BFD_RELOC_NONE, BFD_RELOC_NONE,
     HEXAGON_OPERAND_IS_IMMEDIATE | HEXAGON_OPERAND_IS_SIGNED | HEXAGON_OPERAND_IS_HI16,
     "#%d", NULL, NULL },
 
@@ -705,7 +705,7 @@ const hexagon_operand hexagon_operands [] =
 const size_t hexagon_operand_count =
   sizeof (hexagon_operands) / sizeof (hexagon_operands [0]);
 
-/* HEXAGON instructions.
+/* Hexagon instructions.
 
    Longer versions of insns must appear before shorter ones.
 
@@ -713,7 +713,7 @@ const size_t hexagon_operand_count =
    before the real insn so they're chosen when disassembling. */
 
 /* Top level variables. Point to correct variables based on the type of
-   HEXAGON architecture */
+   Hexagon architecture */
 hexagon_opcode *hexagon_opcodes;
 size_t hexagon_opcodes_count;
 

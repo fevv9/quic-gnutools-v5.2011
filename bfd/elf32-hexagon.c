@@ -1,4 +1,4 @@
-/* HEXAGON-specific support for 32-bit ELF.
+/* Hexagon-specific support for 32-bit ELF.
    PIC and DSO support based primarily on the CRIS, i386, PPC, x86-64 ports.
 
    Copyright 1994, 1995, 1997, 1999, 2001, 2002
@@ -47,20 +47,20 @@
    section.  */
 #define ELF_DYNAMIC_INTERPRETER "/lib/ld.so"
 
-/* The size in insns of an entry in the PLT, per the HEXAGON ABI. */
+/* The size in insns of an entry in the PLT, per the ABI. */
 #define PLT_ENTRY_LENGTH (6)
-/* The size in bytes of an entry in the PLT, per the HEXAGON ABI. */
+/* The size in bytes of an entry in the PLT, per the ABI. */
 #define PLT_ENTRY_SIZE (PLT_ENTRY_LENGTH * sizeof (hexagon_insn))
 /* The size of the PLT first few entries reserved for the dynamic linker,
-   per the HEXAGON ABI. */
+   per the ABI. */
 #define PLT_RESERVED_ENTRIES (4)
 #define PLT_INITIAL_ENTRY_LENGTH (PLT_ENTRY_LENGTH * PLT_RESERVED_ENTRIES)
 #define PLT_INITIAL_ENTRY_SIZE (PLT_ENTRY_SIZE * PLT_RESERVED_ENTRIES)
 
-/* The size in bytes of an entry in the GOT, per the HEXAGON ABI. */
+/* The size in bytes of an entry in the GOT, per the ABI. */
 #define GOT_ENTRY_SIZE (4)
 /* The size of the of the first few GOT entries reserved for the dynamic linker,
-   per the HEXAGON ABI. */
+   per the ABI. */
 #define GOT_RESERVED_ENTRIES (4)
 #define GOT_INITIAL_ENTRY_SIZE (GOT_ENTRY_SIZE * GOT_RESERVED_ENTRIES)
 
@@ -148,14 +148,14 @@ typedef struct elf_dyn_relocs hexagon_dyn_reloc;
 typedef struct _hexagon_link_hash_entry
   {
     struct elf_link_hash_entry elf;
-    /* HEXAGON data. */
+    /* Hexagon data. */
     hexagon_dyn_reloc *dyn_relocs;
   } hexagon_link_hash_entry;
 
 typedef struct _hexagon_link_hash_table
   {
     struct elf_link_hash_table elf;
-    /* HEXAGON data. */
+    /* Hexagon data. */
     /* Shortcuts to get to dynamic linker sections.  */
     struct
       {
@@ -194,17 +194,6 @@ static const hexagon_trampoline hexagon_trampolines [] =
    binding. */
 static const hexagon_insn hexagon_plt_initial_entry [PLT_INITIAL_ENTRY_LENGTH] =
   {
-#ifdef HEXAGON_OLD_PLT_ENTRY
-    0x6a09c00c, /* r12 = pc                                            */
-    0x918cc11c, /* r28 = memw (r12 + #32)    # offset of @PLT from GOT */
-    0xf33ccc1c, /* r28 = sub (r12, r28)      # address of GOT          */
-    0xf32c4f0d, /* { r13 = sub (r15, r12)    # offset of @PLT from PLT */
-    0xf33c4e0e, /*   r14 = sub (r14, r28)    # offset of @GOT from GOT */
-    0x919c404f, /*   r15 = memw (r28 + #8)   # object ID at GOT [2]    */
-    0x919cc02b, /*   r11 = memw (r28 + #4) } # dynamic link at GOT [1] */
-    0x528bc000, /* jumpr r11                 # call it                 */
-    0x00000000, /* .word GOTOFF                                        */
-#else
     0x6a09400c, /*  { r12 = pc                # address of PLT          */
     0x723cc000, /*    r28.h = #hi (PLT@GOTOFF) }                        */
     0x713cc000, /*  r28.l = #lo (PLT@GOTOFF)  # offset of PLT from GOT  */
@@ -215,27 +204,17 @@ static const hexagon_insn hexagon_plt_initial_entry [PLT_INITIAL_ENTRY_LENGTH] =
     0x919cc03c, /*    r28 = memw (r28 + #4) } # dynamic link at GOT [1] */
     0x8c0d420d, /*  { r13 = asr (r13, #2)     # index of @PLT           */
     0x529cc000, /*    jumpr r28 }             # call dynamic link       */
-#endif
   };
 
 /* Default PLT entry */
 static const hexagon_insn hexagon_plt_entry [PLT_ENTRY_LENGTH] =
   {
-#ifdef HEXAGON_OLD_PLT_ENTRY
-    0x6a09c00f, /* r15 = pc                    # address of @PLT          */
-    0x918fc0bc, /* r28 = memw (r15 + #20)      # offset of @GOT from @PLT */
-    0xf30fdc0e, /* r14 = add (r15, r28)        # address of @GOT          */
-    0x918ec01c, /* r28 = memw (r14)            # contents of @GOT         */
-    0x529cc000, /* jumpr r28                   # call it                  */
-    0x00000000, /* .word @GOT - @PLT                                      */
-#else
     0x6a09400f, /* { r15 = pc                  # address of @PLT          */
     0x723cc000, /*   r28.h = #hi (@GOT - @PLT) }                          */
     0x713cc000, /* r28.l = #lo (@GOT - @PLT)   # offset of @GOT from @PLT */
     0xf30fdc0e, /* r14 = add (r15, r28)        # address of @GOT          */
     0x918ec01c, /* r28 = memw (r14)            # contents of @GOT         */
     0x529cc000, /* jumpr r28                   # call it                  */
-#endif
   };
 
 static reloc_howto_type hexagon_elf_howto_table [] =
@@ -289,7 +268,7 @@ static reloc_howto_type hexagon_elf_howto_table [] =
 	 FALSE),		/* pcrel_offset  */
 
   /* Low 16 bits of a 32 bit number. */
-  HOWTO (R_HEXAGON_LO16,		/* type  */
+  HOWTO (R_HEXAGON_LO16,	/* type  */
 	 0,			/* rightshift  */
 	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
 	 32,			/* bitsize  */
@@ -304,7 +283,7 @@ static reloc_howto_type hexagon_elf_howto_table [] =
 	 FALSE),		/* pcrel_offset  */
 
   /* High 16 bits of a 32 bit number. */
-  HOWTO (R_HEXAGON_HI16,		/* type  */
+  HOWTO (R_HEXAGON_HI16,	/* type  */
 	 0,			/* rightshift  */
 	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
 	 32,			/* bitsize  */
@@ -327,7 +306,7 @@ static reloc_howto_type hexagon_elf_howto_table [] =
 	 0,			/* bitpos  */
 	 complain_overflow_bitfield, /* complain_on_overflow  */
 	 bfd_elf_generic_reloc,	/* special_function  */
-	 "R_HEXAGON_32",		/* name  */
+	 "R_HEXAGON_32",	/* name  */
 	 FALSE,			/* partial_inplace  */
 	 0,			/* src_mask  */
 	 0xffffffff,		/* dst_mask  */
@@ -342,7 +321,7 @@ static reloc_howto_type hexagon_elf_howto_table [] =
 	 0,			/* bitpos  */
 	 complain_overflow_bitfield, /* complain_on_overflow  */
 	 bfd_elf_generic_reloc,	/* special_function  */
-	 "R_HEXAGON_16",		/* name  */
+	 "R_HEXAGON_16",	/* name  */
 	 FALSE,			/* partial_inplace  */
 	 0,			/* src_mask  */
 	 0xffff,		/* dst_mask  */
@@ -424,7 +403,7 @@ static reloc_howto_type hexagon_elf_howto_table [] =
 	 FALSE),		/* pcrel_offset  */
 
   /* High and low 16 bits of a 32 bit number applied to 2 insns back-to-back. */
-  HOWTO (R_HEXAGON_HL16,		/* type  */
+  HOWTO (R_HEXAGON_HL16,	/* type  */
 	 0,			/* rightshift  */
 	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
 	 32,			/* bitsize  */
@@ -477,7 +456,7 @@ static reloc_howto_type hexagon_elf_howto_table [] =
 	 0,			/* bitpos  */
 	 complain_overflow_signed, /* complain_on_overflow  */
 	 hexagon_elf_reloc,	/* special_function  */
-	 "R_HEXAGON_B32_PCREL_X",	/* name  */
+	 "R_HEXAGON_B32_PCREL_X", /* name  */
 	 FALSE,			/* partial_inplace  */
 	 ~0x3f,			/* src_mask  */
 	 0x0fff3fff,		/* dst_mask  */
@@ -507,7 +486,7 @@ static reloc_howto_type hexagon_elf_howto_table [] =
 	 0,			/* bitpos  */
 	 complain_overflow_signed, /* complain_on_overflow  */
 	 hexagon_elf_reloc,	/* special_function  */
-	 "R_HEXAGON_B22_PCREL_X",	/* name  */
+	 "R_HEXAGON_B22_PCREL_X", /* name  */
 	 FALSE,			/* partial_inplace  */
 	 0x3f,			/* src_mask  */
 	 0x01ff3ffe,		/* dst_mask  */
@@ -522,7 +501,7 @@ static reloc_howto_type hexagon_elf_howto_table [] =
 	 0,			/* bitpos  */
 	 complain_overflow_signed, /* complain_on_overflow  */
 	 hexagon_elf_reloc,	/* special_function  */
-	 "R_HEXAGON_B15_PCREL_X",	/* name  */
+	 "R_HEXAGON_B15_PCREL_X", /* name  */
 	 FALSE,			/* partial_inplace  */
 	 0x3f,			/* src_mask  */
 	 0x00df20fe,		/* dst_mask  */
@@ -537,7 +516,7 @@ static reloc_howto_type hexagon_elf_howto_table [] =
 	 0,			/* bitpos  */
 	 complain_overflow_signed, /* complain_on_overflow  */
 	 hexagon_elf_reloc,	/* special_function  */
-	 "R_HEXAGON_B13_PCREL_X",	/* name  */
+	 "R_HEXAGON_B13_PCREL_X", /* name  */
 	 FALSE,			/* partial_inplace  */
 	 0x3f,			/* src_mask  */
 	 0x00202ffe,		/* dst_mask  */
@@ -552,7 +531,7 @@ static reloc_howto_type hexagon_elf_howto_table [] =
 	 0,			/* bitpos  */
 	 complain_overflow_signed, /* complain_on_overflow  */
 	 hexagon_elf_reloc,	/* special_function  */
-	 "R_HEXAGON_B9_PCREL_X",	/* name  */
+	 "R_HEXAGON_B9_PCREL_X", /* name  */
 	 FALSE,			/* partial_inplace  */
 	 0x3f,			/* src_mask  */
 	 0x00c000ff,		/* dst_mask  */
@@ -567,14 +546,14 @@ static reloc_howto_type hexagon_elf_howto_table [] =
 	 0,			/* bitpos  */
 	 complain_overflow_signed, /* complain_on_overflow  */
 	 hexagon_elf_reloc,	/* special_function  */
-	 "R_HEXAGON_B7_PCREL_X",	/* name  */
+	 "R_HEXAGON_B7_PCREL_X", /* name  */
 	 FALSE,			/* partial_inplace  */
 	 0x3f,			/* src_mask  */
 	 0x00001f18,		/* dst_mask  */
 	 FALSE),		/* pcrel_offset  */
 
   /* An extended signed 16 bit number. */
-  HOWTO (R_HEXAGON_16_X,		/* type  */
+  HOWTO (R_HEXAGON_16_X,	/* type  */
 	 0,			/* rightshift  */
 	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
 	 6,			/* bitsize  */
@@ -589,7 +568,7 @@ static reloc_howto_type hexagon_elf_howto_table [] =
 	 FALSE),		/* pcrel_offset  */
 
   /* An extended signed 12 bit number. */
-  HOWTO (R_HEXAGON_12_X,		/* type  */
+  HOWTO (R_HEXAGON_12_X,	/* type  */
 	 0,			/* rightshift  */
 	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
 	 6,			/* bitsize  */
@@ -604,7 +583,7 @@ static reloc_howto_type hexagon_elf_howto_table [] =
 	 FALSE),		/* pcrel_offset  */
 
   /* An extended 11 bit number for bytes. */
-  HOWTO (R_HEXAGON_11_X,		/* type  */
+  HOWTO (R_HEXAGON_11_X,	/* type  */
 	 0,			/* rightshift  */
 	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
 	 6,			/* bitsize  */
@@ -619,7 +598,7 @@ static reloc_howto_type hexagon_elf_howto_table [] =
 	 FALSE),		/* pcrel_offset  */
 
   /* An extended signed 16 bit number. */
-  HOWTO (R_HEXAGON_10_X,		/* type  */
+  HOWTO (R_HEXAGON_10_X,	/* type  */
 	 0,			/* rightshift  */
 	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
 	 6,			/* bitsize  */
@@ -642,7 +621,7 @@ static reloc_howto_type hexagon_elf_howto_table [] =
 	 0,			/* bitpos  */
 	 complain_overflow_signed, /* complain_on_overflow  */
 	 hexagon_elf_reloc,	/* special_function  */
-	 "R_HEXAGON_9_X",		/* name  */
+	 "R_HEXAGON_9_X",	/* name  */
 	 FALSE,			/* partial_inplace  */
 	 0x3f,			/* src_mask  */
 	 0,			/* dst_mask  */
@@ -657,7 +636,7 @@ static reloc_howto_type hexagon_elf_howto_table [] =
 	 0,			/* bitpos  */
 	 complain_overflow_signed, /* complain_on_overflow  */
 	 hexagon_elf_reloc,	/* special_function  */
-	 "R_HEXAGON_8_X",		/* name  */
+	 "R_HEXAGON_8_X",	/* name  */
 	 FALSE,			/* partial_inplace  */
 	 0x3f,			/* src_mask  */
 	 0,			/* dst_mask  */
@@ -672,7 +651,7 @@ static reloc_howto_type hexagon_elf_howto_table [] =
 	 0,			/* bitpos  */
 	 complain_overflow_signed, /* complain_on_overflow  */
 	 hexagon_elf_reloc,	/* special_function  */
-	 "R_HEXAGON_7_X",		/* name  */
+	 "R_HEXAGON_7_X",	/* name  */
 	 FALSE,			/* partial_inplace  */
 	 0x3f,			/* src_mask  */
 	 0,			/* dst_mask  */
@@ -687,7 +666,7 @@ static reloc_howto_type hexagon_elf_howto_table [] =
 	 0,			/* bitpos  */
 	 complain_overflow_signed, /* complain_on_overflow  */
 	 hexagon_elf_reloc,	/* special_function  */
-	 "R_HEXAGON_6_X",		/* name  */
+	 "R_HEXAGON_6_X",	/* name  */
 	 FALSE,			/* partial_inplace  */
 	 0x3f,			/* src_mask  */
 	 0,			/* dst_mask  */
@@ -709,7 +688,7 @@ static reloc_howto_type hexagon_elf_howto_table [] =
 	 TRUE),			/* pcrel_offset  */
 
   /* Copy initial value from copy in DSO. */
-  HOWTO (R_HEXAGON_COPY,		/* type  */
+  HOWTO (R_HEXAGON_COPY,	/* type  */
 	 0,			/* rightshift  */
 	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
 	 32,			/* bitsize  */
@@ -784,7 +763,7 @@ static reloc_howto_type hexagon_elf_howto_table [] =
 	 FALSE),		/* pcrel_offset  */
 
   /* Low 16 bits of a 32 bit offset from GOT. */
-  HOWTO (R_HEXAGON_GOTOFF_LO16,	/* type  */
+  HOWTO (R_HEXAGON_GOTREL_LO16,	/* type  */
 	 0,			/* rightshift  */
 	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
 	 32,			/* bitsize  */
@@ -792,14 +771,14 @@ static reloc_howto_type hexagon_elf_howto_table [] =
 	 0,			/* bitpos  */
 	 complain_overflow_bitfield, /* complain_on_overflow  */
 	 hexagon_elf_reloc,	/* special_function  */
-	 "R_HEXAGON_GOTOFF_LO16",	/* name  */
+	 "R_HEXAGON_GOTREL_LO16", /* name  */
 	 FALSE,			/* partial_inplace  */
 	 0,			/* src_mask  */
 	 0x00c03fff,		/* dst_mask  */
 	 FALSE),		/* pcrel_offset  */
 
   /* High 16 bits of a 32 bit offset from GOT. */
-  HOWTO (R_HEXAGON_GOTOFF_HI16,	/* type  */
+  HOWTO (R_HEXAGON_GOTREL_HI16,	/* type  */
 	 0,			/* rightshift  */
 	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
 	 32,			/* bitsize  */
@@ -807,14 +786,14 @@ static reloc_howto_type hexagon_elf_howto_table [] =
 	 0,			/* bitpos  */
 	 complain_overflow_bitfield, /* complain_on_overflow  */
 	 hexagon_elf_reloc,	/* special_function  */
-	 "R_HEXAGON_GOTOFF_HI16",	/* name  */
+	 "R_HEXAGON_GOTREL_HI16", /* name  */
 	 FALSE,			/* partial_inplace  */
 	 0,			/* src_mask  */
 	 0x00c03fff,		/* dst_mask  */
 	 FALSE),		/* pcrel_offset  */
 
   /* 32 bit offset from GOT. */
-  HOWTO (R_HEXAGON_GOTOFF_32,     /* type  */
+  HOWTO (R_HEXAGON_GOTREL_32,	/* type  */
          0,                     /* rightshift  */
          2,                     /* size (0 = byte, 1 = short, 2 = long)  */
          32,                    /* bitsize  */
@@ -822,7 +801,7 @@ static reloc_howto_type hexagon_elf_howto_table [] =
          0,                     /* bitpos  */
          complain_overflow_bitfield, /* complain_on_overflow  */
          bfd_elf_generic_reloc, /* special_function  */
-         "R_HEXAGON_GOTOFF_32",   /* name  */
+         "R_HEXAGON_GOTREL_32",	/* name  */
          FALSE,                 /* partial_inplace  */
          0,                     /* src_mask  */
          0xffffffff,            /* dst_mask  */
@@ -859,7 +838,7 @@ static reloc_howto_type hexagon_elf_howto_table [] =
 	 FALSE),		/* pcrel_offset  */
 
   /* 32 bit offset of a GOT entry. */
-  HOWTO (R_HEXAGON_GOT_32,        /* type  */
+  HOWTO (R_HEXAGON_GOT_32,	/* type  */
          0,                     /* rightshift  */
          2,                     /* size (0 = byte, 1 = short, 2 = long)  */
          32,                    /* bitsize  */
@@ -867,22 +846,22 @@ static reloc_howto_type hexagon_elf_howto_table [] =
          0,                     /* bitpos  */
          complain_overflow_bitfield, /* complain_on_overflow  */
          bfd_elf_generic_reloc, /* special_function  */
-         "R_HEXAGON_GOT_32",      /* name  */
+         "R_HEXAGON_GOT_32",	/* name  */
          FALSE,                 /* partial_inplace  */
          0,                     /* src_mask  */
          0xffffffff,            /* dst_mask  */
          FALSE),                /* pcrel_offset  */
 
   /* 16 bit offset of a GOT entry. */
-  HOWTO (R_HEXAGON_GOT_16,        /* type  */
+  HOWTO (R_HEXAGON_GOT_16,	/* type  */
          0,                     /* rightshift  */
          2,                     /* size (0 = byte, 1 = short, 2 = long)  */
          16,                    /* bitsize  */
          FALSE,                 /* pc_relative  */
          0,                     /* bitpos  */
          complain_overflow_bitfield, /* complain_on_overflow  */
-         hexagon_elf_reloc,       /* special_function  */
-         "R_HEXAGON_GOT_16",      /* name  */
+         hexagon_elf_reloc,	/* special_function  */
+         "R_HEXAGON_GOT_16",	/* name  */
          FALSE,                 /* partial_inplace  */
          0,                     /* src_mask  */
          0x00c03fff,            /* dst_mask  */
@@ -890,7 +869,7 @@ static reloc_howto_type hexagon_elf_howto_table [] =
 
 };
 
-/* HEXAGON ELF uses two common sections.  One is the usual one, and the
+/* Hexagon ELF uses two common sections.  One is the usual one, and the
    other is for small objects.  All the small objects are kept
    together, and then referenced via the GP-register, which yields
    faster assembler code.  This is what we use for the small common
@@ -900,7 +879,7 @@ static asymbol     hexagon_scom_symbol  [SHN_HEXAGON_SCOMMON_8 - SHN_HEXAGON_SCO
 static const char *hexagon_scom_name    [SHN_HEXAGON_SCOMMON_8 - SHN_HEXAGON_SCOMMON + 1] =
   {".scommon", ".scommon.1", ".scommon.2", ".scommon.4", ".scommon.8"};
 
-/* Map BFD reloc types to HEXAGON ELF reloc types.  */
+/* Map BFD reloc types to Hexagon ELF reloc types.  */
 
 struct hexagon_reloc_map
 {
@@ -911,7 +890,7 @@ struct hexagon_reloc_map
 
 static const struct hexagon_reloc_map hexagon_reloc_map [] =
 {
-  { BFD_RELOC_NONE,                R_HEXAGON_NONE,          0 },
+  { BFD_RELOC_NONE,                  R_HEXAGON_NONE,          0 },
   { BFD_RELOC_HEXAGON_B32_PCREL_X,   R_HEXAGON_B32_PCREL_X,   0 }, /* K-ext */
   { BFD_RELOC_HEXAGON_B22_PCREL,     R_HEXAGON_B22_PCREL,     0 },
   { BFD_RELOC_HEXAGON_B22_PCREL_X,   R_HEXAGON_B22_PCREL_X,   HEXAGON_OPERAND_IS_KXED },
@@ -927,10 +906,10 @@ static const struct hexagon_reloc_map hexagon_reloc_map [] =
   { BFD_RELOC_HEXAGON_HI16,          R_HEXAGON_HI16,          0 },
   { BFD_RELOC_HEXAGON_HL16,          R_HEXAGON_HL16,          0 },
   { BFD_RELOC_HEXAGON_32_6_X,        R_HEXAGON_32_6_X,        0 }, /* K-ext */
-  { BFD_RELOC_32_PCREL,            R_HEXAGON_32_PCREL,      0 },
-  { BFD_RELOC_32,                  R_HEXAGON_32,            0 },
-  { BFD_RELOC_16,                  R_HEXAGON_16,            0 },
-  { BFD_RELOC_8,                   R_HEXAGON_8,             0 },
+  { BFD_RELOC_32_PCREL,              R_HEXAGON_32_PCREL,      0 },
+  { BFD_RELOC_32,                    R_HEXAGON_32,            0 },
+  { BFD_RELOC_16,                    R_HEXAGON_16,            0 },
+  { BFD_RELOC_8,                     R_HEXAGON_8,             0 },
   { BFD_RELOC_HEXAGON_16_X,          R_HEXAGON_16_X,          HEXAGON_OPERAND_IS_KXED },
   { BFD_RELOC_HEXAGON_12_X,          R_HEXAGON_12_X,          HEXAGON_OPERAND_IS_KXED },
   { BFD_RELOC_HEXAGON_11_X,          R_HEXAGON_11_X,          HEXAGON_OPERAND_IS_KXED },
@@ -951,9 +930,9 @@ static const struct hexagon_reloc_map hexagon_reloc_map [] =
   /* PLT */
   { BFD_RELOC_HEXAGON_PLT_B22_PCREL, R_HEXAGON_PLT_B22_PCREL, 0 },
   /* GOT */
-  { BFD_RELOC_HEXAGON_GOTOFF_LO16,   R_HEXAGON_GOTOFF_LO16,   0 },
-  { BFD_RELOC_HEXAGON_GOTOFF_HI16,   R_HEXAGON_GOTOFF_HI16,   0 },
-  { BFD_RELOC_32_GOTOFF,           R_HEXAGON_GOTOFF_32,     0 },
+  { BFD_RELOC_HEXAGON_GOTREL_LO16,   R_HEXAGON_GOTREL_LO16,   0 },
+  { BFD_RELOC_HEXAGON_GOTREL_HI16,   R_HEXAGON_GOTREL_HI16,   0 },
+  { BFD_RELOC_32_GOTOFF,             R_HEXAGON_GOTREL_32,     0 },
   { BFD_RELOC_HEXAGON_GOT_LO16,      R_HEXAGON_GOT_LO16,      0 },
   { BFD_RELOC_HEXAGON_GOT_HI16,      R_HEXAGON_GOT_HI16,      0 },
   { BFD_RELOC_HEXAGON_GOT_32,        R_HEXAGON_GOT_32,        0 },
@@ -1014,7 +993,7 @@ hexagon_elf_reloc_name_lookup
   return NULL;
 }
 
-/* Set the howto pointer for a HEXAGON ELF reloc.  */
+/* Set the howto pointer for a Hexagon ELF reloc.  */
 
 static void
 hexagon_info_to_howto_rel
@@ -1028,7 +1007,7 @@ hexagon_info_to_howto_rel
   cache_ptr->howto = hexagon_elf_howto_table + r_type;
 }
 
-/* Set the right machine number for an HEXAGON ELF file.  */
+/* Set the right machine number for an Hexagon ELF file.  */
 
 static bfd_boolean
 hexagon_elf_object_p
@@ -1068,8 +1047,8 @@ hexagon_elf_object_p
   return (bfd_default_set_arch_mach (abfd, bfd_arch_hexagon, mach));
 }
 
-/* The final processing done just before writing out an HEXAGON ELF object file.
-   This gets the HEXAGON architecture right based on the machine number.  */
+/* The final processing done just before writing out an Hexagon ELF object file.
+   This gets the Hexagon architecture right based on the machine number.  */
 
 static void
 hexagon_elf_final_write_processing
@@ -1552,7 +1531,7 @@ hexagon_elf_add_symbol_hook
   return TRUE;
 }
 
-/* Handle the special HEXAGON section numbers that a symbol may use. */
+/* Handle the special Hexagon section numbers that a symbol may use. */
 void
 hexagon_elf_symbol_processing
 (bfd *abfd, asymbol *asym)
@@ -2483,9 +2462,9 @@ hexagon_elf_relocate_section
       /* Check relocations for correctness. */
       switch (r_type)
         {
-	case R_HEXAGON_GOTOFF_LO16:
-	case R_HEXAGON_GOTOFF_HI16:
-	case R_HEXAGON_GOTOFF_32:
+	case R_HEXAGON_GOTREL_LO16:
+	case R_HEXAGON_GOTREL_HI16:
+	case R_HEXAGON_GOTREL_32:
 	  /* This can happen if we get a link error with the input ELF
 	     variant mismatching the output variant.  Emit an error so
 	     it's noticed if it happens elsewhere.  */
@@ -2626,9 +2605,9 @@ hexagon_elf_relocate_section
                        + offset;
           break;
 
-	case R_HEXAGON_GOTOFF_LO16:
-	case R_HEXAGON_GOTOFF_HI16:
-	case R_HEXAGON_GOTOFF_32:
+	case R_HEXAGON_GOTREL_LO16:
+	case R_HEXAGON_GOTREL_HI16:
+	case R_HEXAGON_GOTREL_32:
 	  /* These relocations are like a PC-relative one, except the
 	     reference point is the location of _GLOBAL_OFFSET_TABLE_.  Note
 	     that sgot->output_offset is not involved in this calculation.
@@ -2816,8 +2795,8 @@ hexagon_elf_relocate_section
 
 	case R_HEXAGON_LO16:
 	case R_HEXAGON_HI16:
-	case R_HEXAGON_GOTOFF_LO16:
-	case R_HEXAGON_GOTOFF_HI16:
+	case R_HEXAGON_GOTREL_LO16:
+	case R_HEXAGON_GOTREL_HI16:
 	case R_HEXAGON_GOT_LO16:
 	case R_HEXAGON_GOT_HI16:
 	case R_HEXAGON_GOT_16:
@@ -2953,7 +2932,7 @@ hexagon_elf_relocate_section
 	case R_HEXAGON_16:
 	case R_HEXAGON_8:
         case R_HEXAGON_32_PCREL:
-        case R_HEXAGON_GOTOFF_32:
+        case R_HEXAGON_GOTREL_32:
         case R_HEXAGON_GOT_32:
           /* Fall through. */
 
@@ -3122,9 +3101,9 @@ hexagon_elf_check_relocs
 
 	  /* Fall through */
 
-        case R_HEXAGON_GOTOFF_LO16:
-        case R_HEXAGON_GOTOFF_HI16:
-        case R_HEXAGON_GOTOFF_32:
+        case R_HEXAGON_GOTREL_LO16:
+        case R_HEXAGON_GOTREL_HI16:
+        case R_HEXAGON_GOTREL_32:
 	  if (!htab->elf.sgotplt)
 	    {
 	      /* Create the GOT. */
