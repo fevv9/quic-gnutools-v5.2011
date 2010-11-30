@@ -22,7 +22,7 @@
 
 #
 # XXX_SM: 
-#	- This is a copy of gdb.exp with qdsp6 modifications.
+#	- This is a copy of gdb.exp with hexagon modifications.
 #	- So far the only change is to the default prompt setting
 #         and this should configable but its not obvious how 
 #	- This file is referenced from config/unix.exp
@@ -68,7 +68,7 @@ set INTERNAL_GDBFLAGS "-nw -nx"
 # Set it if it is not already set.
 global gdb_prompt
 if ![info exists gdb_prompt] then {
-    set gdb_prompt "\[(\]qdsp6-gdb\[)\]"
+    set gdb_prompt "\[(\]hexagon-gdb\[)\]"
 }
 
 # The variable fullname_syntax_POSIX is a regexp which matches a POSIX 
@@ -2347,7 +2347,7 @@ proc default_gdb_init { args } {
     if [target_info exists gdb_prompt] {
 	set gdb_prompt [target_info gdb_prompt];
     } else {
-	set gdb_prompt "\\(qdsp6-gdb\\)"
+	set gdb_prompt "\\(hexagon-gdb\\)"
     }
 }
 
