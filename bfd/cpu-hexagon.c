@@ -1,5 +1,5 @@
 
-/* BFD support for the HEXAGON processor
+/* BFD support for the Hexagon processor
    Copyright 1994, 1995, 1997, 2001, 2002 Free Software Foundation, Inc.
    Contributed by Doug Evans (dje@cygnus.com).
 
@@ -26,7 +26,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.  */
 static const bfd_arch_info_type *hexagon_bfd_compatible
   (const bfd_arch_info_type *a, const bfd_arch_info_type *b);
 
-#define HEXAGON(MACH, NAME, DEFAULT, NEXT) \
+#define HEXAGON_ARCH_INFO(MACH, NAME, DEFAULT, NEXT) \
   {					 \
     32,	/* 32 bits in a word  */	 \
     32,	/* 32 bits in an address  */	 \
@@ -45,14 +45,14 @@ static const bfd_arch_info_type *hexagon_bfd_compatible
 static const bfd_arch_info_type hexagon_arch_info [] =
 {
   /* These are the other supported ISAs. */
-  HEXAGON (bfd_mach_hexagon_v3, "hexagonv3", FALSE, hexagon_arch_info + 1),
-  HEXAGON (bfd_mach_hexagon_v4, "hexagonv4", FALSE, hexagon_arch_info + 2),
-  HEXAGON (bfd_mach_hexagon,    "hexagon",   FALSE, NULL)
+  HEXAGON_ARCH_INFO (bfd_mach_hexagon_v3, "hexagonv3", FALSE, hexagon_arch_info + 1),
+  HEXAGON_ARCH_INFO (bfd_mach_hexagon_v4, "hexagonv4", FALSE, hexagon_arch_info + 2),
+  HEXAGON_ARCH_INFO (bfd_mach_hexagon,    "hexagon",   FALSE, NULL)
 };
 
 /* This is the default ISA. */
 const bfd_arch_info_type bfd_hexagon_arch =
-  HEXAGON (bfd_mach_hexagon_v2, "hexagonv2", TRUE, hexagon_arch_info + 0);
+  HEXAGON_ARCH_INFO (bfd_mach_hexagon_v2, "hexagonv2", TRUE, hexagon_arch_info + 0);
 
 /* Utility routines.  */
 int hexagon_get_mach PARAMS ((char *));

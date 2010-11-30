@@ -1,6 +1,6 @@
 
 
-/* Opcode table for the HEXAGON.
+/* Opcode table for the Hexagon.
    Copyright 2004 Free Software Foundation, Inc.
 
    This file is part of GAS, the GNU Assembler, GDB, the GNU debugger, and
@@ -124,7 +124,7 @@
                               || (HEXAGON_INSN_TYPE_MASK (i) == HEXAGON_INSN_TYPE_X13) \
                               || (HEXAGON_INSN_TYPE_MASK (i) == HEXAGON_INSN_TYPE_X14))
 
-/* Type to denote an HEXAGON instruction (at least a 32 bit unsigned int).  */
+/* Type to denote an Hexagon instruction (at least a 32 bit unsigned int).  */
 typedef unsigned int hexagon_insn;
 
 typedef struct _hexagon_opcode

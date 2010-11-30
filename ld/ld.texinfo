@@ -158,7 +158,7 @@ in the section entitled ``GNU Free Documentation License''.
 * PowerPC64 ELF64::             ld and PowerPC64 64-bit ELF Support
 @end ifset
 @ifset HEXAGON
-* HEXAGON::			ld and the HEXAGON family
+* Hexagon::			ld and the Hexagon family
 @end ifset
 @ifset SPU
 * SPU ELF::			ld and SPU ELF Support
@@ -5737,7 +5737,7 @@ functionality are not listed.
 * PowerPC64 ELF64::		@command{ld} and PowerPC64 64-bit ELF Support
 @end ifset
 @ifset HEXAGON
-* HEXAGON::			@command{ld} and the HEXAGON family
+* Hexagon::			@command{ld} and the Hexagon family
 @end ifset
 @ifset SPU
 * SPU ELF::			@command{ld} and SPU ELF Support
@@ -6469,31 +6469,31 @@ Use this option to turn off this feature.
 @raisesections
 @end ifclear
 
-@node HEXAGON
-@section @command{ld} and the HEXAGON family
+@node Hexagon
+@section @command{ld} and the Hexagon family
 
-@cindex HEXAGON options
+@cindex Hexagon options
 @table @option
 
-@cindex Link for the HEXAGON V2 architecture
+@cindex Link for the Hexagon V2 architecture
 @kindex -mv2
 @item -mv2
-Link for the HEXAGON V2 architecture.  Equivalent to @code{--march=hexagonv2}.
+Link for the Hexagon V2 architecture.  Equivalent to @code{--march=hexagonv2}.
 
-@cindex Link for the HEXAGON V3 architecture
+@cindex Link for the Hexagon V3 architecture
 @kindex -mv3
 @item -mv3
-Link for the HEXAGON V3 architecture.  Equivalent to @code{--march=hexagonv3}.
+Link for the Hexagon V3 architecture.  Equivalent to @code{--march=hexagonv3}.
 
-@cindex Link for the HEXAGON V4 architecture
+@cindex Link for the Hexagon V4 architecture
 @kindex -mv4
 @item -mv4
-Link for the HEXAGON V4 architecture.  Equivalent to @code{--march=hexagonv4}.
+Link for the Hexagon V4 architecture.  Equivalent to @code{--march=hexagonv4}.
 
 @cindex Link for the specified architecture
 @kindex --march=@var{architecture}
 @item --march=@var{architecture}
-Link for the specified HEXAGON architecture.  By default, the linker will use the
+Link for the specified Hexagon architecture.  By default, the linker will use the
 architecture of input objects to determine the architecture of the output object
 based on several criteria, such as ABI and binary compatibility, as well as when
 to reject input objects.  By using this option, it is possible to

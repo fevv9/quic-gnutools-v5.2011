@@ -1911,7 +1911,7 @@ get_machine_name (unsigned e_machine)
     case EM_CR16_OLD:		return "National Semiconductor's CR16";
     case EM_MICROBLAZE:		return "Xilinx MicroBlaze";
     case EM_MICROBLAZE_OLD:	return "Xilinx MicroBlaze";
-    case EM_HEXAGON:		return "Qualcomm HEXAGON";
+    case EM_HEXAGON:		return "Qualcomm Hexagon";
     default:
       snprintf (buff, sizeof (buff), _("<unknown>: 0x%x"), e_machine);
       return buff;

@@ -1,8 +1,8 @@
 #
-# Makefile to build binutils for the HEXAGON.
+# Makefile to build binutils for Hexagon.
 #
 
-dirs = build_win build_lnx 
+dirs = build_win build_lnx
 
 
 BS=$(shell uname)
@@ -43,7 +43,7 @@ all: help
 help:
 	@echo "Specify a target:"
 	@echo "	\"build_win\" for windows"
-	@echo "	\"build_lnx\" for linux" 
+	@echo "	\"build_lnx\" for linux"
 	@echo
 	@echo "Be sure to set PREFIX to the desired install location"
 	@echo
@@ -57,7 +57,7 @@ CONFIGURE_OPTIONS = --target=hexagon \
 		    --enable-bfd-assembler \
 		    --disable-multilib \
         $(EXP_FLAGS) \
-		    --prefix=$(PREFIX) 
+		    --prefix=$(PREFIX)
 
 build_win:
 	mkdir -p $@
@@ -214,4 +214,4 @@ install_win: build_win
 
 .PHONY: clean
 clean:
-	rm -rf $(dirs) 
+	rm -rf $(dirs)

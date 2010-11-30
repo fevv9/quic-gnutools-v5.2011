@@ -1,4 +1,4 @@
-/* tc-hexagon.h - Macros and type defines for the HEXAGON.
+/* tc-hexagon.h - Macros and type defines for the Hexagon.
    Copyright 1994, 1995, 1997, 2000, 2001, 2002
    Free Software Foundation, Inc.
    Contributed by Doug Evans (dje@cygnus.com).
@@ -54,7 +54,7 @@ extern const char *hexagon_target_format;
 
 #define WORKING_DOT_WORD
 
-#define LISTING_HEADER "HEXAGON GAS "
+#define LISTING_HEADER "Hexagon GAS "
 
 #define DOUBLESLASH_LINE_COMMENTS
 
@@ -67,7 +67,7 @@ extern const char *hexagon_target_format;
 #define TC_START_LABEL(C, B, A) hexagon_start_label (C, B, A)
 extern int hexagon_start_label PARAMS ((char c, char *before, char *after));
 
-/* The HEXAGON needs to parse reloc specifiers in .word.  */
+/* The Hexagon needs to parse reloc specifiers in .word.  */
 #define TC_PARSE_CONS_EXPRESSION(EXP, NBYTES) \
   hexagon_parse_cons_expression (EXP, NBYTES)
 extern void hexagon_parse_cons_expression PARAMS ((struct expressionS *, unsigned));
@@ -161,7 +161,7 @@ extern long hexagon_relax_frag (segT segment, fragS *fragP, long stretch);
    || (r) == BFD_RELOC_HEXAGON_GPREL16_1 \
    || (r) == BFD_RELOC_HEXAGON_GPREL16_0)
 
-/* HEXAGON 7 bit pc-relative branch.
+/* Hexagon 7 bit pc-relative branch.
    The lowest 2 bits must be zero and are not stored in the instruction.*/
 #define IS_PC_RELATIVE_RELOC(r) \
    ((r) == BFD_RELOC_HEXAGON_B32_PCREL_X \

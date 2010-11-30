@@ -423,7 +423,7 @@ gcc(1), ld(1), and the Info entries for @file{binutils} and @file{ld}.
 @end ifset
 @ifset HEXAGON
 
-@emph{Target HEXAGON options:}
+@emph{Target Hexagon options:}
    [@b{-EB}|@b{-EL}]
    [@b{-G} @var{size}]
    [@b{-mv2}|@b{-mv3}|@b{-mv4}]
@@ -959,7 +959,7 @@ This option is only useful for testing @command{@value{AS}}.
 
 @ifset HEXAGON
 The following options are available when @command{@value{AS}} is configured
-for the HEXAGON architecture:
+for the Hexagon architecture:
 
 @table @gcctabopt
 
@@ -975,7 +975,7 @@ the GP register (default is @code{8}).
 @item -mv2
 @item -mv3
 @item -mv4
-Select a variant of the HEXAGON architecture,
+Select a variant of the Hexagon architecture,
 V2, V3 or V4 (default is @code{-mv2}).
 
 @item -march=hexagonv2
@@ -999,22 +999,22 @@ Enable [disable] sorting the objects in the small-data area by their access size
 (enabled by default).
 
 @item -mno-extender
-Disable the use of constant extenders in HEXAGON V4.
+Disable the use of constant extenders in Hexagon V4.
 
 @item -mno-jumps
-Disable automatic extension of some branch instructions in HEXAGON V4.
+Disable automatic extension of some branch instructions in Hexagon V4.
 
 @item -mno-pairing
-Disable pairing of packet instructions in HEXAGON V4.
+Disable pairing of packet instructions in Hexagon V4.
 
 @item -mno-pairing-duplex
-Disable pairing to duplex instructions in HEXAGON V4.
+Disable pairing to duplex instructions in Hexagon V4.
 
 @item -mno-pairing-branch
-Disable pairing of branch instructions in HEXAGON V4.
+Disable pairing of branch instructions in Hexagon V4.
 
 @item -mpairing-info
-Report about instructions pairing in HEXAGON V4.
+Report about instructions pairing in Hexagon V4.
 
 @end table
 @end ifset
@@ -6885,7 +6885,7 @@ subject, see the hardware manufacturer's manual.
 * PPC-Dependent::               PowerPC Dependent Features
 @end ifset
 @ifset HEXAGON
-* HEXAGON-Dependent::             HEXAGON Dependent Features
+* Hexagon-Dependent::             Hexagon Dependent Features
 @end ifset
 @ifset S390
 * S/390-Dependent::             IBM S/390 Dependent Features

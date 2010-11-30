@@ -1903,7 +1903,7 @@ enum bfd_architecture
 #define bfd_mach_ppc_7400      7400
 #define bfd_mach_ppc_e500      500
 #define bfd_mach_ppc_e500mc    5001
-  bfd_arch_hexagon,    /* Qualcomm HEXAGON */
+  bfd_arch_hexagon,    /* Qualcomm Hexagon */
 #define bfd_mach_hexagon        1
 #define bfd_mach_hexagon_v2     2
 #define bfd_mach_hexagon_v3     3
@@ -4597,10 +4597,10 @@ value in a word.  The relocation is relative offset from  */
 the dynamic object into the runtime process image.  */
   BFD_RELOC_MICROBLAZE_COPY,
 
-/* HEXAGON relocation with 32 bits shifted right by 6.  */
+/* Relocation with 32 bits shifted right by 6.  */
   BFD_RELOC_HEXAGON_32_6_X,
 
-/* HEXAGON basic signed relocations extended by BFD_RELOC_HEXAGON_32_6_X, holding
+/* Basic signed relocations extended by BFD_RELOC_HEXAGON_32_6_X, holding
 the lower 6 bits.  */
   BFD_RELOC_HEXAGON_16_X,
   BFD_RELOC_HEXAGON_12_X,
@@ -4611,10 +4611,10 @@ the lower 6 bits.  */
   BFD_RELOC_HEXAGON_7_X,
   BFD_RELOC_HEXAGON_6_X,
 
-/* HEXAGON PC-relative relocation with 32-bit signed offset.  */
+/* PC-relative relocation with 32-bit signed offset.  */
   BFD_RELOC_HEXAGON_32_PCREL,
 
-/* HEXAGON PC-relative relocations with 24, 17, 15, 11 or 9-bit signed offset
+/* PC-relative relocations with 24, 17, 15, 11 or 9-bit signed offset
 shifted right by 1.  */
   BFD_RELOC_HEXAGON_B22_PCREL,
   BFD_RELOC_HEXAGON_B15_PCREL,
@@ -4622,14 +4622,14 @@ shifted right by 1.  */
   BFD_RELOC_HEXAGON_B9_PCREL,
   BFD_RELOC_HEXAGON_B7_PCREL,
 
-/* HEXAGON PC-relative relocations with 23-bit signed offset
+/* PC-relative relocations with 23-bit signed offset
 shifted right by 1 to a PLT entry.  */
   BFD_RELOC_HEXAGON_PLT_B22_PCREL,
 
-/* HEXAGON PC-relative relocations with 32-bit signed offset shifted right by 6.  */
+/* PC-relative relocations with 32-bit signed offset shifted right by 6.  */
   BFD_RELOC_HEXAGON_B32_PCREL_X,
 
-/* HEXAGON PC-relative relocations extended by BFD_RELOC_HEXAGON_B32_PCREL_X,
+/* PC-relative relocations extended by BFD_RELOC_HEXAGON_B32_PCREL_X,
 holding the lower 6 bits shifted right by 1.  */
   BFD_RELOC_HEXAGON_B22_PCREL_X,
   BFD_RELOC_HEXAGON_B15_PCREL_X,
@@ -4637,33 +4637,33 @@ holding the lower 6 bits shifted right by 1.  */
   BFD_RELOC_HEXAGON_B9_PCREL_X,
   BFD_RELOC_HEXAGON_B7_PCREL_X,
 
-/* HEXAGON relocations for the lower and the higher 16 bits of a 32-bit address,
+/* Relocations for the lower and the higher 16 bits of a 32-bit address,
 applied to individual instructions or to a pair of instructions.  */
   BFD_RELOC_HEXAGON_LO16,
   BFD_RELOC_HEXAGON_HI16,
   BFD_RELOC_HEXAGON_HL16,
 
-/* HEXAGON GOT-relative relocations for the lower and the higher 16 bits and
+/* GOT-relative relocations for the lower and the higher 16 bits and
 all 32 bits of a 32-bit address.  */
-  BFD_RELOC_HEXAGON_GOTOFF_LO16,
-  BFD_RELOC_HEXAGON_GOTOFF_HI16,
-  BFD_RELOC_HEXAGON_GOTOFF_32,
+  BFD_RELOC_HEXAGON_GOTREL_LO16,
+  BFD_RELOC_HEXAGON_GOTREL_HI16,
+  BFD_RELOC_HEXAGON_GOTREL_32,
 
-/* HEXAGON GOT-relative relocations for the lower and the higher 16 bits,
+/* GOT-relative relocations for the lower and the higher 16 bits,
 all 32 bits and the signed lower 16 bits of a signed 32-bit offset.  */
   BFD_RELOC_HEXAGON_GOT_LO16,
   BFD_RELOC_HEXAGON_GOT_HI16,
   BFD_RELOC_HEXAGON_GOT_32,
   BFD_RELOC_HEXAGON_GOT_16,
 
-/* HEXAGON GP-relative relocations with 16, 17, 18 or 19-bit unsigned offset
+/* GP-relative relocations with 16, 17, 18 or 19-bit unsigned offset
 shifted right by the access size.  */
   BFD_RELOC_HEXAGON_GPREL16_0,
   BFD_RELOC_HEXAGON_GPREL16_1,
   BFD_RELOC_HEXAGON_GPREL16_2,
   BFD_RELOC_HEXAGON_GPREL16_3,
 
-/* HEXAGON relocations for dynamic linking support.  */
+/* Relocations for dynamic linking support.  */
   BFD_RELOC_HEXAGON_GLOB_DAT,
   BFD_RELOC_HEXAGON_COPY,
   BFD_RELOC_HEXAGON_JMP_SLOT,

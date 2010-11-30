@@ -2,114 +2,114 @@
 @c For copying conditions, see the file as.texinfo.
 @ifset GENERIC
 @page
-@node HEXAGON-Dependent
-@chapter HEXAGON Dependent Features
+@node Hexagon-Dependent
+@chapter Hexagon Dependent Features
 @end ifset
 @ifclear GENERIC
 @node Machine Dependencies
-@chapter HEXAGON Dependent Features
+@chapter Hexagon Dependent Features
 @end ifclear
 
-@cindex HEXAGON support
+@cindex Hexagon support
 @menu
-* HEXAGON-Opts::                   HEXAGON Options
-* HEXAGON-Directives::             HEXAGON Machine Directives
+* Hexagon-Opts::                   Hexagon Options
+* Hexagon-Directives::             Hexagon Machine Directives
 @end menu
 
-@node HEXAGON-Opts
-@section HEXAGON Options
+@node Hexagon-Opts
+@section Hexagon Options
 
-@cindex options, HEXAGON
-@cindex HEXAGON options
-The Qualcomm HEXAGON version of @code{@value{AS}} has a few machine
+@cindex options, Hexagon
+@cindex Hexagon options
+The Qualcomm Hexagon version of @code{@value{AS}} has a few machine
 dependent options:
 
 @table @code
 
-@cindex @code{-EB} option, HEXAGON
+@cindex @code{-EB} option, Hexagon
 @item -EB
 Generate code for a big-endian CPU.
 
-@cindex @code{-EL} option, HEXAGON
+@cindex @code{-EL} option, Hexagon
 @item -EL
 Generate code for a little-endian CPU (default).
 
-@cindex @code{-G} option, HEXAGON
+@cindex @code{-G} option, Hexagon
 @item -G @var{size}
 Set the maximum size of objects to be optimized using the GP register to
 @var{size} (default is 8).
 
-@cindex @code{-mv2} option, HEXAGON
+@cindex @code{-mv2} option, Hexagon
 @item -mv2
-Generate code for HEXAGON V2 (default).
+Generate code for Hexagon V2 (default).
 
-@cindex @code{-mv3} option, HEXAGON
+@cindex @code{-mv3} option, Hexagon
 @item -mv3
-Generate code for HEXAGON V3.
+Generate code for Hexagon V3.
 
-@cindex @code{-mv4} option, HEXAGON
+@cindex @code{-mv4} option, Hexagon
 @item -mv4
-Generate code for HEXAGON V4.
+Generate code for Hexagon V4.
 
-@cindex @code{-march=} option, HEXAGON
+@cindex @code{-march=} option, Hexagon
 @item -march=@var{version}
-Generate code for the specified HEXAGON version.  The following version names are
+Generate code for the specified Hexagon version.  The following version names are
 valid:
 @code{hexagonv2}, @code{hexagonv3} and @code{hexagonv4}.
 
-@cindex @code{-mcpu=} option, HEXAGON
+@cindex @code{-mcpu=} option, Hexagon
 @item -mcpu=@var{version}
 Equivalent to @code{-march=@var{version}}.
 
-@cindex @code{-mfalign-info} option, HEXAGON
+@cindex @code{-mfalign-info} option, Hexagon
 @item -mfalign-info
 Report usage statistics for the directive @code{.falign}.
 
-@cindex @code{-msort-sda} option, HEXAGON
+@cindex @code{-msort-sda} option, Hexagon
 @item -msort-sda
 Sort objects in the small-data area in ascending oder by their access size.
 @code{-mno-sort-sda} disables this default behavior.
 
-@cindex @code{-mno-extender} option, HEXAGON
+@cindex @code{-mno-extender} option, Hexagon
 @item -mno-extender
-Disable the use of constant extenders in HEXAGON V4.
+Disable the use of constant extenders in Hexagon V4.
 
-@cindex @code{-mno-jumps} option, HEXAGON
+@cindex @code{-mno-jumps} option, Hexagon
 @item -mno-jumps
-Disable automatic extension of some branch instructions in HEXAGON V4.
+Disable automatic extension of some branch instructions in Hexagon V4.
 
-@cindex @code{-mno-pairing} option, HEXAGON
+@cindex @code{-mno-pairing} option, Hexagon
 @item -mno-pairing
-Disable pairing of packet instructions in HEXAGON V4.
+Disable pairing of packet instructions in Hexagon V4.
 
-@cindex @code{-mno-pairing-duplex} option, HEXAGON
+@cindex @code{-mno-pairing-duplex} option, Hexagon
 @item -mno-pairing-duplex
-Disable pairing to duplex instructions in HEXAGON V4.
+Disable pairing to duplex instructions in Hexagon V4.
 
-@cindex @code{-mno-pairing-branch} option, HEXAGON
+@cindex @code{-mno-pairing-branch} option, Hexagon
 @item -mno-pairing-branch
-Disable pairing of branch instructions in HEXAGON V4.
+Disable pairing of branch instructions in Hexagon V4.
 
-@cindex @code{-mpairing-info} option, HEXAGON
+@cindex @code{-mpairing-info} option, Hexagon
 @item -mpairing-info
-Report about instructions pairing in HEXAGON V4.
+Report about instructions pairing in Hexagon V4.
 
 @end table
 
-@node HEXAGON-Directives
-@section HEXAGON Machine Directives
+@node Hexagon-Directives
+@section Hexagon Machine Directives
 
-@cindex machine directives, HEXAGON
-@cindex HEXAGON machine directives
+@cindex machine directives, Hexagon
+@cindex Hexagon machine directives
 @table @code
 
-@cindex @code{.falign} directive, HEXAGON
+@cindex @code{.falign} directive, Hexagon
 @item .falign
 The @code{.falign} directive guarantees that the next instruction packet does
 not cross a 16-byte address boundary, thereby avoiding a fetch stall, by adding
 NOP instructions to preceding instruction packets if necessary.
 
-@cindex @code{.comm} directive, HEXAGON
+@cindex @code{.comm} directive, Hexagon
 @item .comm
 The @code{.comm} directive accepts an additional optional
 argument that specifies the access size of global objects thus defined.  If
@@ -117,7 +117,7 @@ ommited, then the natural access size for the object alignment is assumed.  When
 the option @code{-msort-sda} is specified, the objects in the
 small-data area are sorted in ascending order by their access sizes.
 
-@cindex @code{.lcomm} directive, HEXAGON
+@cindex @code{.lcomm} directive, Hexagon
 @item .lcomm
 The @code{.lcomm} directive accepts an additional optional
 argument that specifies the access size of local objects thus defined,
