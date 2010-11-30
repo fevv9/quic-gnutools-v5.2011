@@ -50,9 +50,9 @@ static int qzebu_debug = 0;
 static struct serial scb;
 
 static pid_t hexagon_sim_pid = (pid_t) 0;
-static void hexagon_zebu_close (int quitting);
+static void hexagonzebu_close (int quitting);
 static void hexagon_mourn_inferior (void);
-struct target_ops *hexagon_zebu_target = (struct target_ops *)NULL;
+struct target_ops *hexagonzebu_target = (struct target_ops *)NULL;
 static int portid = 0;
 static struct hostent *hexagon_hostent = (struct hostent *)NULL;
 static int alarmed = 0;
@@ -76,14 +76,14 @@ static int hexagon_random_port(void)
 	
 
 /*
- * function: hexagon_zebu_can_run
+ * function: hexagonzebu_can_run
  * description:
  * 	- Tries to assure that when create_inferior is called it will be successful.
  *	- The bulk of the code here is geared to reliably finding a port number that 
  *        will work.
  */
 static int
-hexagon_zebu_can_run(void)
+hexagonzebu_can_run(void)
 {
     extern char *current_hexagon_target;
     extern struct bfd *exec_bfd;
@@ -169,12 +169,12 @@ hexagon_zebu_can_run(void)
 }
 
 /*
- * function: hexagon_zebu_exec_simulation
+ * function: hexagonzebu_exec_simulation
  * description:
  * 	Call fork/execvp to start the simulator
  */
 static int
-hexagon_zebu_exec_simulation(char *sim_name, char *exec_name,
+hexagonzebu_exec_simulation(char *sim_name, char *exec_name,
 		      int portid, char *args, char **env)
 {
     char port[11];
@@ -205,8 +205,8 @@ hexagon_zebu_exec_simulation(char *sim_name, char *exec_name,
         sim_args[index++] = strdupa ("--gdbserv");
         sim_args[index++] = strdupa (port);
 
-	while (hexagon_targetargsInfo[argc])
-            sim_args[index++] = strdupa (hexagon_targetargsInfo[argc++]);
+	while (hexagontargetargsInfo[argc])
+            sim_args[index++] = strdupa (hexagontargetargsInfo[argc++]);
 
 	/*
 	 * This case the user has passed arguments to the program that
@@ -240,7 +240,7 @@ hexagon_zebu_exec_simulation(char *sim_name, char *exec_name,
 			 current_hexagon_target, sim_args, NULL, 
 			 0, 1, 2, 0, &errmsg, &err);
 	if (-1 == hexagon_sim_pid) 
-	    error ("hexagon_sim_exec_simulation: Unable to execute hexagon-sim!");
+	    error ("hexagonsim_exec_simulation: Unable to execute hexagon-sim!");
 
 #else
         execvp(sim_args[0], sim_args); 
@@ -262,12 +262,12 @@ hexagon_zebu_exec_simulation(char *sim_name, char *exec_name,
 
 
 /*
- * function: hexagon_zebu_create_inferior
+ * function: hexagonzebu_create_inferior
  * description:
  *        - Primary function of this target.
  *        - Starts the simulator and forms a connection.
  */
-static void hexagon_zebu_create_inferior (char *exec_file, char *args, char **env)
+static void hexagonzebu_create_inferior (char *exec_file, char *args, char **env)
 {
     extern struct serial *remote_desc;
     extern struct serial_ops *serial_interface_lookup (char *);
@@ -283,7 +283,7 @@ static void hexagon_zebu_create_inferior (char *exec_file, char *args, char **en
     if (!THIS_TARGET())
 	return 0;
 
-    hexagon_zebu_exec_simulation("hexagon-zebu", exec_bfd->filename, portid, NULL, NULL);
+    hexagonzebu_exec_simulation("hexagon-zebu", exec_bfd->filename, portid, NULL, NULL);
     sprintf (target_port, ":%d", portid);
     push_remote_target(target_port, 1);
 
@@ -292,7 +292,7 @@ static void hexagon_zebu_create_inferior (char *exec_file, char *args, char **en
 }
 
 static void
-hexagon_zebu_close (int quitting)
+hexagonzebu_close (int quitting)
 {
     if (qzebu_debug)
     {
@@ -368,12 +368,12 @@ hexagon_find_new_threads (void)
 }
 
 /*
- * function: hexagon_zebu_open
+ * function: hexagonzebu_open
  * description:
  *      - Called when the user selects the hexagon-zebu target architecture.
  */
 static void
-hexagon_zebu_open (char *args, int from_tty)
+hexagonzebu_open (char *args, int from_tty)
 {
     extern char *current_hexagon_target;
     if (qzebu_debug)
@@ -397,14 +397,14 @@ _initialize_hexagon_zebu (void)
   t->to_doc = "Qualcomm Hexagon Zebu interface, used for debugging software \n\
 running on the Hexagon (hexagon-zebu) target";
 
-  t->to_open = hexagon_zebu_open;
-  t->to_close = hexagon_zebu_close;
-  t->to_can_run = hexagon_zebu_can_run;
-  t->to_create_inferior = hexagon_zebu_create_inferior;
+  t->to_open = hexagonzebu_open;
+  t->to_close = hexagonzebu_close;
+  t->to_can_run = hexagonzebu_can_run;
+  t->to_create_inferior = hexagonzebu_create_inferior;
 
   /* Register target.  */
   add_target (t);
-  hexagon_zebu_target = t;
+  hexagonzebu_target = t;
 
 }
 

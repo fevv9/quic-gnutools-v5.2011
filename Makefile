@@ -70,10 +70,10 @@ build_win:
 	MAKEINFO=$(MAKEINFO) \
 	ISS_DIR=$(ISS_DIR) \
 	../configure \
-		--with-python=/prj/dsp/qdsp6/austin/builds/hexbuild/python/Python26 \
+		--with-python=/prj/dsp/hexagon/austin/builds/hexbuild/python/Python26 \
 		--x-includes=../win \
-		--host=i386-pc-mingw32 \
-		--build=i686-linux \
+  		--host=i386-pc-mingw32 \
+  		--build=i686-linux \
 		$(CONFIGURE_OPTIONS)  && \
 	PATH=$(MINGW_GCC):$(PATH) $(MAKE) -j $(JOBS) all
 

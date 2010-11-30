@@ -182,7 +182,7 @@ hexagon_linux_store_inferior_registers (struct target_ops *ops,
   if (tid == 0)
     tid = PIDGET (inferior_ptid);
 
-  if (regno >= 0)
+  if ((regno >= 0) && (regno < 60) && (regno != 43))
     hexagon_store_register (regcache, tid, regno);
 }
 

@@ -486,7 +486,7 @@ ALL_EMULATIONS = \
 	eelf32mcore.o \
 	eelf32mep.o \
 	eelf32mb_linux.o \
-	eelf32microblaze.o \
+ 	eelf32microblaze.o \
 	eelf32mipswindiss.o \
 	eelf32mt.o \
 	eelf32openrisc.o \

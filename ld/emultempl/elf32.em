@@ -1884,7 +1884,7 @@ if [ "${ARCH}" = "hexagon" ]; then
     *-linux*)
       ;;
     *)
-      echo '  ; else if (config.use_tcm) return ""'              >> e${EMULATION_NAME}.c
+      echo '  ; else if (config.use_tcm) return'              >> e${EMULATION_NAME}.c
       sed $sc ldscripts/${EMULATION_NAME}.tcm                 >> e${EMULATION_NAME}.c
       ;;
   esac

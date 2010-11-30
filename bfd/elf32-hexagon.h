@@ -3,28 +3,28 @@
 /* 
  * Function Prototypes:
  */
-static bfd_reloc_status_type hexagonelf_reloc
+static bfd_reloc_status_type hexagon_elf_reloc
   (bfd *, arelent *, asymbol *, PTR , asection *, bfd *, char **);
 
-static bfd_reloc_status_type hexagonelf_final_sda_base
+static bfd_reloc_status_type hexagon_elf_final_sda_base
   (bfd *, char **, bfd_vma *);
 
 static int hexagon_reloc_operand
   (reloc_howto_type *howto, hexagon_insn *insn, bfd_vma offset, char **errmsg);
 
-static bfd_reloc_code_real_type hexagonelf_reloc_val_lookup
+static bfd_reloc_code_real_type hexagon_elf_reloc_val_lookup
   (unsigned char elf_reloc_val);
 
-static int hexagonelf_section_processing
+static int hexagon_elf_section_processing
   (bfd *abfd __attribute__ ((unused)), Elf_Internal_Shdr *hdr);
 
-static void hexagonelf_symbol_processing
+static void hexagon_elf_symbol_processing
   (bfd *abfd, asymbol *asym);
 
-static bfd_boolean hexagonelf_section_from_bfd_section
+static bfd_boolean hexagon_elf_section_from_bfd_section
   (bfd *abfd __attribute__ ((unused)), asection *sec, int *retval);
 
-static bfd_boolean hexagonelf_link_output_symbol_hook
+static bfd_boolean hexagon_elf_link_output_symbol_hook
   (bfd *abfd ATTRIBUTE_UNUSED,
    struct bfd_link_info *info ATTRIBUTE_UNUSED,
    const char *name ATTRIBUTE_UNUSED, Elf_Internal_Sym *sym,

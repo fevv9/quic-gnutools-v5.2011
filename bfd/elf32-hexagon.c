@@ -47,11 +47,14 @@
    section.  */
 #define ELF_DYNAMIC_INTERPRETER "/lib/ld.so"
 
+/* The size in insns of an entry in the PLT, per the HEXAGON ABI. */
+#define PLT_ENTRY_LENGTH (6)
 /* The size in bytes of an entry in the PLT, per the HEXAGON ABI. */
-#define PLT_ENTRY_SIZE (24)
+#define PLT_ENTRY_SIZE (PLT_ENTRY_LENGTH * sizeof (hexagon_insn))
 /* The size of the PLT first few entries reserved for the dynamic linker,
    per the HEXAGON ABI. */
-#define PLT_RESERVED_ENTRIES (16)
+#define PLT_RESERVED_ENTRIES (4)
+#define PLT_INITIAL_ENTRY_LENGTH (PLT_ENTRY_LENGTH * PLT_RESERVED_ENTRIES)
 #define PLT_INITIAL_ENTRY_SIZE (PLT_ENTRY_SIZE * PLT_RESERVED_ENTRIES)
 
 /* The size in bytes of an entry in the GOT, per the HEXAGON ABI. */
@@ -70,74 +73,74 @@
 #define hexagon_hash_entry(E) ((hexagon_link_hash_entry *) (E))
 #define hexagon_hash_table(I) ((hexagon_link_hash_table *) ((I)->hash))
 
-static reloc_howto_type *hexagonelf_reloc_type_lookup
+static reloc_howto_type *hexagon_elf_reloc_type_lookup
   PARAMS ((bfd *abfd, bfd_reloc_code_real_type code));
 static void hexagon_info_to_howto_rel
   PARAMS ((bfd *, arelent *, Elf_Internal_Rela *));
-static bfd_boolean hexagonelf_object_p
+static bfd_boolean hexagon_elf_object_p
   PARAMS ((bfd *));
-static void hexagonelf_final_write_processing
+static void hexagon_elf_final_write_processing
   PARAMS ((bfd *, bfd_boolean));
-static bfd_reloc_status_type hexagonelf_reloc
+static bfd_reloc_status_type hexagon_elf_reloc
   PARAMS ((bfd *, arelent *, asymbol *, PTR, asection *, bfd *, char **));
-static bfd_reloc_status_type hexagonelf_final_sda_base
+static bfd_reloc_status_type hexagon_elf_final_sda_base
   PARAMS ((bfd *, char **, bfd_vma *));
-static bfd_boolean hexagonelf_link_output_symbol_hook
+static bfd_boolean hexagon_elf_link_output_symbol_hook
   PARAMS ((struct bfd_link_info *info ATTRIBUTE_UNUSED,
            const char *name ATTRIBUTE_UNUSED,
            Elf_Internal_Sym *sym,
            asection *input_sec,
            struct elf_link_hash_entry *h ATTRIBUTE_UNUSED));
-static bfd_boolean hexagonelf_section_from_bfd_section
+static bfd_boolean hexagon_elf_section_from_bfd_section
   PARAMS ((bfd *, asection *, int *));
-static bfd_boolean hexagonelf_section_processing
+static bfd_boolean hexagon_elf_section_processing
   PARAMS ((bfd *, Elf_Internal_Shdr *));
-static void hexagonelf_symbol_processing
+static void hexagon_elf_symbol_processing
   PARAMS ((bfd *, asymbol *));
-static bfd_boolean hexagonelf_common_definition
+static bfd_boolean hexagon_elf_common_definition
   PARAMS ((Elf_Internal_Sym *));
-static bfd_boolean hexagonelf_add_symbol_hook
+static bfd_boolean hexagon_elf_add_symbol_hook
   PARAMS ((bfd *, struct bfd_link_info *, Elf_Internal_Sym *,
            const char **, flagword *, asection **, bfd_vma *));
-static bfd_boolean hexagonelf_section_from_shdr
+static bfd_boolean hexagon_elf_section_from_shdr
   PARAMS ((bfd *, Elf_Internal_Shdr *, const char *, int));
-static bfd_boolean hexagonelf_fake_sections
+static bfd_boolean hexagon_elf_fake_sections
   PARAMS ((bfd *, Elf_Internal_Shdr *, asection *));
-static bfd_boolean hexagonelf_relocate_section
+static bfd_boolean hexagon_elf_relocate_section
   PARAMS ((bfd *, struct bfd_link_info *, bfd *, asection *, bfd_byte *,
            Elf_Internal_Rela *, Elf_Internal_Sym *, asection **));
-static bfd_boolean hexagonelf_gc_sweep_hook
+static bfd_boolean hexagon_elf_gc_sweep_hook
   PARAMS ((bfd *, struct bfd_link_info *,
            asection *, const Elf_Internal_Rela *));
-static bfd_boolean hexagonelf_check_relocs
+static bfd_boolean hexagon_elf_check_relocs
   PARAMS ((bfd *, struct bfd_link_info *,
            asection *, const Elf_Internal_Rela *));
-static bfd_boolean hexagonelf_relax_section
+static bfd_boolean hexagon_elf_relax_section
   PARAMS ((bfd *, asection *, struct bfd_link_info *, bfd_boolean *));
-static void hexagonelf_copy_indirect_symbol
+static void hexagon_elf_copy_indirect_symbol
   PARAMS ((struct bfd_link_info *, struct elf_link_hash_entry *,
            struct elf_link_hash_entry *));
-static int hexagonelf_additional_program_headers
+static int hexagon_elf_additional_program_headers
   PARAMS ((bfd *, struct bfd_link_info *));
-static bfd_boolean hexagonelf_ignore_discarded_relocs
+static bfd_boolean hexagon_elf_ignore_discarded_relocs
   PARAMS ((asection *));
 /* PIC & DSO */
-static bfd_boolean hexagonelf_adjust_dynamic_symbol
+static bfd_boolean hexagon_elf_adjust_dynamic_symbol
   PARAMS ((struct bfd_link_info *, struct elf_link_hash_entry *));
-static bfd_boolean hexagonelf_finish_dynamic_symbol
+static bfd_boolean hexagon_elf_finish_dynamic_symbol
   PARAMS ((bfd *, struct bfd_link_info *,
            struct elf_link_hash_entry *, Elf_Internal_Sym *));
-static bfd_boolean hexagonelf_create_dynamic_sections
+static bfd_boolean hexagon_elf_create_dynamic_sections
   PARAMS ((bfd *, struct bfd_link_info *));
-static bfd_boolean hexagonelf_size_dynamic_sections
+static bfd_boolean hexagon_elf_size_dynamic_sections
   PARAMS ((bfd *, struct bfd_link_info *));
-static bfd_boolean hexagonelf_finish_dynamic_sections
+static bfd_boolean hexagon_elf_finish_dynamic_sections
   PARAMS ((bfd *, struct bfd_link_info *));
-static enum elf_reloc_type_class hexagonelf_reloc_type_class
+static enum elf_reloc_type_class hexagon_elf_reloc_type_class
   PARAMS ((const Elf_Internal_Rela *));
-static bfd_vma hexagonelf_plt_sym_val
+static bfd_vma hexagon_elf_plt_sym_val
   PARAMS ((bfd_vma, const asection *, const arelent *));
-static bfd_boolean hexagonelf_hash_symbol
+static bfd_boolean hexagon_elf_hash_symbol
   PARAMS ((struct elf_link_hash_entry *));
 
 typedef struct elf_dyn_relocs hexagon_dyn_reloc;
@@ -167,7 +170,7 @@ typedef struct
     unsigned r_type;
     bfd_vma offset;
     size_t length;
-    hexagon_insn insns [8];
+    hexagon_insn insns [8]; /* Actually <length> insns. */
   } hexagon_trampoline;
 
 static const hexagon_trampoline hexagon_trampolines [] =
@@ -189,31 +192,53 @@ static const hexagon_trampoline hexagon_trampolines [] =
 
 /* Reserved entry that is placed at the start of the PLT, used for lazy
    binding. */
-static const hexagon_insn hexagon_plt_initial_entry [] =
+static const hexagon_insn hexagon_plt_initial_entry [PLT_INITIAL_ENTRY_LENGTH] =
   {
-    0x6a09c00c, /* r12 = pc                                             */
-    0x918cc11c, /* r28 = memw (r12 + #32)    # offset of @PLT from GOT  */
-    0xf33ccc1c, /* r28 = sub (r12, r28)      # address of GOT           */
-    0xf32c4f0d, /* { r13 = sub (r15, r12)    # offset of @PLT           */
-    0xf33c4e0e, /*   r14 = sub (r14, r28)    # offset of @GOT           */
-    0x919c404f, /*   r15 = memw (r28 + #8)   # object ID at GOT [2]     */
-    0x919cc02b, /*   r11 = memw (r28 + #4) } # dynamic link at GOT [1]  */
-    0x528bc000, /* jumpr r11                 # call it                  */
-    0x00000000, /* .word @GOTOFF                                        */
+#ifdef HEXAGON_OLD_PLT_ENTRY
+    0x6a09c00c, /* r12 = pc                                            */
+    0x918cc11c, /* r28 = memw (r12 + #32)    # offset of @PLT from GOT */
+    0xf33ccc1c, /* r28 = sub (r12, r28)      # address of GOT          */
+    0xf32c4f0d, /* { r13 = sub (r15, r12)    # offset of @PLT from PLT */
+    0xf33c4e0e, /*   r14 = sub (r14, r28)    # offset of @GOT from GOT */
+    0x919c404f, /*   r15 = memw (r28 + #8)   # object ID at GOT [2]    */
+    0x919cc02b, /*   r11 = memw (r28 + #4) } # dynamic link at GOT [1] */
+    0x528bc000, /* jumpr r11                 # call it                 */
+    0x00000000, /* .word GOTOFF                                        */
+#else
+    0x6a09400c, /*  { r12 = pc                # address of PLT          */
+    0x723cc000, /*    r28.h = #hi (PLT@GOTOFF) }                        */
+    0x713cc000, /*  r28.l = #lo (PLT@GOTOFF)  # offset of PLT from GOT  */
+    0xf33ccc1c, /*  r28 = sub (r12, r28)      # address of GOT          */
+    0xf33c4e0e, /*  { r14 = sub (r14, r28)    # offset of @GOT from GOT */
+    0x919cc04f, /*    r15 = memw (r28 + #8) } # object ID at GOT [2]    */
+    0xbfee7e0d, /*  { r13 = add (r14, #-16)                             */
+    0x919cc03c, /*    r28 = memw (r28 + #4) } # dynamic link at GOT [1] */
+    0x8c0d420d, /*  { r13 = asr (r13, #2)     # index of @PLT           */
+    0x529cc000, /*    jumpr r28 }             # call dynamic link       */
+#endif
   };
 
 /* Default PLT entry */
-static const hexagon_insn hexagon_plt_entry [] =
+static const hexagon_insn hexagon_plt_entry [PLT_ENTRY_LENGTH] =
   {
-    0x6a09c00f, /* r15 = pc                                               */
+#ifdef HEXAGON_OLD_PLT_ENTRY
+    0x6a09c00f, /* r15 = pc                    # address of @PLT          */
     0x918fc0bc, /* r28 = memw (r15 + #20)      # offset of @GOT from @PLT */
     0xf30fdc0e, /* r14 = add (r15, r28)        # address of @GOT          */
     0x918ec01c, /* r28 = memw (r14)            # contents of @GOT         */
     0x529cc000, /* jumpr r28                   # call it                  */
     0x00000000, /* .word @GOT - @PLT                                      */
+#else
+    0x6a09400f, /* { r15 = pc                  # address of @PLT          */
+    0x723cc000, /*   r28.h = #hi (@GOT - @PLT) }                          */
+    0x713cc000, /* r28.l = #lo (@GOT - @PLT)   # offset of @GOT from @PLT */
+    0xf30fdc0e, /* r14 = add (r15, r28)        # address of @GOT          */
+    0x918ec01c, /* r28 = memw (r14)            # contents of @GOT         */
+    0x529cc000, /* jumpr r28                   # call it                  */
+#endif
   };
 
-static reloc_howto_type hexagonelf_howto_table [] =
+static reloc_howto_type hexagon_elf_howto_table [] =
 {
   /* This reloc does nothing.  */
   EMPTY_HOWTO (R_HEXAGON_NONE),
@@ -226,7 +251,7 @@ static reloc_howto_type hexagonelf_howto_table [] =
 	 TRUE,			/* pc_relative  */
 	 0,			/* bitpos  */
 	 complain_overflow_signed, /* complain_on_overflow  */
-	 hexagonelf_reloc,	/* special_function  */
+	 hexagon_elf_reloc,	/* special_function  */
 	 "R_HEXAGON_B22_PCREL",	/* name  */
 	 FALSE,			/* partial_inplace  */
 	 -1L,			/* src_mask  */
@@ -241,7 +266,7 @@ static reloc_howto_type hexagonelf_howto_table [] =
 	 TRUE,			/* pc_relative  */
 	 0,			/* bitpos  */
 	 complain_overflow_signed, /* complain_on_overflow  */
-	 hexagonelf_reloc,	/* special_function  */
+	 hexagon_elf_reloc,	/* special_function  */
 	 "R_HEXAGON_B15_PCREL",	/* name  */
 	 FALSE,			/* partial_inplace  */
 	 -1L,			/* src_mask  */
@@ -256,7 +281,7 @@ static reloc_howto_type hexagonelf_howto_table [] =
 	 TRUE,			/* pc_relative  */
 	 0,			/* bitpos  */
 	 complain_overflow_signed, /* complain_on_overflow  */
-	 hexagonelf_reloc,	/* special_function  */
+	 hexagon_elf_reloc,	/* special_function  */
 	 "R_HEXAGON_B7_PCREL",	/* name  */
 	 FALSE,			/* partial_inplace  */
 	 -1L,			/* src_mask  */
@@ -271,7 +296,7 @@ static reloc_howto_type hexagonelf_howto_table [] =
 	 FALSE,			/* pc_relative  */
 	 0,			/* bitpos  */
 	 complain_overflow_dont, /* complain_on_overflow  */
-	 hexagonelf_reloc,	/* special_function  */
+	 hexagon_elf_reloc,	/* special_function  */
 	 "R_HEXAGON_LO16",	/* name  */
 	 FALSE,			/* partial_inplace  */
 	 -1L,			/* src_mask  */
@@ -286,7 +311,7 @@ static reloc_howto_type hexagonelf_howto_table [] =
 	 FALSE,			/* pc_relative  */
 	 0,			/* bitpos  */
 	 complain_overflow_dont, /* complain_on_overflow  */
-	 hexagonelf_reloc,	/* special_function  */
+	 hexagon_elf_reloc,	/* special_function  */
 	 "R_HEXAGON_HI16",	/* name  */
 	 FALSE,			/* partial_inplace  */
 	 -1L,			/* src_mask  */
@@ -346,7 +371,7 @@ static reloc_howto_type hexagonelf_howto_table [] =
 	 FALSE,			/* pc_relative  */
 	 0,			/* bitpos  */
 	 complain_overflow_bitfield, /* complain_on_overflow  */
-	 hexagonelf_reloc,	/* special_function  */
+	 hexagon_elf_reloc,	/* special_function  */
 	 "R_HEXAGON_GPREL16_0",	/* name  */
 	 FALSE,			/* partial_inplace  */
 	 -1L,			/* src_mask  */
@@ -361,7 +386,7 @@ static reloc_howto_type hexagonelf_howto_table [] =
 	 FALSE,			/* pc_relative  */
 	 0,			/* bitpos  */
 	 complain_overflow_bitfield, /* complain_on_overflow  */
-	 hexagonelf_reloc,	/* special_function  */
+	 hexagon_elf_reloc,	/* special_function  */
 	 "R_HEXAGON_GPREL16_1",	/* name  */
 	 FALSE,			/* partial_inplace  */
 	 -1L,			/* src_mask  */
@@ -376,7 +401,7 @@ static reloc_howto_type hexagonelf_howto_table [] =
 	 FALSE,			/* pc_relative  */
 	 -1L,			/* bitpos  */
 	 complain_overflow_bitfield, /* complain_on_overflow  */
-	 hexagonelf_reloc,	/* special_function  */
+	 hexagon_elf_reloc,	/* special_function  */
 	 "R_HEXAGON_GPREL16_2",	/* name  */
 	 FALSE,			/* partial_inplace  */
 	 -1L,			/* src_mask  */
@@ -391,7 +416,7 @@ static reloc_howto_type hexagonelf_howto_table [] =
 	 FALSE,			/* pc_relative  */
 	 0,			/* bitpos  */
 	 complain_overflow_bitfield, /* complain_on_overflow  */
-	 hexagonelf_reloc,	/* special_function  */
+	 hexagon_elf_reloc,	/* special_function  */
 	 "R_HEXAGON_GPREL16_3",	/* name  */
 	 FALSE,			/* partial_inplace  */
 	 -1L,			/* src_mask  */
@@ -406,7 +431,7 @@ static reloc_howto_type hexagonelf_howto_table [] =
 	 FALSE,			/* pc_relative  */
 	 0,			/* bitpos  */
 	 complain_overflow_dont, /* complain_on_overflow  */
-	 hexagonelf_reloc,	/* special_function  */
+	 hexagon_elf_reloc,	/* special_function  */
 	 "R_HEXAGON_HL16",	/* name  */
 	 FALSE,			/* partial_inplace  */
 	 -1L,			/* src_mask  */
@@ -421,7 +446,7 @@ static reloc_howto_type hexagonelf_howto_table [] =
 	 TRUE,			/* pc_relative  */
 	 0,			/* bitpos  */
 	 complain_overflow_signed, /* complain_on_overflow  */
-	 hexagonelf_reloc,	/* special_function  */
+	 hexagon_elf_reloc,	/* special_function  */
 	 "R_HEXAGON_B13_PCREL",	/* name  */
 	 FALSE,			/* partial_inplace  */
 	 -1L,			/* src_mask  */
@@ -436,7 +461,7 @@ static reloc_howto_type hexagonelf_howto_table [] =
 	 TRUE,			/* pc_relative  */
 	 0,			/* bitpos  */
 	 complain_overflow_signed, /* complain_on_overflow  */
-	 hexagonelf_reloc,	/* special_function  */
+	 hexagon_elf_reloc,	/* special_function  */
 	 "R_HEXAGON_B9_PCREL",	/* name  */
 	 FALSE,			/* partial_inplace  */
 	 -1L,			/* src_mask  */
@@ -451,7 +476,7 @@ static reloc_howto_type hexagonelf_howto_table [] =
 	 TRUE,			/* pc_relative  */
 	 0,			/* bitpos  */
 	 complain_overflow_signed, /* complain_on_overflow  */
-	 hexagonelf_reloc,	/* special_function  */
+	 hexagon_elf_reloc,	/* special_function  */
 	 "R_HEXAGON_B32_PCREL_X",	/* name  */
 	 FALSE,			/* partial_inplace  */
 	 ~0x3f,			/* src_mask  */
@@ -466,7 +491,7 @@ static reloc_howto_type hexagonelf_howto_table [] =
 	 FALSE,			/* pc_relative  */
 	 0,			/* bitpos  */
 	 complain_overflow_bitfield, /* complain_on_overflow  */
-	 hexagonelf_reloc,	/* special_function  */
+	 hexagon_elf_reloc,	/* special_function  */
 	 "R_HEXAGON_32_6_X",	/* name  */
 	 FALSE,			/* partial_inplace  */
 	 ~0x3f,			/* src_mask  */
@@ -481,7 +506,7 @@ static reloc_howto_type hexagonelf_howto_table [] =
 	 TRUE,			/* pc_relative  */
 	 0,			/* bitpos  */
 	 complain_overflow_signed, /* complain_on_overflow  */
-	 hexagonelf_reloc,	/* special_function  */
+	 hexagon_elf_reloc,	/* special_function  */
 	 "R_HEXAGON_B22_PCREL_X",	/* name  */
 	 FALSE,			/* partial_inplace  */
 	 0x3f,			/* src_mask  */
@@ -496,7 +521,7 @@ static reloc_howto_type hexagonelf_howto_table [] =
 	 TRUE,			/* pc_relative  */
 	 0,			/* bitpos  */
 	 complain_overflow_signed, /* complain_on_overflow  */
-	 hexagonelf_reloc,	/* special_function  */
+	 hexagon_elf_reloc,	/* special_function  */
 	 "R_HEXAGON_B15_PCREL_X",	/* name  */
 	 FALSE,			/* partial_inplace  */
 	 0x3f,			/* src_mask  */
@@ -511,7 +536,7 @@ static reloc_howto_type hexagonelf_howto_table [] =
 	 TRUE,			/* pc_relative  */
 	 0,			/* bitpos  */
 	 complain_overflow_signed, /* complain_on_overflow  */
-	 hexagonelf_reloc,	/* special_function  */
+	 hexagon_elf_reloc,	/* special_function  */
 	 "R_HEXAGON_B13_PCREL_X",	/* name  */
 	 FALSE,			/* partial_inplace  */
 	 0x3f,			/* src_mask  */
@@ -526,7 +551,7 @@ static reloc_howto_type hexagonelf_howto_table [] =
 	 TRUE,			/* pc_relative  */
 	 0,			/* bitpos  */
 	 complain_overflow_signed, /* complain_on_overflow  */
-	 hexagonelf_reloc,	/* special_function  */
+	 hexagon_elf_reloc,	/* special_function  */
 	 "R_HEXAGON_B9_PCREL_X",	/* name  */
 	 FALSE,			/* partial_inplace  */
 	 0x3f,			/* src_mask  */
@@ -541,7 +566,7 @@ static reloc_howto_type hexagonelf_howto_table [] =
 	 TRUE,			/* pc_relative  */
 	 0,			/* bitpos  */
 	 complain_overflow_signed, /* complain_on_overflow  */
-	 hexagonelf_reloc,	/* special_function  */
+	 hexagon_elf_reloc,	/* special_function  */
 	 "R_HEXAGON_B7_PCREL_X",	/* name  */
 	 FALSE,			/* partial_inplace  */
 	 0x3f,			/* src_mask  */
@@ -556,7 +581,7 @@ static reloc_howto_type hexagonelf_howto_table [] =
 	 FALSE,			/* pc_relative  */
 	 0,			/* bitpos  */
 	 complain_overflow_signed, /* complain_on_overflow  */
-	 hexagonelf_reloc,	/* special_function  */
+	 hexagon_elf_reloc,	/* special_function  */
 	 "R_HEXAGON_16_X",	/* name  */
 	 FALSE,			/* partial_inplace  */
 	 0x3f,			/* src_mask  */
@@ -571,7 +596,7 @@ static reloc_howto_type hexagonelf_howto_table [] =
 	 FALSE,			/* pc_relative  */
 	 0,			/* bitpos  */
 	 complain_overflow_signed, /* complain_on_overflow  */
-	 hexagonelf_reloc,	/* special_function  */
+	 hexagon_elf_reloc,	/* special_function  */
 	 "R_HEXAGON_12_X",	/* name  */
 	 FALSE,			/* partial_inplace  */
 	 0,			/* src_mask  */
@@ -586,7 +611,7 @@ static reloc_howto_type hexagonelf_howto_table [] =
 	 FALSE,			/* pc_relative  */
 	 0,			/* bitpos  */
 	 complain_overflow_bitfield, /* complain_on_overflow  */
-	 hexagonelf_reloc,	/* special_function  */
+	 hexagon_elf_reloc,	/* special_function  */
 	 "R_HEXAGON_11_X",	/* name  */
 	 FALSE,			/* partial_inplace  */
 	 0x3f,			/* src_mask  */
@@ -601,7 +626,7 @@ static reloc_howto_type hexagonelf_howto_table [] =
 	 FALSE,			/* pc_relative  */
 	 0,			/* bitpos  */
 	 complain_overflow_signed, /* complain_on_overflow  */
-	 hexagonelf_reloc,	/* special_function  */
+	 hexagon_elf_reloc,	/* special_function  */
 	 "R_HEXAGON_10_X",	/* name  */
 	 FALSE,			/* partial_inplace  */
 	 0x3f,			/* src_mask  */
@@ -616,7 +641,7 @@ static reloc_howto_type hexagonelf_howto_table [] =
 	 FALSE,			/* pc_relative  */
 	 0,			/* bitpos  */
 	 complain_overflow_signed, /* complain_on_overflow  */
-	 hexagonelf_reloc,	/* special_function  */
+	 hexagon_elf_reloc,	/* special_function  */
 	 "R_HEXAGON_9_X",		/* name  */
 	 FALSE,			/* partial_inplace  */
 	 0x3f,			/* src_mask  */
@@ -631,7 +656,7 @@ static reloc_howto_type hexagonelf_howto_table [] =
 	 FALSE,			/* pc_relative  */
 	 0,			/* bitpos  */
 	 complain_overflow_signed, /* complain_on_overflow  */
-	 hexagonelf_reloc,	/* special_function  */
+	 hexagon_elf_reloc,	/* special_function  */
 	 "R_HEXAGON_8_X",		/* name  */
 	 FALSE,			/* partial_inplace  */
 	 0x3f,			/* src_mask  */
@@ -646,7 +671,7 @@ static reloc_howto_type hexagonelf_howto_table [] =
 	 FALSE,			/* pc_relative  */
 	 0,			/* bitpos  */
 	 complain_overflow_signed, /* complain_on_overflow  */
-	 hexagonelf_reloc,	/* special_function  */
+	 hexagon_elf_reloc,	/* special_function  */
 	 "R_HEXAGON_7_X",		/* name  */
 	 FALSE,			/* partial_inplace  */
 	 0x3f,			/* src_mask  */
@@ -661,7 +686,7 @@ static reloc_howto_type hexagonelf_howto_table [] =
 	 FALSE,			/* pc_relative  */
 	 0,			/* bitpos  */
 	 complain_overflow_signed, /* complain_on_overflow  */
-	 hexagonelf_reloc,	/* special_function  */
+	 hexagon_elf_reloc,	/* special_function  */
 	 "R_HEXAGON_6_X",		/* name  */
 	 FALSE,			/* partial_inplace  */
 	 0x3f,			/* src_mask  */
@@ -751,7 +776,7 @@ static reloc_howto_type hexagonelf_howto_table [] =
 	 TRUE,			/* pc_relative  */
 	 0,			/* bitpos  */
 	 complain_overflow_signed, /* complain_on_overflow  */
-	 hexagonelf_reloc,	/* special_function  */
+	 hexagon_elf_reloc,	/* special_function  */
 	 "R_HEXAGON_PLT_B22_PCREL", /* name  */
 	 FALSE,			/* partial_inplace  */
 	 0,			/* src_mask  */
@@ -766,7 +791,7 @@ static reloc_howto_type hexagonelf_howto_table [] =
 	 FALSE,			/* pc_relative  */
 	 0,			/* bitpos  */
 	 complain_overflow_bitfield, /* complain_on_overflow  */
-	 hexagonelf_reloc,	/* special_function  */
+	 hexagon_elf_reloc,	/* special_function  */
 	 "R_HEXAGON_GOTOFF_LO16",	/* name  */
 	 FALSE,			/* partial_inplace  */
 	 0,			/* src_mask  */
@@ -781,7 +806,7 @@ static reloc_howto_type hexagonelf_howto_table [] =
 	 FALSE,			/* pc_relative  */
 	 0,			/* bitpos  */
 	 complain_overflow_bitfield, /* complain_on_overflow  */
-	 hexagonelf_reloc,	/* special_function  */
+	 hexagon_elf_reloc,	/* special_function  */
 	 "R_HEXAGON_GOTOFF_HI16",	/* name  */
 	 FALSE,			/* partial_inplace  */
 	 0,			/* src_mask  */
@@ -796,7 +821,7 @@ static reloc_howto_type hexagonelf_howto_table [] =
          FALSE,                 /* pc_relative  */
          0,                     /* bitpos  */
          complain_overflow_bitfield, /* complain_on_overflow  */
-         hexagonelf_reloc,       /* special_function  */
+         bfd_elf_generic_reloc, /* special_function  */
          "R_HEXAGON_GOTOFF_32",   /* name  */
          FALSE,                 /* partial_inplace  */
          0,                     /* src_mask  */
@@ -811,7 +836,7 @@ static reloc_howto_type hexagonelf_howto_table [] =
 	 FALSE,			/* pc_relative  */
 	 0,			/* bitpos  */
 	 complain_overflow_bitfield, /* complain_on_overflow  */
-	 hexagonelf_reloc,	/* special_function  */
+	 hexagon_elf_reloc,	/* special_function  */
 	 "R_HEXAGON_GOT_LO16",	/* name  */
 	 FALSE,			/* partial_inplace  */
 	 0,			/* src_mask  */
@@ -826,7 +851,7 @@ static reloc_howto_type hexagonelf_howto_table [] =
 	 FALSE,			/* pc_relative  */
 	 0,			/* bitpos  */
 	 complain_overflow_bitfield, /* complain_on_overflow  */
-	 hexagonelf_reloc,	/* special_function  */
+	 hexagon_elf_reloc,	/* special_function  */
 	 "R_HEXAGON_GOT_HI16",	/* name  */
 	 FALSE,			/* partial_inplace  */
 	 0,			/* src_mask  */
@@ -841,7 +866,7 @@ static reloc_howto_type hexagonelf_howto_table [] =
          FALSE,                 /* pc_relative  */
          0,                     /* bitpos  */
          complain_overflow_bitfield, /* complain_on_overflow  */
-         hexagonelf_reloc,       /* special_function  */
+         bfd_elf_generic_reloc, /* special_function  */
          "R_HEXAGON_GOT_32",      /* name  */
          FALSE,                 /* partial_inplace  */
          0,                     /* src_mask  */
@@ -856,7 +881,7 @@ static reloc_howto_type hexagonelf_howto_table [] =
          FALSE,                 /* pc_relative  */
          0,                     /* bitpos  */
          complain_overflow_bitfield, /* complain_on_overflow  */
-         hexagonelf_reloc,       /* special_function  */
+         hexagon_elf_reloc,       /* special_function  */
          "R_HEXAGON_GOT_16",      /* name  */
          FALSE,                 /* partial_inplace  */
          0,                     /* src_mask  */
@@ -936,7 +961,7 @@ static const struct hexagon_reloc_map hexagon_reloc_map [] =
 };
 
 static reloc_howto_type *
-hexagonelf_reloc_type_lookup
+hexagon_elf_reloc_type_lookup
 (bfd *abfd ATTRIBUTE_UNUSED, bfd_reloc_code_real_type code)
 {
   size_t i;
@@ -945,7 +970,7 @@ hexagonelf_reloc_type_lookup
     if (hexagon_reloc_map [i].bfd_reloc_val == code)
       {
         reloc_howto_type *howto =
-          hexagonelf_howto_table + hexagon_reloc_map [i].elf_reloc_val;
+          hexagon_elf_howto_table + hexagon_reloc_map [i].elf_reloc_val;
         BFD_ASSERT (howto->type == hexagon_reloc_map [i].elf_reloc_val);
 
         return (howto);
@@ -955,7 +980,7 @@ hexagonelf_reloc_type_lookup
 }
 
 static bfd_reloc_code_real_type
-hexagonelf_reloc_val_lookup
+hexagon_elf_reloc_val_lookup
 (unsigned char elf_reloc_val, int *flag)
 {
   unsigned int i;
@@ -976,15 +1001,15 @@ hexagonelf_reloc_val_lookup
 }
 
 static reloc_howto_type *
-hexagonelf_reloc_name_lookup
+hexagon_elf_reloc_name_lookup
 (bfd *abfd ATTRIBUTE_UNUSED, const char *r_name)
 {
   unsigned int i;
 
-  for (i = 0; i < ARRAY_SIZE (hexagonelf_howto_table); i++)
-    if (hexagonelf_howto_table [i].name
-        && !strcasecmp (hexagonelf_howto_table [i].name, r_name))
-    return (hexagonelf_howto_table + i);
+  for (i = 0; i < ARRAY_SIZE (hexagon_elf_howto_table); i++)
+    if (hexagon_elf_howto_table [i].name
+        && !strcasecmp (hexagon_elf_howto_table [i].name, r_name))
+    return (hexagon_elf_howto_table + i);
 
   return NULL;
 }
@@ -1000,13 +1025,13 @@ hexagon_info_to_howto_rel
   r_type = ELF32_R_TYPE (dst->r_info);
   BFD_ASSERT (r_type < (unsigned int) R_HEXAGON_max);
 
-  cache_ptr->howto = hexagonelf_howto_table + r_type;
+  cache_ptr->howto = hexagon_elf_howto_table + r_type;
 }
 
 /* Set the right machine number for an HEXAGON ELF file.  */
 
 static bfd_boolean
-hexagonelf_object_p
+hexagon_elf_object_p
 (bfd *abfd)
 {
   unsigned int mach = bfd_mach_hexagon_v2;
@@ -1047,7 +1072,7 @@ hexagonelf_object_p
    This gets the HEXAGON architecture right based on the machine number.  */
 
 static void
-hexagonelf_final_write_processing
+hexagon_elf_final_write_processing
 (bfd *abfd, bfd_boolean linker ATTRIBUTE_UNUSED)
 {
   unsigned long val;
@@ -1078,7 +1103,7 @@ hexagonelf_final_write_processing
 static struct bfd_link_hash_entry *hexagon_sda_base;
 
 static bfd_byte *
-hexagonelf_get_relocated_section_contents
+hexagon_elf_get_relocated_section_contents
 (bfd *obfd, struct bfd_link_info *link_info,
  struct bfd_link_order *link_order, bfd_byte *data, bfd_boolean relocatable,
  asymbol **symbols)
@@ -1102,7 +1127,7 @@ hexagonelf_get_relocated_section_contents
   /* Try to validate the effective value of _SDA_BASE_. */
   if (hexagon_sda_base)
     {
-      if (bfd_reloc_ok != hexagonelf_final_sda_base (obfd, NULL, &vma))
+      if (bfd_reloc_ok != hexagon_elf_final_sda_base (obfd, NULL, &vma))
         {
           fprintf (stderr, "_SDA_BASE_ must be defined.\n");
           abort ();
@@ -1126,7 +1151,7 @@ hexagonelf_get_relocated_section_contents
    external symbol if we are producing relocatable output.  */
 
 static bfd_reloc_status_type
-hexagonelf_final_sda_base
+hexagon_elf_final_sda_base
 (bfd *obfd, char **error_message, bfd_vma *psb)
 {
   if (obfd != (bfd *) NULL)
@@ -1162,7 +1187,7 @@ hexagon_reloc_operand
   long value, xvalue;
 
   opcode  = hexagon_lookup_insn (*insn);
-  type    = hexagonelf_reloc_val_lookup (howto->type, &flag);
+  type    = hexagon_elf_reloc_val_lookup (howto->type, &flag);
   operand = hexagon_lookup_reloc (type, flag, opcode);
 
   is_x = (flag & HEXAGON_OPERAND_IS_KXED);
@@ -1190,7 +1215,7 @@ hexagon_reloc_operand
 }
 
 static bfd_reloc_status_type
-hexagonelf_reloc
+hexagon_elf_reloc
 (bfd *abfd, arelent *reloc_entry, asymbol *symbol, PTR data,
  asection *isection, bfd *obfd, char **error_message)
 {
@@ -1203,11 +1228,11 @@ hexagonelf_reloc
   bfd_vma output_base = 0;
   asection *reloc_target_output_section;
 
-  /* bfd_perform_relocation() performed this test before calling
-     howto->special_function(), but that gets ignored if we return
-	 bfd_reloc_ok (which we do, below) so we need to re-do this
-	 test here. The real bug is probably in bfd_perform_relocation()
-	 but it is better not to modify the common code. */
+  /* bfd_perform_relocation () performed this test before calling
+     howto->special_function (), but that gets ignored if we return
+     bfd_reloc_ok (which we do, below) so we need to re-do this
+     test here. The real bug is probably in bfd_perform_relocation ()
+     but it is better not to modify the common code. */
   if (bfd_is_und_section (symbol->section)
       && (symbol->flags & BSF_WEAK) == 0
       && obfd == (bfd *) NULL)
@@ -1244,7 +1269,7 @@ hexagonelf_reloc
 
   /* Is the address of the relocation really within the section?  */
   if (reloc_entry->address > (isection->size
-			      / bfd_octets_per_byte (abfd)))
+                              / bfd_octets_per_byte (abfd)))
     return bfd_reloc_outofrange;
 
   /* Work out which section the relocation is targetted at and the
@@ -1281,7 +1306,7 @@ hexagonelf_reloc
     {
       bfd_vma sda_base;
 
-      status = hexagonelf_final_sda_base (obfd, error_message, &sda_base);
+      status = hexagon_elf_final_sda_base (obfd, error_message, &sda_base);
       if (status != bfd_reloc_ok)
         return status;
 
@@ -1292,63 +1317,62 @@ hexagonelf_reloc
   if (howto->pc_relative)
     {
       /* This is a PC relative relocation.  We want to set RELOCATION
-	 to the distance between the address of the symbol and the
-	 location.  RELOCATION is already the address of the symbol.
+         to the distance between the address of the symbol and the
+         location.  RELOCATION is already the address of the symbol.
 
-	 We start by subtracting the address of the section containing
-	 the location.
+         We start by subtracting the address of the section containing
+         the location.
 
-	 If pcrel_offset is set, we must further subtract the position
-	 of the location within the section.  Some targets arrange for
-	 the addend to be the negative of the position of the location
-	 within the section; for example, i386-aout does this.  For
-	 i386-aout, pcrel_offset is FALSE.  Some other targets do not
-	 include the position of the location; for example, m88kbcs,
-	 or ELF.  For those targets, pcrel_offset is TRUE.
+         If pcrel_offset is set, we must further subtract the position
+         of the location within the section.  Some targets arrange for
+         the addend to be the negative of the position of the location
+         within the section; for example, i386-aout does this.  For
+         i386-aout, pcrel_offset is FALSE.  Some other targets do not
+         include the position of the location; for example, m88kbcs,
+         or ELF.  For those targets, pcrel_offset is TRUE.
 
-	 If we are producing relocatable output, then we must ensure
-	 that this reloc will be correctly computed when the final
-	 relocation is done.  If pcrel_offset is FALSE we want to wind
-	 up with the negative of the location within the section,
-	 which means we must adjust the existing addend by the change
-	 in the location within the section.  If pcrel_offset is TRUE
-	 we do not want to adjust the existing addend at all.
+         If we are producing relocatable output, then we must ensure
+         that this reloc will be correctly computed when the final
+         relocation is done.  If pcrel_offset is FALSE we want to wind
+         up with the negative of the location within the section,
+         which means we must adjust the existing addend by the change
+         in the location within the section.  If pcrel_offset is TRUE
+         we do not want to adjust the existing addend at all.
 
-	 FIXME: This seems logical to me, but for the case of
-	 producing relocatable output it is not what the code
-	 actually does.  I don't want to change it, because it seems
-	 far too likely that something will break.  */
+         FIXME: This seems logical to me, but for the case of
+         producing relocatable output it is not what the code
+         actually does.  I don't want to change it, because it seems
+         far too likely that something will break.  */
 
       relocation -=
-	isection->output_section->vma + isection->output_offset;
+        isection->output_section->vma + isection->output_offset;
 
       if (howto->pcrel_offset)
-	relocation -= reloc_entry->address;
+        relocation -= reloc_entry->address;
     }
 
   if (obfd != (bfd *) NULL)
     {
       if (!howto->partial_inplace)
-	{
-	  /* This is a partial relocation, and we want to apply the relocation
-	     to the reloc entry rather than the raw data. Modify the reloc
-	     inplace to reflect what we now know.  */
-	  reloc_entry->addend = relocation;
-	  reloc_entry->address += isection->output_offset;
-	  return flag;
-	}
+        {
+          /* This is a partial relocation, and we want to apply the relocation
+             to the reloc entry rather than the raw data. Modify the reloc
+             inplace to reflect what we now know.  */
+          reloc_entry->addend = relocation;
+          reloc_entry->address += isection->output_offset;
+          return flag;
+        }
       else
-	{
-	  /* This is a partial relocation, but inplace, so modify the
-	     reloc record a bit.
+        {
+          /* This is a partial relocation, but inplace, so modify the
+             reloc record a bit.
 
-	     If we've relocated with a symbol with a section, change
-	     into a ref to the section belonging to the symbol.  */
+             If we've relocated with a symbol with a section, change
+             into a ref to the section belonging to the symbol.  */
 
-	  reloc_entry->address += isection->output_offset;
-	  //printf("%d: relocation: 0x%x Reloc address: 0x%x\n",__LINE__,relocation,reloc_entry->address);
-	  reloc_entry->addend = relocation;
-	}
+          reloc_entry->address += isection->output_offset;
+          reloc_entry->addend = relocation;
+        }
     }
   else
     {
@@ -1379,76 +1403,36 @@ hexagonelf_reloc
   if (howto->complain_on_overflow != complain_overflow_dont
       && flag == bfd_reloc_ok)
     flag = bfd_check_overflow (howto->complain_on_overflow,
-			       howto->bitsize,
-			       howto->rightshift,
-			       bfd_arch_bits_per_address (abfd),
-			       relocation);
-
-  /* Either we are relocating all the way, or we don't want to apply
-     the relocation to the reloc entry (probably because there isn't
-     any room in the output format to describe addends to relocs).  */
-
-  /* The cast to bfd_vma avoids a bug in the Alpha OSF/1 C compiler
-     (OSF version 1.3, compiler version 3.11).  It miscompiles the
-     following program:
-
-     struct str
-     {
-       unsigned int i0;
-     } s = { 0 };
-
-     int
-     main ()
-     {
-       unsigned long x;
-
-       x = 0x100000000;
-       x <<= (unsigned long) s.i0;
-       if (x == 0)
-	 printf ("failed\n");
-       else
-	 printf ("succeeded (%lx)\n", x);
-     }
-     */
+                               howto->bitsize,
+                               howto->rightshift,
+                               bfd_arch_bits_per_address (abfd),
+                               relocation);
 
   switch (howto->size)
     {
       case 1:
         {
-	  hexagon_insn insn = bfd_get_16 (abfd, (bfd_byte *) data + octets);
+          hexagon_insn insn = bfd_get_16 (abfd, (bfd_byte *) data + octets);
 
-	  if (!hexagon_reloc_operand (howto, &insn, relocation, error_message))
-	    {
-	      /*
-	      fprintf (stderr, "\tfor \"%s\" in \"%s\", %s.\n",
-		       symbol->name, symbol->the_bfd->filename,
-		       *error_message);
-	      */
+          if (!hexagon_reloc_operand (howto, &insn, relocation, error_message))
+            {
+              return bfd_reloc_overflow;
+            }
 
-	      return bfd_reloc_overflow;
-	    }
-
-	  bfd_put_16 (abfd, (bfd_vma) insn, (unsigned char *) data);
+          bfd_put_16 (abfd, (bfd_vma) insn, (unsigned char *) data);
         }
       break;
 
       case 2:
         {
-	  hexagon_insn insn = bfd_get_32 (abfd, (bfd_byte *) data + octets);
+          hexagon_insn insn = bfd_get_32 (abfd, (bfd_byte *) data + octets);
 
-	  if (!hexagon_reloc_operand (howto, &insn, relocation, error_message))
-	    {
-	      /*
-	      fprintf (stderr, "\tat offset 0x%08x of section \"%s\" in \"%s\",\n\t%s.\n",
-		       (bfd_byte *) octets, isection->name,
-		       symbol->the_bfd->filename,
-		       *error_message);
-	      */
-
+          if (!hexagon_reloc_operand (howto, &insn, relocation, error_message))
+            {
                return bfd_reloc_overflow;
-	     }
+             }
 
-	  bfd_put_32 (abfd, (bfd_vma) insn, (bfd_byte *) data + octets);
+          bfd_put_32 (abfd, (bfd_vma) insn, (bfd_byte *) data + octets);
         }
       break;
 
@@ -1463,7 +1447,7 @@ hexagonelf_reloc
    Also calls hexagon_opcode_init_tables */
 
 static bfd_boolean
-hexagonelf_set_arch_mach
+hexagon_elf_set_arch_mach
 (bfd *abfd, enum bfd_architecture arch, unsigned long machine)
 {
   if (!_bfd_elf_set_arch_mach (abfd, arch, machine))
@@ -1476,7 +1460,7 @@ hexagonelf_set_arch_mach
 
 /* Set up any other section flags and such that may be necessary.  */
 static bfd_boolean
-hexagonelf_fake_sections
+hexagon_elf_fake_sections
 (bfd *abfd ATTRIBUTE_UNUSED, Elf_Internal_Shdr *shdr, asection *asect)
 {
   if ((asect->flags & SEC_SORT_ENTRIES))
@@ -1488,7 +1472,7 @@ hexagonelf_fake_sections
 /* Handle a specific sections when reading an object file.  This
    is called when elfcode.h finds a section with an unknown type.  */
 static bfd_boolean
-hexagonelf_section_from_shdr
+hexagon_elf_section_from_shdr
 (bfd *abfd, Elf_Internal_Shdr *hdr, const char *name, int shindex)
 {
   asection *newsect;
@@ -1510,7 +1494,7 @@ hexagonelf_section_from_shdr
 /* Hook called by the linker routine which adds symbols from an object
    file.  We use it to put .comm items in .sbss, and not .bss.  */
 static bfd_boolean
-hexagonelf_add_symbol_hook
+hexagon_elf_add_symbol_hook
 (bfd *abfd, struct bfd_link_info *info ATTRIBUTE_UNUSED,
  Elf_Internal_Sym *sym, const char **namep ATTRIBUTE_UNUSED,
  flagword *flagsp ATTRIBUTE_UNUSED, asection **secp, bfd_vma *valp)
@@ -1524,44 +1508,43 @@ hexagonelf_add_symbol_hook
         {
           case SHN_COMMON:
             /* Common symbols less than the GP size are automatically
-               treated as SHN_HEXAGON_S_SCOMMON symbols.  */
-            /* FIXME: For now, the SDA is not supported in a DSO. */
-            if (sym->st_size > elf_gp_size (abfd)
-                || info->shared)
+               treated as SHN_HEXAGONS_SCOMMON symbols.  */
+            if (!elf_gp_size (abfd) || sym->st_size > elf_gp_size (abfd))
               break;
 
             /* Choose which section to place them in. */
             if (sym->st_size > 8)
-              ((Elf_Internal_Sym *) sym)->st_shndx = SHN_HEXAGON_SCOMMON;
-            if (sym->st_size > 4)
-              ((Elf_Internal_Sym *) sym)->st_shndx = SHN_HEXAGON_SCOMMON_8;
+              sym->st_shndx = SHN_HEXAGON_SCOMMON;
+            else if (sym->st_size > 4)
+              sym->st_shndx = SHN_HEXAGON_SCOMMON_8;
             else if (sym->st_size > 2)
-              ((Elf_Internal_Sym *) sym)->st_shndx = SHN_HEXAGON_SCOMMON_4;
+              sym->st_shndx = SHN_HEXAGON_SCOMMON_4;
             else if (sym->st_size > 1)
-              ((Elf_Internal_Sym *) sym)->st_shndx = SHN_HEXAGON_SCOMMON_2;
+              sym->st_shndx = SHN_HEXAGON_SCOMMON_2;
             else
-              ((Elf_Internal_Sym *) sym)->st_shndx = SHN_HEXAGON_SCOMMON_1;
+              sym->st_shndx = SHN_HEXAGON_SCOMMON_1;
 
             /* Fall through. */
 
           case SHN_HEXAGON_SCOMMON:
-          case SHN_HEXAGON_SCOMMON_1:
-          case SHN_HEXAGON_SCOMMON_2:
-          case SHN_HEXAGON_SCOMMON_4:
           case SHN_HEXAGON_SCOMMON_8:
-            if (info->executable)
+          case SHN_HEXAGON_SCOMMON_4:
+          case SHN_HEXAGON_SCOMMON_2:
+          case SHN_HEXAGON_SCOMMON_1:
+            if (!elf_gp_size (abfd) || sym->st_size > elf_gp_size (abfd))
+              {
+                sym->st_shndx = SHN_COMMON;
+                *secp = bfd_com_section_ptr;
+              }
+            else
               {
                 /* Common symbols less than or equal to -G are placed in .scommon. */
                 *secp = bfd_make_section_old_way
                           (abfd, hexagon_scom_name [sym->st_shndx - SHN_HEXAGON_SCOMMON]);
                 bfd_set_section_flags
                   (abfd, *secp, SEC_ALLOC | SEC_IS_COMMON | SEC_LINKER_CREATED);
-                *valp = sym->st_size;
               }
-            else
-              /* FIXME: For now, the SDA is not supported in a DSO. */
-              ((Elf_Internal_Sym *) sym)->st_shndx = SHN_COMMON;
-
+            *valp = sym->st_size;
             break;
         }
     }
@@ -1571,7 +1554,7 @@ hexagonelf_add_symbol_hook
 
 /* Handle the special HEXAGON section numbers that a symbol may use. */
 void
-hexagonelf_symbol_processing
+hexagon_elf_symbol_processing
 (bfd *abfd, asymbol *asym)
 {
   elf_symbol_type *elfsym = (elf_symbol_type *) asym;
@@ -1581,8 +1564,8 @@ hexagonelf_symbol_processing
     {
     case SHN_COMMON:
       /* Common symbols less than the GP size are automatically
-	 treated as SHN_HEXAGON_S_SCOMMON symbols.  */
-      if (asym->value > elf_gp_size (abfd))
+	 treated as SHN_HEXAGON_SCOMMON symbols.  */
+      if (!elf_gp_size (abfd) || asym->value > elf_gp_size (abfd))
         break;
 
       /* Choose which section to place them in. */
@@ -1600,10 +1583,17 @@ hexagonelf_symbol_processing
       /* Fall through.  */
 
     case SHN_HEXAGON_SCOMMON:
-    case SHN_HEXAGON_SCOMMON_1:
-    case SHN_HEXAGON_SCOMMON_2:
-    case SHN_HEXAGON_SCOMMON_4:
     case SHN_HEXAGON_SCOMMON_8:
+    case SHN_HEXAGON_SCOMMON_4:
+    case SHN_HEXAGON_SCOMMON_2:
+    case SHN_HEXAGON_SCOMMON_1:
+      if (!elf_gp_size (abfd)
+          || elfsym->internal_elf_sym.st_size > elf_gp_size (abfd))
+        {
+          asym->section = bfd_com_section_ptr;
+          asym->value = elfsym->internal_elf_sym.st_size;
+        }
+      else
         {
           asection *scom_section = hexagon_scom_section
                                  + elfsym->internal_elf_sym.st_shndx
@@ -1640,15 +1630,15 @@ hexagonelf_symbol_processing
 }
 
 static bfd_boolean
-hexagonelf_common_definition
+hexagon_elf_common_definition
 (Elf_Internal_Sym *sym)
 {
   return (sym->st_shndx == SHN_COMMON
           || sym->st_shndx == SHN_HEXAGON_SCOMMON
-          || sym->st_shndx == SHN_HEXAGON_SCOMMON_1
-          || sym->st_shndx == SHN_HEXAGON_SCOMMON_2
+          || sym->st_shndx == SHN_HEXAGON_SCOMMON_8
           || sym->st_shndx == SHN_HEXAGON_SCOMMON_4
-          || sym->st_shndx == SHN_HEXAGON_SCOMMON_8);
+          || sym->st_shndx == SHN_HEXAGON_SCOMMON_2
+          || sym->st_shndx == SHN_HEXAGON_SCOMMON_1);
 }
 
 
@@ -1657,7 +1647,7 @@ hexagonelf_common_definition
    a better way.  */
 
 bfd_boolean
-hexagonelf_section_processing
+hexagon_elf_section_processing
 (bfd *abfd ATTRIBUTE_UNUSED, Elf_Internal_Shdr *hdr)
 {
   if (hdr->bfd_section)
@@ -1681,7 +1671,7 @@ hexagonelf_section_processing
 
 /* Given a BFD section, try to locate the corresponding ELF section index. */
 bfd_boolean
-hexagonelf_section_from_bfd_section
+hexagon_elf_section_from_bfd_section
 (bfd *abfd ATTRIBUTE_UNUSED, asection *sec, int *retval)
 {
   const char *name = bfd_get_section_name (abfd, sec);
@@ -1708,7 +1698,7 @@ hexagonelf_section_from_bfd_section
 /* This hook function is called before the linker writes out a global
    symbol.  We mark symbols as small common if appropriate. */
 bfd_boolean
-hexagonelf_link_output_symbol_hook
+hexagon_elf_link_output_symbol_hook
 (struct bfd_link_info *info ATTRIBUTE_UNUSED, const char *name ATTRIBUTE_UNUSED,
  Elf_Internal_Sym *sym, asection *input_sec,
  struct elf_link_hash_entry *h ATTRIBUTE_UNUSED)
@@ -1716,10 +1706,10 @@ hexagonelf_link_output_symbol_hook
   /* If we see a common symbol, which implies a relocatable link, then
      if a symbol was small common in an input file, mark it as small
      common in the output file.  */
-  /* FIXME: For now the SDA is not supported in a DSO. */
   if (sym->st_shndx == SHN_COMMON
-      && CONST_STRNEQ (input_sec->name, hexagon_scom_name [0])
-      && info->executable)
+      && elf_gp_size (info->output_bfd)
+      && sym->st_size > elf_gp_size (info->output_bfd)
+      && CONST_STRNEQ (input_sec->name, hexagon_scom_name [0]))
     {
       if (!strcmp (name, hexagon_scom_name [SHN_HEXAGON_SCOMMON_8 - SHN_HEXAGON_SCOMMON]))
         sym->st_shndx = SHN_HEXAGON_SCOMMON_8;
@@ -1810,7 +1800,7 @@ hexagon_kept_hash_lookup
 }
 
 static bfd_boolean
-hexagonelf_relax_section (bfd *ibfd,
+hexagon_elf_relax_section (bfd *ibfd,
                          asection *isec,
                          struct bfd_link_info *info,
                          bfd_boolean *again)
@@ -2017,7 +2007,7 @@ hexagonelf_relax_section (bfd *ibfd,
               {
                 hexagon_insn insn;
 
-                insn = hexagon_get_insn (ibfd, hexagonelf_howto_table + r_type,
+                insn = hexagon_get_insn (ibfd, hexagon_elf_howto_table + r_type,
                                        contents + from - HEXAGON_INSN_LEN);
                 if (HEXAGON_END_PACKET_GET (insn) == HEXAGON_END_PACKET
                     || HEXAGON_END_PACKET_GET (insn) == HEXAGON_END_PAIR)
@@ -2099,11 +2089,11 @@ hexagonelf_relax_section (bfd *ibfd,
 
               /* Fix up the offending branch by pointing it to the trampoline. */
               insn = hexagon_get_insn (ibfd,
-                                     hexagonelf_howto_table + r_type,
+                                     hexagon_elf_howto_table + r_type,
                                      contents + at);
-              if (hexagon_reloc_operand (hexagonelf_howto_table + r_type, &insn,
+              if (hexagon_reloc_operand (hexagon_elf_howto_table + r_type, &insn,
                                        t_at - from, NULL))
-                hexagon_put_insn (ibfd, hexagonelf_howto_table + r_type,
+                hexagon_put_insn (ibfd, hexagon_elf_howto_table + r_type,
                                 contents + at, insn);
 
               /* Done adding the trampolines.
@@ -2132,7 +2122,7 @@ hexagonelf_relax_section (bfd *ibfd,
 /* Copy the extra info we tack onto an elf_link_hash_entry.  */
 
 static void
-hexagonelf_copy_indirect_symbol
+hexagon_elf_copy_indirect_symbol
 (struct bfd_link_info *info,
  struct elf_link_hash_entry *dir, struct elf_link_hash_entry *ind)
 {
@@ -2194,7 +2184,7 @@ hexagonelf_copy_indirect_symbol
 /* Create an entry in an ELF linker hash table.  */
 
 static struct bfd_hash_entry *
-hexagonelf_link_hash_newfunc
+hexagon_elf_link_hash_newfunc
 (struct bfd_hash_entry *entry, struct bfd_hash_table *table, const char *string)
 {
   /* Allocate the structure if it has not already been allocated by a
@@ -2213,7 +2203,7 @@ hexagonelf_link_hash_newfunc
 /* Create an ELF linker hash table.  */
 
 static struct bfd_link_hash_table *
-hexagonelf_link_hash_table_create
+hexagon_elf_link_hash_table_create
 (bfd *abfd)
 {
   hexagon_link_hash_table *htab;
@@ -2222,7 +2212,7 @@ hexagonelf_link_hash_table_create
     return NULL;
 
   if (!_bfd_elf_link_hash_table_init
-         (&htab->elf, abfd, hexagonelf_link_hash_newfunc,
+         (&htab->elf, abfd, hexagon_elf_link_hash_newfunc,
           sizeof (struct _hexagon_link_hash_entry)))
     {
       free (htab);
@@ -2237,7 +2227,7 @@ hexagonelf_link_hash_table_create
 /* We may need to bump up the number of program headers beyond .text and .data. */
 
 static int
-hexagonelf_additional_program_headers
+hexagon_elf_additional_program_headers
 (bfd *abfd, struct bfd_link_info *info ATTRIBUTE_UNUSED)
 {
   asection *s;
@@ -2268,7 +2258,7 @@ hexagonelf_additional_program_headers
    dangling relocations against discarded sections. */
 
 static bfd_boolean
-hexagonelf_ignore_discarded_relocs
+hexagon_elf_ignore_discarded_relocs
 (asection *s ATTRIBUTE_UNUSED)
 {
   /* Always ignore because relocate_section () will get rid of
@@ -2277,7 +2267,7 @@ hexagonelf_ignore_discarded_relocs
 }
 
 static asection *
-hexagonelf_gc_mark_hook
+hexagon_elf_gc_mark_hook
 (asection *sec, struct bfd_link_info *info ATTRIBUTE_UNUSED,
  Elf_Internal_Rela *rel ATTRIBUTE_UNUSED, struct elf_link_hash_entry *h,
  Elf_Internal_Sym *sym)
@@ -2306,7 +2296,7 @@ hexagonelf_gc_mark_hook
 }
 
 static bfd_boolean
-hexagonelf_relocate_section
+hexagon_elf_relocate_section
 (bfd *obfd, struct bfd_link_info *info,
  bfd *ibfd, asection *isection, bfd_byte *contents,
  Elf_Internal_Rela *relocs, Elf_Internal_Sym *local_syms,
@@ -2349,7 +2339,7 @@ hexagonelf_relocate_section
 	  return FALSE;
 	}
       else
-        howto = hexagonelf_howto_table + r_type;
+        howto = hexagon_elf_howto_table + r_type;
 
       if (r_symndx < symtab_hdr->sh_info)
 	{
@@ -2434,9 +2424,9 @@ hexagonelf_relocate_section
 
 	        case R_HEXAGON_GOT_LO16:
 	        case R_HEXAGON_GOT_HI16:
+                case R_HEXAGON_GOT_32:
 	        case R_HEXAGON_GOT_16:
-	        case R_HEXAGON_GOT_32:
-	          if (elf_hash_table(info)->dynamic_sections_created
+	          if (elf_hash_table (info)->dynamic_sections_created
 	              && (info->executable
 	                  || !SYMBOLIC_BIND (info, h)
 	                  || !h->def_regular))
@@ -2460,7 +2450,7 @@ hexagonelf_relocate_section
 			(_("%B: relocation %s for symbol `%s\' in section `%A\' " \
 			   "cannot be resolved"),
 			 ibfd, isection,
-			 hexagonelf_howto_table [r_type].name, name);
+			 hexagon_elf_howto_table [r_type].name, name);
                       bfd_set_error (bfd_error_bad_value);
                       return FALSE;
 		    }
@@ -2505,7 +2495,7 @@ hexagonelf_relocate_section
 		(_("%B: relocation %s for symbol `%s\' in section `%A\' " \
 		   "cannot be handled with no GOT created"),
 		 ibfd, isection,
-		 hexagonelf_howto_table [r_type].name, name);
+		 hexagon_elf_howto_table [r_type].name, name);
 	      bfd_set_error (bfd_error_bad_value);
 	      return FALSE;
 	    }
@@ -2528,7 +2518,7 @@ hexagonelf_relocate_section
 		(_("%s: relocation %s for symbol `%s\' in section `%s\' " \
 		   "cannot be handled due to insufficient range"),
 		 bfd_archive_filename (input_bfd),
-		 hexagonelf_howto_table [r_type].name,
+		 hexagon_elf_howto_table [r_type].name,
 		 name,
 		 bfd_get_section_name (input_bfd, input_section));
 	      bfd_set_error (bfd_error_bad_value);
@@ -2543,8 +2533,8 @@ hexagonelf_relocate_section
         {
         case R_HEXAGON_GOT_LO16:
         case R_HEXAGON_GOT_HI16:
-        case R_HEXAGON_GOT_16:
         case R_HEXAGON_GOT_32:
+        case R_HEXAGON_GOT_16:
           if (h)
             {
               /* Global symbol. */
@@ -2629,7 +2619,11 @@ hexagonelf_relocate_section
                   local_got_offsets [r_symndx] |= 1;
                 }
             }
-          relocation = htab->elf.sgot->output_offset + offset;
+          relocation = htab->elf.sgot->output_section->vma
+                       + htab->elf.sgot->output_offset
+                       - htab->elf.sgotplt->output_section->vma
+                       - htab->elf.sgotplt->output_offset
+                       + offset;
           break;
 
 	case R_HEXAGON_GOTOFF_LO16:
@@ -2642,7 +2636,7 @@ hexagonelf_relocate_section
 	     _GLOBAL_OFFSET_TABLE_ is, not the position after the reserved
 	     header.  */
 	  relocation -= htab->elf.sgotplt->output_section->vma
-	              + htab->elf.sgotplt->output_offset;
+	                + htab->elf.sgotplt->output_offset;
 	  break;
 
         case R_HEXAGON_PLT_B22_PCREL:
@@ -2845,33 +2839,33 @@ hexagonelf_relocate_section
 	  offset = relocation + rel->r_addend;
 
           /* First instruction (HI). */
-	  insn = hexagon_get_insn (ibfd, hexagonelf_howto_table + R_HEXAGON_HI16,
+	  insn = hexagon_get_insn (ibfd, hexagon_elf_howto_table + R_HEXAGON_HI16,
                                  contents + rel->r_offset + 0);
 
 	  if (!hexagon_reloc_operand
-	         (hexagonelf_howto_table + R_HEXAGON_HI16, &insn, offset, NULL)
+	         (hexagon_elf_howto_table + R_HEXAGON_HI16, &insn, offset, NULL)
               && h && h->root.type != bfd_link_hash_undefined)
             r = info->callbacks->reloc_overflow
                   (info, (h ? &h->root : NULL), name,
-                   hexagonelf_howto_table [R_HEXAGON_HI16].name, 0,
+                   hexagon_elf_howto_table [R_HEXAGON_HI16].name, 0,
                    ibfd, isection, rel->r_offset + sizeof (insn));
 	  else
-            hexagon_put_insn (ibfd, hexagonelf_howto_table + R_HEXAGON_HI16,
+            hexagon_put_insn (ibfd, hexagon_elf_howto_table + R_HEXAGON_HI16,
                             contents + rel->r_offset + 0, insn);
 
           /* Second instruction (LO). */
-	  insn = hexagon_get_insn (ibfd, hexagonelf_howto_table + R_HEXAGON_LO16,
+	  insn = hexagon_get_insn (ibfd, hexagon_elf_howto_table + R_HEXAGON_LO16,
                                  contents + rel->r_offset + sizeof (insn));
 
 	  if (!hexagon_reloc_operand
-	         (hexagonelf_howto_table + R_HEXAGON_LO16, &insn, offset, NULL)
+	         (hexagon_elf_howto_table + R_HEXAGON_LO16, &insn, offset, NULL)
               && h && h->root.type != bfd_link_hash_undefined)
             r = info->callbacks->reloc_overflow
                   (info, (h ? &h->root : NULL), name,
-                   hexagonelf_howto_table [R_HEXAGON_LO16].name, 0,
+                   hexagon_elf_howto_table [R_HEXAGON_LO16].name, 0,
                    ibfd, isection, rel->r_offset + sizeof (insn));
 	  else
-            hexagon_put_insn (ibfd, hexagonelf_howto_table + R_HEXAGON_LO16,
+            hexagon_put_insn (ibfd, hexagon_elf_howto_table + R_HEXAGON_LO16,
                             contents + rel->r_offset + sizeof (insn), insn);
 
           break;
@@ -2958,9 +2952,9 @@ hexagonelf_relocate_section
 	case R_HEXAGON_32:
 	case R_HEXAGON_16:
 	case R_HEXAGON_8:
-        case R_HEXAGON_GOT_32:
-        case R_HEXAGON_GOTOFF_32:
         case R_HEXAGON_32_PCREL:
+        case R_HEXAGON_GOTOFF_32:
+        case R_HEXAGON_GOT_32:
           /* Fall through. */
 
 	case R_HEXAGON_NONE:
@@ -3033,7 +3027,7 @@ the GOT, the PLT and dynamic relocation sections.
 */
 
 static bfd_boolean
-hexagonelf_check_relocs
+hexagon_elf_check_relocs
 (bfd *abfd, struct bfd_link_info *info,
  asection *sec, const Elf_Internal_Rela *relocs)
 {
@@ -3051,7 +3045,7 @@ hexagonelf_check_relocs
      special symbols are created.  */
   if (!elf_hash_table (info)->dynamic_sections_created)
     {
-      if (!hexagonelf_create_dynamic_sections (abfd, info))
+      if (!hexagon_elf_create_dynamic_sections (abfd, info))
 	return FALSE;
     }
 #endif
@@ -3330,7 +3324,7 @@ hexagonelf_check_relocs
                 (_("%B: relocation %s%s%s%s in section `%A\' cannot be handled " \
                     "in a shared object; recompile with `-fpic\'"),
                 abfd, sec,
-                hexagonelf_howto_table [r_type].name,
+                hexagon_elf_howto_table [r_type].name,
                 h? " for symbol `": "", h? h->root.root.string: "", h? "\'": "");
               bfd_set_error (bfd_error_bad_value);
               return FALSE;
@@ -3349,7 +3343,7 @@ hexagonelf_check_relocs
                 (_("%B: relocation %s for symbol `%s\' in section `%A\' " \
                    "cannot be handled when it is defined by a shared library"),
                 abfd, sec,
-                hexagonelf_howto_table [r_type].name, h->root.root.string);
+                hexagon_elf_howto_table [r_type].name, h->root.root.string);
               bfd_set_error (bfd_error_bad_value);
               return FALSE;
             }
@@ -3364,7 +3358,7 @@ hexagonelf_check_relocs
 Update the GOT entry reference counts for the section being removed.
 */
 static bfd_boolean
-hexagonelf_gc_sweep_hook
+hexagon_elf_gc_sweep_hook
 (bfd *abfd ATTRIBUTE_UNUSED, struct bfd_link_info *info ATTRIBUTE_UNUSED,
  asection *sec, const Elf_Internal_Rela *relocs ATTRIBUTE_UNUSED)
 {
@@ -3462,7 +3456,7 @@ Finish up dynamic symbol handling.  We set the contents of various
 dynamic sections.
 */
 static bfd_boolean
-hexagonelf_finish_dynamic_symbol
+hexagon_elf_finish_dynamic_symbol
 (bfd *obfd, struct bfd_link_info *info, struct elf_link_hash_entry *h,
  Elf_Internal_Sym *sym)
 {
@@ -3494,8 +3488,27 @@ hexagonelf_finish_dynamic_symbol
       /* Initialize the PLT entry. */
       memcpy (htab->elf.splt->contents + h->plt.offset,
               hexagon_plt_entry, sizeof (hexagon_plt_entry));
-      /* Its last word contains the difference between the address of
+      /* A couple of insns contain the difference between the address of
          its corresponding GOT entry and the address of the PLT entry. */
+      hexagon_reloc_operand
+        (hexagon_elf_howto_table + R_HEXAGON_HI16,
+         (hexagon_insn *) (htab->elf.splt->contents + h->plt.offset
+                         + 1 * sizeof (*hexagon_plt_entry)),
+         htab->elf.sgotplt->output_section->vma + htab->elf.sgotplt->output_offset
+         + got_offset
+         - htab->elf.splt->output_section->vma - htab->elf.splt->output_offset
+         - h->plt.offset,
+         NULL);
+      hexagon_reloc_operand
+        (hexagon_elf_howto_table + R_HEXAGON_LO16,
+         (hexagon_insn *) (htab->elf.splt->contents + h->plt.offset
+                         + 2 * sizeof (*hexagon_plt_entry)),
+         htab->elf.sgotplt->output_section->vma + htab->elf.sgotplt->output_offset
+         + got_offset
+         - htab->elf.splt->output_section->vma - htab->elf.splt->output_offset
+         - h->plt.offset,
+         NULL);
+/*
       bfd_put_32 (obfd,
                   htab->elf.sgotplt->output_section->vma
                   + htab->elf.sgotplt->output_offset
@@ -3505,6 +3518,7 @@ hexagonelf_finish_dynamic_symbol
                   - h->plt.offset,
                   htab->elf.splt->contents + h->plt.offset
                   + sizeof (hexagon_plt_entry) - sizeof (*hexagon_plt_entry));
+*/
 
       /* Intialize the GOT entry corresponding to this PLT entry to initially
          point to the 0th PLT entry, which marshalls the dynamic linker
@@ -3596,7 +3610,8 @@ hexagonelf_finish_dynamic_symbol
       Elf_Internal_Rela rela;
       asection *s;
 
-      s = h->size <= elf_gp_size (htab->elf.dynobj)
+      s = elf_gp_size (htab->elf.dynobj)
+          && h->size <= elf_gp_size (htab->elf.dynobj)
           ? htab->sbss.r: htab->bss.r;
 
       if (h->dynindx == -1
@@ -3628,7 +3643,7 @@ Finish up the dynamic sections.
 */
 
 static bfd_boolean
-hexagonelf_finish_dynamic_sections
+hexagon_elf_finish_dynamic_sections
 (bfd *obfd, struct bfd_link_info *info)
 {
   hexagon_link_hash_table *htab;
@@ -3734,8 +3749,27 @@ hexagonelf_finish_dynamic_sections
              resolve symbols used by the other PLT entries. */
 	  memcpy (htab->elf.splt->contents, hexagon_plt_initial_entry,
 	          sizeof (hexagon_plt_initial_entry));
-	  /* Its last word contains the difference between the address of the
+	  /* A couple of insns contain the difference between the address of the
 	     PLT and of the GOT. */
+          hexagon_reloc_operand
+            (hexagon_elf_howto_table + R_HEXAGON_HI16,
+            (hexagon_insn *) (htab->elf.splt->contents
+                            + 1 * sizeof (*hexagon_plt_initial_entry)),
+            htab->elf.splt->output_section->vma
+            + htab->elf.splt->output_offset
+            - htab->elf.sgotplt->output_section->vma
+            - htab->elf.sgotplt->output_offset,
+            NULL);
+          hexagon_reloc_operand
+            (hexagon_elf_howto_table + R_HEXAGON_LO16,
+            (hexagon_insn *) (htab->elf.splt->contents
+                            + 2 * sizeof (*hexagon_plt_initial_entry)),
+            htab->elf.splt->output_section->vma
+            + htab->elf.splt->output_offset
+            - htab->elf.sgotplt->output_section->vma
+            - htab->elf.sgotplt->output_offset,
+            NULL);
+/*
 	  bfd_put_32 (obfd,
 		      htab->elf.splt->output_section->vma
 		      + htab->elf.splt->output_offset
@@ -3744,6 +3778,7 @@ hexagonelf_finish_dynamic_sections
 		      htab->elf.splt->contents
 		      + sizeof (hexagon_plt_initial_entry)
 		      - sizeof (*hexagon_plt_initial_entry));
+*/
 
 	  elf_section_data (htab->elf.splt->output_section)->this_hdr.sh_entsize
 	    = PLT_ENTRY_SIZE;
@@ -3784,7 +3819,7 @@ hexagonelf_finish_dynamic_sections
    understand.	*/
 
 static bfd_boolean
-hexagonelf_adjust_dynamic_symbol
+hexagon_elf_adjust_dynamic_symbol
 (struct bfd_link_info *info, struct elf_link_hash_entry *h)
 {
   hexagon_link_hash_table *htab;
@@ -3907,7 +3942,8 @@ hexagonelf_adjust_dynamic_symbol
      runtime process image.  */
   if ((h->root.u.def.section->flags & SEC_ALLOC))
     {
-      s = h->size <= elf_gp_size (htab->elf.dynobj)
+      s = elf_gp_size (htab->elf.dynobj)
+          && h->size <= elf_gp_size (htab->elf.dynobj)
           ? htab->sbss.r: htab->bss.r;
       BFD_ASSERT (s);
 
@@ -3926,7 +3962,8 @@ hexagonelf_adjust_dynamic_symbol
     }
 
   /* Choose the proper section.  */
-  s = h->size <= elf_gp_size (htab->elf.dynobj)
+  s = elf_gp_size (htab->elf.dynobj)
+      && h->size <= elf_gp_size (htab->elf.dynobj)
       ? htab->sbss.s: htab->bss.s;
   return (_bfd_elf_adjust_dynamic_copy (h, s));
 }
@@ -4149,7 +4186,7 @@ Set the sizes of the dynamic sections.
 */
 
 static bfd_boolean
-hexagonelf_size_dynamic_sections
+hexagon_elf_size_dynamic_sections
 (bfd *obfd ATTRIBUTE_UNUSED, struct bfd_link_info *info)
 {
   hexagon_link_hash_table *htab;
@@ -4354,7 +4391,7 @@ before writing them out.
 */
 
 static enum elf_reloc_type_class
-hexagonelf_reloc_type_class
+hexagon_elf_reloc_type_class
 (const Elf_Internal_Rela *rela)
 {
   switch ((int) ELF32_R_TYPE (rela->r_info))
@@ -4377,7 +4414,7 @@ in our hash table.
 */
 
 static bfd_boolean
-hexagonelf_create_dynamic_sections
+hexagon_elf_create_dynamic_sections
 (bfd *abfd, struct bfd_link_info *info)
 {
   hexagon_link_hash_table *htab;
@@ -4391,22 +4428,32 @@ hexagonelf_create_dynamic_sections
   if (!bfd_set_section_alignment (abfd, htab->elf.splt, 4))
     return FALSE;
 
-  htab->bss.s = bfd_get_section_by_name (abfd, ".dynbss");
-  htab->sbss.s = bfd_make_section_with_flags
-                   (abfd, ".dynsbss", SEC_ALLOC | SEC_LINKER_CREATED);
+  if (get_elf_backend_data (abfd)->want_plt_sym)
+    /* Enable pretty disassembly of the PLT. */
+    htab->elf.hplt->type = STT_FUNC;
 
+  htab->bss.s = bfd_get_section_by_name (abfd, ".dynbss");
   if (info->executable)
     {
       htab->bss.r = bfd_get_section_by_name (abfd, ".rela.bss");
-      htab->sbss.r = bfd_make_section_with_flags
-                       (abfd, ".rela.sbss", flags | SEC_READONLY);
-      if (!bfd_set_section_alignment (abfd, htab->sbss.r, 2))
-        return FALSE;
     }
 
-  if (!htab->sbss.s
-      || (info->executable && !htab->sbss.r))
-    abort ();
+  if (elf_gp_size (htab->elf.dynobj))
+    {
+      htab->sbss.s = bfd_make_section_with_flags
+                      (abfd, ".dynsbss", SEC_ALLOC | SEC_LINKER_CREATED);
+      if (info->executable)
+        {
+          htab->sbss.r = bfd_make_section_with_flags
+                          (abfd, ".rela.sbss", flags | SEC_READONLY);
+          if (!bfd_set_section_alignment (abfd, htab->sbss.r, 2))
+            return FALSE;
+        }
+
+      if (!htab->sbss.s
+          || (info->executable && !htab->sbss.r))
+        abort ();
+    }
 
   return TRUE;
 }
@@ -4417,7 +4464,7 @@ or (bfd_vma) -1 if it should not be included.
 */
 
 static bfd_vma
-hexagonelf_plt_sym_val
+hexagon_elf_plt_sym_val
 (bfd_vma i, const asection *plt, const arelent *rel ATTRIBUTE_UNUSED)
 {
   return (plt->vma + (i + PLT_RESERVED_ENTRIES) * PLT_ENTRY_SIZE);
@@ -4428,7 +4475,7 @@ Return TRUE if symbol should be hashed in the `.gnu.hash' section.
 */
 
 static bfd_boolean
-hexagonelf_hash_symbol
+hexagon_elf_hash_symbol
 (struct elf_link_hash_entry *h)
 {
   if (h->plt.offset != (bfd_vma) -1
@@ -4463,49 +4510,50 @@ hexagonelf_hash_symbol
 #define elf_backend_plt_header_size		PLT_INITIAL_ENTRY_SIZE
 #define elf_backend_plt_readonly		1
 #define elf_backend_want_got_plt		1
-#define elf_backend_want_plt_sym		0
+#define elf_backend_want_plt_sym		1
 
 #define elf_info_to_howto			0
 #define elf_info_to_howto_rel			hexagon_info_to_howto_rel
-#define bfd_elf32_bfd_reloc_type_lookup		hexagonelf_reloc_type_lookup
-#define bfd_elf32_bfd_reloc_name_lookup		hexagonelf_reloc_name_lookup
+#define bfd_elf32_bfd_reloc_type_lookup		hexagon_elf_reloc_type_lookup
+#define bfd_elf32_bfd_reloc_name_lookup		hexagon_elf_reloc_name_lookup
 
-#define elf_backend_object_p			hexagonelf_object_p
-#define elf_backend_gc_mark_hook		hexagonelf_gc_mark_hook
-#define elf_backend_gc_sweep_hook		hexagonelf_gc_sweep_hook
-#define elf_backend_final_write_processing	hexagonelf_final_write_processing
-#define elf_backend_section_from_shdr		hexagonelf_section_from_shdr
-#define elf_backend_add_symbol_hook		hexagonelf_add_symbol_hook
-#define elf_backend_fake_sections		hexagonelf_fake_sections
-#define elf_backend_symbol_processing		hexagonelf_symbol_processing
-#define elf_backend_section_processing		hexagonelf_section_processing
-#define elf_backend_section_from_bfd_section	hexagonelf_section_from_bfd_section
-#define elf_backend_link_output_symbol_hook	hexagonelf_link_output_symbol_hook
-#define elf_backend_copy_indirect_symbol	hexagonelf_copy_indirect_symbol
-#define elf_backend_additional_program_headers	hexagonelf_additional_program_headers
-#define elf_backend_ignore_discarded_relocs	hexagonelf_ignore_discarded_relocs
-#define elf_backend_reloc_type_class		hexagonelf_reloc_type_class
-#define elf_backend_common_definition		hexagonelf_common_definition
-#define elf_backend_plt_sym_val		        hexagonelf_plt_sym_val
-#define elf_backend_hash_symbol		        hexagonelf_hash_symbol
+#define elf_backend_object_p			hexagon_elf_object_p
+#define elf_backend_gc_mark_hook		hexagon_elf_gc_mark_hook
+#define elf_backend_gc_sweep_hook		hexagon_elf_gc_sweep_hook
+#define elf_backend_final_write_processing	hexagon_elf_final_write_processing
+#define elf_backend_section_from_shdr		hexagon_elf_section_from_shdr
+#define elf_backend_add_symbol_hook		hexagon_elf_add_symbol_hook
+#define elf_backend_fake_sections		hexagon_elf_fake_sections
+#define elf_backend_symbol_processing		hexagon_elf_symbol_processing
+#define elf_backend_section_processing		hexagon_elf_section_processing
+#define elf_backend_section_from_bfd_section	hexagon_elf_section_from_bfd_section
+#define elf_backend_link_output_symbol_hook	hexagon_elf_link_output_symbol_hook
+#define elf_backend_copy_indirect_symbol	hexagon_elf_copy_indirect_symbol
+#define elf_backend_additional_program_headers	hexagon_elf_additional_program_headers
+#define elf_backend_ignore_discarded_relocs	hexagon_elf_ignore_discarded_relocs
+#define elf_backend_reloc_type_class		hexagon_elf_reloc_type_class
+#define elf_backend_common_definition		hexagon_elf_common_definition
+#define elf_backend_plt_sym_val		        hexagon_elf_plt_sym_val
+#define elf_backend_hash_symbol		        hexagon_elf_hash_symbol
 
-#define elf_backend_check_relocs		hexagonelf_check_relocs
-#define elf_backend_adjust_dynamic_symbol	hexagonelf_adjust_dynamic_symbol
-#define elf_backend_size_dynamic_sections	hexagonelf_size_dynamic_sections
-#define bfd_elf32_bfd_relax_section		hexagonelf_relax_section
-#define elf_backend_relocate_section		hexagonelf_relocate_section
-#define elf_backend_finish_dynamic_symbol	hexagonelf_finish_dynamic_symbol
-#define elf_backend_finish_dynamic_sections	hexagonelf_finish_dynamic_sections
-#define elf_backend_create_dynamic_sections	hexagonelf_create_dynamic_sections
+#define elf_backend_check_relocs		hexagon_elf_check_relocs
+#define elf_backend_adjust_dynamic_symbol	hexagon_elf_adjust_dynamic_symbol
+#define elf_backend_size_dynamic_sections	hexagon_elf_size_dynamic_sections
+#define bfd_elf32_bfd_relax_section		hexagon_elf_relax_section
+#define elf_backend_relocate_section		hexagon_elf_relocate_section
+#define elf_backend_finish_dynamic_symbol	hexagon_elf_finish_dynamic_symbol
+#define elf_backend_finish_dynamic_sections	hexagon_elf_finish_dynamic_sections
+#define elf_backend_create_dynamic_sections	hexagon_elf_create_dynamic_sections
 
-#define bfd_elf32_bfd_get_relocated_section_contents hexagonelf_get_relocated_section_contents
-#define bfd_elf32_bfd_link_hash_table_create	hexagonelf_link_hash_table_create
-#define bfd_elf32_bfd_reloc_type_lookup		hexagonelf_reloc_type_lookup
+#define bfd_elf32_bfd_get_relocated_section_contents \
+                                                hexagon_elf_get_relocated_section_contents
+#define bfd_elf32_bfd_link_hash_table_create	hexagon_elf_link_hash_table_create
+#define bfd_elf32_bfd_reloc_type_lookup		hexagon_elf_reloc_type_lookup
 
 /* This is a bit of a hack to install the wrapper for _bfd_elf_set_arch_mach. */
 #undef BFD_JUMP_TABLE_WRITE
 #define BFD_JUMP_TABLE_WRITE(NAME) \
-  hexagonelf_set_arch_mach, \
+  hexagon_elf_set_arch_mach, \
   bfd_elf32_set_section_contents
 
 #include "elf32-target.h"

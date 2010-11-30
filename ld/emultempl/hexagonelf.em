@@ -3,15 +3,34 @@
 # This file is sourced from elf32.em, and defines extra
 # HEXAGON-specific routines.
 
-cat >>e${EMULATION_NAME}.c <<"EOF"
+case "${target_alias}" in
+  hexagon*-linux*)
+    HEXAGON_IS_LINUX=" "
+    # The SDA is not supported in Linux.
+    HEXAGON_LINUX_G_SWITCH=$'
+      else
+        {
+          g_switch_value = 0;
+          einfo (_("%P: small data size reset to zero\\n"));
+        }
+    '
+    # The TCM is not supported in Linux.
+    HEXAGON_LINUX_USE_TCM=$'
+      else
+        einfo (_("%P%F: `-tcm\\\' not supported\\n"));
+    '
+    ;;
+  hexagon*)
+    ;;
+esac
+
+cat >>e${EMULATION_NAME}.c <<EOF
 
 #include "elf/internal.h"
 #include "elf/hexagon.h"
 #include "elf-bfd.h"
 
 #define EMUL_HEXAGON
-
-static void hexagon_after_parse PARAMS ((void));
 
 static char* hexagon_arch_name;
 static int hexagon_cmdline_set_arch;
@@ -40,34 +59,53 @@ hexagon_after_parse (void)
     link_info.hexagon_trampolines = command_line.relax = !link_info.relocatable;
 
   /* It likely does not make sense to have a DSO using the TCM. */
-  if (config.use_tcm && link_info.shared)
-    einfo (_("%P%F: `-tcm\' not supported with `-shared\'\n"));
-
-  /* For now, the SDA is not supported in a DSO. */
-  if (g_switch_value && link_info.shared)
+  if (config.use_tcm)
     {
-      g_switch_value = 0;
-      einfo (_("%P: small data size set to zero with `-shared\'\n"));
+      if (link_info.shared)
+        einfo (_("%P%F: \`-tcm\' not supported with \`-shared\'\\n"));
+      ${HEXAGON_LINUX_USE_TCM}
     }
 
-  after_parse_default();
+  if (g_switch_value)
+    {
+      /* The compiler doesn't set up the GP register, which precludes the SDA
+         in some situations. */
+      if (link_info.shared)
+        {
+          g_switch_value = 0;
+          einfo (_("%P: small data size set to zero with \`-shared\'\\n"));
+        }
+      ${HEXAGON_LINUX_G_SWITCH}
+    }
+
+  after_parse_default ();
+}
+
+EOF
+
+test -n "$HEXAGON_IS_LINUX" && cat >>e${EMULATION_NAME}.c <<EOF
+
+static void
+hexagon_before_parse (void)
+{
+  gld${EMULATION_NAME}_before_parse ();
+
+  /* Default to no SDA. */
+  g_switch_value = 0;
 }
 
 EOF
 
 # Put these extra routines in ld_${EMULATION_NAME}_emulation
-
 LDEMUL_AFTER_PARSE=hexagon_after_parse
-
-# Define some shell vars to insert bits of code into the standard elf
-# parse_args and list_options functions.
+test -n "$HEXAGON_IS_LINUX" && LDEMUL_BEFORE_PARSE=hexagon_before_parse
 
 # HEXAGON option values (between 300 and 399).
 PARSE_AND_LIST_PROLOGUE=$'
-#define OPTION_MHEXAGON_V1    (301)
-#define OPTION_MHEXAGON_V2    (302)
-#define OPTION_MHEXAGON_V3    (303)
-#define OPTION_MHEXAGON_V4    (304)
+#define OPTION_MHEXAGONV1    (301)
+#define OPTION_MHEXAGONV2    (302)
+#define OPTION_MHEXAGONV3    (303)
+#define OPTION_MHEXAGONV4    (304)
 #define OPTION_MARCH       (305)
 #define OPTION_MCPU        (306)
 #define OPTION_TCM         (307)
@@ -77,9 +115,9 @@ PARSE_AND_LIST_PROLOGUE=$'
 # HEXAGON options.
 # Because the option `-m' is overloaded here, proper code must be added to get_emulation ().
 PARSE_AND_LIST_LONGOPTS=$'
-    {"mv2",         no_argument,       NULL, OPTION_MHEXAGON_V2},
-    {"mv3",         no_argument,       NULL, OPTION_MHEXAGON_V3},
-    {"mv4",         no_argument,       NULL, OPTION_MHEXAGON_V4},
+    {"mv2",         no_argument,       NULL, OPTION_MHEXAGONV2},
+    {"mv3",         no_argument,       NULL, OPTION_MHEXAGONV3},
+    {"mv4",         no_argument,       NULL, OPTION_MHEXAGONV4},
     {"march",       required_argument, NULL, OPTION_MARCH},
     {"mcpu",        required_argument, NULL, OPTION_MCPU},
     {"tcm",         no_argument,       NULL, OPTION_TCM},
@@ -91,7 +129,11 @@ PARSE_AND_LIST_OPTIONS=$'
   fprintf (file, _("  --march={v2|v3|v4}          Link for the specified HEXAGON architecture\\n"));
   fprintf (file, _("  --mcpu={v2|v3|v4}           Equivalent to `--march\'\\n"));
   fprintf (file, _("  -m{v2|v3|v4}                Equivalent to `--march\'\\n"));
+'
+test -z "$HEXAGON_IS_LINUX" && PARSE_AND_LIST_OPTIONS=$PARSE_AND_LIST_OPTIONS$'
   fprintf (file, _("  --tcm                       Use the TCM\\n"));
+'
+PARSE_AND_LIST_OPTIONS=$PARSE_AND_LIST_OPTIONS$'
   fprintf (file, _("  --trampolines[={yes|no}]    Add trampolines when necessary (default)\\n"));
 '
 
@@ -158,10 +200,10 @@ PARSE_AND_LIST_ARGS_CASES=$'
                                     : TRUE;
       break;
 
-    case OPTION_MHEXAGON_V1:
-    case OPTION_MHEXAGON_V2:
-    case OPTION_MHEXAGON_V3:
-    case OPTION_MHEXAGON_V4:
+    case OPTION_MHEXAGONV1:
+    case OPTION_MHEXAGONV2:
+    case OPTION_MHEXAGONV3:
+    case OPTION_MHEXAGONV4:
     case OPTION_MARCH:
     case OPTION_MCPU:
       /* The output architecture is specified. */
@@ -171,12 +213,12 @@ PARSE_AND_LIST_ARGS_CASES=$'
 
           switch (optc)
             {
-              case OPTION_MHEXAGON_V2:
-              case OPTION_MHEXAGON_V3:
-              case OPTION_MHEXAGON_V4:
+              case OPTION_MHEXAGONV2:
+              case OPTION_MHEXAGONV3:
+              case OPTION_MHEXAGONV4:
                 /* -mv* options. */
                 temp_hexagon_arch_name
-                  = hexagon_marchs [optc - OPTION_MHEXAGON_V2].march_name_be;
+                  = hexagon_marchs [optc - OPTION_MHEXAGONV2].march_name_be;
                 break;
 
               default:
@@ -211,4 +253,5 @@ PARSE_AND_LIST_ARGS_CASES=$'
         }
       break;
 '
+
 source_em ${srcdir}/emultempl/needrelax.em

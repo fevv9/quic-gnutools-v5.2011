@@ -47,7 +47,7 @@ static const bfd_arch_info_type hexagon_arch_info [] =
   /* These are the other supported ISAs. */
   HEXAGON (bfd_mach_hexagon_v3, "hexagonv3", FALSE, hexagon_arch_info + 1),
   HEXAGON (bfd_mach_hexagon_v4, "hexagonv4", FALSE, hexagon_arch_info + 2),
-  HEXAGON (bfd_mach_hexagon,   "hexagon",   FALSE, NULL)
+  HEXAGON (bfd_mach_hexagon,    "hexagon",   FALSE, NULL)
 };
 
 /* This is the default ISA. */
@@ -57,10 +57,10 @@ const bfd_arch_info_type bfd_hexagon_arch =
 /* Utility routines.  */
 int hexagon_get_mach PARAMS ((char *));
 
-/** Given CPU type, return its bfd_mach_hexagon_* value.
+/** Given CPU type, return its bfd_mach_hexagon* value.
 
 @param name CPU type.
-@return bfd_mach_hexagon_* value if successful or -1 otherwise.
+@return bfd_mach_hexagon* value if successful or -1 otherwise.
 */
 int
 hexagon_get_mach

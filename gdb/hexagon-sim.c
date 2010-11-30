@@ -54,11 +54,11 @@
 static int qsim_debug = 0;
 static struct serial scb;
 
-char *hexagon_targetargsInfo[SIM_ARG_MAX];
+char *hexagontargetargsInfo[SIM_ARG_MAX];
 static pid_t hexagon_sim_pid = (pid_t) 0;
-static void hexagon_sim_close (int quitting);
+static void hexagonsim_close (int quitting);
 static void hexagon_mourn_inferior (void);
-struct target_ops *hexagon_sim_target = (struct target_ops *)NULL;
+struct target_ops *hexagonsim_target = (struct target_ops *)NULL;
 static int portid = 0;
 static struct hostent *hexagon_hostent = (struct hostent *)NULL;
 static int alarmed = 0;
@@ -70,15 +70,15 @@ char *current_hexagon_target = NULL;
 int HEXAGON_tcl_fe_state = 0;
 
 /* for set globalregs command - contains the user typed string*/
-static char *hexagon_globalregsInfo = NULL;
+static char *hexagonglobalregsInfo = NULL;
 /* for set interrupt command - contains the user typed string*/
-static char *hexagon_Interrupt      = NULL;
+static char *hexagonInterrupt      = NULL;
 /* for hwthrdbg command; 0 indicates s/w thread debug; non-zero indicated 
    h/w thread debug */
-static int hexagon_hwthread_debug = 0;
+static int hexagonhwthread_debug = 0;
 
 /* The list of available "info hexagon " commands.  */
-static struct cmd_list_element *hexagon_cmdlist = NULL;
+static struct cmd_list_element *hexagoncmdlist = NULL;
 
 
 /* maximum message size from RIL */
@@ -114,14 +114,14 @@ static int hexagon_random_port(void)
 
 
 /*
- * function: hexagon_sim_can_run
+ * function: hexagonsim_can_run
  * description:
  * 	- Tries to assure that when create_inferior is called it will be successful.
  *	- The bulk of the code here is geared to reliably finding a port number that 
  *        will work.
  */
 static int
-hexagon_sim_can_run(void)
+hexagonsim_can_run(void)
 {
     extern struct bfd *exec_bfd;
     char *default_host = "localhost";
@@ -208,12 +208,12 @@ hexagon_sim_can_run(void)
 }
 
 /*
- * function: hexagon_sim_exec_simulation
+ * function: hexagonsim_exec_simulation
  * description:
  * 	Call fork/execvp to start the simulator
  */
 static int
-hexagon_sim_exec_simulation(char *sim_name, char *exec_name,
+hexagonsim_exec_simulation(char *sim_name, char *exec_name,
 		         char *args, char **env, int portid)
 {
     char port[11];
@@ -245,14 +245,14 @@ hexagon_sim_exec_simulation(char *sim_name, char *exec_name,
            he should not include the matching executable name, gdb
            will furnish that to the simulator.
  */
-	if (hexagon_targetargsInfo[0]==(char *)0)
+	if (hexagontargetargsInfo[0]==(char *)0)
 	    sim_args[index++] = strdupa (exec_name);
 
         sim_args[index++] = strdupa ("--gdbserv");
         sim_args[index++] = strdupa (port);
 
-	while (hexagon_targetargsInfo[argc])
-            sim_args[index++] = strdupa (hexagon_targetargsInfo[argc++]);
+	while (hexagontargetargsInfo[argc])
+            sim_args[index++] = strdupa (hexagontargetargsInfo[argc++]);
 
 	/*
 	 * This case the user has passed arguments to the program that
@@ -268,7 +268,7 @@ hexagon_sim_exec_simulation(char *sim_name, char *exec_name,
              * exec name prior to the argument list being passed to
              * the executable running on the simulator.
              */
-	    if (hexagon_targetargsInfo[0]!=(char *)0)
+	    if (hexagontargetargsInfo[0]!=(char *)0)
 	        sim_args[index++] = strdupa (exec_name);
 
 	    sim_args[index++] = strdupa (args);
@@ -294,7 +294,7 @@ hexagon_sim_exec_simulation(char *sim_name, char *exec_name,
 			 current_hexagon_target, sim_args, NULL, 
 			 0, 1, 2, 0, &errmsg, &err);
 	if (-1 == hexagon_sim_pid) 
-	    error ("hexagon_sim_exec_simulation: Unable to execute hexagon-sim!");
+	    error ("hexagonsim_exec_simulation: Unable to execute hexagon-sim!");
 
 #else
         execvp(sim_args[0], sim_args); 
@@ -355,7 +355,7 @@ static void hexagon_create_inferior (struct target_ops *ops, char *exec_file,
     if (!THIS_TARGET())
 	return;
 
-    hexagon_sim_exec_simulation("hexagon-sim", exec_file, args, env, portid);
+    hexagonsim_exec_simulation("hexagon-sim", exec_file, args, env, portid);
     sprintf (target_port, ":%d", portid);
     push_remote_target(target_port, 1);
 
@@ -363,7 +363,7 @@ static void hexagon_create_inferior (struct target_ops *ops, char *exec_file,
 }
 
 static void
-hexagon_sim_close (int quitting)
+hexagonsim_close (int quitting)
 {
     if (qsim_debug)
     {
@@ -439,12 +439,12 @@ hexagon_find_new_threads (void)
 }
 
 /*
- * function: hexagon_sim_open
+ * function: hexagonsim_open
  * description:
  *      - Called when the user selects the hexagon-sim target architecture.
  */
 static void
-hexagon_sim_open (char *args, int from_tty)
+hexagonsim_open (char *args, int from_tty)
 {
     if (qsim_debug)
     {
@@ -464,8 +464,8 @@ hexagon_can_use_hw_breakpoint (int type, int cnt, int othertype)
 static void
 hexagon_command (char *args, int from_tty)
 {
-  printf_unfiltered (_("\"hexagon_\" prefix must be followed by the name of an HEXAGON command.\n"));
-  help_list (hexagon_cmdlist, "hexagon ", -1, gdb_stdout);
+  printf_unfiltered (_("\"hexagon\" prefix must be followed by the name of an HEXAGON command.\n"));
+  help_list (hexagoncmdlist, "hexagon ", -1, gdb_stdout);
 }
 
 static void
@@ -615,7 +615,7 @@ hexagon_rtos_info_command (char *args, int from_tty)
   if(current_hexagon_target == NULL)
     error ("Program has no rtos info. Load program first");
     
-  putpkt ("qhexagon_RtosInfo");
+  putpkt ("qhexagonRtosInfo");
   getpkt (&response, &gdb_rsp_ril_info_max_size , 0);
   PRINT_MSG;
 }
@@ -923,7 +923,7 @@ hexagon_globalregs_info_command (char *args, int from_tty)
 }
 
 /* Get the value of a particular register */
-int get_hexagon_globalregs_value (char *args)
+int get_hexagonglobalregs_value (char *args)
 {
 
   LONGEST regVal;
@@ -975,7 +975,7 @@ void
 setglobalregistervalue(char *args, int from_tty, 
                        struct cmd_list_element *cmdlist)
 {
-  char *regName, *regValue, *substr,*hexagon_regbuf = NULL;
+  char *regName, *regValue, *substr,*hexagonregbuf = NULL;
   char tmpbuf[9], message[256];
   int regNum, len=0, result;
   int newValue;   //LONGEST newValue;
@@ -983,31 +983,31 @@ setglobalregistervalue(char *args, int from_tty,
  
   if(current_hexagon_target == NULL)
     error("Program has no global registers. Load program first");
-  else if(hexagon_globalregsInfo == NULL)
+  else if(hexagonglobalregsInfo == NULL)
     error("Invalid register name/value.");
 					
   /*Check for blanks in the user entered string */ 
-   substr = strtok((char*)hexagon_globalregsInfo, " ");
+   substr = strtok((char*)hexagonglobalregsInfo, " ");
    if(substr != NULL)
    {		
-     hexagon_regbuf = (char*)malloc(sizeof(char) * SET_CMD_BUFFER_SIZE);
+     hexagonregbuf = (char*)malloc(sizeof(char) * SET_CMD_BUFFER_SIZE);
 
-     if(hexagon_regbuf == NULL)
+     if(hexagonregbuf == NULL)
         error("Memory allocation for register buffer failed !");
 
      /*clear the temporary buffer */
-     memset(hexagon_regbuf,0,SET_CMD_BUFFER_SIZE);
+     memset(hexagonregbuf,0,SET_CMD_BUFFER_SIZE);
 
      /*extract user string with spaces removed */
-     strcat(hexagon_regbuf, substr);
+     strcat(hexagonregbuf, substr);
      while ( (substr=strtok(NULL, " ")) != NULL)
-       strcat(hexagon_regbuf, substr);
+       strcat(hexagonregbuf, substr);
    }
    else
-     hexagon_regbuf=hexagon_globalregsInfo; 
+     hexagonregbuf=hexagonglobalregsInfo; 
 
   /* Extract the register name whose value is to be set  */
-  regName = strtok(hexagon_regbuf, "=");
+  regName = strtok(hexagonregbuf, "=");
   if(regName == NULL)  
     error("Invalid register name/value.");
   
@@ -1017,7 +1017,7 @@ setglobalregistervalue(char *args, int from_tty,
     error("Invalid register name : %s.",regName );
   
   /* get the register value to be set  */
-  regValue =hexagon_regbuf+strlen(regName)+1;
+  regValue =hexagonregbuf+strlen(regName)+1;
 
   /* parse the new register value and get the decimal value
      expr->elts[2].longconst stores the converted values */
@@ -1049,50 +1049,50 @@ setglobalregistervalue(char *args, int from_tty,
 
   gdb_flush (gdb_stdout);
 
-  /* free resources allocated to hexagon_globalregsinfo */
-  if(hexagon_regbuf != NULL)
-    free (hexagon_regbuf); 
+  /* free resources allocated to hexagonglobalregsinfo */
+  if(hexagonregbuf != NULL)
+    free (hexagonregbuf); 
 
 }  
 
 void init_globalregs()
 {
    /* Chain containing all defined show subcommands.  */
-   struct cmd_list_element *hexagon_showlist = NULL;
+   struct cmd_list_element *hexagonshowlist = NULL;
 
    /* allocate memory for control variable for setshow command */
-   hexagon_globalregsInfo  = (char*)malloc(sizeof(char) * SET_CMD_BUFFER_SIZE);
+   hexagonglobalregsInfo  = (char*)malloc(sizeof(char) * SET_CMD_BUFFER_SIZE);
   
  
-    if(hexagon_globalregsInfo ==  NULL)
+    if(hexagonglobalregsInfo ==  NULL)
         error ("Memory allocation for register buffer failed!");
      /* set global regs */
       add_setshow_string_noescape_cmd ("globalregs",         /* name */
 		   no_class,             /* class category for help list */
-		   &hexagon_globalregsInfo,    /* address of the variable being controlled by this */
+		   &hexagonglobalregsInfo,    /* address of the variable being controlled by this */
            "set HEXAGON global register to the specified value", /* documentation for this cmd */
            "set HEXAGON global register to the specified value", /* documentation for this cmd */
            "set HEXAGON global register to the specified value", /* documentation for this cmd */
 		   &setglobalregistervalue,  /* set cmd func ptr */
 		   NULL,                     /* show cmd fn  ptr */
 		   &setlist,
-		   &hexagon_showlist);
+		   &hexagonshowlist);
 
 
 }
 
 /*
- * function: setHEXAGON_targetargs
+ * function: setHEXAGONtargetargs
  * description:
  * 	- takes a single input string and breaks it up into component
  * 	  parts suitable execvp
  */
 void  
-setHEXAGON_targetargs (char * args, int tty, struct cmd_list_element *c)
+setHEXAGONtargetargs (char * args, int tty, struct cmd_list_element *c)
 {
     ULONGEST addr = *(unsigned long *)c->var;
     char *simargs = (char *) addr;
-    char **targs = hexagon_targetargsInfo;
+    char **targs = hexagontargetargsInfo;
     int index = 0; 
 
     simargs = strtok (simargs, " \t\n");
@@ -1128,11 +1128,11 @@ void init_targetargs()
    /* set global regs */
    add_setshow_string_noescape_cmd ("targetargs",         /* name */
 		            no_class,      /* class category for help list */
-		            &hexagon_targetargsInfo[0],    /* control var address */
+		            &hexagontargetargsInfo[0],    /* control var address */
                     "set HEXAGON target args", /* doc for this cmd */
                     "set HEXAGON target args", /* doc for this cmd */
                     "set HEXAGON target args", /* doc for this cmd */
-		            &setHEXAGON_targetargs, /* set cmd func ptr */
+		            &setHEXAGONtargetargs, /* set cmd func ptr */
 		            NULL,                 /* show cmd fn  ptr */
 		            &setlist,
 		            &targetargsshowlist);
@@ -1160,13 +1160,13 @@ set_HEXAGON_hwthread_debug(char *args, int from_tty, struct cmd_list_element *cm
   if (current_hexagon_target == NULL)
     error ("Cannot set interrupts. Load program first.");
 
-  if (hexagon_hwthread_debug)
+  if (hexagonhwthread_debug)
     {
-      sprintf(message, "hexagon_hwThreadDebug,%d", 1);
+      sprintf(message, "hexagonhwThreadDebug,%d", 1);
     }
   else
     {
-      sprintf(message, "hexagon_hwThreadDebug,%d", 0);
+      sprintf(message, "hexagonhwThreadDebug,%d", 0);
       
     }
     
@@ -1189,11 +1189,11 @@ set_HEXAGON_interrupt(char *args, int from_tty, struct cmd_list_element *cmdlist
   if (current_hexagon_target == NULL)
     error ("Cannot set interrupts. Load program first.");
  
-  if (hexagon_Interrupt == NULL)
+  if (hexagonInterrupt == NULL)
      error ("Usage: set interrupt <interrupt no> <delay> <period>.");
   
   /*Extract watch point type*/ 
-  substr = strtok(hexagon_Interrupt, " ");
+  substr = strtok(hexagonInterrupt, " ");
   if(substr != NULL)
   {
     /* parse user input and get decimal values, This
@@ -1247,20 +1247,20 @@ set_HEXAGON_interrupt(char *args, int from_tty, struct cmd_list_element *cmdlist
 void init_set_hwthread_debug_only_mode()
 {
   /* Chain containing all defined show subcommands.  */
-   struct cmd_list_element *hexagon_showlist = NULL;
+   struct cmd_list_element *hexagonshowlist = NULL;
 
 
    /* set hwthrdbg */
    add_setshow_zinteger_cmd ("hwthrdbg",        /* name */
                     no_class,          /* class category for help list */
-                    &hexagon_hwthread_debug, /*address of the variable being controlled by this */
+                    &hexagonhwthread_debug, /*address of the variable being controlled by this */
                     "switch to hw thread debug more", /* documentation for this cmd */
                     "switch to hw thread debug more", /* documentation for this cmd */
                     "switch to hw thread debug more", /* documentation for this cmd */
                     &set_HEXAGON_hwthread_debug,          /* set cmd func ptr */
                     NULL,                     /* show cmd fn  ptr */
                     &setlist,
-                    &hexagon_showlist);
+                    &hexagonshowlist);
    
    
 }
@@ -1269,33 +1269,33 @@ void init_set_hwthread_debug_only_mode()
 void init_set_interrupt()
 {
    /* Chain containing all defined show subcommands.  */
-   struct cmd_list_element *hexagon_showlist = NULL;
+   struct cmd_list_element *hexagonshowlist = NULL;
    struct cmd_list_element *c  ;
 
    /* for set interrupt command - contains the user typed string*/
-   hexagon_Interrupt = (char*)malloc(sizeof(char) * SET_CMD_BUFFER_SIZE);
+   hexagonInterrupt = (char*)malloc(sizeof(char) * SET_CMD_BUFFER_SIZE);
  
-   if(hexagon_Interrupt == NULL)
+   if(hexagonInterrupt == NULL)
         error ("Memory allocation for interrupt buffer failed !");
 
    /* set interrupt */
    add_setshow_string_noescape_cmd ("interrupt",               /* name */
 		             no_class,                 /* class category for help list */
-		             &hexagon_Interrupt,             /*address of the variable being controlled by this */
+		             &hexagonInterrupt,             /*address of the variable being controlled by this */
        	             "generate interrupt in HEXAGON core", /* documentation for this cmd */
        	             "generate interrupt in HEXAGON core", /* documentation for this cmd */
        	             "generate interrupt in HEXAGON core", /* documentation for this cmd */
 		             &set_HEXAGON_interrupt,          /* set cmd func ptr */
 		             NULL,                     /* show cmd fn  ptr */
 		             &setlist,
-		             &hexagon_showlist);
+		             &hexagonshowlist);
 
 
 
 
 
 /*c = (add_set_cmd ("interrupt", no_class, var_string,
-		   (char *) &hexagon_Interrupt,
+		   (char *) &hexagonInterrupt,
 		   "Set interrupt in HEXAGON core", 
            &sethistlist));
   set_cmd_sfunc (c, set_HEXAGON_interrupt);      
@@ -1385,7 +1385,7 @@ hexagon_msg_channels_info_command (char *args, int from_tty)
  if(current_hexagon_target == NULL)
    error ("Program has no message channels info. Load program first");
     
- putpkt ("hexagon_MsgChannelInfo");
+ putpkt ("hexagonMsgChannelInfo");
  getpkt (&response, &gdb_rsp_ril_info_max_size , 0);
  if(strncmp(response,"E00", strlen("E00"))==0)
     warning ("No message channel information.");
@@ -1415,8 +1415,8 @@ hexagon_msg_queues_info_command (char *args, int from_tty)
   // ASG - bug 1436.  Need to pass whole string
   //sscanf(args, "%s", &msgStr[0]);
     /* send the message out */
-  //sprintf(pktStr, "hexagon_MsgQueueInfo,%s", msgStr);
-  sprintf(pktStr, "hexagon_MsgQueueInfo,%s", args);
+  //sprintf(pktStr, "hexagonMsgQueueInfo,%s", msgStr);
+  sprintf(pktStr, "hexagonMsgQueueInfo,%s", args);
   putpkt (pktStr);
 
   /* get the response */
@@ -1438,7 +1438,7 @@ hexagon_timers_info_command (char *args, int from_tty)
  if(current_hexagon_target == NULL)
    error ("Program has no timer info. Load program first");
     
- putpkt ("hexagon_TimerInfo");
+ putpkt ("hexagonTimerInfo");
  getpkt (&response, &gdb_rsp_ril_info_max_size , 0);
  if(strncmp(response,"E00", strlen("E00"))==0)
     warning ("No timer information.");
@@ -1476,7 +1476,7 @@ hexagon_mutex_info_command (char *args, int from_tty)
   mutexID = expr->elts[2].longconst;
     
     /* send the message out */
-  sprintf(pktStr, "hexagon_MutexInfo,%x", mutexID);
+  sprintf(pktStr, "hexagonMutexInfo,%x", mutexID);
   putpkt (pktStr);
 
   /* get the response */
@@ -1509,7 +1509,7 @@ hexagon_interrupt_map_info_command(char *args, int from_tty)
 
 
 void 
-hexagon_interrupt_remap(char *args, int from_tty)
+hexagoninterrupt_remap(char *args, int from_tty)
 {
   char message[256] = {'0'};
   char tmpbuf [25]  = {'0'};
@@ -1567,7 +1567,7 @@ hexagon_interrupt_remap(char *args, int from_tty)
 
 }
 void 
-hexagon_interrupt_reset (char *args, int from_tty)
+hexagoninterrupt_reset (char *args, int from_tty)
 {
   char message[256] = {'0'};
   char tmpbuf [25]  = {'0'};
@@ -1649,7 +1649,7 @@ init_set_interruptmap(void)
 {
 
   struct cmd_list_element *c;
-  c = add_com ("remap", no_class, hexagon_interrupt_remap,
+  c = add_com ("remap", no_class, hexagoninterrupt_remap,
 	       "Remap an interrupt.");
   set_cmd_completer (c, location_completer);
 }
@@ -1659,15 +1659,15 @@ init_reset_interrupt(void)
 
   struct cmd_list_element *c;
 
- /* add_prefix_cmd ("reset", no_class, hexagon_interrupt_reset,
+ /* add_prefix_cmd ("reset", no_class, hexagoninterrupt_reset,
                   concat("Use 'reset interrupt' "\
                   "to reset periodic/pin interrupts.", NULL),
                   &resetlist, "reset ", 1, &cmdlist);
-  c = add_cmd ("interrupt", no_class, hexagon_interrupt_reset,
+  c = add_cmd ("interrupt", no_class, hexagoninterrupt_reset,
            "Usage: reset interrupt <number> [both] <periodic> <pin>.",
            &resetlist);*/
   
-  c = add_com ("reset-interrupt", no_class, hexagon_interrupt_reset,
+  c = add_com ("reset-interrupt", no_class, hexagoninterrupt_reset,
 	       "Reset an interrupt.\n"\
            "Usage: reset-interrupt <number> [both] <periodic> <pin>."); 
   set_cmd_completer (c, location_completer);
@@ -1700,13 +1700,13 @@ _initialize_hexagon_sim (void)
 
   add_prefix_cmd ("hexagon", class_support, hexagon_command,
 		  _("Various HEXAGON specific commands."),
-		  &hexagon_cmdlist, "hexagon ", 0, &cmdlist);
+		  &hexagoncmdlist, "hexagon ", 0, &cmdlist);
 
   add_cmd ("watch", class_breakpoint, hexagon_watch_command,
 _("set either a cycle count or tlbmiss breakpoint.\n\
 	hexagon watch cycle <cycle count>\n\
 	hexagon watch tlbmiss <32 bit addr> <page size in bits>\n"),
-	   &hexagon_cmdlist);
+	   &hexagoncmdlist);
 
 
   t->to_shortname = "hexagon-sim";
@@ -1714,15 +1714,15 @@ _("set either a cycle count or tlbmiss breakpoint.\n\
   t->to_doc = "Qualcomm Hexagon Simulation interface, used for debugging software \n\
 running on the Hexagon (hexagon-sim) simulator";
 
-  t->to_open = hexagon_sim_open;
-  t->to_close = hexagon_sim_close;
-  t->to_can_run = hexagon_sim_can_run;
+  t->to_open = hexagonsim_open;
+  t->to_close = hexagonsim_close;
+  t->to_can_run = hexagonsim_can_run;
   t->to_create_inferior = hexagon_create_inferior;
   t->to_can_use_hw_breakpoint = hexagon_can_use_hw_breakpoint;
 
   /* Register target.  */
   add_target (t);
-  hexagon_sim_target = t;
+  hexagonsim_target = t;
   current_hexagon_target = TARGET_NAME;
 
   /* info hexagon-rtos */

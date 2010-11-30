@@ -306,8 +306,6 @@ char *hexagon_insn_write
 void hexagon_packet_init (hexagon_packet *);
 void hexagon_packet_begin (hexagon_packet *);
 void hexagon_packet_end (hexagon_packet *);
-void hexagon_packet_end_inner (hexagon_packet *);
-void hexagon_packet_end_outer (hexagon_packet *);
 void hexagon_packet_end_lookahead (int *inner_p, int *);
 void hexagon_packet_check (hexagon_packet *);
 void hexagon_packet_unfold (hexagon_packet *);
@@ -335,7 +333,7 @@ int hexagon_prefix_kext (hexagon_packet_insn *, long);
 char *hexagon_parse_immediate
   (hexagon_packet_insn *, hexagon_packet_insn *, const hexagon_operand *,
    char *, long *, char **);
-static char *hexagon_parse_pic (hexagon_pic_type *);
+static char *hexagon_parse_pic (hexagon_pic_type *, char **);
 int hexagon_gp_const_lookup (char *str, char *);
 segT hexagon_create_sbss_section (const char *, flagword, unsigned int);
 segT hexagon_create_scom_section (const char *, flagword, unsigned int);
@@ -360,6 +358,7 @@ int hexagon_has_mem (const hexagon_packet *);
 int hexagon_has_store (const hexagon_packet *);
 int hexagon_has_store_not (const hexagon_packet *);
 int hexagon_has_but_ax (const hexagon_packet *);
+int hexagon_has_solo (const hexagon_packet *);
 int hexagon_is_nop_keep (const hexagon_packet *, int);
 int hexagon_find_noslot1 (const hexagon_packet *, size_t);
 void hexagon_check_register
@@ -369,7 +368,6 @@ void hexagon_check_predicate (int, const hexagon_opcode *);
 void hexagon_check_implicit
   (const hexagon_opcode *, unsigned int, int, hexagon_reg_score *, const char *);
 void hexagon_check_implicit_predicate (const hexagon_opcode *, unsigned int, int);
-int hexagon_packet_check_solo (const hexagon_packet *);
 int hexagon_relax_branch (fragS *);
 int hexagon_relax_falign (fragS *);
 long hexagon_relax_branch_try (fragS *, segT, long);
@@ -474,12 +472,12 @@ struct option md_longopts [] =
 #define OPTION_HEXAGON_NO_2MEMORY (OPTION_MD_BASE + 5)
     { "mno-dual-memory", no_argument, NULL, OPTION_HEXAGON_NO_2MEMORY },
 /* Code in md_parse_option () assumes that the -mv* options, are sequential. */
-#define OPTION_HEXAGON_MHEXAGON_V2 (OPTION_MD_BASE + 6)
-    { "mv2", no_argument, NULL, OPTION_HEXAGON_MHEXAGON_V2 },
-#define OPTION_HEXAGON_MHEXAGON_V3 (OPTION_MD_BASE + 7)
-    { "mv3", no_argument, NULL, OPTION_HEXAGON_MHEXAGON_V3 },
-#define OPTION_HEXAGON_MHEXAGON_V4 (OPTION_MD_BASE + 8)
-    { "mv4", no_argument, NULL, OPTION_HEXAGON_MHEXAGON_V4 },
+#define OPTION_HEXAGON_MHEXAGONV2 (OPTION_MD_BASE + 6)
+    { "mv2", no_argument, NULL, OPTION_HEXAGON_MHEXAGONV2 },
+#define OPTION_HEXAGON_MHEXAGONV3 (OPTION_MD_BASE + 7)
+    { "mv3", no_argument, NULL, OPTION_HEXAGON_MHEXAGONV3 },
+#define OPTION_HEXAGON_MHEXAGONV4 (OPTION_MD_BASE + 8)
+    { "mv4", no_argument, NULL, OPTION_HEXAGON_MHEXAGONV4 },
 #define OPTION_HEXAGON_MARCH (OPTION_MD_BASE + 9)
     { "march", required_argument, NULL, OPTION_HEXAGON_MARCH },
 #define OPTION_HEXAGON_MCPU (OPTION_MD_BASE + 10)
@@ -690,19 +688,19 @@ md_parse_option
         }
       break;
 
-    case OPTION_HEXAGON_MHEXAGON_V2:
-    case OPTION_HEXAGON_MHEXAGON_V3:
-    case OPTION_HEXAGON_MHEXAGON_V4:
+    case OPTION_HEXAGON_MHEXAGONV2:
+    case OPTION_HEXAGON_MHEXAGONV3:
+    case OPTION_HEXAGON_MHEXAGONV4:
     case OPTION_HEXAGON_MARCH:
     case OPTION_HEXAGON_MCPU:
       switch (c)
         {
-          case OPTION_HEXAGON_MHEXAGON_V2:
-          case OPTION_HEXAGON_MHEXAGON_V3:
-          case OPTION_HEXAGON_MHEXAGON_V4:
+          case OPTION_HEXAGON_MHEXAGONV2:
+          case OPTION_HEXAGON_MHEXAGONV3:
+          case OPTION_HEXAGON_MHEXAGONV4:
             /* -mv* options. */
             temp_hexagon_mach_type
-              = hexagon_marchs [c - OPTION_HEXAGON_MHEXAGON_V2].march_name_be;
+              = hexagon_marchs [c - OPTION_HEXAGON_MHEXAGONV2].march_name_be;
             break;
 
           default:
@@ -1114,6 +1112,7 @@ hexagon_relax_falign
       hexagon_shuffle_prepare (&packet);
       if (hexagon_shuffle_helper (&packet, 0, NULL))
         {
+          /* Padding resulted in a well-formed packet. */
           hexagon_packet_fold (&packet);
           hexagon_packet_unpad (&packet);
           after = packet.size;
@@ -1140,6 +1139,8 @@ hexagon_relax_falign
         }
       else
         {
+          /* In order to avoid a malformed packet, convert the padding into a
+             padding packet. */
           hexagon_packet_fold (&packet);
           after = apacket->size;
 
@@ -1276,7 +1277,7 @@ hexagon_relax_falign_try
                     next = 0;
 
                   room = MAX_PACKET_INSNS - MAX (size, next);
-                  if (room)
+                  if (room && !hexagon_has_solo (zpacket))
                     {
                       zpacket->ddpad += MIN (left, room);
                       left           -= MIN (left, room);
@@ -1583,7 +1584,7 @@ hexagon_init
       hexagon_pairing        &= hexagon_if_arch_pairs ();
       hexagon_pairing_branch &= hexagon_pairing;
       hexagon_pairing_duplex &= hexagon_pairing;
-      hexagon_relax          &= hexagon_extender & hexagon_pairing_branch;
+      hexagon_relax          &= hexagon_extender;
       hexagon_relax_long     &= hexagon_relax;
 
       /* Tell `.option' it's too late.  */
@@ -1717,16 +1718,21 @@ hexagon_parse_immediate
   const hexagon_operand *operandx;
   long value = 0;
   long xvalue = 0;
-  int is_x = FALSE, is_may_x = FALSE, is_not_x = FALSE;
+  int is_may_x = FALSE, is_x = FALSE, is_lbs = FALSE;
   int is_relax = FALSE;
   int is_lo16 = FALSE, is_hi16 = FALSE;
   char *pic_line;
-  hexagon_pic_type pic_type = PIC_NONE;
+  hexagon_pic_type pic_type;
 
-  /* We only have the mandatory '#' for immediates that are NOT pc relative */
+  is_may_x = (((insn->opcode->attributes & EXTENDABLE_LOWER_CASE_IMMEDIATE)
+               && ISLOWER (operand->enc_letter))
+              || ((insn->opcode->attributes & EXTENDABLE_UPPER_CASE_IMMEDIATE)
+                  && ISUPPER (operand->enc_letter)));
+
+  /* We only have the mandatory '#' for immediates that are NOT PC-relative */
   if (*str == '#')
     {
-      is_not_x = (operand->flags & HEXAGON_OPERAND_PC_RELATIVE);
+      is_lbs = (operand->flags & HEXAGON_OPERAND_PC_RELATIVE);
       str++;
       if (*str == '#')
         {
@@ -1735,20 +1741,15 @@ hexagon_parse_immediate
         }
       else
         {
-          is_x = (insn->opcode->attributes & MUST_EXTEND);
+          is_x = (hexagon_extender) && (insn->opcode->attributes & MUST_EXTEND);
         }
-      is_not_x = is_not_x && !is_x;
+      is_lbs = is_lbs && !is_x;
     }
   else if (!(operand->flags & HEXAGON_OPERAND_PC_RELATIVE))
     return NULL;
 
-  is_may_x = (((insn->opcode->attributes & EXTENDABLE_LOWER_CASE_IMMEDIATE)
-               && ISLOWER (operand->enc_letter))
-              || ((insn->opcode->attributes & EXTENDABLE_UPPER_CASE_IMMEDIATE)
-                  && ISUPPER (operand->enc_letter)));
-
-  is_relax = ENCODE_RELAX (operand->reloc_type)
-             && !is_not_x && (is_x || is_may_x);
+  is_relax = is_may_x && !is_x && !is_lbs
+             && ENCODE_RELAX (operand->reloc_type);
 
   if (is_x && !insn->opcode->map)
     {
@@ -1784,23 +1785,31 @@ hexagon_parse_immediate
     }
 
   hold = input_line_pointer;
-  input_line_pointer = str;
+    {
+      input_line_pointer = str;
 
-  pic_line = hexagon_parse_pic (&pic_type);
-  if (pic_line)
-    input_line_pointer = pic_line;
+      pic_type = PIC_NONE;
+      pic_line = hexagon_parse_pic (&pic_type, &str);
+      if (pic_line)
+        input_line_pointer = pic_line;
 
-  expression (&exp);
+      expression (&exp);
 
-  str = input_line_pointer;
+      if (!pic_line)
+        str = input_line_pointer;
+    }
   input_line_pointer = hold;
 
+  operandx = NULL;
   if (pic_type == PIC_GOT)
-    operand = hexagon_operand_find (operand, "got");
+    operandx = hexagon_operand_find (operand, "got");
   else if (pic_type == PIC_GOTOFF)
-    operand = hexagon_operand_find (operand, "gotoff");
+    operandx = hexagon_operand_find (operand, "gotoff");
   else if (pic_type == PIC_PLT)
-    operand = hexagon_operand_find (operand, "plt");
+    operandx = hexagon_operand_find (operand, "plt");
+  if (operandx)
+    /* Get new PIC operand. */
+    operand = operandx;
 
   if (is_lo16 || is_hi16)
     {
@@ -3572,7 +3581,7 @@ hexagon_assemble
 		  else if (operand->flags & HEXAGON_OPERAND_IS_IMMEDIATE)
 		    {
 		      str = hexagon_parse_immediate
-			      (ainsn, aprefix, operand, str, &op_val,
+			      (ainsn, aprefix, operand, op_str, &op_val,
                                !pair? &errmsg: NULL);
 		      if (!str)
 			goto NEXT_OPCODE;
@@ -3609,6 +3618,7 @@ hexagon_assemble
 
                   /* Store the operand value in case the insn is an alias. */
                   assert (op_ndx < MAX_OPERANDS);
+                  assert (str);
 
                   op_args [op_ndx].operand = operand;
                   op_args [op_ndx].value = op_val;
@@ -4268,14 +4278,14 @@ hexagon_got_frag
 
 static char *
 hexagon_parse_pic
-(hexagon_pic_type *gottype)
+(hexagon_pic_type *type, char **extra)
 {
   static const struct
     {
       const char *str;
-      const hexagon_pic_type gottype;
+      const hexagon_pic_type type;
     }
-  gotrel [] =
+  pic [] =
     {
       { "GOTOFF", PIC_GOTOFF },
       { "GOT", PIC_GOT },
@@ -4288,40 +4298,42 @@ hexagon_parse_pic
     if (is_end_of_line [(unsigned char) *cp])
       return NULL;
 
-  for (j = 0; j < ARRAY_SIZE (gotrel); j++)
+  for (j = 0; j < ARRAY_SIZE (pic); j++)
     {
       size_t len;
 
-      len = strlen (gotrel [j].str);
-      if (!(strncasecmp (cp + 1, gotrel [j].str, len)))
+      len = strlen (pic [j].str);
+      if (!(strncasecmp (cp + 1, pic [j].str, len)))
 	{
           ptrdiff_t before, after;
-          char *tmpbuf, *past;
-
-          /* Replace the relocation token with ' ', so that
-              errors like foo@GOTOFF1 will be detected.  */
+          char *tmp, *past;
 
           /* The length of the before part of our input line.  */
           before = cp - input_line_pointer;
 
           /* The after part goes from after the relocation token until
-              (and including) an end_of_line char.  Don't use strlen
-              here as the end_of_line char may not be a NUL.  */
+             (and including) an end_of_line char.  Don't use strlen
+             here as the end_of_line char may not be a NUL.  */
           past = cp + 1 + len;
           for (cp = past; !is_end_of_line [(unsigned char) *cp]; cp++)
             ;
           after = cp - past;
 
           /* Allocate and form string.  */
-          tmpbuf = xmalloc (before + after + 2);
+          tmp = xmalloc (before + after + 2);
 
-          memcpy (tmpbuf, input_line_pointer, before);
-          tmpbuf [before] = ' ';
-          memcpy (tmpbuf + before + 1, past, after);
-          tmpbuf [before + after + 1] = '\0';
+          strncpy (tmp, input_line_pointer, before);
+          /* Replace the '@' with ' ', so that errors like "foo@GOTOFF1"
+             will be detected.  */
+          tmp [before] = ' ';
+          strncpy (tmp + before + 1, past, after);
+          tmp [before + after + 1] = '\0';
 
-          *gottype = gotrel [j].gottype;
-          return (tmpbuf);
+          *type = pic [j].type;
+          if (extra)
+            *extra = past;
+
+          return (tmp);
 	}
     }
 
@@ -4349,10 +4361,9 @@ hexagon_cons_fix_new
 
         case 4:
 	  {
-	    expressionS exptmp;
-	    char *save;
-	    char *picptr;
-	    hexagon_pic_type pic;
+	    expressionS tmp;
+	    char *save, *pic_line;
+	    hexagon_pic_type pictype;
 
             r_type = BFD_RELOC_32;
 
@@ -4360,16 +4371,16 @@ hexagon_cons_fix_new
 	    if (!(strncmp (save, "@GOT", 4)))
               {
                 /* Handle GOT and PLT expressions. */
-                picptr = hexagon_parse_pic (&pic);
-                if (picptr)
+                pic_line = hexagon_parse_pic (&pictype, NULL);
+                if (pic_line)
                   {
-                    input_line_pointer = picptr;
-                    expression (&exptmp);
-                    exp->X_add_number += exptmp.X_add_number;
+                    input_line_pointer = pic_line;
+                    expression (&tmp);
+                    exp->X_add_number += tmp.X_add_number;
 
-                    if (pic == PIC_GOTOFF)
+                    if (pictype == PIC_GOTOFF)
                       r_type = BFD_RELOC_32_GOTOFF;
-                    else if (pic == PIC_GOT)
+                    else if (pictype == PIC_GOT)
                       r_type = BFD_RELOC_HEXAGON_GOT_32;
                   }
 
@@ -5589,7 +5600,7 @@ hexagon_packet_end
     */
 
       /* Check for a solo instruction in a packet with :endloop0. */
-      if (hexagon_packet_check_solo (apacket))
+      if (hexagon_has_solo (apacket))
         as_bad (_("packet marked with `:endloop0' cannot contain a solo instruction."));
     }
 
@@ -5601,7 +5612,7 @@ hexagon_packet_end
                   "modify registers `SA1', `LC1' or `PC'."));
 
       /* Check for a solo instruction in a packet with :endloop1. */
-      if (hexagon_packet_check_solo (apacket))
+      if (hexagon_has_solo (apacket))
         as_bad (_("packet marked with `:endloop1' cannot contain a solo instruction."));
     }
 
@@ -5646,7 +5657,7 @@ hexagon_packet_end
 }
 
 int
-hexagon_packet_check_solo
+hexagon_has_solo
 (const hexagon_packet *apacket)
 {
   int solo;
@@ -5658,51 +5669,6 @@ hexagon_packet_check_solo
       solo = TRUE;
 
   return (solo);
-}
-
-/** Validate end of inner loop packet.
-*/
-void
-hexagon_packet_end_inner
-(hexagon_packet *apacket)
-{
-  /* Check whether registers updated by :endloop0 are updated in packet. */
-  if (cArray [HEXAGON_P30].used | cArray [HEXAGON_SR].used
-      | cArray [HEXAGON_SA0].used | cArray [HEXAGON_LC0].used | cArray [HEXAGON_PC].used)
-    as_bad (_("packet marked with `:endloop0' cannot contain instructions that " \
-              "modify registers `C4/P3:0', `C8/USR', `SA0', `LC0' or `PC'."));
-
-  /* Although it may be dangerous to modify P3 then, legacy code is full of this. */
-/*
-  if (pArray [3])
-    as_warn (_("packet marked with `:endloop0' that contain instructions that " \
-               "modify register `p3' may have undefined results if "
-               "ending a pipelined loop."));
-*/
-
-  /* Check for a solo instruction in a packet with :endloop0. */
-  if (hexagon_packet_check_solo (apacket))
-    as_bad (_("packet marked with `:endloop0' cannot contain a solo instruction."));
-
-  apacket->is_inner = TRUE;
-}
-
-/** Validate end of outer loop packet.
-*/
-void
-hexagon_packet_end_outer
-(hexagon_packet *apacket)
-{
-  /* Check whether registers updated by :endloop1 are updated in packet. */
-  if (cArray [HEXAGON_SA1].used | cArray [HEXAGON_LC1].used | cArray [HEXAGON_PC].used)
-    as_bad (_("packet marked with `:endloop1' cannot contain instructions that " \
-              "modify registers `SA1', `LC1' or `PC'."));
-
-  /* Check for a solo instruction in a packet with :endloop1. */
-  if (hexagon_packet_check_solo (apacket))
-    as_bad (_("packet marked with `:endloop1' cannot contain a solo instruction."));
-
-  apacket->is_outer = TRUE;
 }
 
 /*

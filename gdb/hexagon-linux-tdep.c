@@ -439,15 +439,20 @@ hexagon_software_single_step (struct frame_info *frame)
   return 1;
 }
 
-
 /* function: hexagon_linux_init_abi
    description:
 	- Generic GNU/Linux ABI settings
 */
+extern CORE_ADDR
+hexagon_push_dummy_call (struct gdbarch *gdbarch, struct value *function,
+                     struct regcache *regcache, CORE_ADDR bp_addr,
+                     int nargs, struct value **args, CORE_ADDR sp,
+		     int struct_return, CORE_ADDR struct_addr);
 static void
 hexagon_linux_init_abi (struct gdbarch_info info, struct gdbarch *gdbarch)
 {
   set_gdbarch_software_single_step (gdbarch, hexagon_software_single_step);
+  set_gdbarch_push_dummy_call (gdbarch, hexagon_push_dummy_call);
   set_gdbarch_decr_pc_after_break (gdbarch, 4);
 }
 

@@ -417,239 +417,239 @@ static struct hexagon_system_register_offsets hexagon_reg_offset_v4 =
  * mapping structure.  Trigger a segv if usage is made prior to setting
  * the pointer.
  */
-extern struct hexagon_system_register_offsets *hexagon_RegOffset;
-#define hexagon_stopme(a) a
+extern struct hexagon_system_register_offsets *hexagonRegOffset;
+#define hexagonstopme(a) a
 
 #undef REG_ACC0
-#define REG_ACC0 hexagon_RegOffset?hexagon_RegOffset->reg_acc0:hexagon_stopme(-1)
+#define REG_ACC0 hexagonRegOffset?hexagonRegOffset->reg_acc0:hexagonstopme(-1)
 #undef REG_ACC1
-#define REG_ACC1 hexagon_RegOffset?hexagon_RegOffset->reg_acc1:hexagon_stopme(-1)
+#define REG_ACC1 hexagonRegOffset?hexagonRegOffset->reg_acc1:hexagonstopme(-1)
 #undef REG_AVS
-#define REG_AVS hexagon_RegOffset?hexagon_RegOffset->reg_avs:hexagon_stopme(-1)
+#define REG_AVS hexagonRegOffset?hexagonRegOffset->reg_avs:hexagonstopme(-1)
 #undef REG_BADVA
-#define REG_BADVA hexagon_RegOffset?hexagon_RegOffset->reg_badva:hexagon_stopme(-1)
+#define REG_BADVA hexagonRegOffset?hexagonRegOffset->reg_badva:hexagonstopme(-1)
 #undef REG_BADVA0
-#define REG_BADVA0 hexagon_RegOffset?hexagon_RegOffset->reg_badva0:hexagon_stopme(-1)
+#define REG_BADVA0 hexagonRegOffset?hexagonRegOffset->reg_badva0:hexagonstopme(-1)
 #undef REG_BADVA1
-#define REG_BADVA1 hexagon_RegOffset?hexagon_RegOffset->reg_badva1:hexagon_stopme(-1)
+#define REG_BADVA1 hexagonRegOffset?hexagonRegOffset->reg_badva1:hexagonstopme(-1)
 #undef REG_BRKPTCFG0
-#define REG_BRKPTCFG0 hexagon_RegOffset?hexagon_RegOffset->reg_brkptcfg0:hexagon_stopme(-1)
+#define REG_BRKPTCFG0 hexagonRegOffset?hexagonRegOffset->reg_brkptcfg0:hexagonstopme(-1)
 #undef REG_BRKPTCFG1
-#define REG_BRKPTCFG1 hexagon_RegOffset?hexagon_RegOffset->reg_brkptcfg1:hexagon_stopme(-1)
+#define REG_BRKPTCFG1 hexagonRegOffset?hexagonRegOffset->reg_brkptcfg1:hexagonstopme(-1)
 #undef REG_BRKPTINFO
-#define REG_BRKPTINFO hexagon_RegOffset?hexagon_RegOffset->reg_brkptinfo:hexagon_stopme(-1)
+#define REG_BRKPTINFO hexagonRegOffset?hexagonRegOffset->reg_brkptinfo:hexagonstopme(-1)
 #undef REG_BRKPTPC0
-#define REG_BRKPTPC0 hexagon_RegOffset?hexagon_RegOffset->reg_brkptpc0:hexagon_stopme(-1)
+#define REG_BRKPTPC0 hexagonRegOffset?hexagonRegOffset->reg_brkptpc0:hexagonstopme(-1)
 #undef REG_BRKPTPC1
-#define REG_BRKPTPC1 hexagon_RegOffset?hexagon_RegOffset->reg_brkptpc1:hexagon_stopme(-1)
+#define REG_BRKPTPC1 hexagonRegOffset?hexagonRegOffset->reg_brkptpc1:hexagonstopme(-1)
 #undef REG_CCR
-#define REG_CCR hexagon_RegOffset?hexagon_RegOffset->reg_ccr:hexagon_stopme(-1)
+#define REG_CCR hexagonRegOffset?hexagonRegOffset->reg_ccr:hexagonstopme(-1)
 #undef REG_CFGBASE
-#define REG_CFGBASE hexagon_RegOffset?hexagon_RegOffset->reg_cfgbase:hexagon_stopme(-1)
+#define REG_CFGBASE hexagonRegOffset?hexagonRegOffset->reg_cfgbase:hexagonstopme(-1)
 #undef REG_CHICKEN
-#define REG_CHICKEN hexagon_RegOffset?hexagon_RegOffset->reg_chicken:hexagon_stopme(-1)
+#define REG_CHICKEN hexagonRegOffset?hexagonRegOffset->reg_chicken:hexagonstopme(-1)
 #undef REG_CS0
-#define REG_CS0 hexagon_RegOffset?hexagon_RegOffset->reg_cs0:hexagon_stopme(-1)
+#define REG_CS0 hexagonRegOffset?hexagonRegOffset->reg_cs0:hexagonstopme(-1)
 #undef REG_CS1
-#define REG_CS1 hexagon_RegOffset?hexagon_RegOffset->reg_cs1:hexagon_stopme(-1)
+#define REG_CS1 hexagonRegOffset?hexagonRegOffset->reg_cs1:hexagonstopme(-1)
 #undef REG_DIAG
-#define REG_DIAG hexagon_RegOffset?hexagon_RegOffset->reg_diag:hexagon_stopme(-1)
+#define REG_DIAG hexagonRegOffset?hexagonRegOffset->reg_diag:hexagonstopme(-1)
 #undef REG_ELR
-#define REG_ELR hexagon_RegOffset?hexagon_RegOffset->reg_elr:hexagon_stopme(-1)
+#define REG_ELR hexagonRegOffset?hexagonRegOffset->reg_elr:hexagonstopme(-1)
 #undef REG_EVB
-#define REG_EVB hexagon_RegOffset?hexagon_RegOffset->reg_evb:hexagon_stopme(-1)
+#define REG_EVB hexagonRegOffset?hexagonRegOffset->reg_evb:hexagonstopme(-1)
 #undef REG_FP
-#define REG_FP hexagon_RegOffset?hexagon_RegOffset->reg_fp:hexagon_stopme(-1)
+#define REG_FP hexagonRegOffset?hexagonRegOffset->reg_fp:hexagonstopme(-1)
 #undef REG_G0
-#define REG_G0 hexagon_RegOffset?hexagon_RegOffset->reg_g0:hexagon_stopme(-1)
+#define REG_G0 hexagonRegOffset?hexagonRegOffset->reg_g0:hexagonstopme(-1)
 #undef REG_G1
-#define REG_G1 hexagon_RegOffset?hexagon_RegOffset->reg_g1:hexagon_stopme(-1)
+#define REG_G1 hexagonRegOffset?hexagonRegOffset->reg_g1:hexagonstopme(-1)
 #undef REG_G2
-#define REG_G2 hexagon_RegOffset?hexagon_RegOffset->reg_g2:hexagon_stopme(-1)
+#define REG_G2 hexagonRegOffset?hexagonRegOffset->reg_g2:hexagonstopme(-1)
 #undef REG_G3
-#define REG_G3 hexagon_RegOffset?hexagon_RegOffset->reg_g3:hexagon_stopme(-1)
+#define REG_G3 hexagonRegOffset?hexagonRegOffset->reg_g3:hexagonstopme(-1)
 #undef REG_GP
-#define REG_GP hexagon_RegOffset?hexagon_RegOffset->reg_gp:hexagon_stopme(-1)
+#define REG_GP hexagonRegOffset?hexagonRegOffset->reg_gp:hexagonstopme(-1)
 #undef REG_HTID
-#define REG_HTID hexagon_RegOffset?hexagon_RegOffset->reg_htid:hexagon_stopme(-1)
+#define REG_HTID hexagonRegOffset?hexagonRegOffset->reg_htid:hexagonstopme(-1)
 #undef REG_IAD
-#define REG_IAD hexagon_RegOffset?hexagon_RegOffset->reg_iad:hexagon_stopme(-1)
+#define REG_IAD hexagonRegOffset?hexagonRegOffset->reg_iad:hexagonstopme(-1)
 #undef REG_IAHL
-#define REG_IAHL hexagon_RegOffset?hexagon_RegOffset->reg_iahl:hexagon_stopme(-1)
+#define REG_IAHL hexagonRegOffset?hexagonRegOffset->reg_iahl:hexagonstopme(-1)
 #undef REG_IEL
-#define REG_IEL hexagon_RegOffset?hexagon_RegOffset->reg_iel:hexagon_stopme(-1)
+#define REG_IEL hexagonRegOffset?hexagonRegOffset->reg_iel:hexagonstopme(-1)
 #undef REG_IMASK
-#define REG_IMASK hexagon_RegOffset?hexagon_RegOffset->reg_imask:hexagon_stopme(-1)
+#define REG_IMASK hexagonRegOffset?hexagonRegOffset->reg_imask:hexagonstopme(-1)
 #undef REG_IPEND
-#define REG_IPEND hexagon_RegOffset?hexagon_RegOffset->reg_ipend:hexagon_stopme(-1)
+#define REG_IPEND hexagonRegOffset?hexagonRegOffset->reg_ipend:hexagonstopme(-1)
 #undef REG_ISDBCFG0
-#define REG_ISDBCFG0 hexagon_RegOffset?hexagon_RegOffset->reg_isdbcfg0:hexagon_stopme(-1)
+#define REG_ISDBCFG0 hexagonRegOffset?hexagonRegOffset->reg_isdbcfg0:hexagonstopme(-1)
 #undef REG_ISDBCFG1
-#define REG_ISDBCFG1 hexagon_RegOffset?hexagon_RegOffset->reg_isdbcfg1:hexagon_stopme(-1)
+#define REG_ISDBCFG1 hexagonRegOffset?hexagonRegOffset->reg_isdbcfg1:hexagonstopme(-1)
 #undef REG_ISDBCMD
-#define REG_ISDBCMD hexagon_RegOffset?hexagon_RegOffset->reg_isdbcmd:hexagon_stopme(-1)
+#define REG_ISDBCMD hexagonRegOffset?hexagonRegOffset->reg_isdbcmd:hexagonstopme(-1)
 #undef REG_ISDBEN
-#define REG_ISDBEN hexagon_RegOffset?hexagon_RegOffset->reg_isdben:hexagon_stopme(-1)
+#define REG_ISDBEN hexagonRegOffset?hexagonRegOffset->reg_isdben:hexagonstopme(-1)
 #undef REG_ISDBGPR
-#define REG_ISDBGPR hexagon_RegOffset?hexagon_RegOffset->reg_isdbgpr:hexagon_stopme(-1)
+#define REG_ISDBGPR hexagonRegOffset?hexagonRegOffset->reg_isdbgpr:hexagonstopme(-1)
 #undef REG_ISDBMBXIN
-#define REG_ISDBMBXIN hexagon_RegOffset?hexagon_RegOffset->reg_isdbmbxin:hexagon_stopme(-1)
+#define REG_ISDBMBXIN hexagonRegOffset?hexagonRegOffset->reg_isdbmbxin:hexagonstopme(-1)
 #undef REG_ISDBMBXOUT
-#define REG_ISDBMBXOUT hexagon_RegOffset?hexagon_RegOffset->reg_isdbmbxout:hexagon_stopme(-1)
+#define REG_ISDBMBXOUT hexagonRegOffset?hexagonRegOffset->reg_isdbmbxout:hexagonstopme(-1)
 #undef REG_ISDBST
-#define REG_ISDBST hexagon_RegOffset?hexagon_RegOffset->reg_isdbst:hexagon_stopme(-1)
+#define REG_ISDBST hexagonRegOffset?hexagonRegOffset->reg_isdbst:hexagonstopme(-1)
 #undef REG_ISDBVER
-#define REG_ISDBVER hexagon_RegOffset?hexagon_RegOffset->reg_isdbver:hexagon_stopme(-1)
+#define REG_ISDBVER hexagonRegOffset?hexagonRegOffset->reg_isdbver:hexagonstopme(-1)
 #undef REG_LC0
-#define REG_LC0 hexagon_RegOffset?hexagon_RegOffset->reg_lc0:hexagon_stopme(-1)
+#define REG_LC0 hexagonRegOffset?hexagonRegOffset->reg_lc0:hexagonstopme(-1)
 #undef REG_LC1
-#define REG_LC1 hexagon_RegOffset?hexagon_RegOffset->reg_lc1:hexagon_stopme(-1)
+#define REG_LC1 hexagonRegOffset?hexagonRegOffset->reg_lc1:hexagonstopme(-1)
 #undef REG_LR
-#define REG_LR hexagon_RegOffset?hexagon_RegOffset->reg_lr:hexagon_stopme(-1)
+#define REG_LR hexagonRegOffset?hexagonRegOffset->reg_lr:hexagonstopme(-1)
 #undef REG_M0
-#define REG_M0 hexagon_RegOffset?hexagon_RegOffset->reg_m0:hexagon_stopme(-1)
+#define REG_M0 hexagonRegOffset?hexagonRegOffset->reg_m0:hexagonstopme(-1)
 #undef REG_M1
-#define REG_M1 hexagon_RegOffset?hexagon_RegOffset->reg_m1:hexagon_stopme(-1)
+#define REG_M1 hexagonRegOffset?hexagonRegOffset->reg_m1:hexagonstopme(-1)
 #undef REG_MODECTL
-#define REG_MODECTL hexagon_RegOffset?hexagon_RegOffset->reg_modectl:hexagon_stopme(-1)
+#define REG_MODECTL hexagonRegOffset?hexagonRegOffset->reg_modectl:hexagonstopme(-1)
 #undef REG_P3_0
-#define REG_P3_0 hexagon_RegOffset?hexagon_RegOffset->reg_p3_0:hexagon_stopme(-1)
+#define REG_P3_0 hexagonRegOffset?hexagonRegOffset->reg_p3_0:hexagonstopme(-1)
 #undef REG_PC
-#define REG_PC hexagon_RegOffset?hexagon_RegOffset->reg_pc:hexagon_stopme(-1)
+#define REG_PC hexagonRegOffset?hexagonRegOffset->reg_pc:hexagonstopme(-1)
 #undef REG_PCYCLEHI
-#define REG_PCYCLEHI hexagon_RegOffset?hexagon_RegOffset->reg_pcyclehi:hexagon_stopme(-1)
+#define REG_PCYCLEHI hexagonRegOffset?hexagonRegOffset->reg_pcyclehi:hexagonstopme(-1)
 #undef REG_PCYCLELO
-#define REG_PCYCLELO hexagon_RegOffset?hexagon_RegOffset->reg_pcyclelo:hexagon_stopme(-1)
+#define REG_PCYCLELO hexagonRegOffset?hexagonRegOffset->reg_pcyclelo:hexagonstopme(-1)
 #undef REG_PMUCFG
-#define REG_PMUCFG hexagon_RegOffset?hexagon_RegOffset->reg_pmucfg:hexagon_stopme(-1)
+#define REG_PMUCFG hexagonRegOffset?hexagonRegOffset->reg_pmucfg:hexagonstopme(-1)
 #undef REG_PMUCNT0
-#define REG_PMUCNT0 hexagon_RegOffset?hexagon_RegOffset->reg_pmucnt0:hexagon_stopme(-1)
+#define REG_PMUCNT0 hexagonRegOffset?hexagonRegOffset->reg_pmucnt0:hexagonstopme(-1)
 #undef REG_PMUCNT1
-#define REG_PMUCNT1 hexagon_RegOffset?hexagon_RegOffset->reg_pmucnt1:hexagon_stopme(-1)
+#define REG_PMUCNT1 hexagonRegOffset?hexagonRegOffset->reg_pmucnt1:hexagonstopme(-1)
 #undef REG_PMUCNT2
-#define REG_PMUCNT2 hexagon_RegOffset?hexagon_RegOffset->reg_pmucnt2:hexagon_stopme(-1)
+#define REG_PMUCNT2 hexagonRegOffset?hexagonRegOffset->reg_pmucnt2:hexagonstopme(-1)
 #undef REG_PMUCNT3
-#define REG_PMUCNT3 hexagon_RegOffset?hexagon_RegOffset->reg_pmucnt3:hexagon_stopme(-1)
+#define REG_PMUCNT3 hexagonRegOffset?hexagonRegOffset->reg_pmucnt3:hexagonstopme(-1)
 #undef REG_PMUEVTCFG
-#define REG_PMUEVTCFG hexagon_RegOffset?hexagon_RegOffset->reg_pmuevtcfg:hexagon_stopme(-1)
+#define REG_PMUEVTCFG hexagonRegOffset?hexagonRegOffset->reg_pmuevtcfg:hexagonstopme(-1)
 #undef REG_R00
-#define REG_R00 hexagon_RegOffset?hexagon_RegOffset->reg_r00:hexagon_stopme(-1)
+#define REG_R00 hexagonRegOffset?hexagonRegOffset->reg_r00:hexagonstopme(-1)
 #undef REG_R01
-#define REG_R01 hexagon_RegOffset?hexagon_RegOffset->reg_r01:hexagon_stopme(-1)
+#define REG_R01 hexagonRegOffset?hexagonRegOffset->reg_r01:hexagonstopme(-1)
 #undef REG_R02
-#define REG_R02 hexagon_RegOffset?hexagon_RegOffset->reg_r02:hexagon_stopme(-1)
+#define REG_R02 hexagonRegOffset?hexagonRegOffset->reg_r02:hexagonstopme(-1)
 #undef REG_R03
-#define REG_R03 hexagon_RegOffset?hexagon_RegOffset->reg_r03:hexagon_stopme(-1)
+#define REG_R03 hexagonRegOffset?hexagonRegOffset->reg_r03:hexagonstopme(-1)
 #undef REG_R04
-#define REG_R04 hexagon_RegOffset?hexagon_RegOffset->reg_r04:hexagon_stopme(-1)
+#define REG_R04 hexagonRegOffset?hexagonRegOffset->reg_r04:hexagonstopme(-1)
 #undef REG_R05
-#define REG_R05 hexagon_RegOffset?hexagon_RegOffset->reg_r05:hexagon_stopme(-1)
+#define REG_R05 hexagonRegOffset?hexagonRegOffset->reg_r05:hexagonstopme(-1)
 #undef REG_R06
-#define REG_R06 hexagon_RegOffset?hexagon_RegOffset->reg_r06:hexagon_stopme(-1)
+#define REG_R06 hexagonRegOffset?hexagonRegOffset->reg_r06:hexagonstopme(-1)
 #undef REG_R07
-#define REG_R07 hexagon_RegOffset?hexagon_RegOffset->reg_r07:hexagon_stopme(-1)
+#define REG_R07 hexagonRegOffset?hexagonRegOffset->reg_r07:hexagonstopme(-1)
 #undef REG_R08
-#define REG_R08 hexagon_RegOffset?hexagon_RegOffset->reg_r08:hexagon_stopme(-1)
+#define REG_R08 hexagonRegOffset?hexagonRegOffset->reg_r08:hexagonstopme(-1)
 #undef REG_R09
-#define REG_R09 hexagon_RegOffset?hexagon_RegOffset->reg_r09:hexagon_stopme(-1)
+#define REG_R09 hexagonRegOffset?hexagonRegOffset->reg_r09:hexagonstopme(-1)
 #undef REG_R10
-#define REG_R10 hexagon_RegOffset?hexagon_RegOffset->reg_r10:hexagon_stopme(-1)
+#define REG_R10 hexagonRegOffset?hexagonRegOffset->reg_r10:hexagonstopme(-1)
 #undef REG_R11
-#define REG_R11 hexagon_RegOffset?hexagon_RegOffset->reg_r11:hexagon_stopme(-1)
+#define REG_R11 hexagonRegOffset?hexagonRegOffset->reg_r11:hexagonstopme(-1)
 #undef REG_R12
-#define REG_R12 hexagon_RegOffset?hexagon_RegOffset->reg_r12:hexagon_stopme(-1)
+#define REG_R12 hexagonRegOffset?hexagonRegOffset->reg_r12:hexagonstopme(-1)
 #undef REG_R13
-#define REG_R13 hexagon_RegOffset?hexagon_RegOffset->reg_r13:hexagon_stopme(-1)
+#define REG_R13 hexagonRegOffset?hexagonRegOffset->reg_r13:hexagonstopme(-1)
 #undef REG_R14
-#define REG_R14 hexagon_RegOffset?hexagon_RegOffset->reg_r14:hexagon_stopme(-1)
+#define REG_R14 hexagonRegOffset?hexagonRegOffset->reg_r14:hexagonstopme(-1)
 #undef REG_R15
-#define REG_R15 hexagon_RegOffset?hexagon_RegOffset->reg_r15:hexagon_stopme(-1)
+#define REG_R15 hexagonRegOffset?hexagonRegOffset->reg_r15:hexagonstopme(-1)
 #undef REG_R16
-#define REG_R16 hexagon_RegOffset?hexagon_RegOffset->reg_r16:hexagon_stopme(-1)
+#define REG_R16 hexagonRegOffset?hexagonRegOffset->reg_r16:hexagonstopme(-1)
 #undef REG_R17
-#define REG_R17 hexagon_RegOffset?hexagon_RegOffset->reg_r17:hexagon_stopme(-1)
+#define REG_R17 hexagonRegOffset?hexagonRegOffset->reg_r17:hexagonstopme(-1)
 #undef REG_R18
-#define REG_R18 hexagon_RegOffset?hexagon_RegOffset->reg_r18:hexagon_stopme(-1)
+#define REG_R18 hexagonRegOffset?hexagonRegOffset->reg_r18:hexagonstopme(-1)
 #undef REG_R19
-#define REG_R19 hexagon_RegOffset?hexagon_RegOffset->reg_r19:hexagon_stopme(-1)
+#define REG_R19 hexagonRegOffset?hexagonRegOffset->reg_r19:hexagonstopme(-1)
 #undef REG_R20
-#define REG_R20 hexagon_RegOffset?hexagon_RegOffset->reg_r20:hexagon_stopme(-1)
+#define REG_R20 hexagonRegOffset?hexagonRegOffset->reg_r20:hexagonstopme(-1)
 #undef REG_R21
-#define REG_R21 hexagon_RegOffset?hexagon_RegOffset->reg_r21:hexagon_stopme(-1)
+#define REG_R21 hexagonRegOffset?hexagonRegOffset->reg_r21:hexagonstopme(-1)
 #undef REG_R22
-#define REG_R22 hexagon_RegOffset?hexagon_RegOffset->reg_r22:hexagon_stopme(-1)
+#define REG_R22 hexagonRegOffset?hexagonRegOffset->reg_r22:hexagonstopme(-1)
 #undef REG_R23
-#define REG_R23 hexagon_RegOffset?hexagon_RegOffset->reg_r23:hexagon_stopme(-1)
+#define REG_R23 hexagonRegOffset?hexagonRegOffset->reg_r23:hexagonstopme(-1)
 #undef REG_R24
-#define REG_R24 hexagon_RegOffset?hexagon_RegOffset->reg_r24:hexagon_stopme(-1)
+#define REG_R24 hexagonRegOffset?hexagonRegOffset->reg_r24:hexagonstopme(-1)
 #undef REG_R25
-#define REG_R25 hexagon_RegOffset?hexagon_RegOffset->reg_r25:hexagon_stopme(-1)
+#define REG_R25 hexagonRegOffset?hexagonRegOffset->reg_r25:hexagonstopme(-1)
 #undef REG_R26
-#define REG_R26 hexagon_RegOffset?hexagon_RegOffset->reg_r26:hexagon_stopme(-1)
+#define REG_R26 hexagonRegOffset?hexagonRegOffset->reg_r26:hexagonstopme(-1)
 #undef REG_R27
-#define REG_R27 hexagon_RegOffset?hexagon_RegOffset->reg_r27:hexagon_stopme(-1)
+#define REG_R27 hexagonRegOffset?hexagonRegOffset->reg_r27:hexagonstopme(-1)
 #undef REG_R28
-#define REG_R28 hexagon_RegOffset?hexagon_RegOffset->reg_r28:hexagon_stopme(-1)
+#define REG_R28 hexagonRegOffset?hexagonRegOffset->reg_r28:hexagonstopme(-1)
 #undef REG_R29
-#define REG_R29 hexagon_RegOffset?hexagon_RegOffset->reg_r29:hexagon_stopme(-1)
+#define REG_R29 hexagonRegOffset?hexagonRegOffset->reg_r29:hexagonstopme(-1)
 #undef REG_R30
-#define REG_R30 hexagon_RegOffset?hexagon_RegOffset->reg_r30:hexagon_stopme(-1)
+#define REG_R30 hexagonRegOffset?hexagonRegOffset->reg_r30:hexagonstopme(-1)
 #undef REG_R31
-#define REG_R31 hexagon_RegOffset?hexagon_RegOffset->reg_r31:hexagon_stopme(-1)
+#define REG_R31 hexagonRegOffset?hexagonRegOffset->reg_r31:hexagonstopme(-1)
 #undef REG_REV
-#define REG_REV hexagon_RegOffset?hexagon_RegOffset->reg_rev:hexagon_stopme(-1)
+#define REG_REV hexagonRegOffset?hexagonRegOffset->reg_rev:hexagonstopme(-1)
 #undef REG_RGDR
-#define REG_RGDR hexagon_RegOffset?hexagon_RegOffset->reg_rgdr:hexagon_stopme(-1)
+#define REG_RGDR hexagonRegOffset?hexagonRegOffset->reg_rgdr:hexagonstopme(-1)
 #undef REG_SA0
-#define REG_SA0 hexagon_RegOffset?hexagon_RegOffset->reg_sa0:hexagon_stopme(-1)
+#define REG_SA0 hexagonRegOffset?hexagonRegOffset->reg_sa0:hexagonstopme(-1)
 #undef REG_SA1
-#define REG_SA1 hexagon_RegOffset?hexagon_RegOffset->reg_sa1:hexagon_stopme(-1)
+#define REG_SA1 hexagonRegOffset?hexagonRegOffset->reg_sa1:hexagonstopme(-1)
 #undef REG_SGP0
-#define REG_SGP0 hexagon_RegOffset?hexagon_RegOffset->reg_sgp0:hexagon_stopme(-1)
+#define REG_SGP0 hexagonRegOffset?hexagonRegOffset->reg_sgp0:hexagonstopme(-1)
 #undef REG_SGP1
-#define REG_SGP1 hexagon_RegOffset?hexagon_RegOffset->reg_sgp1:hexagon_stopme(-1)
+#define REG_SGP1 hexagonRegOffset?hexagonRegOffset->reg_sgp1:hexagonstopme(-1)
 #undef REG_SP
-#define REG_SP hexagon_RegOffset?hexagon_RegOffset->reg_sp:hexagon_stopme(-1)
+#define REG_SP hexagonRegOffset?hexagonRegOffset->reg_sp:hexagonstopme(-1)
 #undef REG_SSR
-#define REG_SSR hexagon_RegOffset?hexagon_RegOffset->reg_ssr:hexagon_stopme(-1)
+#define REG_SSR hexagonRegOffset?hexagonRegOffset->reg_ssr:hexagonstopme(-1)
 #undef REG_STFINST
-#define REG_STFINST hexagon_RegOffset?hexagon_RegOffset->reg_stfinst:hexagon_stopme(-1)
+#define REG_STFINST hexagonRegOffset?hexagonRegOffset->reg_stfinst:hexagonstopme(-1)
 #undef REG_STID
-#define REG_STID hexagon_RegOffset?hexagon_RegOffset->reg_stid:hexagon_stopme(-1)
+#define REG_STID hexagonRegOffset?hexagonRegOffset->reg_stid:hexagonstopme(-1)
 #undef REG_SYSCFG
-#define REG_SYSCFG hexagon_RegOffset?hexagon_RegOffset->reg_syscfg:hexagon_stopme(-1)
+#define REG_SYSCFG hexagonRegOffset?hexagonRegOffset->reg_syscfg:hexagonstopme(-1)
 #undef REG_UGP
-#define REG_UGP hexagon_RegOffset?hexagon_RegOffset->reg_ugp:hexagon_stopme(-1)
+#define REG_UGP hexagonRegOffset?hexagonRegOffset->reg_ugp:hexagonstopme(-1)
 #undef REG_UPCYCLEHI
-#define REG_UPCYCLEHI hexagon_RegOffset?hexagon_RegOffset->reg_upcyclehi:hexagon_stopme(-1)
+#define REG_UPCYCLEHI hexagonRegOffset?hexagonRegOffset->reg_upcyclehi:hexagonstopme(-1)
 #undef REG_UPCYCLELO
-#define REG_UPCYCLELO hexagon_RegOffset?hexagon_RegOffset->reg_upcyclelo:hexagon_stopme(-1)
+#define REG_UPCYCLELO hexagonRegOffset?hexagonRegOffset->reg_upcyclelo:hexagonstopme(-1)
 #undef REG_UPMUCNT0
-#define REG_UPMUCNT0 hexagon_RegOffset?hexagon_RegOffset->reg_upmucnt0:hexagon_stopme(-1)
+#define REG_UPMUCNT0 hexagonRegOffset?hexagonRegOffset->reg_upmucnt0:hexagonstopme(-1)
 #undef REG_UPMUCNT1
-#define REG_UPMUCNT1 hexagon_RegOffset?hexagon_RegOffset->reg_upmucnt1:hexagon_stopme(-1)
+#define REG_UPMUCNT1 hexagonRegOffset?hexagonRegOffset->reg_upmucnt1:hexagonstopme(-1)
 #undef REG_UPMUCNT2
-#define REG_UPMUCNT2 hexagon_RegOffset?hexagon_RegOffset->reg_upmucnt2:hexagon_stopme(-1)
+#define REG_UPMUCNT2 hexagonRegOffset?hexagonRegOffset->reg_upmucnt2:hexagonstopme(-1)
 #undef REG_UPMUCNT3
-#define REG_UPMUCNT3 hexagon_RegOffset?hexagon_RegOffset->reg_upmucnt3:hexagon_stopme(-1)
+#define REG_UPMUCNT3 hexagonRegOffset?hexagonRegOffset->reg_upmucnt3:hexagonstopme(-1)
 #undef REG_VID
-#define REG_VID hexagon_RegOffset?hexagon_RegOffset->reg_vid:hexagon_stopme(-1)
+#define REG_VID hexagonRegOffset?hexagonRegOffset->reg_vid:hexagonstopme(-1)
 #undef REG_USR
-#define REG_USR hexagon_RegOffset?hexagon_RegOffset->reg_usr:hexagon_stopme(-1)
+#define REG_USR hexagonRegOffset?hexagonRegOffset->reg_usr:hexagonstopme(-1)
 #undef REG_SGP
-#define REG_SGP hexagon_RegOffset?hexagon_RegOffset->reg_sgp:hexagon_stopme(-1)
+#define REG_SGP hexagonRegOffset?hexagonRegOffset->reg_sgp:hexagonstopme(-1)
 #undef REG_SR
-#define REG_SR hexagon_RegOffset?hexagon_RegOffset->reg_sr:hexagon_stopme(-1)
+#define REG_SR hexagonRegOffset?hexagonRegOffset->reg_sr:hexagonstopme(-1)
 #undef REG_SYSCONF
-#define REG_SYSCONF hexagon_RegOffset?hexagon_RegOffset->reg_sysconf:hexagon_stopme(-1)
+#define REG_SYSCONF hexagonRegOffset?hexagonRegOffset->reg_sysconf:hexagonstopme(-1)
 #undef REG_TID
-#define REG_TID hexagon_RegOffset?hexagon_RegOffset->reg_tid:hexagon_stopme(-1)
+#define REG_TID hexagonRegOffset?hexagonRegOffset->reg_tid:hexagonstopme(-1)
 #undef REG_TLBHI
-#define REG_TLBHI hexagon_RegOffset?hexagon_RegOffset->reg_tlbhi:hexagon_stopme(-1)
+#define REG_TLBHI hexagonRegOffset?hexagonRegOffset->reg_tlbhi:hexagonstopme(-1)
 #undef REG_TLBIDX
-#define REG_TLBIDX hexagon_RegOffset?hexagon_RegOffset->reg_tlbidx:hexagon_stopme(-1)
+#define REG_TLBIDX hexagonRegOffset?hexagonRegOffset->reg_tlbidx:hexagonstopme(-1)
 #undef REG_TLBLO
-#define REG_TLBLO hexagon_RegOffset?hexagon_RegOffset->reg_tlblo:hexagon_stopme(-1)
+#define REG_TLBLO hexagonRegOffset?hexagonRegOffset->reg_tlblo:hexagonstopme(-1)
 
 
 /*

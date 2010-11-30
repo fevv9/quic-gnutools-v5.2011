@@ -7,10 +7,11 @@ OUTPUT_FORMAT="elf32-littlehexagon"
 LITTLE_OUTPUT_FORMAT="elf32-littlehexagon"
 BIG_OUTPUT_FORMAT="elf32-bighexagon"
 MAXPAGESIZE="CONSTANT (MAXPAGESIZE)"
+COMMONPAGESIZE="CONSTANT (COMMONPAGESIZE)"
 NONPAGED_TEXT_START_ADDR=0
 ENTRY=start
 DATA_GOT=yes
-SEPARATE_GOTPLT=0
+SEPARATE_GOTPLT=16
 GENERATE_SHLIB_SCRIPT=yes
 GENERATE_COMBRELOC_SCRIPT=yes
 # HEXAGON V2 NOP
@@ -18,14 +19,15 @@ NOP=0x00c0007f
 # Largest cache-line size
 ALIGNMENT=64 # L2
 SBSS_START_SYMBOLS="PROVIDE (${USER_LABEL_PREFIX}__sbss_start = .);
-PROVIDE (${USER_LABEL_PREFIX}___sbss_start = .);"
+    PROVIDE (${USER_LABEL_PREFIX}___sbss_start = .);"
 SBSS_END_SYMBOLS="PROVIDE (${USER_LABEL_PREFIX}__sbss_end = .);
-PROVIDE (${USER_LABEL_PREFIX}___sbss_end = .);"
+    PROVIDE (${USER_LABEL_PREFIX}___sbss_end = .);"
 SDATA_START_SYMBOLS="__default_sda_base__ = .;
-PROVIDE (_SDA_BASE_ = .);"
+    PROVIDE (_SDA_BASE_ = .);"
 
 case "$target" in
-  hexagon_*-linux*)
+  hexagon*-linux*)
+    NO_SMALL_DATA=yes
     TEXT_START_ADDR="CONSTANT (MAXPAGESIZE)"
     ;;
   *)

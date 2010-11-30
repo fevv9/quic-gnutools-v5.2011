@@ -113,7 +113,7 @@ hexagon_regtype_t * threadRegSetInfo;
 /* pointer to the architecture's thread registers */
 hexagon_regtype_t * globalRegSetInfo;
 
-struct hexagon_system_register_offsets *hexagon_RegOffset = (struct hexagon_system_register_offsets *)0;
+struct hexagon_system_register_offsets *hexagonRegOffset = (struct hexagon_system_register_offsets *)0;
 
 
 enum 
@@ -134,10 +134,10 @@ typedef enum
   HEXAGON_V2                        = 2,   // 31
   HEXAGON_V3                        = 3,   // 31
   HEXAGON_V4                        = 4,   // 31
-}Qdsp6_Version;
+}Hexagon_Version;
 
-int hexagon_Version = 0;
-int hexagon_ArgRegMax = 0;
+int hexagonVersion = 0;
+int hexagonArgRegMax = 0;
 int hexagon_version = 0;
 int hexagon_reg_index_max = 0;
 int hexagon_reg_count = 0;
@@ -214,7 +214,7 @@ hexagon_index_max (hexagon_regtype_t *rt)
 
   if (hexagon_debug == 1)
   {
-    printf_filtered ("HEXAGON_DEB: hexagon_Version = %d, max reg index = %d, thread reg count = %d\n", hexagon_Version, hexagon_reg_index_max, hexagon_reg_count);
+    printf_filtered ("HEXAGON_DEB: hexagonVersion = %d, max reg index = %d, thread reg count = %d\n", hexagonVersion, hexagon_reg_index_max, hexagon_reg_count);
   }
 
   return max_index;
@@ -232,7 +232,7 @@ new_variant (void)
   int regnum;
   int reg_count;
   char buf[20];
-  extern int hexagon_Version;
+  extern int hexagonVersion;
 
   var = xmalloc (sizeof (*var));
   memset (var, 0, sizeof (*var));
@@ -283,7 +283,7 @@ printf ("REG_CCR = %d\n", REG_CCR);
   var->register_names[REG_SSR]     = "ssr"  ;
   var->register_names[REG_IMASK]   = "imask";
   var->register_names[REG_ELR]     = "elr";
-  if(hexagon_Version < HEXAGON_V4)
+  if(hexagonVersion < HEXAGON_V4)
   {
       var->register_names[REG_SGP]     = "sgp";
       var->register_names[REG_BADVA]   = "badva";
@@ -370,16 +370,16 @@ hexagon_breakpoint_from_pc (struct gdbarch *gdbarch, CORE_ADDR *pcptr, int *lenp
   static unsigned char breakpoint_insn[] = {0x0c, 0xdb, 0x00, 0x54};
   static unsigned char *breakpoint;
 
-  if ((hexagon_Version == HEXAGON_V4) || 
-      (hexagon_Version == HEXAGON_V3) ||
-      (hexagon_Version == HEXAGON_V2))
+  if ((hexagonVersion == HEXAGON_V4) || 
+      (hexagonVersion == HEXAGON_V3) ||
+      (hexagonVersion == HEXAGON_V2))
   {
     breakpoint=breakpoint_insn;
     *lenp = sizeof (breakpoint_insn);
   } 
   else
   {
-    printf_filtered ("%s, invalid setting for arch level %d\n",__func__, hexagon_Version);
+    printf_filtered ("%s, invalid setting for arch level %d\n",__func__, hexagonVersion);
     gdb_assert(0);
   }
   return breakpoint;
@@ -450,7 +450,7 @@ static int
 is_callee_saves_reg (int reg)
 {
   //printf("\n In s_callee_saves_reg ..................\n");
-  if(hexagon_Version == HEXAGON_V2) 
+  if(hexagonVersion == HEXAGON_V2) 
       return (reg >= 24 && reg <= 27);
   else
       return (reg >= 16 && reg <= 27);
@@ -462,7 +462,7 @@ static int
 is_argument_reg (int reg)
 {
   //printf("\n In is_argument_reg ...........................\n");
-  return (reg < hexagon_ArgRegMax);
+  return (reg < hexagonArgRegMax);
 }
 
 /*
@@ -503,7 +503,7 @@ is_allocframe (unsigned int insn, CORE_ADDR pc, unsigned int *immediate)
       *immediate = ALLOCFRAME_SIZE (insn);
       return 1;
     }
-  else if (hexagon_Version == HEXAGON_V4)
+  else if (hexagonVersion == HEXAGON_V4)
     {
       if ((insn & mask) == memd_allocframe)
 	{
@@ -597,7 +597,7 @@ is_memX_r29 (unsigned int insn, CORE_ADDR pc,
 
   if (frame_debug && rc == 1)
     {
-      printf_filtered ("HEXAGON_:%s: PC:0x%lx saving reg %x:%x, offset = %d\n",
+      printf_filtered ("HEXAGON:%s: PC:0x%lx saving reg %x:%x, offset = %d\n",
 		       __func__, pc, *reg1, *reg2, *stack_offset);
     }
 
@@ -752,13 +752,11 @@ hexagon_analyze_prologue (struct gdbarch *gdbarch,
   CORE_ADDR pc;
 
   if (hexagon_debug == 1)
-      printf_filtered ("HEXAGON_DEB: %s, pc = 0x%lx\n",__func__, start_pc);
+      printf_filtered ("HEXAGON_DEB: %s: start_pc = 0x%llx, end_pc = 0x%llx\n",
+                        __func__, start_pc, end_pc);
 
-
-#if 1
   if (start_pc == 0)
 	start_pc = end_pc;
-#endif
 
   prolog_pc = start_pc;
 
@@ -901,7 +899,11 @@ hexagon_analyze_prologue (struct gdbarch *gdbarch,
 
       info->saved_regs[REG_PC] = info->saved_regs[REG_LR];
 
-      info->prev_sp = this_base + 8; /* +4 for saved R30, +4 for saved R31 */
+      if (fp_set || could_be_frameless)
+        info->prev_sp = this_base + 8; /* +4 for saved R30, +4 for saved R31 */
+      else
+        info->prev_sp = this_base;
+
       info->base = this_base;
       trad_frame_set_value (info->saved_regs, REG_SP, info->prev_sp);
 
@@ -1001,7 +1003,7 @@ hexagon_frame_unwind_cache (struct frame_info *this_frame,
 
   if (hexagon_debug == 1)
   {
-      printf_filtered("\tHEXAGON_DEB: pc = 0x%lx\n", pc);
+      printf_filtered("\tHEXAGON_DEB: pc = 0x%x\n", pc);
   }
   
   return info;
@@ -1083,23 +1085,166 @@ hexagon_return_value (struct gdbarch *gdbarch, struct type *func_type,
      return RETURN_VALUE_REGISTER_CONVENTION;
 }
 
-static CORE_ADDR
-hexagon_push_dummy_code (struct gdbarch *gdbarch,
-                      CORE_ADDR sp, CORE_ADDR funaddr,
-                      struct value **args, int nargs,
-                      struct type *value_type,
-                      CORE_ADDR *real_pc, CORE_ADDR *bp_addr,
-                      struct regcache *regcache)
+/*
+   function: hexagon_push_dummy_call
+   description:
+        - prepares the stack and registers so that gdb call make a call
+          to one of the inferior's functions.
+ */
+CORE_ADDR
+hexagon_push_dummy_call (struct gdbarch *gdbarch, struct value *function,
+                     struct regcache *regcache, CORE_ADDR bp_addr,
+                     int nargs, struct value **args, CORE_ADDR sp,
+		     int struct_return, CORE_ADDR struct_addr)
 {
-  sp = (sp - 4) & ~3;
-  (*real_pc) = funaddr;
-  regcache_cooked_read(regcache, REG_LR, (gdb_byte *)bp_addr);
-       
+  enum bfd_endian byte_order = gdbarch_byte_order (gdbarch);
+  int regnum = 0;
+  int stack_arg = -1;
+  int i;
+
+  gdb_byte buf[16];
+
+
+  /* If STRUCT_RETURN is true, then the struct return address (in
+     STRUCT_ADDR) will consume the first argument-passing register.
+     Adjust the register count and store that value.  */
+  if (struct_return)
+  {
+    memset (buf, 0, sizeof buf);
+    store_unsigned_integer (buf, 4, byte_order, struct_addr);
+
+    regcache_cooked_write (regcache, regnum++, buf);
+  }
+
+
+  /* Stack memory (higher to lower)
+     Example address            Value
+     ----------------------------------
+     (0x10F0)                   Saved LR
+     (0x10DC)                   Saved FP  (FP pointer points to this Address)
+     (0x10D8)                   Prodedure local- 
+     (0x10D4)                   data on stack.
+	...
+     (0x1000)                   SP register points to this lowest address.
+
+	- Note: the "sp" passed to this function has been pre-decremented
+	  by 8 to hold the frame header (Saved LR/Saved FP)
+   */
+  regcache_cooked_read (regcache, REG_LR, buf);
+  target_write_memory (sp+4, buf, 4);
+  regcache_cooked_read (regcache, REG_FP, buf);
+  target_write_memory (sp, buf, 4);
+
+  /* The current FP register points to the address saved FP which we just
+     stored above.  At this point sp==fp but later in this function, if values
+     are passed on the stack, sp will be decremented.
+   */
+  store_unsigned_integer (buf, 4, byte_order, sp);
+  regcache_cooked_write (regcache, REG_FP, buf);
+
+  /* Set the return address.  */
+  memset (buf, 0, sizeof buf);
+  store_unsigned_integer (buf, 4, byte_order, bp_addr);
+  regcache_cooked_write (regcache, REG_LR, buf);
+
+
+
+/* ABI Rules: "Stack structure"
+	- Any param with size <=64bits can be passed by register
+	- parms are passed from r0-r5 in order
+	- parms > 32-bits are passed in register pairs
+		- if next register is odd it is skipped thus args > 32-bits
+		  start on even register boundaries
+	- parms > 64-bits are passed on the stack.
+    NOTE:
+        The SP must be 8-byte aligned for the allocate and deallocate
+        instructions to work properly.
+*/
+  for (i = 0; i < nargs; i++)
+    {
+      struct value *arg = args[i];
+      struct type *type = check_typedef (value_type (arg));
+      const gdb_byte *contents = value_contents (arg);
+      int typelen = TYPE_LENGTH (type);
+      int n_regs = align_up (typelen, 4) / 4;
+
+      /* If the argument doesn't wholly fit into registers, it and
+	 all subsequent arguments go to the stack.  */
+      if (regnum + n_regs > hexagonArgRegMax)
+	{
+	  stack_arg = i;
+	  break;
+	}
+
+      /* See ABI Rules above */
+      if (typelen <= 4)
+	{
+          regcache_cooked_write (regcache, regnum, contents);
+          regnum += n_regs;
+	}
+
+      else if (typelen <= 8) /* >4 but <=8 must be in an even register */
+	{
+	  if (regnum & 0x1)
+	    regnum++;
+
+          regcache_cooked_write (regcache, regnum, contents);
+          regnum += n_regs;
+	}
+
+      else /* >8 then then argument must go on the stack */
+	{
+	  CORE_ADDR ap;
+
+	  sp -= typelen;
+          sp = align_down (sp, 8); /* SP must be 8-byte aligned. */
+
+	  target_write_memory (sp, value_contents (arg), typelen);
+	}
+
+    }
+
+  /* When the function uses more than 6 registers to pass arguments then the
+     rest must reside on the stack.
+   */
+  if (stack_arg != -1)
+    {
+      CORE_ADDR ap;
+
+      /* Allocate the required stack size.  */
+      for (i = stack_arg; i < nargs; i++)
+	{
+	  struct type *type = check_typedef (value_type (args[i]));
+	  sp -= TYPE_LENGTH (type);
+	}
+
+      sp = align_down (sp, 8);
+
+      /* Fill in stack arguments, from the bottom up. */
+      ap = sp;
+      for (i = stack_arg; i < nargs; i++)
+	{
+	  struct value *arg = args[i];
+	  struct type *type = check_typedef (value_type (arg));
+	  int len = TYPE_LENGTH (type);
+
+	  target_write_memory (ap, value_contents (arg), len);
+	  ap += TYPE_LENGTH (type);
+	}
+
+    }
+
+  /* Set the stack regsiter address.  */
+  store_unsigned_integer (buf, 4, byte_order, sp);
+  regcache_cooked_write (regcache, REG_SP, buf);
+
   return sp;
 }
 
+
 static CORE_ADDR
-hexagon_push_dummy_call (struct gdbarch *gdbarch, struct value *function,
+hexagon_push_dummy_call_deprecated (struct gdbarch *gdbarch,
+                     struct value *function,
                      struct regcache *regcache, CORE_ADDR bp_addr,
                      int nargs, struct value **args, CORE_ADDR sp,
 		     int struct_return, CORE_ADDR struct_addr)
@@ -1120,16 +1265,25 @@ hexagon_push_dummy_call (struct gdbarch *gdbarch, struct value *function,
   struct symbol  *pFuncSymbol    =  NULL;
   struct minimal_symbol *msymbol =  NULL;
   CORE_ADDR func_addr = find_function_addr (function, NULL);
+  enum bfd_endian byte_order = gdbarch_byte_order (gdbarch);
+  gdb_byte buf[16];
 
-  
+  /* Set the return address.  */
+  memset (buf, 0, sizeof buf);
+  store_unsigned_integer (buf, 4, byte_order, bp_addr);
+  regcache_cooked_write (regcache, REG_LR, buf);
+
+
   
 #if 0
   printf("\n In hexagon_push_dummy_call ........................\n");
-  printf("\nFunction Address = 0x%x\n", func_addr);
+  printf("Function Address = 0x%x\n", func_addr);
   printf("Push %d args at sp = 0x%x, struct_return=%d (%x)\n",
 	 nargs, (int) sp, struct_return, struct_addr);
+  printf("bp_addr = 0x%x\n", bp_addr);
 #endif
 
+  regcache_cooked_write_unsigned (regcache, REG_FP, sp+8);
   
   /* get the function symbol for this function address */
    pFuncSymbol = find_pc_function (func_addr);
@@ -1203,7 +1357,7 @@ hexagon_push_dummy_call (struct gdbarch *gdbarch, struct value *function,
 
 	  /* Pass function params into regs R0-R5 for only fixed
 	     type of arguments */
-	  if ((argreg < hexagon_ArgRegMax) &&
+	  if ((argreg < hexagonArgRegMax) &&
               (argnum < numOfFixedTypeFunctionArgs))
 	    {
 	      regval = extract_unsigned_integer (val, partial_len,
@@ -1222,7 +1376,7 @@ hexagon_push_dummy_call (struct gdbarch *gdbarch, struct value *function,
 	      regcache_cooked_write_unsigned (regcache, argreg, regval);
 	      ++argreg;
 	    }
-	  else if((argreg < hexagon_ArgRegMax) && 
+	  else if((argreg < hexagonArgRegMax) && 
                   (sDemangledFunctionName != NULL))
 	  {
 	    /* This code is a temp. hack for C++ gdb test virtfunc.cc 
@@ -1382,13 +1536,13 @@ hexagon_unwind_sp (struct gdbarch *gdbarch, struct frame_info *next_frame)
 static struct frame_id
 hexagon_dummy_id (struct gdbarch *gdbarch, struct frame_info *this_frame)
 {
+
   CORE_ADDR pc = get_frame_register_unsigned (this_frame, REG_PC);
   CORE_ADDR sp = get_frame_register_unsigned (this_frame, REG_SP);
+  CORE_ADDR fp = get_frame_register_unsigned (this_frame, REG_FP);
+  CORE_ADDR pc2 = get_frame_pc (this_frame);
+
   return frame_id_build (sp, pc);
-#if 0
-  return frame_id_build (hexagon_unwind_sp (gdbarch, this_frame),
-			 get_frame_pc (this_frame));
-#endif
 }
 
 
@@ -1411,24 +1565,24 @@ hexagon_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
   switch (info.bfd_arch_info->mach)
     {
     case bfd_mach_hexagon_v2:
-      hexagon_Version = HEXAGON_V2;
+      hexagonVersion = HEXAGON_V2;
       threadRegSetInfo = &threadRegSetInfo_v2[0];
       globalRegSetInfo = &globalRegSetInfo_v2[0];
-      hexagon_RegOffset = &hexagon_reg_offset;
+      hexagonRegOffset = &hexagon_reg_offset;
     break;
     
     case bfd_mach_hexagon_v3:
-      hexagon_Version = HEXAGON_V3;
+      hexagonVersion = HEXAGON_V3;
       threadRegSetInfo = &threadRegSetInfo_v3[0];
       globalRegSetInfo = &globalRegSetInfo_v3[0];
-      hexagon_RegOffset = &hexagon_reg_offset;
+      hexagonRegOffset = &hexagon_reg_offset;
     break;
 
     case bfd_mach_hexagon_v4:
-      hexagon_Version = HEXAGON_V4;
+      hexagonVersion = HEXAGON_V4;
       threadRegSetInfo = &threadRegSetInfo_v4[0];
       globalRegSetInfo = &globalRegSetInfo_v4[0];
-      hexagon_RegOffset = &hexagon_reg_offset_v4;
+      hexagonRegOffset = &hexagon_reg_offset_v4;
     break;
     
     default:
@@ -1437,10 +1591,10 @@ hexagon_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
     }
 
 
-  hexagon_ArgRegMax = 6;
+  hexagonArgRegMax = 6;
   hexagon_reg_index_max = hexagon_index_max (threadRegSetInfo);
   
-  /* Select the right tdep structure for this variant (hexagon_).  */
+  /* Select the right tdep structure for this variant (hexagon).  */
   var = new_variant ();
   switch (info.bfd_arch_info->mach)
     {
@@ -1487,8 +1641,6 @@ hexagon_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
 
   set_gdbarch_adjust_breakpoint_address (gdbarch, hexagon_gdbarch_adjust_breakpoint_address);
 
-  set_gdbarch_push_dummy_code (gdbarch, hexagon_push_dummy_code);
-
   set_gdbarch_return_value (gdbarch, hexagon_return_value);
 
   /* Frame stuff.  */
@@ -1501,7 +1653,7 @@ hexagon_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
   frame_base_set_default (gdbarch, &hexagon_frame_base);
 
   /* Settings for calling functions in the inferior.  */
-  set_gdbarch_push_dummy_call (gdbarch, hexagon_push_dummy_call);
+  set_gdbarch_push_dummy_call (gdbarch, hexagon_push_dummy_call_deprecated);
   set_gdbarch_dummy_id (gdbarch, hexagon_dummy_id);
 
   /* Settings that should be unnecessary.  */
@@ -1518,11 +1670,6 @@ hexagon_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
 
   /* Hook in ABI-specific overrides, if they have been registered.  */
   gdbarch_init_osabi (info, gdbarch);
-
-  /* Bug Fix for bug1316
-     Changed CALL_DUMMY_LOCATION from default AT_ENTRY to ON_STACK
-   */  
-  //set_gdbarch_call_dummy_location (gdbarch, ON_STACK);
 
   return gdbarch;
 }

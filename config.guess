@@ -945,7 +945,7 @@ EOF
     parisc64:Linux:*:* | hppa64:Linux:*:*)
 	echo hppa64-unknown-linux-gnu
 	exit ;;
-    hexagon_:Linux:*:*)
+    hexagon:Linux:*:*)
     	echo hexagon-unknown-linux-gnu
 	exit ;;
     s390:Linux:*:* | s390x:Linux:*:*)

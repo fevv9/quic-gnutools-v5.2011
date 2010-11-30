@@ -26,7 +26,7 @@ if ![check_gc_sections_available] {
 }
 
 set cflags "-ffunction-sections -fdata-sections"
-if { [istarget qdsp6*] } {
+if { [istarget hexagon*] } {
     append cflags " -G0"
 }
 set objfile "tmpdir/gc.o"
