@@ -1098,6 +1098,8 @@ hexagon_push_dummy_call (struct gdbarch *gdbarch, struct value *function,
 		     int struct_return, CORE_ADDR struct_addr)
 {
   enum bfd_endian byte_order = gdbarch_byte_order (gdbarch);
+  struct type *func_type = value_type (function);
+  int typed_args;
   int regnum = 0;
   int stack_arg = -1;
   int i;
@@ -1148,7 +1150,6 @@ hexagon_push_dummy_call (struct gdbarch *gdbarch, struct value *function,
   regcache_cooked_write (regcache, REG_LR, buf);
 
 
-
 /* ABI Rules: "Stack structure"
 	- Any param with size <=64bits can be passed by register
 	- parms are passed from r0-r5 in order
@@ -1156,11 +1157,19 @@ hexagon_push_dummy_call (struct gdbarch *gdbarch, struct value *function,
 		- if next register is odd it is skipped thus args > 32-bits
 		  start on even register boundaries
 	- parms > 64-bits are passed on the stack.
+	- Variable argument list parameters are passed on the stack.  When
+	  the "typed" arguments are less than the actual number then a
+	  variable argument list function is being called.
     NOTE:
         The SP must be 8-byte aligned for the allocate and deallocate
         instructions to work properly.
 */
-  for (i = 0; i < nargs; i++)
+  if (TYPE_VARARGS (func_type))  /* Variable Argument List function */
+    typed_args = TYPE_NFIELDS(func_type);
+  else 
+    typed_args = nargs;
+
+  for (i = 0; i < typed_args; i++)
     {
       struct value *arg = args[i];
       struct type *type = check_typedef (value_type (arg));
@@ -1204,6 +1213,11 @@ hexagon_push_dummy_call (struct gdbarch *gdbarch, struct value *function,
 	}
 
     }
+ /* The following is true if the function processes a Variable-length
+     Argument List, like "foo (int num, ...);"
+  */
+  if (typed_args < nargs)
+    stack_arg = i;
 
   /* When the function uses more than 6 registers to pass arguments then the
      rest must reside on the stack.
