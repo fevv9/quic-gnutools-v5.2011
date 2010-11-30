@@ -1,7 +1,7 @@
 ##################################################################
 
 # This file is sourced from elf32.em, and defines extra
-# HEXAGON-specific routines.
+# Hexagon-specific routines.
 
 case "${target_alias}" in
   hexagon*-linux*)
@@ -37,15 +37,15 @@ static int hexagon_cmdline_set_arch;
 
 struct hexagon_march
 {
-  char *march_name_fe, *march_short_fe;
+  char *march_name_fe, *march_alt_fe, *march_short_fe;
   char *march_name_be;
 };
 
 static const struct hexagon_march hexagon_marchs [] =
 {
-  {"hexagonv2", "v2", "hexagonv2"},
-  {"hexagonv3", "v3", "hexagonv3"},
-  {"hexagonv4", "v4", "hexagonv4"},
+  {"hexagonv2", "qdsp6v2", "v2", "hexagonv2"},
+  {"hexagonv3", "qdsp6v3", "v3", "hexagonv3"},
+  {"hexagonv4", "qdsp6v4", "v4", "hexagonv4"},
 };
 
 static size_t hexagon_marchs_size =
@@ -100,33 +100,32 @@ EOF
 LDEMUL_AFTER_PARSE=hexagon_after_parse
 test -n "$HEXAGON_IS_LINUX" && LDEMUL_BEFORE_PARSE=hexagon_before_parse
 
-# HEXAGON option values (between 300 and 399).
+# Hexagon option values (between 300 and 399).
 PARSE_AND_LIST_PROLOGUE=$'
-#define OPTION_MHEXAGONV1    (301)
-#define OPTION_MHEXAGONV2    (302)
-#define OPTION_MHEXAGONV3    (303)
-#define OPTION_MHEXAGONV4    (304)
-#define OPTION_MARCH       (305)
-#define OPTION_MCPU        (306)
-#define OPTION_TCM         (307)
-#define OPTION_TRAMPOLINES (308)
+#define OPTION_MV2         (301)
+#define OPTION_MV3         (302)
+#define OPTION_MV4         (303)
+#define OPTION_MARCH       (304)
+#define OPTION_MCPU        (305)
+#define OPTION_TCM         (306)
+#define OPTION_TRAMPOLINES (307)
 '
 
-# HEXAGON options.
+# Hexagon options.
 # Because the option `-m' is overloaded here, proper code must be added to get_emulation ().
 PARSE_AND_LIST_LONGOPTS=$'
-    {"mv2",         no_argument,       NULL, OPTION_MHEXAGONV2},
-    {"mv3",         no_argument,       NULL, OPTION_MHEXAGONV3},
-    {"mv4",         no_argument,       NULL, OPTION_MHEXAGONV4},
+    {"mv2",         no_argument,       NULL, OPTION_MV2},
+    {"mv3",         no_argument,       NULL, OPTION_MV3},
+    {"mv4",         no_argument,       NULL, OPTION_MV4},
     {"march",       required_argument, NULL, OPTION_MARCH},
     {"mcpu",        required_argument, NULL, OPTION_MCPU},
     {"tcm",         no_argument,       NULL, OPTION_TCM},
     {"trampolines", optional_argument, NULL, OPTION_TRAMPOLINES},
 '
 
-# HEXAGON target help.
+# Hexagon target help.
 PARSE_AND_LIST_OPTIONS=$'
-  fprintf (file, _("  --march={v2|v3|v4}          Link for the specified HEXAGON architecture\\n"));
+  fprintf (file, _("  --march={v2|v3|v4}          Link for the specified Hexagon architecture\\n"));
   fprintf (file, _("  --mcpu={v2|v3|v4}           Equivalent to `--march\'\\n"));
   fprintf (file, _("  -m{v2|v3|v4}                Equivalent to `--march\'\\n"));
 '
@@ -137,7 +136,7 @@ PARSE_AND_LIST_OPTIONS=$PARSE_AND_LIST_OPTIONS$'
   fprintf (file, _("  --trampolines[={yes|no}]    Add trampolines when necessary (default)\\n"));
 '
 
-# HEXAGON option processing.
+# Hexagon option processing.
 PARSE_AND_LIST_ARGS_CASES=$'
     case 1: /* File name. */
       /* Unless the output architecture is specified, then it is determined by
@@ -200,10 +199,9 @@ PARSE_AND_LIST_ARGS_CASES=$'
                                     : TRUE;
       break;
 
-    case OPTION_MHEXAGONV1:
-    case OPTION_MHEXAGONV2:
-    case OPTION_MHEXAGONV3:
-    case OPTION_MHEXAGONV4:
+    case OPTION_MV2:
+    case OPTION_MV3:
+    case OPTION_MV4:
     case OPTION_MARCH:
     case OPTION_MCPU:
       /* The output architecture is specified. */
@@ -213,18 +211,19 @@ PARSE_AND_LIST_ARGS_CASES=$'
 
           switch (optc)
             {
-              case OPTION_MHEXAGONV2:
-              case OPTION_MHEXAGONV3:
-              case OPTION_MHEXAGONV4:
+              case OPTION_MV2:
+              case OPTION_MV3:
+              case OPTION_MV4:
                 /* -mv* options. */
                 temp_hexagon_arch_name
-                  = hexagon_marchs [optc - OPTION_MHEXAGONV2].march_name_be;
+                  = hexagon_marchs [optc - OPTION_MV2].march_name_be;
                 break;
 
               default:
                 /* -march and- mcpu options. */
                 for (i = 0; i < hexagon_marchs_size; i++)
-                  if (   !strcmp (optarg, hexagon_marchs [i].march_name_fe)
+                  if (!strcmp (optarg, hexagon_marchs [i].march_name_fe)
+                      || !strcmp (optarg, hexagon_marchs [i].march_alt_fe)
                       || !strcmp (optarg, hexagon_marchs [i].march_short_fe))
                     {
                       temp_hexagon_arch_name = hexagon_marchs [i].march_name_be;
