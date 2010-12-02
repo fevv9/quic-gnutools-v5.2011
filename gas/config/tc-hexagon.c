@@ -471,12 +471,12 @@ struct option md_longopts [] =
 #define OPTION_HEXAGON_NO_2MEMORY (OPTION_MD_BASE + 5)
     { "mno-dual-memory", no_argument, NULL, OPTION_HEXAGON_NO_2MEMORY },
 /* Code in md_parse_option () assumes that the -mv* options, are sequential. */
-#define OPTION_HEXAGON_MHEXAGONV2 (OPTION_MD_BASE + 6)
-    { "mv2", no_argument, NULL, OPTION_HEXAGON_MHEXAGONV2 },
-#define OPTION_HEXAGON_MHEXAGONV3 (OPTION_MD_BASE + 7)
-    { "mv3", no_argument, NULL, OPTION_HEXAGON_MHEXAGONV3 },
-#define OPTION_HEXAGON_MHEXAGONV4 (OPTION_MD_BASE + 8)
-    { "mv4", no_argument, NULL, OPTION_HEXAGON_MHEXAGONV4 },
+#define OPTION_HEXAGON_MV2 (OPTION_MD_BASE + 6)
+    { "mv2", no_argument, NULL, OPTION_HEXAGON_MV2 },
+#define OPTION_HEXAGON_MV3 (OPTION_MD_BASE + 7)
+    { "mv3", no_argument, NULL, OPTION_HEXAGON_MV3 },
+#define OPTION_HEXAGON_MV4 (OPTION_MD_BASE + 8)
+    { "mv4", no_argument, NULL, OPTION_HEXAGON_MV4 },
 #define OPTION_HEXAGON_MARCH (OPTION_MD_BASE + 9)
     { "march", required_argument, NULL, OPTION_HEXAGON_MARCH },
 #define OPTION_HEXAGON_MCPU (OPTION_MD_BASE + 10)
@@ -687,19 +687,19 @@ md_parse_option
         }
       break;
 
-    case OPTION_HEXAGON_MHEXAGONV2:
-    case OPTION_HEXAGON_MHEXAGONV3:
-    case OPTION_HEXAGON_MHEXAGONV4:
+    case OPTION_HEXAGON_MV2:
+    case OPTION_HEXAGON_MV3:
+    case OPTION_HEXAGON_MV4:
     case OPTION_HEXAGON_MARCH:
     case OPTION_HEXAGON_MCPU:
       switch (c)
         {
-          case OPTION_HEXAGON_MHEXAGONV2:
-          case OPTION_HEXAGON_MHEXAGONV3:
-          case OPTION_HEXAGON_MHEXAGONV4:
+          case OPTION_HEXAGON_MV2:
+          case OPTION_HEXAGON_MV3:
+          case OPTION_HEXAGON_MV4:
             /* -mv* options. */
             temp_hexagon_mach_type
-              = hexagon_marchs [c - OPTION_HEXAGON_MHEXAGONV2].march_name_be;
+              = hexagon_marchs [c - OPTION_HEXAGON_MV2].march_name_be;
             break;
 
           default:
