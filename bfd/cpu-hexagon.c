@@ -26,14 +26,14 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.  */
 static const bfd_arch_info_type *hexagon_bfd_compatible
   (const bfd_arch_info_type *a, const bfd_arch_info_type *b);
 
-#define HEXAGON_ARCH_INFO(MACH, NAME, DEFAULT, NEXT) \
+#define HEXAGON_ARCH_INFO(MACH, ARCH, NAME, DEFAULT, NEXT) \
   {					 \
     32,	/* 32 bits in a word  */	 \
     32,	/* 32 bits in an address  */	 \
     8,	/* 8 bits in a byte  */		 \
     bfd_arch_hexagon,			 \
     MACH,				 \
-    "hexagon",				 \
+    ARCH,				 \
     NAME,				 \
     4, /* section alignment power  */	 \
     DEFAULT,				 \
@@ -45,14 +45,16 @@ static const bfd_arch_info_type *hexagon_bfd_compatible
 static const bfd_arch_info_type hexagon_arch_info [] =
 {
   /* These are the other supported ISAs. */
-  HEXAGON_ARCH_INFO (bfd_mach_hexagon_v3, "hexagonv3", FALSE, hexagon_arch_info + 1),
-  HEXAGON_ARCH_INFO (bfd_mach_hexagon_v4, "hexagonv4", FALSE, hexagon_arch_info + 2),
-  HEXAGON_ARCH_INFO (bfd_mach_hexagon,    "hexagon",   FALSE, NULL)
+  HEXAGON_ARCH_INFO (bfd_mach_hexagon_v2, "qdsp6",   "qdsp6v2",   FALSE, hexagon_arch_info + 1),
+  HEXAGON_ARCH_INFO (bfd_mach_hexagon_v3, "hexagon", "hexagonv3", FALSE, hexagon_arch_info + 2),
+  HEXAGON_ARCH_INFO (bfd_mach_hexagon_v3, "qdsp6",   "qdsp6v3",   FALSE, hexagon_arch_info + 3),
+  HEXAGON_ARCH_INFO (bfd_mach_hexagon_v4, "hexagon", "hexagonv4", FALSE, hexagon_arch_info + 4),
+  HEXAGON_ARCH_INFO (bfd_mach_hexagon_v4, "qdsp6",   "qdsp6v4",   FALSE, NULL),
 };
 
 /* This is the default ISA. */
 const bfd_arch_info_type bfd_hexagon_arch =
-  HEXAGON_ARCH_INFO (bfd_mach_hexagon_v2, "hexagonv2", TRUE, hexagon_arch_info + 0);
+  HEXAGON_ARCH_INFO (bfd_mach_hexagon_v2, "hexagon", "hexagonv2", TRUE, hexagon_arch_info + 0);
 
 /* Utility routines.  */
 int hexagon_get_mach PARAMS ((char *));
@@ -72,7 +74,7 @@ hexagon_get_mach
     if (!strcmp (name, p->printable_name))
       return p->mach;
 
-  return -1;
+  return (-1);
 }
 
 static const bfd_arch_info_type *
@@ -82,13 +84,8 @@ hexagon_bfd_compatible
   if (a->arch != bfd_arch_hexagon || b->arch != bfd_arch_hexagon)
     return NULL;
 
-  /* V1 is not compatible with anything else. */
-  if (   (a->mach == bfd_mach_hexagon || b->mach == bfd_mach_hexagon)
-      && a->mach != b->mach)
-    return NULL;
-
   /* The V2 ABI was superseded by the V3 ABI. */
-  if (   (a->mach == bfd_mach_hexagon_v2 || b->mach == bfd_mach_hexagon_v2)
+  if ((a->mach == bfd_mach_hexagon_v2 || b->mach == bfd_mach_hexagon_v2)
       && a->mach != b->mach)
     return NULL;
 
