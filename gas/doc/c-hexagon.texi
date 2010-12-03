@@ -39,36 +39,31 @@ Generate code for a little-endian CPU (default).
 Set the maximum size of objects to be optimized using the GP register to
 @var{size} (default is 8).
 
-@cindex @code{-mv2} option, Hexagon
-@item -mv2
-Generate code for Hexagon V2 (default).
-
-@cindex @code{-mv3} option, Hexagon
-@item -mv3
-Generate code for Hexagon V3.
-
-@cindex @code{-mv4} option, Hexagon
-@item -mv4
-Generate code for Hexagon V4.
-
 @cindex @code{-march=} option, Hexagon
 @item -march=@var{version}
 Generate code for the specified Hexagon version.  The following version names are
 valid:
-@code{hexagonv2}, @code{hexagonv3} and @code{hexagonv4}.
+@code{v2}, @code{v3} and @code{v4}.
 
 @cindex @code{-mcpu=} option, Hexagon
 @item -mcpu=@var{version}
 Equivalent to @code{-march=@var{version}}.
 
+@cindex @code{-mv2} option, Hexagon
+@item -mv2
+Generate code for Hexagon V2.  Equivalent to @code{-march=v2} (default).
+
+@cindex @code{-mv3} option, Hexagon
+@item -mv3
+Generate code for Hexagon V3.  Equivalent to @code{-march=v3}.
+
+@cindex @code{-mv4} option, Hexagon
+@item -mv4
+Generate code for Hexagon V4.  Equivalent to @code{-march=v4}.
+
 @cindex @code{-mfalign-info} option, Hexagon
 @item -mfalign-info
 Report usage statistics for the directive @code{.falign}.
-
-@cindex @code{-msort-sda} option, Hexagon
-@item -msort-sda
-Sort objects in the small-data area in ascending oder by their access size.
-@code{-mno-sort-sda} disables this default behavior.
 
 @cindex @code{-mno-extender} option, Hexagon
 @item -mno-extender
@@ -78,21 +73,31 @@ Disable the use of constant extenders in Hexagon V4.
 @item -mno-jumps
 Disable automatic extension of some branch instructions in Hexagon V4.
 
+@cindex @code{-mno-jumps-long} option, Hexagon
+@item -mno-jumps-long
+Disable automatic extension of long (non-paired)
+branch instructions in Hexagon V4.
+
 @cindex @code{-mno-pairing} option, Hexagon
 @item -mno-pairing
 Disable pairing of packet instructions in Hexagon V4.
-
-@cindex @code{-mno-pairing-duplex} option, Hexagon
-@item -mno-pairing-duplex
-Disable pairing to duplex instructions in Hexagon V4.
 
 @cindex @code{-mno-pairing-branch} option, Hexagon
 @item -mno-pairing-branch
 Disable pairing of branch instructions in Hexagon V4.
 
+@cindex @code{-mno-pairing-duplex} option, Hexagon
+@item -mno-pairing-duplex
+Disable pairing to duplex instructions in Hexagon V4.
+
 @cindex @code{-mpairing-info} option, Hexagon
 @item -mpairing-info
 Report about instructions pairing in Hexagon V4.
+
+@cindex @code{-msort-sda} option, Hexagon
+@item -msort-sda
+Sort objects in the small-data area in ascending oder by their access size.
+@code{-mno-sort-sda} disables this default behavior.
 
 @end table
 

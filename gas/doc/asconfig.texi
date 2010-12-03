@@ -36,6 +36,7 @@
 @set D10V
 @set D30V
 @set H8/300
+@set HEXAGON
 @set HPPA
 @set I370
 @set I80386
@@ -58,7 +59,6 @@
 @set PDP11
 @set PJ
 @set PPC
-@set HEXAGON
 @set S390
 @set SCORE
 @set SH
