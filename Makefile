@@ -184,6 +184,28 @@ build_native_gdb:
 		--disable-ld && \
 	$(MAKE) -j $(JOBS) all
 
+build_native_gdb_static:
+	mkdir -p $@
+	cd $@ &&  \
+	CC=qdsp6-gcc \
+	AS=qdsp6-as \
+	AR=qdsp6-ar \
+	LD=qdsp6-ld \
+	CFLAGS="$(BUILD_CFLAGS) -static -fno-short-enums" \
+	../configure \
+		--disable-nls \
+		--disable-werror \
+		--build=i686-linux \
+		--host=qdsp6-linux-uclibc \
+		--target=qdsp6-linux-uclibc \
+		--without-tcl \
+		--with-curses \
+		--disable-binutils \
+		--disable-gas \
+		--disable-gprof \
+		--disable-ld && \
+	$(MAKE) -j $(JOBS) all
+
 build_native_static:
 	mkdir -p $@
 	cd $@ &&  \
