@@ -158,22 +158,6 @@ char original_case_string[128];
 
 static char *buffer;	/* 1st char of each buffer of lines is here.  */
 static char *buffer_limit;	/*->1 + last char in buffer.  */
-#ifdef TC_HEXAGON
-/*
- * XXX_SM: hexagon_packet_end_lookahead needs bufferlimit
- * XXX_SM: I'm kinda on the fence about this one seems eaisier just to
- * make buffer_limit global but I will resist doing that for now.
- */
-char *get_buffer_limit(void)
-{
-    return buffer_limit;
-}
-void put_buffer_limit(char *limit)
-{
-    buffer_limit = limit;
-}
-#endif
-
 
 /* TARGET_BYTES_BIG_ENDIAN is required to be defined to either 0 or 1
    in the tc-<CPU>.h file.  See the "Porting GAS" section of the
@@ -240,7 +224,7 @@ static void pobegin (void);
 static int get_non_macro_line_sb (sb *);
 static void generate_file_debug (void);
 static char *_find_end_of_line (char *, int, int, int);
-
+
 void
 read_begin (void)
 {
@@ -262,7 +246,7 @@ read_begin (void)
   if (flag_mri)
     lex_type['?'] = 3;
 }
-
+
 #ifndef TC_ADDRESS_BYTES
 #define TC_ADDRESS_BYTES address_bytes
 
@@ -543,7 +527,7 @@ pobegin (void)
   cfi_pop_insert ();
 #endif
 }
-
+
 #define HANDLE_CONDITIONAL_ASSEMBLY()					\
   if (ignore_input ())							\
     {									\
@@ -3555,7 +3539,7 @@ s_weakref (int ignore ATTRIBUTE_UNUSED)
 
   demand_empty_rest_of_line ();
 }
-
+
 
 /* Verify that we are at the end of a line.  If not, issue an error and
    skip to EOL.  */
@@ -3576,7 +3560,7 @@ demand_empty_rest_of_line (void)
 		 *input_line_pointer);
       ignore_rest_of_line ();
     }
-  
+
   /* Return pointing just after end-of-line.  */
   know (is_end_of_line[(unsigned char) input_line_pointer[-1]]);
 }
@@ -3722,7 +3706,7 @@ pseudo_set (symbolS *symbolP)
       break;
     }
 }
-
+
 /*			cons()
 
    CONStruct more frag of .bytes, or .words etc.
@@ -4300,7 +4284,7 @@ emit_expr_fix (expressionS *exp, unsigned int nbytes, fragS *frag, char *p)
   }
 #endif
 }
-
+
 #ifdef BITFIELD_CONS_EXPRESSIONS
 
 /* i960 assemblers, (eg, asm960), allow bitfields after ".byte" as
@@ -4427,7 +4411,7 @@ parse_bitfield_cons (exp, nbytes)
 }
 
 #endif /* BITFIELD_CONS_EXPRESSIONS */
-
+
 /* Handle an MRI style string expression.  */
 
 #ifdef TC_M68K
@@ -4496,7 +4480,7 @@ parse_mri_cons (exp, nbytes)
     }
 }
 #endif /* TC_M68K */
-
+
 #ifdef REPEAT_CONS_EXPRESSIONS
 
 /* Parse a repeat expression for cons.  This is used by the MIPS
@@ -4537,7 +4521,7 @@ parse_repeat_cons (exp, nbytes)
 }
 
 #endif /* REPEAT_CONS_EXPRESSIONS */
-
+
 /* Parse a floating point number represented as a hex constant.  This
    permits users to specify the exact bits they want in the floating
    point number.  */
@@ -4741,7 +4725,7 @@ float_cons (/* Clobbers input_line-pointer, checks end-of-line.  */
   --input_line_pointer;
   demand_empty_rest_of_line ();
 }
-
+
 /* Return the size of a LEB128 value.  */
 
 static inline int
@@ -5058,7 +5042,7 @@ s_leb128 (int sign)
   input_line_pointer--;
   demand_empty_rest_of_line ();
 }
-
+
 static void
 stringer_append_char (int c, int bitsize)
 {
@@ -5195,7 +5179,7 @@ stringer (int bits_appendzero)
 
   demand_empty_rest_of_line ();
 }
-
+
 /* FIXME-SOMEDAY: I had trouble here on characters with the
     high bits set.  We'll probably also have trouble with
     multibyte chars, wide chars, etc.  Also be careful about
@@ -5322,7 +5306,7 @@ next_char_of_string (void)
     }
   return (c);
 }
-
+
 static segT
 get_segmented_expression (register expressionS *expP)
 {
@@ -5371,7 +5355,7 @@ get_absolute_expression_and_terminator (long *val_pointer /* Return value of exp
   *val_pointer = (long) get_absolute_expression ();
   return (*input_line_pointer++);
 }
-
+
 /* Like demand_copy_string, but return NULL if the string contains any '\0's.
    Give a warning if that happens.  */
 
@@ -5398,7 +5382,7 @@ demand_copy_C_string (int *len_pointer)
 
   return s;
 }
-
+
 /* Demand string, but return a safe (=private) copy of the string.
    Return NULL if we can't read a string here.  */
 
@@ -5434,7 +5418,7 @@ demand_copy_string (int *lenP)
   *lenP = len;
   return (retval);
 }
-
+
 /* In:	Input_line_pointer->next character.
 
    Do:	Skip input_line_pointer over all whitespace.
@@ -5683,7 +5667,7 @@ add_include_dir (char *path)
   if (i > include_dir_maxlen)
     include_dir_maxlen = i;
 }
-
+
 /* Output debugging information to denote the source file.  */
 
 static void
@@ -5811,7 +5795,7 @@ do_s_func (int end_p, const char *default_prefix)
 
   demand_empty_rest_of_line ();
 }
-
+
 void
 s_ignore (int arg ATTRIBUTE_UNUSED)
 {

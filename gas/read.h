@@ -188,7 +188,3 @@ extern void s_rva (int);
 extern void s_incbin (int);
 extern int s_vendor_attribute (int);
 extern void s_weakref (int);
-#ifdef TC_HEXAGON
-extern char *get_buffer_limit(void);
-extern void put_buffer_limit(char *limit);
-#endif
