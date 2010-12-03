@@ -182,9 +182,7 @@ is_loop (unsigned int insn, CORE_ADDR *top,
 	    }
 
 	  *top = (inopc & 0x18) >> 3;
-printf ("*top=0x%x\n", *top);
 	  *top |= (inopc & 0x1f00) >> 6;
-printf ("*top=0x%x\n", *top);
 
 	  return 1;
 	}
@@ -451,9 +449,18 @@ hexagon_push_dummy_call (struct gdbarch *gdbarch, struct value *function,
 static void
 hexagon_linux_init_abi (struct gdbarch_info info, struct gdbarch *gdbarch)
 {
+
   set_gdbarch_software_single_step (gdbarch, hexagon_software_single_step);
   set_gdbarch_push_dummy_call (gdbarch, hexagon_push_dummy_call);
   set_gdbarch_decr_pc_after_break (gdbarch, 4);
+
+  /* Linux uses SVR4-style shared libraries.  */
+  set_gdbarch_skip_trampoline_code (gdbarch, find_solib_trampoline_target);
+  set_solib_svr4_fetch_link_map_offsets
+    (gdbarch, svr4_ilp32_fetch_link_map_offsets);
+
+  /* Linux uses the dynamic linker included in the GNU C Library.  */
+  set_gdbarch_skip_solib_resolver (gdbarch, glibc_skip_solib_resolver);
 }
 
 /* function: hexagon_linux_init_abi_v2
