@@ -1488,7 +1488,7 @@ hexagon_elf_add_symbol_hook
           case SHN_COMMON:
             /* Common symbols less than the GP size are automatically
                treated as SHN_HEXAGONS_SCOMMON symbols.  */
-            if (!elf_gp_size (abfd) || sym->st_size > elf_gp_size (abfd))
+            if (sym->st_size > elf_gp_size (abfd))
               break;
 
             /* Choose which section to place them in. */
@@ -1510,19 +1510,12 @@ hexagon_elf_add_symbol_hook
           case SHN_HEXAGON_SCOMMON_4:
           case SHN_HEXAGON_SCOMMON_2:
           case SHN_HEXAGON_SCOMMON_1:
-            if (!elf_gp_size (abfd) || sym->st_size > elf_gp_size (abfd))
-              {
-                sym->st_shndx = SHN_COMMON;
-                *secp = bfd_com_section_ptr;
-              }
-            else
-              {
-                /* Common symbols less than or equal to -G are placed in .scommon. */
-                *secp = bfd_make_section_old_way
-                          (abfd, hexagon_scom_name [sym->st_shndx - SHN_HEXAGON_SCOMMON]);
-                bfd_set_section_flags
-                  (abfd, *secp, SEC_ALLOC | SEC_IS_COMMON | SEC_LINKER_CREATED);
-              }
+            /* Small common symbols are placed in their originally intended
+	       .scommon sections. */
+            *secp = bfd_make_section_old_way
+                      (abfd, hexagon_scom_name [sym->st_shndx - SHN_HEXAGON_SCOMMON]);
+            bfd_set_section_flags
+              (abfd, *secp, SEC_ALLOC | SEC_IS_COMMON | SEC_LINKER_CREATED);
             *valp = sym->st_size;
             break;
         }
@@ -1544,7 +1537,7 @@ hexagon_elf_symbol_processing
     case SHN_COMMON:
       /* Common symbols less than the GP size are automatically
 	 treated as SHN_HEXAGON_SCOMMON symbols.  */
-      if (!elf_gp_size (abfd) || asym->value > elf_gp_size (abfd))
+      if (asym->value > elf_gp_size (abfd))
         break;
 
       /* Choose which section to place them in. */
@@ -1566,20 +1559,15 @@ hexagon_elf_symbol_processing
     case SHN_HEXAGON_SCOMMON_4:
     case SHN_HEXAGON_SCOMMON_2:
     case SHN_HEXAGON_SCOMMON_1:
-      if (!elf_gp_size (abfd)
-          || elfsym->internal_elf_sym.st_size > elf_gp_size (abfd))
         {
-          asym->section = bfd_com_section_ptr;
-          asym->value = elfsym->internal_elf_sym.st_size;
-        }
-      else
-        {
+	  /* Small common symbols are placed in their originally intended
+	     .scommon sections. */
           asection *scom_section = hexagon_scom_section
+                                   + elfsym->internal_elf_sym.st_shndx
+                                   - SHN_HEXAGON_SCOMMON;
+          asymbol *scom_symbol = hexagon_scom_symbol
                                  + elfsym->internal_elf_sym.st_shndx
                                  - SHN_HEXAGON_SCOMMON;
-          asymbol *scom_symbol = hexagon_scom_symbol
-                               + elfsym->internal_elf_sym.st_shndx
-                               - SHN_HEXAGON_SCOMMON;
 
           if (!scom_section->name)
             {
@@ -1603,7 +1591,7 @@ hexagon_elf_symbol_processing
 
           asym->section = scom_section;
           asym->value = elfsym->internal_elf_sym.st_size;
-        }
+	}
       break;
     }
 }
@@ -3114,6 +3102,42 @@ hexagon_elf_check_relocs
 	    }
 	  break;
 
+        case R_HEXAGON_GPREL16_0:
+        case R_HEXAGON_GPREL16_1:
+        case R_HEXAGON_GPREL16_2:
+        case R_HEXAGON_GPREL16_3:
+
+        case R_HEXAGON_LO16:
+        case R_HEXAGON_HI16:
+        case R_HEXAGON_HL16:
+	case R_HEXAGON_32:
+        case R_HEXAGON_16:
+        case R_HEXAGON_8:
+	  if (h && info->executable)
+	    {
+	      /* If this relocation is in a read-only section, we might
+		 need a copy-relocation.  We can't reliably check at
+		 this stage whether the section is read-only, as input
+		 sections have not yet been mapped to output sections.
+		 Tentatively set the flag for now, and correct in
+		 adjust_dynamic_symbol.  */
+	      h->non_got_ref = TRUE;
+	      h->pointer_equality_needed = TRUE;
+	    }
+          break;
+
+	case R_HEXAGON_B22_PCREL:
+	case R_HEXAGON_B15_PCREL:
+	case R_HEXAGON_B13_PCREL:
+	case R_HEXAGON_B7_PCREL:
+	  if (h) /* && info->executable) */
+	    {
+	      /* A PLT entry may be needed if the function this relocation
+		 refers to is in a shared library.  */
+	      h->plt.refcount++;
+	    }
+          break;
+
 	case R_HEXAGON_PLT_B22_PCREL:
 	  /* This symbol requires a PLT entry.  We actually build the entry
 	     in adjust_dynamic_symbol because this might be a case of
@@ -3126,7 +3150,7 @@ hexagon_elf_check_relocs
               h->plt.refcount++;
 	    }
           break;
-        }
+       }
 
       /* Perform copy-relocation checks. */
       switch (r_type)
@@ -3148,28 +3172,6 @@ hexagon_elf_check_relocs
 	case R_HEXAGON_B15_PCREL:
 	case R_HEXAGON_B13_PCREL:
 	case R_HEXAGON_B7_PCREL:
-	  if (h && info->executable)
-	    {
-	      /* If this relocation is in a read-only section, we might
-		 need a copy-relocation.  We can't reliably check at
-		 this stage whether the section is read-only, as input
-		 sections have not yet been mapped to output sections.
-		 Tentatively set the flag for now, and correct in
-		 adjust_dynamic_symbol.  */
-	      h->non_got_ref = TRUE;
-
-	      /* A PLT entry may be needed if the function this relocation
-		 refers to is in a shared library.  */
-	      h->plt.refcount++;
-
-	      /* FIXME: How about the other relocation types? */
-	      if (r_type != R_HEXAGON_B22_PCREL
-	          && r_type != R_HEXAGON_B15_PCREL
-	          && r_type != R_HEXAGON_B13_PCREL
-	          && r_type != R_HEXAGON_B7_PCREL)
-		h->pointer_equality_needed = 1;
-	    }
-
 	  /* If we are creating a shared library, and this is a relocation
 	     against a global symbol, or a non PC-relative relocation
 	     against a local symbol, then we need to copy the relocation
@@ -3404,16 +3406,22 @@ hexagon_elf_gc_sweep_hook
 	case R_HEXAGON_16:
 	case R_HEXAGON_8:
 
+/*
 	case R_HEXAGON_B22_PCREL:
 	case R_HEXAGON_B15_PCREL:
 	case R_HEXAGON_B13_PCREL:
 	case R_HEXAGON_B7_PCREL:
+*/
 	  if (info->shared)
 	    break;
 
 	  /* Fall thru */
 
 	case R_HEXAGON_PLT_B22_PCREL:
+	case R_HEXAGON_B22_PCREL:
+	case R_HEXAGON_B15_PCREL:
+	case R_HEXAGON_B13_PCREL:
+	case R_HEXAGON_B7_PCREL:
 	  /* FIXME: should symbol visibility matter? */
 	  if (h)
             /* Global symbol. */
