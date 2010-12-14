@@ -879,23 +879,26 @@ hexagon_analyze_prologue (struct gdbarch *gdbarch,
       {
           this_base = get_frame_register_unsigned (next_frame, REG_SP);
 	  this_base -= 8;
-/*
- * Store the back chain
- */
           this_fp = get_frame_register_unsigned (next_frame, REG_FP);
-	  target_write_memory (this_base, &this_fp, 4);
-	  target_write_memory (this_base+4, &this_lr, 4);
       }
       else
           this_base = get_frame_register_unsigned (next_frame, REG_FP);
-
 
       for (i = 0; i < 32; i++)
 	if (gr_saved[i])
 	  info->saved_regs[i].addr = this_base + sp_mod_val + gr_sp_offset[i];
 
-      info->saved_regs[REG_FP].addr = this_base;
-      info->saved_regs[REG_LR].addr = this_base + 4;
+
+      if (fp_set || could_be_frameless)
+	{
+	  trad_frame_set_value (info->saved_regs, REG_LR, this_lr);
+	  trad_frame_set_value (info->saved_regs, REG_FP, this_fp);
+	}
+      else
+	{
+	  info->saved_regs[REG_FP].addr = this_base;
+	  info->saved_regs[REG_LR].addr = this_base + 4;
+	}
 
       info->saved_regs[REG_PC] = info->saved_regs[REG_LR];
 
@@ -1668,7 +1671,7 @@ hexagon_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
   frame_base_set_default (gdbarch, &hexagon_frame_base);
 
   /* Settings for calling functions in the inferior.  */
-  set_gdbarch_push_dummy_call (gdbarch, hexagon_push_dummy_call_deprecated);
+  set_gdbarch_push_dummy_call (gdbarch, hexagon_push_dummy_call);
   set_gdbarch_dummy_id (gdbarch, hexagon_dummy_id);
 
   /* Settings that should be unnecessary.  */
