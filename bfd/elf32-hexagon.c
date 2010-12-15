@@ -274,7 +274,7 @@ static reloc_howto_type hexagon_elf_howto_table [] =
 	 32,			/* bitsize  */
 	 FALSE,			/* pc_relative  */
 	 0,			/* bitpos  */
-	 complain_overflow_dont, /* complain_on_overflow  */
+	 complain_overflow_bitfield, /* complain_on_overflow  */
 	 hexagon_elf_reloc,	/* special_function  */
 	 "R_HEXAGON_LO16",	/* name  */
 	 FALSE,			/* partial_inplace  */
@@ -289,7 +289,7 @@ static reloc_howto_type hexagon_elf_howto_table [] =
 	 32,			/* bitsize  */
 	 FALSE,			/* pc_relative  */
 	 0,			/* bitpos  */
-	 complain_overflow_dont, /* complain_on_overflow  */
+	 complain_overflow_bitfield, /* complain_on_overflow  */
 	 hexagon_elf_reloc,	/* special_function  */
 	 "R_HEXAGON_HI16",	/* name  */
 	 FALSE,			/* partial_inplace  */
@@ -409,7 +409,7 @@ static reloc_howto_type hexagon_elf_howto_table [] =
 	 32,			/* bitsize  */
 	 FALSE,			/* pc_relative  */
 	 0,			/* bitpos  */
-	 complain_overflow_dont, /* complain_on_overflow  */
+	 complain_overflow_bitfield, /* complain_on_overflow  */
 	 hexagon_elf_reloc,	/* special_function  */
 	 "R_HEXAGON_HL16",	/* name  */
 	 FALSE,			/* partial_inplace  */
@@ -559,7 +559,7 @@ static reloc_howto_type hexagon_elf_howto_table [] =
 	 6,			/* bitsize  */
 	 FALSE,			/* pc_relative  */
 	 0,			/* bitpos  */
-	 complain_overflow_signed, /* complain_on_overflow  */
+	 complain_overflow_bitfield, /* complain_on_overflow  */
 	 hexagon_elf_reloc,	/* special_function  */
 	 "R_HEXAGON_16_X",	/* name  */
 	 FALSE,			/* partial_inplace  */
@@ -574,7 +574,7 @@ static reloc_howto_type hexagon_elf_howto_table [] =
 	 6,			/* bitsize  */
 	 FALSE,			/* pc_relative  */
 	 0,			/* bitpos  */
-	 complain_overflow_signed, /* complain_on_overflow  */
+	 complain_overflow_bitfield, /* complain_on_overflow  */
 	 hexagon_elf_reloc,	/* special_function  */
 	 "R_HEXAGON_12_X",	/* name  */
 	 FALSE,			/* partial_inplace  */
@@ -597,14 +597,14 @@ static reloc_howto_type hexagon_elf_howto_table [] =
 	 0,			/* dst_mask  */
 	 FALSE),		/* pcrel_offset  */
 
-  /* An extended signed 16 bit number. */
+  /* An extended signed 10 bit number. */
   HOWTO (R_HEXAGON_10_X,	/* type  */
 	 0,			/* rightshift  */
 	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
 	 6,			/* bitsize  */
 	 FALSE,			/* pc_relative  */
 	 0,			/* bitpos  */
-	 complain_overflow_signed, /* complain_on_overflow  */
+	 complain_overflow_bitfield, /* complain_on_overflow  */
 	 hexagon_elf_reloc,	/* special_function  */
 	 "R_HEXAGON_10_X",	/* name  */
 	 FALSE,			/* partial_inplace  */
@@ -619,7 +619,7 @@ static reloc_howto_type hexagon_elf_howto_table [] =
 	 6,			/* bitsize  */
 	 FALSE,			/* pc_relative  */
 	 0,			/* bitpos  */
-	 complain_overflow_signed, /* complain_on_overflow  */
+	 complain_overflow_bitfield, /* complain_on_overflow  */
 	 hexagon_elf_reloc,	/* special_function  */
 	 "R_HEXAGON_9_X",	/* name  */
 	 FALSE,			/* partial_inplace  */
@@ -634,7 +634,7 @@ static reloc_howto_type hexagon_elf_howto_table [] =
 	 6,			/* bitsize  */
 	 FALSE,			/* pc_relative  */
 	 0,			/* bitpos  */
-	 complain_overflow_signed, /* complain_on_overflow  */
+	 complain_overflow_bitfield, /* complain_on_overflow  */
 	 hexagon_elf_reloc,	/* special_function  */
 	 "R_HEXAGON_8_X",	/* name  */
 	 FALSE,			/* partial_inplace  */
@@ -649,7 +649,7 @@ static reloc_howto_type hexagon_elf_howto_table [] =
 	 6,			/* bitsize  */
 	 FALSE,			/* pc_relative  */
 	 0,			/* bitpos  */
-	 complain_overflow_signed, /* complain_on_overflow  */
+	 complain_overflow_bitfield, /* complain_on_overflow  */
 	 hexagon_elf_reloc,	/* special_function  */
 	 "R_HEXAGON_7_X",	/* name  */
 	 FALSE,			/* partial_inplace  */
@@ -664,7 +664,7 @@ static reloc_howto_type hexagon_elf_howto_table [] =
 	 6,			/* bitsize  */
 	 FALSE,			/* pc_relative  */
 	 0,			/* bitpos  */
-	 complain_overflow_signed, /* complain_on_overflow  */
+	 complain_overflow_bitfield, /* complain_on_overflow  */
 	 hexagon_elf_reloc,	/* special_function  */
 	 "R_HEXAGON_6_X",	/* name  */
 	 FALSE,			/* partial_inplace  */
@@ -679,7 +679,7 @@ static reloc_howto_type hexagon_elf_howto_table [] =
 	 32,			/* bitsize  */
 	 TRUE,			/* pc_relative  */
 	 0,			/* bitpos  */
-	 complain_overflow_signed, /* complain_on_overflow  */
+	 complain_overflow_bitfield, /* complain_on_overflow  */
 	 bfd_elf_generic_reloc,	/* special_function  */
 	 "R_HEXAGON_32_PCREL",	/* name  */
 	 FALSE,			/* partial_inplace  */
@@ -694,7 +694,7 @@ static reloc_howto_type hexagon_elf_howto_table [] =
 	 32,			/* bitsize  */
 	 FALSE,			/* pc_relative  */
 	 0,			/* bitpos  */
-	 complain_overflow_bitfield, /* complain_on_overflow  */
+	 complain_overflow_dont, /* complain_on_overflow  */
 	 bfd_elf_generic_reloc,	/* special_function  */
 	 "R_HEXAGON_COPY",	/* name  */
 	 FALSE,			/* partial_inplace  */
@@ -709,7 +709,7 @@ static reloc_howto_type hexagon_elf_howto_table [] =
 	 32,			/* bitsize  */
 	 FALSE,			/* pc_relative  */
 	 0,			/* bitpos  */
-	 complain_overflow_bitfield, /* complain_on_overflow  */
+	 complain_overflow_dont, /* complain_on_overflow  */
 	 bfd_elf_generic_reloc,	/* special_function  */
 	 "R_HEXAGON_GLOB_DAT",	/* name  */
 	 FALSE,			/* partial_inplace  */
@@ -724,7 +724,7 @@ static reloc_howto_type hexagon_elf_howto_table [] =
 	 32,			/* bitsize  */
 	 FALSE,			/* pc_relative  */
 	 0,			/* bitpos  */
-	 complain_overflow_bitfield, /* complain_on_overflow  */
+	 complain_overflow_dont, /* complain_on_overflow  */
 	 bfd_elf_generic_reloc,	/* special_function  */
 	 "R_HEXAGON_JMP_SLOT",	/* name  */
 	 FALSE,			/* partial_inplace  */
@@ -739,7 +739,7 @@ static reloc_howto_type hexagon_elf_howto_table [] =
 	 32,			/* bitsize  */
 	 FALSE,			/* pc_relative  */
 	 0,			/* bitpos  */
-	 complain_overflow_bitfield, /* complain_on_overflow  */
+	 complain_overflow_dont, /* complain_on_overflow  */
 	 bfd_elf_generic_reloc,	/* special_function  */
 	 "R_HEXAGON_RELATIVE",	/* name  */
 	 FALSE,			/* partial_inplace  */
@@ -1176,16 +1176,10 @@ hexagon_reloc_operand
   if ((opcode) && (operand))
     {
       if (!hexagon_encode_operand
-            (operand, insn, opcode, value, &xvalue, flag & HEXAGON_OPERAND_IS_KXED,
-             operand->flags & HEXAGON_OPERAND_PC_RELATIVE, errmsg))
-        {
-          /*
-          fprintf (stderr, "Error when encoding operand `%s' of `%s'.\n",
-                   operand->fmt, opcode->syntax);
-          */
-
-          return FALSE;
-        }
+             (operand, insn, opcode, value, &xvalue,
+	      flag & HEXAGON_OPERAND_IS_KXED,
+              operand->flags & HEXAGON_OPERAND_PC_RELATIVE, errmsg))
+        return FALSE;
     }
   else
     return FALSE;

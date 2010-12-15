@@ -1948,16 +1948,14 @@ hexagon_insn_write
       else
         reloc_type = operand->reloc_type;
 
-      dwarf2_emit_insn (HEXAGON_INSN_LEN);
       pc = frag_now->fr_address + frag_now_fix ();
 
       fixP
         = fix_new_exp
             (frag_now, stream + offset - frag_now->fr_literal, HEXAGON_INSN_LEN,
-            exp,
-            (operand->flags & HEXAGON_OPERAND_PC_RELATIVE)
-            == HEXAGON_OPERAND_PC_RELATIVE,
-            reloc_type);
+             exp,
+             (operand->flags & HEXAGON_OPERAND_PC_RELATIVE) == HEXAGON_OPERAND_PC_RELATIVE,
+             reloc_type);
       fixP->tc_fix_data = operand;
 
       if (operand->flags & (HEXAGON_OPERAND_IS_LO16 | HEXAGON_OPERAND_IS_HI16))
@@ -1970,11 +1968,8 @@ hexagon_insn_write
         fixP->fx_offset += offset;
     }
   else
-    {
-      /* Allocate space for an insn. */
-      dwarf2_emit_insn (HEXAGON_INSN_LEN);
-      pc = frag_now->fr_address + frag_now_fix ();
-    }
+    /* Allocate space for an insn. */
+    pc = frag_now->fr_address + frag_now_fix ();
 
   /* Write out the instruction. */
   md_number_to_chars (stream + offset, insn, HEXAGON_INSN_LEN);
@@ -2832,16 +2827,18 @@ hexagon_packet_write
       apacket->insns [i].pad = FALSE;
       frag_now->tc_frag_data->packet.insns [size] = apacket->insns [i];
       hexagon_insn_write (frag_now->tc_frag_data->packet.insns [size].insn,
-                        frag_now->tc_frag_data->packet.insns [size].fc,
-                        &frag_now->tc_frag_data->packet.insns [size].operand,
-                        &frag_now->tc_frag_data->packet.insns [size].exp,
-                        first, size * HEXAGON_INSN_LEN,
-                        &frag_now->tc_frag_data->packet.insns [size].fix,
-                        frag_now->tc_frag_data->packet.insns [size].lineno);
+			  frag_now->tc_frag_data->packet.insns [size].fc,
+			  &frag_now->tc_frag_data->packet.insns [size].operand,
+			  &frag_now->tc_frag_data->packet.insns [size].exp,
+			  first, size * HEXAGON_INSN_LEN,
+			  &frag_now->tc_frag_data->packet.insns [size].fix,
+			  frag_now->tc_frag_data->packet.insns [size].lineno);
 
       /* Count insn as legit. */
       frag_now->tc_frag_data->packet.size++;
     }
+
+  dwarf2_emit_insn (frag_now->tc_frag_data->packet.size * HEXAGON_INSN_LEN);
 
   assert (req_insns == frag_now->tc_frag_data->packet.size);
 
