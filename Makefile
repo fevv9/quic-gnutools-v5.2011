@@ -115,10 +115,11 @@ build_cross_binutils:
 	../configure \
 		--disable-nls \
 		--disable-werror \
-		--target=hexagon-linux-uclibc \
+		--target=hexagon-linux \
 		--without-tcl \
 		--disable-libdecnumber \
 		--disable-readline \
+		--prefix=$(PREFIX) \
 		--disable-gdb && \
 	$(MAKE) -j $(JOBS) all
 
