@@ -1620,29 +1620,30 @@ hexagon_encode_operand
       value.s = xed;
     }
 
+  /* Check if the operand fits. */
   if (is_s)
     {
       if (value.s < smin || (smax > 0 && value.s > smax))
-        {
-          if (errmsg)
-            {
-              sprintf (buf, "value %ld out of range: %ld-%ld", value.s, smin, smax);
-              *errmsg = buf;
-            }
-          return FALSE;
-        }
+	{
+	  if (errmsg)
+	    {
+	      sprintf (buf, "value %ld out of range: %ld-%ld", value.s, smin, smax);
+	      *errmsg = buf;
+	    }
+	  return FALSE;
+	}
     }
   else
     {
       if (value.u < umin || (umax > 0 && value.u > umax))
-        {
-          if (errmsg)
-            {
-              sprintf (buf, "value %lu out of range: %lu-%lu", value.u, umin, umax);
-              *errmsg = buf;
-            }
-          return FALSE;
-        }
+	{
+	  if (errmsg)
+	    {
+	      sprintf (buf, "value %lu out of range: %lu-%lu", value.u, umin, umax);
+	      *errmsg = buf;
+	    }
+	  return FALSE;
+	}
     }
 
   /* In the presence of an extender, the value is not shifted. */
