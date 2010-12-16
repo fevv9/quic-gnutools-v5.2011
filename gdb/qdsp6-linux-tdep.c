@@ -182,9 +182,7 @@ is_loop (unsigned int insn, CORE_ADDR *top,
 	    }
 
 	  *top = (inopc & 0x18) >> 3;
-printf ("*top=0x%x\n", *top);
 	  *top |= (inopc & 0x1f00) >> 6;
-printf ("*top=0x%x\n", *top);
 
 	  return 1;
 	}
