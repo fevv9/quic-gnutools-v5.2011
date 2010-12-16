@@ -39,8 +39,8 @@
 
 #define QDSP6_TRAMPOLINE_PREFIX     ".PAD"
 #define QDSP6_TRAMPOLINE_PREFIX_LEN (sizeof (QDSP6_TRAMPOLINE_PREFIX))
-#define QDSP6_TRAMPLINE_NEEDED(D, B) \
-  (abs (D) \
+#define QDSP6_TRAMPOLINE_NEEDED(D, B) \
+  ((bfd_signed_vma) llabs (D) \
    > (~(~(bfd_signed_vma) 0 << ((B) - 1)) & -(MAX_PACKET_INSNS * QDSP6_INSN_LEN)))
 
 /* The name of the dynamic interpreter.  This is put in the .interp
@@ -950,14 +950,12 @@ qdsp6_reloc_operand
   bfd_reloc_code_real_type type;
   const qdsp6_opcode *opcode;
   const qdsp6_operand *operand;
-  int flag, is_x;
+  int flag;
   long value, xvalue;
 
   opcode  = qdsp6_lookup_insn (*insn);
   type    = qdsp6_elf_reloc_val_lookup (howto->type, &flag);
   operand = qdsp6_lookup_reloc (type, flag, opcode);
-
-  is_x = (flag & QDSP6_OPERAND_IS_KXED);
 
   value = offset;
 
@@ -2062,10 +2060,9 @@ qdsp6_elf_relocate_section
 }
 
 static bfd_boolean
-qdsp6_elf_relax_section (bfd *input_bfd,
-                         asection *isec,
-                         struct bfd_link_info *link_info,
-                         bfd_boolean *again)
+qdsp6_elf_relax_section
+(bfd *input_bfd, asection *isec,
+ struct bfd_link_info *link_info, bfd_boolean *again)
 {
   Elf_Internal_Shdr *symtab_hdr = NULL;
   Elf_Internal_Rela *irelbuf = NULL;
@@ -2126,7 +2123,12 @@ qdsp6_elf_relax_section (bfd *input_bfd,
       /* Look into relocation overflows at branches and add trampolines if needed. */
       rtype = ELF32_R_TYPE (irel->r_info);
       if (link_info->qdsp6_trampolines
-          && (rtype == R_QDSP6_B22_PCREL
+          && (rtype == R_QDSP6_B32_PCREL_X
+              || rtype == R_QDSP6_B22_PCREL_X
+              || rtype == R_QDSP6_B15_PCREL_X
+              || rtype == R_QDSP6_B13_PCREL_X
+              || rtype == R_QDSP6_B9_PCREL_X
+              || rtype == R_QDSP6_B22_PCREL
               || rtype == R_QDSP6_B15_PCREL
               || rtype == R_QDSP6_B13_PCREL
               || rtype == R_QDSP6_B9_PCREL))
@@ -2176,7 +2178,8 @@ qdsp6_elf_relax_section (bfd *input_bfd,
               asec = bfd_section_from_elf_index (input_bfd, isym->st_shndx);
 
               name = bfd_malloc (sizeof (l_count) * 2 + 1);
-              sprintf (name, "%0*lx", (int) sizeof (l_count) * 2, (long)l_count++);
+              sprintf (name, "%0*lx",
+		       (int) sizeof (l_count) * 2, (long) l_count++);
 
               is_def = TRUE;
 
@@ -2227,15 +2230,21 @@ qdsp6_elf_relax_section (bfd *input_bfd,
             }
 
           /* Check if the target is beyond reach. */
-          ioffset = abs ((to + to_base) - (from + at_base));
-          if ((is_def && (((rtype == R_QDSP6_B22_PCREL)
-                           && QDSP6_TRAMPLINE_NEEDED (ioffset, 24))
+          ioffset = llabs ((to + to_base) - (from + at_base));
+          if ((is_def && (((rtype == R_QDSP6_B32_PCREL_X
+			    || rtype == R_QDSP6_B22_PCREL_X
+			    || rtype == R_QDSP6_B15_PCREL_X
+			    || rtype == R_QDSP6_B13_PCREL_X
+			    || rtype == R_QDSP6_B9_PCREL_X)
+                           && QDSP6_TRAMPOLINE_NEEDED (ioffset, 32))
+                          || ((rtype == R_QDSP6_B22_PCREL)
+                              && QDSP6_TRAMPOLINE_NEEDED (ioffset, 24))
                           || ((rtype == R_QDSP6_B15_PCREL)
-                              && QDSP6_TRAMPLINE_NEEDED (ioffset, 17))
+                              && QDSP6_TRAMPOLINE_NEEDED (ioffset, 17))
                           || ((rtype == R_QDSP6_B13_PCREL)
-                              && QDSP6_TRAMPLINE_NEEDED (ioffset, 15))
+                              && QDSP6_TRAMPOLINE_NEEDED (ioffset, 15))
                           || ((rtype == R_QDSP6_B9_PCREL)
-                              && QDSP6_TRAMPLINE_NEEDED (ioffset, 11))))
+                              && QDSP6_TRAMPOLINE_NEEDED (ioffset, 11))))
               || !is_def)
 	    {
               /* Try to add a trampoline. */
@@ -2248,9 +2257,8 @@ qdsp6_elf_relax_section (bfd *input_bfd,
 	          if (contents == NULL)
 		    goto error_return;
 
-	          if (!bfd_get_section_contents (input_bfd, isec, contents,
-					          (file_ptr) 0,
-					          isec_size))
+	          if (!bfd_get_section_contents
+			 (input_bfd, isec, contents, (file_ptr) 0, isec_size))
 		    goto error_return;
 
                 elf_section_data (isec)->this_hdr.contents = contents;
@@ -2272,8 +2280,8 @@ qdsp6_elf_relax_section (bfd *input_bfd,
               }
 
               /* Create a symbol for the trampoline. */
-              t_name = bfd_malloc (QDSP6_TRAMPOLINE_PREFIX_LEN + 1
-                                   + strlen (name) + 1);
+              t_name = bfd_malloc
+			 (QDSP6_TRAMPOLINE_PREFIX_LEN + 1 + strlen (name) + 1);
               sprintf (t_name, "%s_%s", QDSP6_TRAMPOLINE_PREFIX, name);
 
               /* Try to find it, otherwise, create it. */
@@ -2282,14 +2290,20 @@ qdsp6_elf_relax_section (bfd *input_bfd,
                 {
                   t_at = isec_size;
 
-                  if (((rtype == R_QDSP6_B22_PCREL)
-                       && QDSP6_TRAMPLINE_NEEDED (t_at - from, 23))
+                  if (((rtype == R_QDSP6_B32_PCREL_X
+			|| rtype == R_QDSP6_B22_PCREL_X
+			|| rtype == R_QDSP6_B15_PCREL_X
+			|| rtype == R_QDSP6_B13_PCREL_X
+			|| rtype == R_QDSP6_B9_PCREL_X)
+                       && QDSP6_TRAMPOLINE_NEEDED (t_at - from, 31))
+                      || ((rtype == R_QDSP6_B22_PCREL)
+			  && QDSP6_TRAMPOLINE_NEEDED (t_at - from, 23))
                       || ((rtype == R_QDSP6_B15_PCREL)
-                          && QDSP6_TRAMPLINE_NEEDED (t_at - from, 16))
+                          && QDSP6_TRAMPOLINE_NEEDED (t_at - from, 16))
                       || ((rtype == R_QDSP6_B13_PCREL)
-                          && QDSP6_TRAMPLINE_NEEDED (t_at - from, 14))
+                          && QDSP6_TRAMPOLINE_NEEDED (t_at - from, 14))
                       || ((rtype == R_QDSP6_B9_PCREL)
-                          && QDSP6_TRAMPLINE_NEEDED (t_at - from, 10)))
+                          && QDSP6_TRAMPOLINE_NEEDED (t_at - from, 10)))
                     /* No room for a trampoline. */
                     goto error_return;
 
@@ -2315,8 +2329,8 @@ qdsp6_elf_relax_section (bfd *input_bfd,
                   for (i = j = 0;
                        i < sizeof (qdsp6_trampoline);
                        i += sizeof (*qdsp6_trampoline), j++)
-                    bfd_put_32 (input_bfd, qdsp6_trampoline [j],
-                                contents + t_at + i);
+                    bfd_put_32
+		      (input_bfd, qdsp6_trampoline [j], contents + t_at + i);
 
                   /* Add relocations for the trampoline. */
                   creloc = sizeof (qdsp6_trampoline_rels)
@@ -2349,13 +2363,12 @@ qdsp6_elf_relax_section (bfd *input_bfd,
                        + t_h->u.def.section->output_offset;
 
               /* Fix up the offending branch by pointing it to the trampoline. */
-              insn = qdsp6_get_insn (input_bfd,
-                                     elf_qdsp6_howto_table + rtype,
-                                     contents + at);
-              if (qdsp6_reloc_operand (elf_qdsp6_howto_table + rtype, &insn,
-                                       t_at - from, NULL))
-                qdsp6_put_insn (input_bfd, elf_qdsp6_howto_table + rtype,
-                                contents + at, insn);
+              insn = qdsp6_get_insn
+		       (input_bfd, elf_qdsp6_howto_table + rtype, contents + at);
+              if (qdsp6_reloc_operand
+		    (elf_qdsp6_howto_table + rtype, &insn, t_at - from, NULL))
+                qdsp6_put_insn
+		  (input_bfd, elf_qdsp6_howto_table + rtype, contents + at, insn);
 
               /* Done adding the trampolines.
                  Relax again in case other branches were pushed out of range. */
