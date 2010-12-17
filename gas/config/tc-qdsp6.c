@@ -1881,15 +1881,13 @@ qdsp6_insn_write
       else
         reloc_type = operand->reloc_type;
 
-      dwarf2_emit_insn (QDSP6_INSN_LEN);
       pc = frag_now->fr_address + frag_now_fix ();
 
       fixP
         = fix_new_exp
             (frag_now, stream + offset - frag_now->fr_literal, QDSP6_INSN_LEN,
             exp,
-            (operand->flags & QDSP6_OPERAND_PC_RELATIVE)
-            == QDSP6_OPERAND_PC_RELATIVE,
+            (operand->flags & QDSP6_OPERAND_PC_RELATIVE) == QDSP6_OPERAND_PC_RELATIVE,
             reloc_type);
       fixP->tc_fix_data = operand;
 
@@ -1903,11 +1901,7 @@ qdsp6_insn_write
         fixP->fx_offset += offset;
     }
   else
-    {
-      /* Allocate space for an insn. */
-      dwarf2_emit_insn (QDSP6_INSN_LEN);
-      pc = frag_now->fr_address + frag_now_fix ();
-    }
+    pc = frag_now->fr_address + frag_now_fix ();
 
   /* Write out the instruction. */
   md_number_to_chars (stream + offset, insn, QDSP6_INSN_LEN);
@@ -2775,6 +2769,9 @@ qdsp6_packet_write
       /* Count insn as legit. */
       frag_now->tc_frag_data->packet.size++;
     }
+
+  /* Emit current line number info at the beginning of the packet. */
+  dwarf2_emit_insn (frag_now->tc_frag_data->packet.size * QDSP6_INSN_LEN);
 
   assert (req_insns == frag_now->tc_frag_data->packet.size);
 
