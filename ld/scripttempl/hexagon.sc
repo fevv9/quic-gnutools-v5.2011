@@ -95,7 +95,7 @@ test -z "${BIG_OUTPUT_FORMAT}" && BIG_OUTPUT_FORMAT=${OUTPUT_FORMAT}
 test -z "${LITTLE_OUTPUT_FORMAT}" && LITTLE_OUTPUT_FORMAT=${OUTPUT_FORMAT}
 if [ -z "$MACHINE" ]; then OUTPUT_ARCH=${ARCH}; else OUTPUT_ARCH=${ARCH}:${MACHINE}; fi
 test -z "${ELFSIZE}" && ELFSIZE=32
-test -z "${ALIGNMENT}" && ALIGNMENT="${ELFSIZE}" / 8
+test -z "${ALIGNMENT}" && ALIGNMENT="${ELFSIZE} / 8"
 test "$LD_FLAG" = "N" && DATA_ADDR=.
 test -z "${ETEXT_NAME}" && ETEXT_NAME=${USER_LABEL_PREFIX}etext
 test -n "$CREATE_SHLIB$CREATE_PIE" && test -n "$SHLIB_DATA_ADDR" && COMMONPAGESIZE=""
@@ -149,7 +149,6 @@ if test -z "${NO_SMALL_DATA}"; then
   .sbss         ${RELOCATING-0} : ${TCM+AT (__ebi_pa_start__ + ADDR (.sbss) - __ebi_va_start__)}
   {
     ${RELOCATING+${SBSS_START_SYMBOLS}}
-    ${CREATE_SHLIB+*(.sbss2 .sbss2.* .gnu.linkonce.sb2.*)}
     *(.dynsbss)
     *(.sbss.hot${RELOCATING+ .sbss.hot.* .gnu.linkonce.sb.hot.*})
     *(.sbss${RELOCATING+ .sbss.* .gnu.linkonce.sb.*})
@@ -165,7 +164,6 @@ if test -z "${NO_SMALL_DATA}"; then
   .sdata        ${RELOCATING-0} : ${TCM+AT (__ebi_pa_start__ + ADDR (.sdata) - __ebi_va_start__)}
   {
     ${RELOCATING+${SDATA_START_SYMBOLS}}
-    ${CREATE_SHLIB+*(.sdata2 .sdata2.* .gnu.linkonce.s2.*)}
     *(.sdata.1${RELOCATING+ .sdata.1.* .gnu.linkonce.s.1.*})
     *(.sbss.1${RELOCATING+ .sbss.1.* .gnu.linkonce.sb.1.*})
     *(.scommon.1${RELOCATING+ .scommon.1.*})
@@ -188,7 +186,7 @@ if test -z "${NO_SMALL_DATA}"; then
   .sdata2       ${RELOCATING-0} : ${TCM+AT (__ebi_pa_start__ + ADDR (.sdata2) - __ebi_va_start__)}
     {
       ${RELOCATING+${SDATA2_START_SYMBOLS}}
-      { *(.sdata2${RELOCATING+ .sdata2.* .gnu.linkonce.s2.*})}
+      *(.sdata2${RELOCATING+ .sdata2.* .gnu.linkonce.s2.*})
     }"
   REL_SDATA="
   .rela.sdata   ${RELOCATING-0} : ${TCM+AT (__ebi_pa_start__ + ADDR (.rela.sdata) - __ebi_va_start__)} \
@@ -210,7 +208,7 @@ if test -z "${DATA_GOT}"; then
     DATA_GOT=" "
   fi
 fi
-if test -z "${SDATA_GOT}" && test -z "${DATA_GOT}"; then
+if test -z "${SDATA_GOT}"; then
   if test -z "${NO_SMALL_DATA}"; then
     SDATA_GOT=" "
   fi
@@ -392,12 +390,11 @@ TCM_DATA_UN="
   .tcm_data_uncached : AT (__tcm_pa_start__ + ADDR (.tcm_data_uncached) - __tcm_va_start__)
   { *(.tcm_data_uncached${RELOCATING+ .tcm_data_uncached.*}) } :TCM_DATA_UN"
 
-OTHER_TEXT_SECTIONS="${TCM+${EBI_CODE}}"
-OTHER_READWRITE_SECTIONS="${TCM+${EBI_DATA}}"
+${TCM+OTHER_TEXT_SECTIONS="${EBI_CODE}"}
+${TCM+OTHER_READWRITE_SECTIONS="${EBI_DATA}"}
 
 cat <<EOF
-OUTPUT_FORMAT("${OUTPUT_FORMAT}",
-              "${BIG_OUTPUT_FORMAT}",
+OUTPUT_FORMAT("${OUTPUT_FORMAT}", "${BIG_OUTPUT_FORMAT}",
 	      "${LITTLE_OUTPUT_FORMAT}")
 OUTPUT_ARCH(${OUTPUT_ARCH})
 ${RELOCATING+ENTRY(${ENTRY})}
@@ -570,6 +567,7 @@ cat <<EOF
     *(.gnu.warning)
     ${RELOCATING+${OTHER_TEXT_SECTIONS}}
   } =${NOP-0}
+
   .fini         ${RELOCATING-0} : ${TCM+AT (__ebi_pa_start__ + ADDR (.fini) - __ebi_va_start__)}
   {
     ${RELOCATING+${FINI_START}}
@@ -588,10 +586,10 @@ cat <<EOF
 
   ${WRITABLE_RODATA-${RODATA}}
   .rodata1      ${RELOCATING-0} : ${TCM+AT (__ebi_pa_start__ + ADDR (.rodata1) - __ebi_va_start__)} { *(.rodata1) }
+  ${OTHER_READONLY_SECTIONS}
   .eh_frame_hdr   : ${TCM+AT (__ebi_pa_start__ + ADDR (.eh_frame_hdr) - __ebi_va_start__)} { *(.eh_frame_hdr) }
   .eh_frame     ${RELOCATING-0} : ${TCM+AT (__ebi_pa_start__ + ADDR (.eh_frame) - __ebi_va_start__)} ONLY_IF_RO { KEEP (*(.eh_frame)) }
   .gcc_except_table ${RELOCATING-0} : ${TCM+AT (__ebi_pa_start__ + ADDR (.gcc_except_table) - __ebi_va_start__)} ONLY_IF_RO { *(.gcc_except_table .gcc_except_table.*) }
-  ${OTHER_READONLY_SECTIONS}
 
 /* Data start. */
   /* Adjust the address for the data segment.  We want to adjust up to
@@ -699,6 +697,8 @@ ${NO_SMALL_DATA-
   ${SDATA_GOT+${GOT}}
   ${SDATA_GOT+${OTHER_GOT_SECTIONS}}
   ${OTHER_SDATA_SECTIONS}
+  ${CREATE_SHLIB-${SDATA2}}
+  ${CREATE_SHLIB-${SBSS2}}
   ${SBSS}
   ${RELOCATING+. = ALIGN (${ALIGNMENT});}
   ${RELOCATING+${OTHER_END_SYMBOLS}}
