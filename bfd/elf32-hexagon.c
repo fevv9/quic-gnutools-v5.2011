@@ -39,8 +39,8 @@
 
 #define HEXAGON_TRAMPOLINE_PREFIX     ".PAD"
 #define HEXAGON_TRAMPOLINE_PREFIX_LEN (sizeof (HEXAGON_TRAMPOLINE_PREFIX))
-#define HEXAGON_TRAMPLINE_NEEDED(D, B) \
-  (abs (D) \
+#define HEXAGON_TRAMPOLINE_NEEDED(D, B) \
+  ((bfd_signed_vma) llabs (D) \
    > (~(~(bfd_signed_vma) 0 << ((B) - 1)) & -(MAX_PACKET_INSNS * HEXAGON_INSN_LEN)))
 
 /* The name of the dynamic interpreter.  This is put in the .interp
@@ -1162,29 +1162,24 @@ hexagon_reloc_operand
   bfd_reloc_code_real_type type;
   const hexagon_opcode *opcode;
   const hexagon_operand *operand;
-  int flag, is_x;
+  int flag;
   long value, xvalue;
 
   opcode  = hexagon_lookup_insn (*insn);
   type    = hexagon_elf_reloc_val_lookup (howto->type, &flag);
   operand = hexagon_lookup_reloc (type, flag, opcode);
 
-  is_x = (flag & HEXAGON_OPERAND_IS_KXED);
-
   value = offset;
 
-  if ((opcode) && (operand))
-    {
-      if (!hexagon_encode_operand
-             (operand, insn, opcode, value, &xvalue,
-	      flag & HEXAGON_OPERAND_IS_KXED,
-              operand->flags & HEXAGON_OPERAND_PC_RELATIVE, errmsg))
-        return FALSE;
-    }
-  else
+  if (!opcode || !operand)
     return FALSE;
-
-  return TRUE;
+  else if (!hexagon_encode_operand
+	      (operand, insn, opcode, value, &xvalue,
+	       flag & HEXAGON_OPERAND_IS_KXED,
+	       operand->flags & HEXAGON_OPERAND_PC_RELATIVE, errmsg))
+    return FALSE;
+  else
+    return TRUE;
 }
 
 static bfd_reloc_status_type
@@ -1761,10 +1756,8 @@ hexagon_kept_hash_lookup
 }
 
 static bfd_boolean
-hexagon_elf_relax_section (bfd *ibfd,
-                         asection *isec,
-                         struct bfd_link_info *info,
-                         bfd_boolean *again)
+hexagon_elf_relax_section
+(bfd *ibfd, asection *isec, struct bfd_link_info *info, bfd_boolean *again)
 {
   Elf_Internal_Shdr *symtab_hdr = NULL;
   Elf_Internal_Rela *irelbuf = NULL;
@@ -1826,7 +1819,12 @@ hexagon_elf_relax_section (bfd *ibfd,
       /* Look into relocation overflows at branches and add trampolines if needed. */
       r_type = ELF32_R_TYPE (irel->r_info);
       if (info->hexagon_trampolines
-          && (r_type == R_HEXAGON_B22_PCREL
+          && (r_type == R_HEXAGON_B32_PCREL_X
+              || r_type == R_HEXAGON_B22_PCREL_X
+              || r_type == R_HEXAGON_B15_PCREL_X
+              || r_type == R_HEXAGON_B13_PCREL_X
+              || r_type == R_HEXAGON_B9_PCREL_X
+              || r_type == R_HEXAGON_B22_PCREL
               || r_type == R_HEXAGON_B15_PCREL
               || r_type == R_HEXAGON_B13_PCREL
               || r_type == R_HEXAGON_B9_PCREL))
@@ -1876,7 +1874,8 @@ hexagon_elf_relax_section (bfd *ibfd,
               asec = bfd_section_from_elf_index (ibfd, isym->st_shndx);
 
               name = bfd_malloc (sizeof (l_count) * 2 + 1);
-              sprintf (name, "%0*lx", (int) sizeof (l_count) * 2, (long)l_count++);
+              sprintf (name, "%0*lx",
+		       (int) sizeof (l_count) * 2, (long) l_count++);
 
               is_def = TRUE;
 
@@ -1927,22 +1926,24 @@ hexagon_elf_relax_section (bfd *ibfd,
             }
 
           /* Check if the target is beyond reach. */
-          offset = abs ((to + to_base) - (from + at_base));
-          if ((is_def && (((r_type == R_HEXAGON_B22_PCREL)
-                           && HEXAGON_TRAMPLINE_NEEDED (offset, 24))
+          offset = llabs ((to + to_base) - (from + at_base));
+          if ((is_def && (((r_type == R_HEXAGON_B32_PCREL_X
+	                    || r_type == R_HEXAGON_B22_PCREL_X
+	                    || r_type == R_HEXAGON_B15_PCREL_X
+	                    || r_type == R_HEXAGON_B13_PCREL_X
+	                    || r_type == R_HEXAGON_B9_PCREL_X)
+                           && HEXAGON_TRAMPOLINE_NEEDED (offset, 32))
+                          || ((r_type == R_HEXAGON_B22_PCREL)
+                              && HEXAGON_TRAMPOLINE_NEEDED (offset, 24))
                           || ((r_type == R_HEXAGON_B15_PCREL)
-                              && HEXAGON_TRAMPLINE_NEEDED (offset, 17))
+                              && HEXAGON_TRAMPOLINE_NEEDED (offset, 17))
                           || ((r_type == R_HEXAGON_B13_PCREL)
-                              && HEXAGON_TRAMPLINE_NEEDED (offset, 15))
+                              && HEXAGON_TRAMPOLINE_NEEDED (offset, 15))
                           || ((r_type == R_HEXAGON_B9_PCREL)
-                              && HEXAGON_TRAMPLINE_NEEDED (offset, 11))))
+                              && HEXAGON_TRAMPOLINE_NEEDED (offset, 11))))
               || !is_def)
 	    {
               /* Try to add a trampoline. */
-/*
-              printf ("Trampoline required at: %s (%s+0x%lx) for `%s'\n",
-                      ibfd->filename, isec->name, at, h->root.root.string);
-*/
 
               /* Allocate new contents. */
               contents = elf_section_data (isec)->this_hdr.contents;
@@ -1953,8 +1954,7 @@ hexagon_elf_relax_section (bfd *ibfd,
 		    goto error_return;
 
 	          if (!bfd_get_section_contents (ibfd, isec, contents,
-					          (file_ptr) 0,
-					          isec_size))
+					         (file_ptr) 0, isec_size))
 		    goto error_return;
 
                 elf_section_data (isec)->this_hdr.contents = contents;
@@ -1969,7 +1969,7 @@ hexagon_elf_relax_section (bfd *ibfd,
                 hexagon_insn insn;
 
                 insn = hexagon_get_insn (ibfd, hexagon_elf_howto_table + r_type,
-                                       contents + from - HEXAGON_INSN_LEN);
+                                         contents + from - HEXAGON_INSN_LEN);
                 if (HEXAGON_END_PACKET_GET (insn) == HEXAGON_END_PACKET
                     || HEXAGON_END_PACKET_GET (insn) == HEXAGON_END_PAIR)
                   break;
@@ -1986,14 +1986,20 @@ hexagon_elf_relax_section (bfd *ibfd,
                 {
                   t_at = isec_size;
 
-                  if (((r_type == R_HEXAGON_B22_PCREL)
-                       && HEXAGON_TRAMPLINE_NEEDED (t_at - from, 23))
+                  if (((r_type == R_HEXAGON_B32_PCREL_X
+		        || r_type == R_HEXAGON_B22_PCREL_X
+		        || r_type == R_HEXAGON_B15_PCREL_X
+		        || r_type == R_HEXAGON_B13_PCREL_X
+		        || r_type == R_HEXAGON_B9_PCREL_X)
+                       && HEXAGON_TRAMPOLINE_NEEDED (t_at - from, 31))
+                      || ((r_type == R_HEXAGON_B22_PCREL)
+                          && HEXAGON_TRAMPOLINE_NEEDED (t_at - from, 23))
                       || ((r_type == R_HEXAGON_B15_PCREL)
-                          && HEXAGON_TRAMPLINE_NEEDED (t_at - from, 16))
+                          && HEXAGON_TRAMPOLINE_NEEDED (t_at - from, 16))
                       || ((r_type == R_HEXAGON_B13_PCREL)
-                          && HEXAGON_TRAMPLINE_NEEDED (t_at - from, 14))
+                          && HEXAGON_TRAMPOLINE_NEEDED (t_at - from, 14))
                       || ((r_type == R_HEXAGON_B9_PCREL)
-                          && HEXAGON_TRAMPLINE_NEEDED (t_at - from, 10)))
+                          && HEXAGON_TRAMPOLINE_NEEDED (t_at - from, 10)))
                     /* No room for a trampoline. */
                     goto error_return;
 
@@ -2050,12 +2056,12 @@ hexagon_elf_relax_section (bfd *ibfd,
 
               /* Fix up the offending branch by pointing it to the trampoline. */
               insn = hexagon_get_insn (ibfd,
-                                     hexagon_elf_howto_table + r_type,
-                                     contents + at);
+                                       hexagon_elf_howto_table + r_type,
+                                       contents + at);
               if (hexagon_reloc_operand (hexagon_elf_howto_table + r_type, &insn,
-                                       t_at - from, NULL))
+                                         t_at - from, NULL))
                 hexagon_put_insn (ibfd, hexagon_elf_howto_table + r_type,
-                                contents + at, insn);
+                                  contents + at, insn);
 
               /* Done adding the trampolines.
                  Relax again in case other branches were pushed out of range. */
