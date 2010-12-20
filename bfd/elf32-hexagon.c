@@ -2405,7 +2405,7 @@ hexagon_elf_relocate_section
                       && (info->executable
                           || !SYMBOLIC_BIND (info, h)
                           || !h->def_regular)
-                      && !h->non_got_ref)
+		      && !h->non_got_ref)
                     relocation = 0;
                   break;
 
@@ -2437,11 +2437,11 @@ hexagon_elf_relocate_section
           else
 	    {
 	      if (!((*info->callbacks->undefined_symbol)
-		    (info, h->root.root.string, ibfd,
-		     isection, rel->r_offset,
-                     info->executable
-                     || info->unresolved_syms_in_objects >= RM_GENERATE_WARNING
-                     || ELF_ST_VISIBILITY (h->other))))
+		      (info, h->root.root.string, ibfd,
+		       isection, rel->r_offset,
+		       info->executable
+		       || info->unresolved_syms_in_objects >= RM_GENERATE_WARNING
+		       || ELF_ST_VISIBILITY (h->other))))
 		return FALSE;
 	      relocation = 0;
 	    }
@@ -3123,6 +3123,9 @@ hexagon_elf_check_relocs
 		 adjust_dynamic_symbol.  */
 	      h->non_got_ref = TRUE;
 	      h->pointer_equality_needed = TRUE;
+	      /* A PLT entry may be needed if this relocation refers to
+	         a function in a shared library.  */
+	      h->plt.refcount++;
 	    }
           break;
 
@@ -3132,8 +3135,8 @@ hexagon_elf_check_relocs
 	case R_HEXAGON_B7_PCREL:
 	  if (h) /* && info->executable) */
 	    {
-	      /* A PLT entry may be needed if the function this relocation
-		 refers to is in a shared library.  */
+	      /* A PLT entry may be needed if this relocation refers to
+	         a function in a shared library.  */
 	      h->plt.refcount++;
 	    }
           break;
@@ -3889,7 +3892,7 @@ hexagon_elf_adjust_dynamic_symbol
   /* If -z nocopyreloc was given, we won't generate them either.  */
   if (info->nocopyreloc)
     {
-      h->non_got_ref = 0;
+      h->non_got_ref = FALSE;
       return TRUE;
     }
 
@@ -3910,7 +3913,7 @@ hexagon_elf_adjust_dynamic_symbol
 	 we'll be keeping the dynamic relocations and avoiding the copy reloc.  */
       if (!p)
 	{
-          h->non_got_ref = 0;
+          h->non_got_ref = FALSE;
 	  return TRUE;
 	}
     }
