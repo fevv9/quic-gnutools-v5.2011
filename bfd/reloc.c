@@ -5384,6 +5384,51 @@ ENUMX
 ENUMDOC
   Relocations for dynamic linking support.
 
+ENUM
+  BFD_RELOC_HEXAGON_DTPMOD_32
+ENUMX
+  BFD_RELOC_HEXAGON_DTPREL_32
+ENUMDOC
+  TLS global-dynamic relocations that make up a TLS_index structure
+  in consecutive GOT entries.
+
+ENUM
+  BFD_RELOC_HEXAGON_GD_GOT_LO16
+ENUMX
+  BFD_RELOC_HEXAGON_GD_GOT_HI16
+ENUMX
+  BFD_RELOC_HEXAGON_GD_GOT_32
+ENUMX
+  BFD_RELOC_HEXAGON_GD_GOT_16
+ENUMDOC
+  GOT-relative TLS global-dynamic relocations for
+  the lower and the higher 16 bits, all 32 bits and the signed lower 16 bits
+  of a 32-bit signed offset to a TLS_index structure in consecutive GOT entries.
+
+ENUM
+  BFD_RELOC_HEXAGON_IE_GOT_LO16
+ENUMX
+  BFD_RELOC_HEXAGON_IE_GOT_HI16
+ENUMX
+  BFD_RELOC_HEXAGON_IE_GOT_32
+ENUMX
+  BFD_RELOC_HEXAGON_IE_GOT_16
+ENUMDOC
+  GOT-relative TLS initial-executable relocations for
+  the lower and the higher 16 bits, all 32 bits and the signed lower 16 bits
+  of a 32-bit signed offset.
+
+ENUM
+  BFD_RELOC_HEXAGON_TPREL_LO16
+ENUMX
+  BFD_RELOC_HEXAGON_TPREL_HI16
+ENUMX
+  BFD_RELOC_HEXAGON_TPREL_32
+ENUMDOC
+  TLS local-executable relocations for the lower and the higher 16 bits
+  and all 32 bits of a 32-bit signed offset
+  from the base of the TLS template.
+
 ENDSENUM
   BFD_RELOC_UNUSED
 CODE_FRAGMENT

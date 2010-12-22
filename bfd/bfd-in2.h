@@ -4668,6 +4668,34 @@ shifted right by the access size.  */
   BFD_RELOC_HEXAGON_COPY,
   BFD_RELOC_HEXAGON_JMP_SLOT,
   BFD_RELOC_HEXAGON_RELATIVE,
+
+/* TLS global-dynamic relocations that make up a TLS_index structure
+in consecutive GOT entries.  */
+  BFD_RELOC_HEXAGON_DTPMOD_32,
+  BFD_RELOC_HEXAGON_DTPREL_32,
+
+/* GOT-relative TLS global-dynamic relocations for
+the lower and the higher 16 bits, all 32 bits and the signed lower 16 bits
+of a 32-bit signed offset to a TLS_index structure in consecutive GOT entries.  */
+  BFD_RELOC_HEXAGON_GD_GOT_LO16,
+  BFD_RELOC_HEXAGON_GD_GOT_HI16,
+  BFD_RELOC_HEXAGON_GD_GOT_32,
+  BFD_RELOC_HEXAGON_GD_GOT_16,
+
+/* GOT-relative TLS initial-executable relocations for
+the lower and the higher 16 bits, all 32 bits and the signed lower 16 bits
+of a 32-bit signed offset.  */
+  BFD_RELOC_HEXAGON_IE_GOT_LO16,
+  BFD_RELOC_HEXAGON_IE_GOT_HI16,
+  BFD_RELOC_HEXAGON_IE_GOT_32,
+  BFD_RELOC_HEXAGON_IE_GOT_16,
+
+/* TLS local-executable relocations for the lower and the higher 16 bits
+and all 32 bits of a 32-bit signed offset
+from the base of the TLS template.  */
+  BFD_RELOC_HEXAGON_TPREL_LO16,
+  BFD_RELOC_HEXAGON_TPREL_HI16,
+  BFD_RELOC_HEXAGON_TPREL_32,
   BFD_RELOC_UNUSED };
 typedef enum bfd_reloc_code_real bfd_reloc_code_real_type;
 reloc_howto_type *bfd_reloc_type_lookup
