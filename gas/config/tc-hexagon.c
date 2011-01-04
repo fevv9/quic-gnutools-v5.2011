@@ -269,13 +269,16 @@ enum _hexagon_pairs_counters
     HEXAGON_PAIRS_COUNTERS
   };
 
-typedef enum _hexagon_pic_type
+typedef enum _hexagon_suffix_type
   {
-    PIC_NONE = 0,
+    SUFFIX_NONE = 0,
     PIC_GOT,
     PIC_GOTREL,
-    PIC_PLT
-  } hexagon_pic_type;
+    PIC_PLT,
+    TLS_GD_GOT,
+    TLS_IE_GOT,
+    TLS_TPREL,
+  } hexagon_suffix_type;
 
 extern int hexagon_get_mach (char *);
 extern void hexagon_code_symbol (expressionS *);
@@ -332,7 +335,7 @@ int hexagon_prefix_kext (hexagon_packet_insn *, long);
 char *hexagon_parse_immediate
   (hexagon_packet_insn *, hexagon_packet_insn *, const hexagon_operand *,
    char *, long *, char **);
-static char *hexagon_parse_pic (hexagon_pic_type *, char **);
+static char *hexagon_parse_suffix (hexagon_suffix_type *, char **);
 int hexagon_gp_const_lookup (char *str, char *);
 segT hexagon_create_sbss_section (const char *, flagword, unsigned int);
 segT hexagon_create_scom_section (const char *, flagword, unsigned int);
@@ -1721,8 +1724,8 @@ hexagon_parse_immediate
   int is_may_x = FALSE, is_x = FALSE, is_hash = FALSE;
   int is_relax = FALSE;
   int is_lo16 = FALSE, is_hi16 = FALSE;
-  char *pic_line;
-  hexagon_pic_type pic_type;
+  char *suffix_line;
+  hexagon_suffix_type suffix_type;
 
   is_may_x = (((insn->opcode->attributes & EXTENDABLE_LOWER_CASE_IMMEDIATE)
                && ISLOWER (operand->enc_letter))
@@ -1788,25 +1791,33 @@ hexagon_parse_immediate
     {
       input_line_pointer = str;
 
-      pic_type = PIC_NONE;
-      pic_line = hexagon_parse_pic (&pic_type, &str);
-      if (pic_line)
-        input_line_pointer = pic_line;
+      suffix_type = SUFFIX_NONE;
+      suffix_line = hexagon_parse_suffix (&suffix_type, &str);
+      if (suffix_line)
+        input_line_pointer = suffix_line;
 
       expression (&exp);
 
-      if (!pic_line)
+      if (!suffix_line)
         str = input_line_pointer;
     }
   input_line_pointer = hold;
 
   operandx = NULL;
-  if (pic_type == PIC_GOT)
+
+  if (suffix_type == PIC_GOT)
     operandx = hexagon_operand_find (operand, "got");
-  else if (pic_type == PIC_GOTREL)
+  else if (suffix_type == PIC_GOTREL)
     operandx = hexagon_operand_find (operand, "gotrel");
-  else if (pic_type == PIC_PLT)
+  else if (suffix_type == PIC_PLT)
     operandx = hexagon_operand_find (operand, "plt");
+  else if (suffix_type == TLS_GD_GOT)
+    operandx = hexagon_operand_find (operand, "gdgot");
+  else if (suffix_type == TLS_IE_GOT)
+    operandx = hexagon_operand_find (operand, "iegot");
+  else if (suffix_type == TLS_TPREL)
+    operandx = hexagon_operand_find (operand, "tprel");
+
   if (operandx)
     /* Get new PIC operand. */
     operand = operandx;
@@ -4251,28 +4262,30 @@ hexagon_got_frag
   return (r_type);
 }
 
-/* Parse operands of the form "<symbol>@GOT+<nnn>" and other GOT or PLT
-   references.  If one is found, set up the correct relocation in RELOC and
+/* Parse operands of the form "<symbol>@<suffix>+<nnn>" and other PIC or TLS
+   references.  If one is found, set up the correct relocation and
    copy the input string, minus the "@..." into an allocated buffer for
-   parsing by the calling routine.  Return this buffer, and if ADJUST is
-   non-null set it to the length of the string that was removed from the
-   input line.  Otherwise return NULL.  */
+   parsing by the calling routine.  Return this buffer set it to the length
+   of the string that was removed from the input line.  Otherwise return NULL.  */
 
 static char *
-hexagon_parse_pic
-(hexagon_pic_type *type, char **extra)
+hexagon_parse_suffix
+(hexagon_suffix_type *type, char **extra)
 {
   static const struct
     {
       const char *str;
-      const hexagon_pic_type type;
+      hexagon_suffix_type type;
     }
   pic [] =
     {
       { "GOTREL", PIC_GOTREL },
       { "GOTOFF", PIC_GOTREL },
-      { "GOT", PIC_GOT },
-      { "PLT", PIC_PLT }
+      { "GOT",    PIC_GOT },
+      { "PLT",    PIC_PLT },
+      { "GDGOT",  TLS_GD_GOT },
+      { "IEGOT",  TLS_IE_GOT },
+      { "TPREL",  TLS_TPREL },
     };
   char *cp;
   size_t j;
@@ -4345,26 +4358,32 @@ hexagon_cons_fix_new
         case 4:
 	  {
 	    expressionS tmp;
-	    char *save, *pic_line;
-	    hexagon_pic_type pictype;
+	    char *save, *suffix_line;
+	    hexagon_suffix_type suffix;
 
             r_type = BFD_RELOC_32;
 
 	    save = input_line_pointer;
-	    if (!(strncmp (save, "@GOT", 4)))
+	    if (!(strncmp (save, "@GOT", 4))
+	        || !(strncmp (save, "@GDGOT", 6))
+	        || !(strncmp (save, "@IEGOT", 6)))
               {
                 /* Handle GOT and PLT expressions. */
-                pic_line = hexagon_parse_pic (&pictype, NULL);
-                if (pic_line)
+                suffix_line = hexagon_parse_suffix (&suffix, NULL);
+                if (suffix_line)
                   {
-                    input_line_pointer = pic_line;
+                    input_line_pointer = suffix_line;
                     expression (&tmp);
                     exp->X_add_number += tmp.X_add_number;
 
-                    if (pictype == PIC_GOTREL)
+                    if (suffix == PIC_GOTREL)
                       r_type = BFD_RELOC_32_GOTOFF;
-                    else if (pictype == PIC_GOT)
+                    else if (suffix == PIC_GOT)
                       r_type = BFD_RELOC_HEXAGON_GOT_32;
+                    else if (suffix == TLS_GD_GOT)
+                      r_type = BFD_RELOC_HEXAGON_GD_GOT_32;
+                    else if (suffix == TLS_IE_GOT)
+                      r_type = BFD_RELOC_HEXAGON_IE_GOT_32;
                   }
 
                 while (!is_end_of_line [(unsigned char) *save++])
