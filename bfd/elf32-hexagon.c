@@ -867,6 +867,201 @@ static reloc_howto_type hexagon_elf_howto_table [] =
          0x00c03fff,            /* dst_mask  */
          FALSE),                /* pcrel_offset  */
 
+  /* 32 bit TLS module ID. */
+  HOWTO (R_HEXAGON_DTPMOD_32,	/* type  */
+         0,                     /* rightshift  */
+         2,                     /* size (0 = byte, 1 = short, 2 = long)  */
+         32,                    /* bitsize  */
+         FALSE,                 /* pc_relative  */
+         0,                     /* bitpos  */
+         complain_overflow_bitfield, /* complain_on_overflow  */
+         bfd_elf_generic_reloc, /* special_function  */
+         "R_HEXAGON_DTPMOD_32",	/* name  */
+         FALSE,                 /* partial_inplace  */
+         0,                     /* src_mask  */
+         0xffffffff,            /* dst_mask  */
+         FALSE),                /* pcrel_offset  */
+
+  /* 32 bit TLS symbol offset. */
+  HOWTO (R_HEXAGON_DTPREL_32,	/* type  */
+         0,                     /* rightshift  */
+         2,                     /* size (0 = byte, 1 = short, 2 = long)  */
+         32,                    /* bitsize  */
+         FALSE,                 /* pc_relative  */
+         0,                     /* bitpos  */
+         complain_overflow_bitfield, /* complain_on_overflow  */
+         bfd_elf_generic_reloc, /* special_function  */
+         "R_HEXAGON_DTPREL_32",	/* name  */
+         FALSE,                 /* partial_inplace  */
+         0,                     /* src_mask  */
+         0xffffffff,            /* dst_mask  */
+         FALSE),                /* pcrel_offset  */
+
+  /* Low 16 bits of a 32 bit offset of GOT entries for a TLS GD descriptor. */
+  HOWTO (R_HEXAGON_GD_GOT_LO16,	/* type  */
+	 0,			/* rightshift  */
+	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
+	 32,			/* bitsize  */
+	 FALSE,			/* pc_relative  */
+	 0,			/* bitpos  */
+	 complain_overflow_bitfield, /* complain_on_overflow  */
+	 hexagon_elf_reloc,	/* special_function  */
+	 "R_HEXAGON_GD_GOT_LO16", /* name  */
+	 FALSE,			/* partial_inplace  */
+	 0,			/* src_mask  */
+	 0x00c03fff,		/* dst_mask  */
+	 FALSE),		/* pcrel_offset  */
+
+  /* High 16 bits of a 32 bit offset of GOT entries for a TLS GD descriptor. */
+  HOWTO (R_HEXAGON_GD_GOT_HI16,	/* type  */
+	 0,			/* rightshift  */
+	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
+	 32,			/* bitsize  */
+	 FALSE,			/* pc_relative  */
+	 0,			/* bitpos  */
+	 complain_overflow_bitfield, /* complain_on_overflow  */
+	 hexagon_elf_reloc,	/* special_function  */
+	 "R_HEXAGON_GD_GOT_HI16", /* name  */
+	 FALSE,			/* partial_inplace  */
+	 0,			/* src_mask  */
+	 0x00c03fff,		/* dst_mask  */
+	 FALSE),		/* pcrel_offset  */
+
+  /* 32 bit offset of GOT entries for a TLS GD descriptor. */
+  HOWTO (R_HEXAGON_GD_GOT_32,	/* type  */
+         0,                     /* rightshift  */
+         2,                     /* size (0 = byte, 1 = short, 2 = long)  */
+         32,                    /* bitsize  */
+         FALSE,                 /* pc_relative  */
+         0,                     /* bitpos  */
+         complain_overflow_bitfield, /* complain_on_overflow  */
+         bfd_elf_generic_reloc, /* special_function  */
+         "R_HEXAGON_GD_GOT_32",	/* name  */
+         FALSE,                 /* partial_inplace  */
+         0,                     /* src_mask  */
+         0xffffffff,            /* dst_mask  */
+         FALSE),                /* pcrel_offset  */
+
+  /* 16 bit offset of GOT entries for a TLS GD descriptor. */
+  HOWTO (R_HEXAGON_GD_GOT_16,	/* type  */
+         0,                     /* rightshift  */
+         2,                     /* size (0 = byte, 1 = short, 2 = long)  */
+         16,                    /* bitsize  */
+         FALSE,                 /* pc_relative  */
+         0,                     /* bitpos  */
+         complain_overflow_bitfield, /* complain_on_overflow  */
+         hexagon_elf_reloc,	/* special_function  */
+         "R_HEXAGON_GD_GOT_16",	/* name  */
+         FALSE,                 /* partial_inplace  */
+         0,                     /* src_mask  */
+         0x00c03fff,            /* dst_mask  */
+         FALSE),                /* pcrel_offset  */
+
+  /* Low 16 bits of a 32 bit offset of a GOT entry for a TLS IE symbol. */
+  HOWTO (R_HEXAGON_IE_GOT_LO16,	/* type  */
+	 0,			/* rightshift  */
+	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
+	 32,			/* bitsize  */
+	 FALSE,			/* pc_relative  */
+	 0,			/* bitpos  */
+	 complain_overflow_bitfield, /* complain_on_overflow  */
+	 hexagon_elf_reloc,	/* special_function  */
+	 "R_HEXAGON_IE_GOT_LO16", /* name  */
+	 FALSE,			/* partial_inplace  */
+	 0,			/* src_mask  */
+	 0x00c03fff,		/* dst_mask  */
+	 FALSE),		/* pcrel_offset  */
+
+  /* High 16 bits of a 32 bit offset of GOT entry for a TLS IE symbol. */
+  HOWTO (R_HEXAGON_IE_GOT_HI16,	/* type  */
+	 0,			/* rightshift  */
+	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
+	 32,			/* bitsize  */
+	 FALSE,			/* pc_relative  */
+	 0,			/* bitpos  */
+	 complain_overflow_bitfield, /* complain_on_overflow  */
+	 hexagon_elf_reloc,	/* special_function  */
+	 "R_HEXAGON_IE_GOT_HI16", /* name  */
+	 FALSE,			/* partial_inplace  */
+	 0,			/* src_mask  */
+	 0x00c03fff,		/* dst_mask  */
+	 FALSE),		/* pcrel_offset  */
+
+  /* 32 bit offset of GOT entry for a TLS IE symbol. */
+  HOWTO (R_HEXAGON_IE_GOT_32,	/* type  */
+         0,                     /* rightshift  */
+         2,                     /* size (0 = byte, 1 = short, 2 = long)  */
+         32,                    /* bitsize  */
+         FALSE,                 /* pc_relative  */
+         0,                     /* bitpos  */
+         complain_overflow_bitfield, /* complain_on_overflow  */
+         bfd_elf_generic_reloc, /* special_function  */
+         "R_HEXAGON_IE_GOT_32",	/* name  */
+         FALSE,                 /* partial_inplace  */
+         0,                     /* src_mask  */
+         0xffffffff,            /* dst_mask  */
+         FALSE),                /* pcrel_offset  */
+
+  /* 16 bit offset of GOT entry for a TLS IE symbol. */
+  HOWTO (R_HEXAGON_IE_GOT_16,	/* type  */
+         0,                     /* rightshift  */
+         2,                     /* size (0 = byte, 1 = short, 2 = long)  */
+         16,                    /* bitsize  */
+         FALSE,                 /* pc_relative  */
+         0,                     /* bitpos  */
+         complain_overflow_bitfield, /* complain_on_overflow  */
+         hexagon_elf_reloc,	/* special_function  */
+         "R_HEXAGON_IE_GOT_16",	/* name  */
+         FALSE,                 /* partial_inplace  */
+         0,                     /* src_mask  */
+         0x00c03fff,            /* dst_mask  */
+         FALSE),                /* pcrel_offset  */
+
+  /* Low 16 bits of a 32 bit offset from the TP. */
+  HOWTO (R_HEXAGON_TPREL_LO16,	/* type  */
+	 0,			/* rightshift  */
+	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
+	 32,			/* bitsize  */
+	 FALSE,			/* pc_relative  */
+	 0,			/* bitpos  */
+	 complain_overflow_bitfield, /* complain_on_overflow  */
+	 hexagon_elf_reloc,	/* special_function  */
+	 "R_HEXAGON_TPREL_LO16", /* name  */
+	 FALSE,			/* partial_inplace  */
+	 0,			/* src_mask  */
+	 0x00c03fff,		/* dst_mask  */
+	 FALSE),		/* pcrel_offset  */
+
+  /* High 16 bits of a 32 bit offset from the TP. */
+  HOWTO (R_HEXAGON_TPREL_HI16,	/* type  */
+	 0,			/* rightshift  */
+	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
+	 32,			/* bitsize  */
+	 FALSE,			/* pc_relative  */
+	 0,			/* bitpos  */
+	 complain_overflow_bitfield, /* complain_on_overflow  */
+	 hexagon_elf_reloc,	/* special_function  */
+	 "R_HEXAGON_TPREL_HI16", /* name  */
+	 FALSE,			/* partial_inplace  */
+	 0,			/* src_mask  */
+	 0x00c03fff,		/* dst_mask  */
+	 FALSE),		/* pcrel_offset  */
+
+  /* 32 bit offset from the TP. */
+  HOWTO (R_HEXAGON_TPREL_32,	/* type  */
+         0,                     /* rightshift  */
+         2,                     /* size (0 = byte, 1 = short, 2 = long)  */
+         32,                    /* bitsize  */
+         FALSE,                 /* pc_relative  */
+         0,                     /* bitpos  */
+         complain_overflow_bitfield, /* complain_on_overflow  */
+         bfd_elf_generic_reloc, /* special_function  */
+         "R_HEXAGON_TPREL_32",	/* name  */
+         FALSE,                 /* partial_inplace  */
+         0,                     /* src_mask  */
+         0xffffffff,            /* dst_mask  */
+         FALSE),                /* pcrel_offset  */
+
 };
 
 /* Hexagon ELF uses two common sections.  One is the usual one, and the
@@ -937,6 +1132,20 @@ static const struct hexagon_reloc_map hexagon_reloc_map [] =
   { BFD_RELOC_HEXAGON_GOT_HI16,      R_HEXAGON_GOT_HI16,      0 },
   { BFD_RELOC_HEXAGON_GOT_32,        R_HEXAGON_GOT_32,        0 },
   { BFD_RELOC_HEXAGON_GOT_16,        R_HEXAGON_GOT_16,        0 },
+  /* TLS */
+  { BFD_RELOC_HEXAGON_DTPMOD_32,     R_HEXAGON_DTPMOD_32,     0 },
+  { BFD_RELOC_HEXAGON_DTPREL_32,     R_HEXAGON_DTPREL_32,     0 },
+  { BFD_RELOC_HEXAGON_GD_GOT_LO16,   R_HEXAGON_GD_GOT_LO16,   0 },
+  { BFD_RELOC_HEXAGON_GD_GOT_HI16,   R_HEXAGON_GD_GOT_HI16,   0 },
+  { BFD_RELOC_HEXAGON_GD_GOT_32,     R_HEXAGON_GD_GOT_32,     0 },
+  { BFD_RELOC_HEXAGON_GD_GOT_16,     R_HEXAGON_GD_GOT_16,     0 },
+  { BFD_RELOC_HEXAGON_IE_GOT_LO16,   R_HEXAGON_IE_GOT_LO16,   0 },
+  { BFD_RELOC_HEXAGON_IE_GOT_HI16,   R_HEXAGON_IE_GOT_HI16,   0 },
+  { BFD_RELOC_HEXAGON_IE_GOT_32,     R_HEXAGON_IE_GOT_32,     0 },
+  { BFD_RELOC_HEXAGON_IE_GOT_16,     R_HEXAGON_IE_GOT_16,     0 },
+  { BFD_RELOC_HEXAGON_TPREL_LO16,    R_HEXAGON_TPREL_LO16,    0 },
+  { BFD_RELOC_HEXAGON_TPREL_HI16,    R_HEXAGON_TPREL_HI16,    0 },
+  { BFD_RELOC_HEXAGON_TPREL_32,      R_HEXAGON_TPREL_32,      0 },
 };
 
 static reloc_howto_type *

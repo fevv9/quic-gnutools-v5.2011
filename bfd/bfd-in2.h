@@ -4669,8 +4669,7 @@ shifted right by the access size.  */
   BFD_RELOC_HEXAGON_JMP_SLOT,
   BFD_RELOC_HEXAGON_RELATIVE,
 
-/* TLS global-dynamic relocations that make up a TLS_index structure
-in consecutive GOT entries.  */
+/* TLS relocations that make up a TLS_index structure in consecutive GOT entries.  */
   BFD_RELOC_HEXAGON_DTPMOD_32,
   BFD_RELOC_HEXAGON_DTPREL_32,
 
@@ -4690,9 +4689,8 @@ of a 32-bit signed offset.  */
   BFD_RELOC_HEXAGON_IE_GOT_32,
   BFD_RELOC_HEXAGON_IE_GOT_16,
 
-/* TLS local-executable relocations for the lower and the higher 16 bits
-and all 32 bits of a 32-bit signed offset
-from the base of the TLS template.  */
+/* TLS relocations for the lower and the higher 16 bits and all 32 bits
+of a 32-bit signed offset from the base of the TLS template.  */
   BFD_RELOC_HEXAGON_TPREL_LO16,
   BFD_RELOC_HEXAGON_TPREL_HI16,
   BFD_RELOC_HEXAGON_TPREL_32,

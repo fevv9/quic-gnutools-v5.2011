@@ -5389,8 +5389,7 @@ ENUM
 ENUMX
   BFD_RELOC_HEXAGON_DTPREL_32
 ENUMDOC
-  TLS global-dynamic relocations that make up a TLS_index structure
-  in consecutive GOT entries.
+  TLS relocations that make up a TLS_index structure in consecutive GOT entries.
 
 ENUM
   BFD_RELOC_HEXAGON_GD_GOT_LO16
@@ -5425,9 +5424,8 @@ ENUMX
 ENUMX
   BFD_RELOC_HEXAGON_TPREL_32
 ENUMDOC
-  TLS local-executable relocations for the lower and the higher 16 bits
-  and all 32 bits of a 32-bit signed offset
-  from the base of the TLS template.
+  TLS relocations for the lower and the higher 16 bits and all 32 bits
+  of a 32-bit signed offset from the base of the TLS template.
 
 ENDSENUM
   BFD_RELOC_UNUSED
