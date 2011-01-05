@@ -1539,25 +1539,36 @@ hexagon_fix_adjustable (fixS *fixP)
 {
   /* FIXME: x86-64 adds some other cases here. */
 
-  /* adjust_reloc_syms doesn't know about the GOT.  */
+  /* adjust_reloc_syms doesn't know about PIC or TLS.  */
   switch (fixP->fx_r_type)
     {
+    /* PLT */
     case BFD_RELOC_HEXAGON_PLT_B22_PCREL:
-    case BFD_RELOC_32_PCREL:
-    case BFD_RELOC_HEXAGON_GOTREL_HI16:
+    /* GOT */
     case BFD_RELOC_HEXAGON_GOTREL_LO16:
+    case BFD_RELOC_HEXAGON_GOTREL_HI16:
     case BFD_RELOC_32_GOTOFF:
-    case BFD_RELOC_HEXAGON_GOT_HI16:
     case BFD_RELOC_HEXAGON_GOT_LO16:
+    case BFD_RELOC_HEXAGON_GOT_HI16:
     case BFD_RELOC_HEXAGON_GOT_32:
     case BFD_RELOC_HEXAGON_GOT_16:
-      return (0);
+    /* TLS */
+    case BFD_RELOC_HEXAGON_GD_GOT_LO16:
+    case BFD_RELOC_HEXAGON_GD_GOT_HI16:
+    case BFD_RELOC_HEXAGON_GD_GOT_32:
+    case BFD_RELOC_HEXAGON_GD_GOT_16:
+    case BFD_RELOC_HEXAGON_IE_GOT_LO16:
+    case BFD_RELOC_HEXAGON_IE_GOT_HI16:
+    case BFD_RELOC_HEXAGON_IE_GOT_32:
+    case BFD_RELOC_HEXAGON_IE_GOT_16:
+    case BFD_RELOC_HEXAGON_TPREL_LO16:
+    case BFD_RELOC_HEXAGON_TPREL_HI16:
+    case BFD_RELOC_HEXAGON_TPREL_32:
+      return FALSE;
 
     default:
-      break;
+      return TRUE;
     }
-
-  return (1);
 }
 
 /* Initialize the various opcode and operand tables. */
