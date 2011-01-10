@@ -97,6 +97,7 @@ END_RELOC_NUMBERS (R_HEXAGON_max)
 #define EF_HEXAGON_MACH_V2 1
 #define EF_HEXAGON_MACH_V3 2
 #define EF_HEXAGON_MACH_V4 3
+#define EF_HEXAGON_MACH_V5 4
 
 /* File contains position independent code.  */
 #define EF_HEXAGON_PIC 0x00000100

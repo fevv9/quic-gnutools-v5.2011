@@ -477,27 +477,29 @@ struct option md_longopts [] =
     { "mv3", no_argument, NULL, OPTION_HEXAGON_MV3 },
 #define OPTION_HEXAGON_MV4 (OPTION_MD_BASE + 8)
     { "mv4", no_argument, NULL, OPTION_HEXAGON_MV4 },
-#define OPTION_HEXAGON_MARCH (OPTION_MD_BASE + 9)
+#define OPTION_HEXAGON_MV5 (OPTION_MD_BASE + 9)
+    { "mv5", no_argument, NULL, OPTION_HEXAGON_MV5 },
+#define OPTION_HEXAGON_MARCH (OPTION_MD_BASE + 10)
     { "march", required_argument, NULL, OPTION_HEXAGON_MARCH },
-#define OPTION_HEXAGON_MCPU (OPTION_MD_BASE + 10)
+#define OPTION_HEXAGON_MCPU (OPTION_MD_BASE + 11)
     { "mcpu", required_argument, NULL, OPTION_HEXAGON_MCPU },
-#define OPTION_HEXAGON_MSORT_SDA (OPTION_MD_BASE + 11)
+#define OPTION_HEXAGON_MSORT_SDA (OPTION_MD_BASE + 12)
     { "msort-sda", no_argument, NULL, OPTION_HEXAGON_MSORT_SDA },
-#define OPTION_HEXAGON_MNO_SORT_SDA (OPTION_MD_BASE + 12)
+#define OPTION_HEXAGON_MNO_SORT_SDA (OPTION_MD_BASE + 13)
     { "mno-sort-sda", no_argument, NULL, OPTION_HEXAGON_MNO_SORT_SDA },
-#define OPTION_HEXAGON_MNO_EXTENDER (OPTION_MD_BASE + 13)
+#define OPTION_HEXAGON_MNO_EXTENDER (OPTION_MD_BASE + 14)
     { "mno-extender", no_argument, NULL, OPTION_HEXAGON_MNO_EXTENDER },
-#define OPTION_HEXAGON_MNO_PAIRING (OPTION_MD_BASE + 14)
+#define OPTION_HEXAGON_MNO_PAIRING (OPTION_MD_BASE + 15)
     { "mno-pairing", no_argument, NULL, OPTION_HEXAGON_MNO_PAIRING },
-#define OPTION_HEXAGON_MNO_PAIRING_B (OPTION_MD_BASE + 15)
+#define OPTION_HEXAGON_MNO_PAIRING_B (OPTION_MD_BASE + 16)
     { "mno-pairing-branch", no_argument, NULL, OPTION_HEXAGON_MNO_PAIRING_B },
-#define OPTION_HEXAGON_MNO_PAIRING_2 (OPTION_MD_BASE + 16)
+#define OPTION_HEXAGON_MNO_PAIRING_2 (OPTION_MD_BASE + 17)
     { "mno-pairing-duplex", no_argument, NULL, OPTION_HEXAGON_MNO_PAIRING_2 },
-#define OPTION_HEXAGON_MNO_JUMPS (OPTION_MD_BASE + 17)
+#define OPTION_HEXAGON_MNO_JUMPS (OPTION_MD_BASE + 18)
     { "mno-jumps", no_argument, NULL, OPTION_HEXAGON_MNO_JUMPS },
-#define OPTION_HEXAGON_MNO_JUMPS_LONG (OPTION_MD_BASE + 18)
+#define OPTION_HEXAGON_MNO_JUMPS_LONG (OPTION_MD_BASE + 19)
     { "mno-jumps-long", no_argument, NULL, OPTION_HEXAGON_MNO_JUMPS_LONG },
-#define OPTION_HEXAGON_MNO_FALIGN (OPTION_MD_BASE + 19)
+#define OPTION_HEXAGON_MNO_FALIGN (OPTION_MD_BASE + 20)
     { "mno-falign", no_argument, NULL, OPTION_HEXAGON_MNO_FALIGN },
   };
 size_t md_longopts_size = sizeof (md_longopts);
@@ -638,6 +640,7 @@ static struct hexagon_march hexagon_marchs [] =
     {"hexagonv2", "qdsp6v2", "v2", bfd_mach_hexagon_v2},
     {"hexagonv3", "qdsp6v3", "v3", bfd_mach_hexagon_v3},
     {"hexagonv4", "qdsp6v4", "v4", bfd_mach_hexagon_v4},
+    {"hexagonv5", "qdsp6v5", "v5", bfd_mach_hexagon_v5},
   };
 
 static size_t hexagon_marchs_size =
@@ -690,6 +693,7 @@ md_parse_option
     case OPTION_HEXAGON_MV2:
     case OPTION_HEXAGON_MV3:
     case OPTION_HEXAGON_MV4:
+    case OPTION_HEXAGON_MV5:
     case OPTION_HEXAGON_MARCH:
     case OPTION_HEXAGON_MCPU:
       switch (c)
@@ -697,6 +701,7 @@ md_parse_option
           case OPTION_HEXAGON_MV2:
           case OPTION_HEXAGON_MV3:
           case OPTION_HEXAGON_MV4:
+          case OPTION_HEXAGON_MV5:
             /* -mv* options. */
             temp_hexagon_mach_type
               = hexagon_marchs [c - OPTION_HEXAGON_MV2].march_name_be;
@@ -799,10 +804,10 @@ Hexagon Options:\n\
   -EB                     select big-endian output\n\
   -EL                     select little-endian ouptut (default)\n\
   -G SIZE                 small-data size limit (default is \"%d\")\n\
-  -march={v2|v3|v4}       assemble for the specified Hexagon architecture\n\
+  -march={v2|v3|v4|v5}       assemble for the specified Hexagon architecture\n\
                           (default is \"v2\")\n\
-  -mcpu={v2|v3|v4}        equivalent to \"-march\"\n\
-  -m{v2|v3|v4}            equivalent to \"-march\"\n\
+  -mcpu={v2|v3|v4|v5}        equivalent to \"-march\"\n\
+  -m{v2|v3|v4|v5}            equivalent to \"-march\"\n\
   -mfalign-info           report \".falign\" statistics\n\
   -mno-extender           disable the use of constant extenders\n\
   -mno-jumps              disable automatic extension of branch instructions\n\
@@ -2301,7 +2306,7 @@ hexagon_has_but_ax
                      && apacket->insns [i].oreg != 21 /* TLBHI */
                      && apacket->insns [i].oreg != 22 /* TLBLO */
                      && apacket->insns [i].oreg != 23 /* TLBIDX */ )
-                    || (hexagon_if_arch_v4 ()
+                    || ((hexagon_if_arch_v4 () || hexagon_if_arch_v5 ())
                         && apacket->insns [i].oreg != 6 /* SSR */ ))))
           axok++;
 
@@ -4664,6 +4669,28 @@ hexagon_shuffle_packet
   memcpy (packet->prefixes, prefixes, sizeof (packet->prefixes));
 }
 
+/** Check if the packet has dotnew loads
+
+@param packet Packet to examine.
+@return True if so.
+*/
+static int
+hexagon_has_dotnew_load
+(const hexagon_packet *apacket)
+{
+  size_t i;
+  int count;
+
+  /* Count number of duplex insns in this packet. */
+  for (i = count = 0; i < hexagon_packet_count (apacket); i++)
+    if (apacket->insns [i].opcode->attributes & A_DOTNEW_LOAD)
+      count++;
+
+  return (count);
+}
+
+
+
 /** Shuffle a packet according to architectural restrictions.
 
 @param packet Packet reference.
@@ -4678,7 +4705,7 @@ hexagon_shuffle_helper
   size_t ndx, slots, temp_mask, store_mask;
   size_t *fromto, aux [MAX_PACKET_INSNS];
   hexagon_packet_insn *inew = NULL;
-  int single, prefix, rnew, store, nostore;
+  int single, prefix, rnew, store, nostore, dotnew_load;
   int changed;
   size_t i;
 
@@ -4692,6 +4719,13 @@ hexagon_shuffle_helper
   single  = hexagon_has_single (packet);
   store   = hexagon_has_store (packet);
   nostore = hexagon_has_store_not (packet);
+  dotnew_load = hexagon_has_dotnew_load (packet);
+
+  if (dotnew_load > 1)
+    as_bad ("illegal packet - multiple .new load operations");
+
+  if (dotnew_load && store != 1)
+    as_bad ("illegal packet - missing store with a .new load");
 
   rnew = hexagon_has_rnew (packet, &inew);
 
@@ -4733,7 +4767,7 @@ hexagon_shuffle_helper
       /* Make sure that several stores follow source order. */
       if ((packet->insns [i].opcode->attributes & A_STORE))
         {
-          if (store > 1)
+          if (store > 1 || dotnew_load)
             {
               temp_mask &= store_mask;
               store_mask >>= 1;

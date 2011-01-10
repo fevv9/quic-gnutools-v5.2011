@@ -2464,6 +2464,7 @@ get_machine_flags (unsigned e_flags, unsigned e_machine)
 	      case EF_HEXAGON_MACH_V2: strcat (buf, ", V2"); break;
 	      case EF_HEXAGON_MACH_V3: strcat (buf, ", V3"); break;
 	      case EF_HEXAGON_MACH_V4: strcat (buf, ", V4"); break;
+	      case EF_HEXAGON_MACH_V5: strcat (buf, ", V5"); break;
             }
           break;
 

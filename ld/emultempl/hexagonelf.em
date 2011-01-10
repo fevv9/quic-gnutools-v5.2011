@@ -46,6 +46,7 @@ static const struct hexagon_march hexagon_marchs [] =
   {"hexagonv2", "qdsp6v2", "v2", "hexagonv2"},
   {"hexagonv3", "qdsp6v3", "v3", "hexagonv3"},
   {"hexagonv4", "qdsp6v4", "v4", "hexagonv4"},
+  {"hexagonv5", "qdsp6v5", "v5", "hexagonv5"},
 };
 
 static size_t hexagon_marchs_size =
@@ -105,10 +106,11 @@ PARSE_AND_LIST_PROLOGUE=$'
 #define OPTION_MV2         (301)
 #define OPTION_MV3         (302)
 #define OPTION_MV4         (303)
-#define OPTION_MARCH       (304)
-#define OPTION_MCPU        (305)
-#define OPTION_TCM         (306)
-#define OPTION_TRAMPOLINES (307)
+#define OPTION_MV5         (304)
+#define OPTION_MARCH       (305)
+#define OPTION_MCPU        (306)
+#define OPTION_TCM         (307)
+#define OPTION_TRAMPOLINES (308)
 '
 
 # Hexagon options.
@@ -117,6 +119,7 @@ PARSE_AND_LIST_LONGOPTS=$'
     {"mv2",         no_argument,       NULL, OPTION_MV2},
     {"mv3",         no_argument,       NULL, OPTION_MV3},
     {"mv4",         no_argument,       NULL, OPTION_MV4},
+    {"mv5",         no_argument,       NULL, OPTION_MV5},
     {"march",       required_argument, NULL, OPTION_MARCH},
     {"mcpu",        required_argument, NULL, OPTION_MCPU},
     {"tcm",         no_argument,       NULL, OPTION_TCM},
@@ -125,9 +128,9 @@ PARSE_AND_LIST_LONGOPTS=$'
 
 # Hexagon target help.
 PARSE_AND_LIST_OPTIONS=$'
-  fprintf (file, _("  --march={v2|v3|v4}          Link for the specified Hexagon architecture\\n"));
-  fprintf (file, _("  --mcpu={v2|v3|v4}           Equivalent to `--march\'\\n"));
-  fprintf (file, _("  -m{v2|v3|v4}                Equivalent to `--march\'\\n"));
+  fprintf (file, _("  --march={v2|v3|v4|v5}          Link for the specified Hexagon architecture\\n"));
+  fprintf (file, _("  --mcpu={v2|v3|v4|v5}           Equivalent to `--march\'\\n"));
+  fprintf (file, _("  -m{v2|v3|v4|v5}                Equivalent to `--march\'\\n"));
 '
 test -z "$HEXAGON_IS_LINUX" && PARSE_AND_LIST_OPTIONS=$PARSE_AND_LIST_OPTIONS$'
   fprintf (file, _("  --tcm                       Use the TCM\\n"));
@@ -202,6 +205,7 @@ PARSE_AND_LIST_ARGS_CASES=$'
     case OPTION_MV2:
     case OPTION_MV3:
     case OPTION_MV4:
+    case OPTION_MV5:
     case OPTION_MARCH:
     case OPTION_MCPU:
       /* The output architecture is specified. */
@@ -214,6 +218,7 @@ PARSE_AND_LIST_ARGS_CASES=$'
               case OPTION_MV2:
               case OPTION_MV3:
               case OPTION_MV4:
+              case OPTION_MV5:
                 /* -mv* options. */
                 temp_hexagon_arch_name
                   = hexagon_marchs [optc - OPTION_MV2].march_name_be;

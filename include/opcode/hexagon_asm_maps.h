@@ -1344,6 +1344,23 @@ MAP_FUNCTION(M2_vrcmpys_s1rp)
 	}
 }
 
+ /*
+ * Source Tag: S2_asr_i_p_rnd_goodsyntax
+ * Source Syntax: Rdd32=asrrnd(Rss32,#u6)
+ * Dest Syntax: Rdd32=Rss32
+ * Dest Syntax2: Rdd32=asr(Rss32,#u5-1):rnd
+ * Condition: #u6==0
+ *
+ */
+MAP_FUNCTION(S2_asr_i_p_rnd_goodsyntax)
+{
+	if (GET_OP_VAL(2)==0) {
+		sprintf(DEST,"R%d:%d=R%d:%d",GET_OP_VAL(0)+1,GET_OP_VAL(0),GET_OP_VAL(1)+1,GET_OP_VAL(1));
+	} else {
+		sprintf(DEST,"R%d:%d=asr(R%d:%d,#u5-1):rnd",GET_OP_VAL(0)+1,GET_OP_VAL(0),GET_OP_VAL(1)+1,GET_OP_VAL(1));
+	}
+}
+
 /*
  * Source Tag: S2_asr_i_r_rnd_goodsyntax
  * Source Syntax: Rd32=asrrnd(Rs32,#u5)

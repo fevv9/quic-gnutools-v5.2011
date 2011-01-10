@@ -1908,6 +1908,7 @@ enum bfd_architecture
 #define bfd_mach_hexagon_v2     2
 #define bfd_mach_hexagon_v3     3
 #define bfd_mach_hexagon_v4     4
+#define bfd_mach_hexagon_v5     5
   bfd_arch_rs6000,    /* IBM RS/6000 */
 #define bfd_mach_rs6k          6000
 #define bfd_mach_rs6k_rs1      6001

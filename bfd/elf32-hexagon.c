@@ -1034,6 +1034,10 @@ hexagon_elf_object_p
             mach = bfd_mach_hexagon_v4;
             break;
 
+          case EF_HEXAGON_MACH_V5:
+            mach = bfd_mach_hexagon_v5;
+            break;
+
           default:
             if (elf_elfheader (abfd)->e_type != ET_HEXAGON_IR)
               {
@@ -1068,6 +1072,10 @@ hexagon_elf_final_write_processing
 
       case bfd_mach_hexagon_v4:
         val = EF_HEXAGON_MACH_V4;
+        break;
+
+      case bfd_mach_hexagon_v5:
+        val = EF_HEXAGON_MACH_V5;
         break;
 
       default:

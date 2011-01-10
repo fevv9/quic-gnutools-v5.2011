@@ -35,6 +35,7 @@
 #define HEXAGON_MACH_V2 2
 #define HEXAGON_MACH_V3 3
 #define HEXAGON_MACH_V4 4
+#define HEXAGON_MACH_V5 5
 /* Additional cpu values can be inserted here and HEXAGON_MACH_BIG moved down.  */
 #define HEXAGON_MACH_BIG 16
 
@@ -47,10 +48,11 @@
 #define HEXAGON_IS_V2 (1 << 31)
 #define HEXAGON_IS_V3 (1 << 30)
 #define HEXAGON_IS_V4 (1 << 29)
+#define HEXAGON_IS_V5 (1 << 28)
 #define HEXAGON_V2_AND_V3 (HEXAGON_IS_V3 | HEXAGON_IS_V2)
-#define HEXAGON_V2_AND_UP (HEXAGON_IS_V4 | HEXAGON_IS_V3 | HEXAGON_IS_V2)
-#define HEXAGON_V3_AND_UP (HEXAGON_IS_V4 | HEXAGON_IS_V3)
-#define HEXAGON_V4_AND_UP (HEXAGON_IS_V4)
+#define HEXAGON_V2_AND_UP (HEXAGON_IS_V5 | HEXAGON_IS_V4 | HEXAGON_IS_V3 | HEXAGON_IS_V2)
+#define HEXAGON_V3_AND_UP (HEXAGON_IS_V5 | HEXAGON_IS_V4 | HEXAGON_IS_V3)
+#define HEXAGON_V4_AND_UP (HEXAGON_IS_V5 | HEXAGON_IS_V4)
 
 /* This is the instruction size in bytes. */
 #define HEXAGON_INSN_LEN (4)
@@ -232,6 +234,7 @@ typedef struct _hexagon_opcode
 #define A_RESTRICT_NOSLOT1_STORE        0x08000000
 #define MUST_EXTEND                     0x10000000
 #define A_MUST_EXTEND                   MUST_EXTEND
+#define A_DOTNEW_LOAD                   0x20000000
   /* Yet unused */
 #define A_GUEST                         0x00000000
 #define A_NOTE_GUEST                    0x00000000
@@ -448,6 +451,7 @@ extern hexagon_insn hexagon_nop, hexagon_kext;
 #define hexagon_if_arch_v2() (hexagon_if_arch (HEXAGON_MACH_V2)) /** < V2 */
 #define hexagon_if_arch_v3() (hexagon_if_arch (HEXAGON_MACH_V3)) /** < V3 */
 #define hexagon_if_arch_v4() (hexagon_if_arch (HEXAGON_MACH_V4)) /** < V4 */
+#define hexagon_if_arch_v5() (hexagon_if_arch (HEXAGON_MACH_V5)) /** < V5 */
 
 extern int hexagon_arch (void);
 extern int hexagon_if_arch (int);

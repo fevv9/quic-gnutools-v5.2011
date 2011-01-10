@@ -235,6 +235,10 @@ const hexagon_operand hexagon_operands [] =
     BFD_RELOC_NONE, BFD_RELOC_NONE, BFD_RELOC_NONE,
     HEXAGON_OPERAND_IS_PREDICATE | HEXAGON_OPERAND_IS_WRITE,
     "p%u", NULL, hexagon_parse_preg },
+  { "Pe4",        2, 'e', 0,
+    BFD_RELOC_NONE, BFD_RELOC_NONE, BFD_RELOC_NONE,
+    HEXAGON_OPERAND_IS_PREDICATE | HEXAGON_OPERAND_IS_WRITE,
+    "p%u", NULL, hexagon_parse_preg },
   { "Px4",        2, 'x', 0,
     BFD_RELOC_NONE, BFD_RELOC_NONE, BFD_RELOC_NONE,
     HEXAGON_OPERAND_IS_PREDICATE | HEXAGON_OPERAND_IS_READ | HEXAGON_OPERAND_IS_WRITE,
@@ -337,6 +341,10 @@ const hexagon_operand hexagon_operands [] =
     "#%u", NULL, NULL },
   { "#u11:3",    11, 'i', 3,
     BFD_RELOC_NONE, BFD_RELOC_NONE, BFD_RELOC_NONE,
+    HEXAGON_OPERAND_IS_IMMEDIATE,
+    "#%u", NULL, NULL },
+  { "#u10",       10, 'i', 0,
+    BFD_RELOC_NONE, BFD_RELOC_HEXAGON_32_6_X, BFD_RELOC_HEXAGON_10_X,
     HEXAGON_OPERAND_IS_IMMEDIATE,
     "#%u", NULL, NULL },
   { "#u9",        9, 'i', 0,
@@ -759,6 +767,15 @@ hexagon_opcode hexagon_opcodes_v4 [] =
 const size_t hexagon_opcodes_count_v4 =
   sizeof (hexagon_opcodes_v4) / sizeof (hexagon_opcodes_v4 [0]);
 
+/* V5 */
+hexagon_opcode hexagon_opcodes_v5 [] =
+{
+#include "opcode/hexagon_iset_v5.h"
+};
+
+const size_t hexagon_opcodes_count_v5 =
+  sizeof (hexagon_opcodes_v5) / sizeof (hexagon_opcodes_v5 [0]);
+
 #define HEXAGON_HASH_SIZE (5 * HEXAGON_HASH_1 + 17) /* Add special groups and hashes. */
 #define HEXAGON_HASH_0    (0 * HEXAGON_HASH_1)      /* 1st group. */
 #define HEXAGON_HASH_1    (1 * ('z' - 'a' + 1))   /* 2nd group. */
@@ -1133,7 +1150,7 @@ hexagon_hash_opcode
 
       if (!strncmp (p1, "jump", 4) || !strncmp (syntax, "jump", 4)
           || !strncmp (p1, "call", 4) || !strncmp (syntax, "call", 4)
-          || (hexagon_if_arch_v4 ()
+          || ((hexagon_if_arch_v4 () || hexagon_if_arch_v5 ())
               && (!strncmp (p1, "return", token) || !strncmp (syntax, "return", token))))
         /* Conditional and unconditioonal branches. */
         return (is_if? HEXAGON_HASH_G: HEXAGON_HASH_H);
@@ -1144,7 +1161,7 @@ hexagon_hash_opcode
 
       if (!strncmp (p1, "jump", 4)
           || !strncmp (p1, "call", 4)
-          || (hexagon_if_arch_v4 ()
+          || ((hexagon_if_arch_v4 () || hexagon_if_arch_v5 ())
               && (!strncmp (p1, "return", token))))
         /* Conditional and unconditioonal branches. */
         return (is_if? HEXAGON_HASH_I: HEXAGON_HASH_J);
@@ -1277,7 +1294,7 @@ int
 hexagon_if_arch_kext
 (void)
 {
-  return (hexagon_if_arch_v4 ());
+  return (hexagon_if_arch_v4 () || hexagon_if_arch_v5 ());
 }
 
 /** Query support for non-GPR pairs.
@@ -1288,7 +1305,7 @@ int
 hexagon_if_arch_pairs
 (void)
 {
-  return (hexagon_if_arch_v4 ());
+  return (hexagon_if_arch_v4 () || hexagon_if_arch_v5 ());
 }
 
 /** Query support for auto-anding of multiple predicate changes
@@ -1300,7 +1317,7 @@ int
 hexagon_if_arch_autoand
 (void)
 {
-  return (hexagon_if_arch_v4 ());
+  return (hexagon_if_arch_v4 () || hexagon_if_arch_v5 ());
 }
 
 /* Translate a bfd_mach_hexagon_xxx value to a HEXAGON_MACHXX value.  */
@@ -1313,11 +1330,12 @@ hexagon_get_opcode_mach
     HEXAGON_MACH_V2,
     HEXAGON_MACH_V3,
     HEXAGON_MACH_V4,
+    HEXAGON_MACH_V5,
     /* Leaving space for future cores */
   };
 
   // RK: Handle cases when bfd_mach is not correctly set
-  if (bfd_mach < bfd_mach_hexagon_v2 || bfd_mach > bfd_mach_hexagon_v4)
+  if (bfd_mach < bfd_mach_hexagon_v2 || bfd_mach > bfd_mach_hexagon_v5)
     return HEXAGON_CPU_TYPE_UNINIT;
 
   return (mach_type_map [bfd_mach - bfd_mach_hexagon_v2]
@@ -1346,6 +1364,7 @@ hexagon_opcode_init_tables
   cpu_flag = hexagon_if_arch_v2 ()? HEXAGON_IS_V2
            : hexagon_if_arch_v3 ()? HEXAGON_IS_V3
            : hexagon_if_arch_v4 ()? HEXAGON_IS_V4
+           : hexagon_if_arch_v5 ()? HEXAGON_IS_V5
            : 0;
 
   /* We may be intentionally called more than once (for example gdb will call
@@ -1355,10 +1374,13 @@ hexagon_opcode_init_tables
   /* Based on cpu type, set: operand, operand_array_size */
   hexagon_opcodes               = hexagon_if_arch_v2 ()? hexagon_opcodes_v2
                                 : hexagon_if_arch_v3 ()? hexagon_opcodes_v3
-                                                     : hexagon_opcodes_v4;
+                                : hexagon_if_arch_v4 ()? hexagon_opcodes_v4
+                                                     : hexagon_opcodes_v5;
+
   hexagon_opcodes_count         = hexagon_if_arch_v2 ()? hexagon_opcodes_count_v2
                                 : hexagon_if_arch_v3 ()? hexagon_opcodes_count_v3
-                                                     : hexagon_opcodes_count_v4;
+                                : hexagon_if_arch_v4 ()? hexagon_opcodes_count_v4
+                                                     : hexagon_opcodes_count_v5;
 
   /* Scan the opcodes table to determine the number of bits
     that can reliably be used to hash opcodes */
@@ -2530,7 +2552,7 @@ hexagon_lookup_operand
   size_t i;
 
   /* Get the length of the operand syntax up to a separator. */
-  op_len = strcspn (name, " .");
+  op_len = strcspn (name, " .,");
 
   for (i = 0; i < hexagon_operand_count; i++)
     {
