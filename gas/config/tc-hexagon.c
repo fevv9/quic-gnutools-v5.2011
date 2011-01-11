@@ -445,7 +445,7 @@ extern int target_big_endian;
 const char *hexagon_target_format = DEFAULT_TARGET_FORMAT;
 static int byte_order = DEFAULT_BYTE_ORDER;
 
-static int hexagon_mach_type = bfd_mach_hexagon_v2;
+static int hexagon_mach_type = bfd_mach_hexagon_v5;
 static int cmdline_set_hexagon_mach_type = 0;
 
 /* Non-zero if the cpu type has been explicitly specified.  */
