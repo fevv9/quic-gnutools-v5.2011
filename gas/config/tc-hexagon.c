@@ -4377,7 +4377,8 @@ hexagon_cons_fix_new
 	    save = input_line_pointer;
 	    if (!(strncmp (save, "@GOT", 4))
 	        || !(strncmp (save, "@GDGOT", 6))
-	        || !(strncmp (save, "@IEGOT", 6)))
+	        || !(strncmp (save, "@IEGOT", 6))
+	        || !(strncmp (save, "@TPREL", 6)))
               {
                 /* Handle GOT and PLT expressions. */
                 suffix_line = hexagon_parse_suffix (&suffix, NULL);
@@ -4395,6 +4396,8 @@ hexagon_cons_fix_new
                       r_type = BFD_RELOC_HEXAGON_GD_GOT_32;
                     else if (suffix == TLS_IE_GOT)
                       r_type = BFD_RELOC_HEXAGON_IE_GOT_32;
+                    else if (suffix == TLS_TPREL)
+                      r_type = BFD_RELOC_HEXAGON_TPREL_32;
                   }
 
                 while (!is_end_of_line [(unsigned char) *save++])
