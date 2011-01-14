@@ -2137,7 +2137,6 @@ static const char *const bfd_reloc_code_real_names[] = { "@@uninitialized@@",
   "BFD_RELOC_HEXAGON_TPREL_LO16",
   "BFD_RELOC_HEXAGON_TPREL_HI16",
   "BFD_RELOC_HEXAGON_TPREL_32",
-  "BFD_RELOC_HEXAGON_TPREL_16",
  "@@overflow: BFD_RELOC_UNUSED@@",
 };
 #endif
