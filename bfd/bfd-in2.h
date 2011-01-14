@@ -4694,6 +4694,7 @@ of a 32-bit signed offset from the base of the TLS template.  */
   BFD_RELOC_HEXAGON_TPREL_LO16,
   BFD_RELOC_HEXAGON_TPREL_HI16,
   BFD_RELOC_HEXAGON_TPREL_32,
+  BFD_RELOC_HEXAGON_TPREL_16,
   BFD_RELOC_UNUSED };
 typedef enum bfd_reloc_code_real bfd_reloc_code_real_type;
 reloc_howto_type *bfd_reloc_type_lookup

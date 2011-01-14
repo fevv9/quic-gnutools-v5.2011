@@ -5423,6 +5423,8 @@ ENUMX
   BFD_RELOC_HEXAGON_TPREL_HI16
 ENUMX
   BFD_RELOC_HEXAGON_TPREL_32
+ENUMX
+  BFD_RELOC_HEXAGON_TPREL_16
 ENUMDOC
   TLS relocations for the lower and the higher 16 bits and all 32 bits
   of a 32-bit signed offset from the base of the TLS template.
