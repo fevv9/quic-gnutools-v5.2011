@@ -4372,9 +4372,11 @@ hexagon_allocate_dynrel
       if (info->shared
 	  || WILL_CALL_FINISH_DYNAMIC_SYMBOL
                (htab->elf.dynamic_sections_created, info, h))
-        htab->elf.srelgot->size += sizeof (Elf32_External_Rela);
-	if (eh->gd_got.refcount > 0)
+	{
 	  htab->elf.srelgot->size += sizeof (Elf32_External_Rela);
+	  if (eh->gd_got.refcount > 0)
+	    htab->elf.srelgot->size += sizeof (Elf32_External_Rela);
+	}
     }
   else
     h->got.offset = -(bfd_vma) 1;
