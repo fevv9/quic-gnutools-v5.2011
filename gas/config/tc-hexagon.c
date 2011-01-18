@@ -4460,24 +4460,50 @@ md_apply_fix
   fixP->fx_offset ^= 0x80000000;
   fixP->fx_offset -= 0x80000000;
 
-  if (fixP->fx_addsy == (symbolS *) NULL)
+  if (!fixP->fx_addsy)
     fixP->fx_done = 1;
-  else if (fixP->fx_pcrel)
+  else
     {
-      switch (fixP->fx_r_type)
-        {
-        case BFD_RELOC_32:
-          fixP->fx_r_type = BFD_RELOC_32_PCREL;
-          break;
-        default:
-          break;
-        }
+      if (fixP->fx_pcrel)
+	{
+	  /* Symbol is PC-relative. */
+	  switch (fixP->fx_r_type)
+	    {
+	    case BFD_RELOC_32:
+	      fixP->fx_r_type = BFD_RELOC_32_PCREL;
+	      break;
+	    default:
+	      break;
+	    }
 
-      /* Hack around bfd_install_relocation brain damage.  */
-      if (S_GET_SEGMENT (fixP->fx_addsy) != seg)
-        value += md_pcrel_from (fixP);
-      else if (fixP->fx_r_type != BFD_RELOC_HEXAGON_PLT_B22_PCREL)
-        fixP->fx_done = 1;
+	  /* Hack around bfd_install_relocation brain damage.  */
+	  if (S_GET_SEGMENT (fixP->fx_addsy) != seg)
+	    value += md_pcrel_from (fixP);
+	  else if (fixP->fx_r_type != BFD_RELOC_HEXAGON_PLT_B22_PCREL)
+	    fixP->fx_done = 1;
+	}
+      else
+	switch (fixP->fx_r_type)
+	  {
+	  case BFD_RELOC_HEXAGON_GD_GOT_LO16:
+	  case BFD_RELOC_HEXAGON_GD_GOT_HI16:
+	  case BFD_RELOC_HEXAGON_GD_GOT_32:
+	  case BFD_RELOC_HEXAGON_GD_GOT_16:
+	  case BFD_RELOC_HEXAGON_IE_GOT_LO16:
+	  case BFD_RELOC_HEXAGON_IE_GOT_HI16:
+	  case BFD_RELOC_HEXAGON_IE_GOT_32:
+	  case BFD_RELOC_HEXAGON_IE_GOT_16:
+	  case BFD_RELOC_HEXAGON_TPREL_LO16:
+	  case BFD_RELOC_HEXAGON_TPREL_HI16:
+	  case BFD_RELOC_HEXAGON_TPREL_32:
+	  case BFD_RELOC_HEXAGON_TPREL_16:
+	    /* Implicitly set type to TLS. */
+	    S_SET_THREAD_LOCAL (fixP->fx_addsy);
+	    break;
+
+	  default:
+	    break;
+	  }
     }
 
   /* We can't actually support subtracting a symbol.  */
