@@ -2393,7 +2393,8 @@ hexagon_elf_relocate_section
 		  /* Fall-through. */
 
 	        case R_HEXAGON_PLT_B22_PCREL:
-	          if (h->plt.offset != -(bfd_vma) 1)
+	          if (h->plt.refcount > 0
+		      && h->plt.offset != -(bfd_vma) 1)
 	            relocation = 0;
 		  break;
 
@@ -2801,7 +2802,7 @@ hexagon_elf_relocate_section
 	  insn = hexagon_get_insn (ibfd, howto, contents + rel->r_offset);
 
 	  if (!hexagon_reloc_operand (howto, &insn, offset, NULL)
-              && h && h->root.type != bfd_link_hash_undefined)
+              && (!h || h->root.type != bfd_link_hash_undefined))
             r = info->callbacks->reloc_overflow
                   (info, h? &h->root: NULL, name, howto->name, 0,
                    ibfd, isection, rel->r_offset);
@@ -2819,7 +2820,7 @@ hexagon_elf_relocate_section
 
 	  if (!hexagon_reloc_operand
 	         (hexagon_elf_howto_table + R_HEXAGON_HI16, &insn, offset, NULL)
-              && h && h->root.type != bfd_link_hash_undefined)
+              && (!h || h->root.type != bfd_link_hash_undefined))
             r = info->callbacks->reloc_overflow
                   (info, (h ? &h->root : NULL), name,
                    hexagon_elf_howto_table [R_HEXAGON_HI16].name, 0,
@@ -2834,7 +2835,7 @@ hexagon_elf_relocate_section
 
 	  if (!hexagon_reloc_operand
 	         (hexagon_elf_howto_table + R_HEXAGON_LO16, &insn, offset, NULL)
-              && h && h->root.type != bfd_link_hash_undefined)
+              && (!h || h->root.type != bfd_link_hash_undefined))
             r = info->callbacks->reloc_overflow
                   (info, (h ? &h->root : NULL), name,
                    hexagon_elf_howto_table [R_HEXAGON_LO16].name, 0,
@@ -2880,7 +2881,7 @@ hexagon_elf_relocate_section
           offset = relocation + rel->r_addend;
 
           if (!hexagon_reloc_operand (howto, &insn, offset, NULL)
-              && h && h->root.type != bfd_link_hash_undefined)
+              && (!h || h->root.type != bfd_link_hash_undefined))
             r = info->callbacks->reloc_overflow
                   (info, (h? &h->root: NULL), name, howto->name, 0,
                    ibfd, isection, rel->r_offset);
@@ -2915,7 +2916,7 @@ hexagon_elf_relocate_section
 	  insn = hexagon_get_insn (ibfd, howto, contents + rel->r_offset);
 
 	  if (!hexagon_reloc_operand (howto, &insn, offset, NULL)
-              && h && h->root.type != bfd_link_hash_undefined)
+              && (!h || h->root.type != bfd_link_hash_undefined))
             r = info->callbacks->reloc_overflow
                 (info, (h ? &h->root : NULL), name, howto->name, 0,
                  ibfd, isection, rel->r_offset);

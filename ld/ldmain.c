@@ -660,9 +660,10 @@ get_emulation (int argc, char **argv)
 	    }
 	  else if (strcmp (argv[i], "-mv2") == 0
 		   || strcmp (argv[i], "-mv3") == 0
-		   || strcmp (argv[i], "-mv4") == 0)
+		   || strcmp (argv[i], "-mv4") == 0
+		   || strcmp (argv[i], "-mv5") == 0)
 	    {
-		/* FIXME: See mips comment */
+		/* FIXME: See mips comment - added -mv5 */
 	    }
 	  else if (strcmp (argv [i], "-march") == 0
 		   || strcmp (argv [i], "-mcpu") == 0)
