@@ -4725,7 +4725,7 @@ hexagon_shuffle_helper
     as_bad ("illegal packet - multiple .new load operations");
 
   if (dotnew_load && store != 1)
-    as_bad ("illegal packet - missing store with a .new load");
+    as_warn ("missing store with a .new load");
 
   rnew = hexagon_has_rnew (packet, &inew);
 
