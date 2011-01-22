@@ -1237,6 +1237,41 @@ hexagon_info_to_howto_rel
   cache_ptr->howto = hexagon_elf_howto_table + r_type;
 }
 
+/* XXX_SM tls start */
+/* TLS utility functions */
+/* Return the base VMA address which should be subtracted from real addresses
+   when resolving @dtpoff relocation.
+   This is PT_TLS segment p_vaddr.  */
+
+static bfd_vma
+dtpoff_base (struct bfd_link_info *info)
+{
+  if (elf_hash_table (info)->tls_sec == NULL)
+    {
+      BFD_FAIL();
+      return 0;
+    }
+  return elf_hash_table (info)->tls_sec->vma;
+}
+
+
+/* Return the relocation value for @tpoff relocation
+   if STT_TLS virtual address is ADDRESS.  */
+static bfd_vma
+tpoff (struct bfd_link_info *info, bfd_vma address)
+{
+  struct elf_link_hash_table *htab = elf_hash_table (info);
+
+  if (htab->tls_sec == NULL)
+    {
+      BFD_FAIL();
+      return 0;
+    }
+
+  return (address - (htab->tls_sec->vma + htab->tls_size));
+}
+/* XXX_SM tls end */
+
 /* Set the right machine number for an Hexagon ELF file.  */
 
 static bfd_boolean
@@ -3055,8 +3090,7 @@ hexagon_elf_relocate_section
 
                 if (indx == 0)
                   {
-                    bfd_vma tls_sec = ((struct elf_link_hash_table *) ((info)->hash))->tls_sec->vma;
-                    bfd_put_32 (obfd, relocation - tls_sec,
+                    bfd_put_32 (obfd, tpoff(info, relocation),
                                 htab->elf.sgot->contents + offset + GOT_ENTRY_SIZE);
                   }
                 else
@@ -3099,58 +3133,83 @@ hexagon_elf_relocate_section
    the lower and the higher 16 bits, all 32 bits and the signed lower
    16 bits of a 32-bit signed offset.
 */
-	case R_HEXAGON_IE_GOT_LO16:
-	case R_HEXAGON_IE_GOT_HI16:
-	case R_HEXAGON_IE_GOT_32:
-	case R_HEXAGON_IE_GOT_16:
-	  if (info->shared)
-	    {
-	      bfd_set_error (bfd_error_invalid_operation);
-	      return FALSE;
-            }
+	  case R_HEXAGON_IE_GOT_LO16:
+	  case R_HEXAGON_IE_GOT_HI16:
+	  case R_HEXAGON_IE_GOT_32:
+	  case R_HEXAGON_IE_GOT_16:
+            indx = h && h->dynindx != -1 ? h->dynindx : 0;
 
-          if (h == NULL || h->def_regular)
-            {
-              bfd_vma offset;
-
-             /* The symbol is defined in the program, so just write
-                 the -prog_tls_size+known_tpoffset into the GOT.
-                 note: x86_64 uses elf64_x86_64_dtpoff_base() to get this
-                       that function checks if tls_sec == NULL and returns 0
-                       if it is */
-              relocation -= elf_hash_table (info)->tls_sec->vma;
-              relocation -= elf_hash_table (info)->tls_size;
-
-              if (h != NULL)
+            if (h)
+              {
+              /* Global symbol. */
                 offset = h->got.offset;
-              else
+                BFD_ASSERT (offset != -(bfd_vma) 1);
+              }
+            else
+              {
+              /* Local symbol. */
+                if (local_got_offsets == NULL)
+                  abort ();
+
                 offset = local_got_offsets[r_symndx];
+              }
 
-              if ((offset & 1) == 0)
-                {
-                  if (h != NULL)
-                    h->got.offset |= 1;
-                  else
-                    local_got_offsets[r_symndx] |= 1;
+            if ((offset & 1))
+              offset &= ~1;
+            else
+              {
+	        sreloc = htab->elf.srelgot;
 
-                  bfd_put_32 (obfd, relocation, htab->elf.sgot->contents + offset);
-                }
+                if (h != NULL)
+                  h->got.offset |= 1;
+                else
+                  local_got_offsets[r_symndx] |= 1;
 
-              if (r_type == ELF32_R_TYPE (rel->r_info))
-                {
-                  relocation = htab->elf.sgot->output_section->vma + 
-                               htab->elf.sgot->output_offset + offset;
-                }
-              else
-                {
-                  (*_bfd_error_handler) (
-                    _("relocation for %s: r_type != rel->r_info"),
-                    h->root.root.string);
-                }
-            }
+                /* If referenced by different thread models use the 2nd
+                   entry. */
+                if ((hexagon_hash_entry (h)->gd_got.refcount != 0)
+                    && (hexagon_hash_entry (h)->ie_got.refcount != 0))
+                  offset += 4;
 
+                /* This places an entry into the GOT that will be the tls
+                   relative location of the variable referenced.
 
-	  break;
+                   If value == TLS [GOT[n]] then below we are storing a
+                   value *contained* in GOT[n].  (In the source below 
+                   "offset" == n)  */
+                bfd_put_32 (obfd, relocation - dtpoff_base(info),
+                            htab->elf.sgot->contents + offset);
+
+		if (h && (info->shared))
+                  {
+                    if ((indx == 0) || (h->def_regular))
+                      outrel.r_addend = relocation - dtpoff_base (info);
+                    else
+                      outrel.r_addend = 0;
+
+                    outrel.r_offset = (htab->elf.sgot->output_section->vma
+                                       + htab->elf.sgot->output_offset 
+                                       + offset);
+                    outrel.r_info = ELF32_R_INFO (indx, R_HEXAGON_DTPREL_32);
+	            loc = htab->elf.srelgot->contents;
+	            loc += htab->elf.srelgot->reloc_count++
+		           * sizeof (Elf32_External_Rela);
+
+                    /* Check that hexagon_allocate_dynrel accounts for this.*/
+                    BFD_ASSERT (loc + sizeof (Elf32_External_Rela) <=
+                                sreloc->contents + sreloc->size);
+	            bfd_elf32_swap_reloca_out (obfd, &outrel, loc);
+
+                  }
+              }
+
+            /* The same calculation that is done for other GOT relocs */
+            relocation  = htab->elf.sgot->output_section->vma
+                         + htab->elf.sgot->output_offset
+                         - htab->elf.sgotplt->output_section->vma
+                         - htab->elf.sgotplt->output_offset
+                         + offset;
+	    break;
 	}
 
       /* Apply relocation. */
@@ -3180,15 +3239,12 @@ hexagon_elf_relocate_section
 	case R_HEXAGON_GOT_LO16:
 	case R_HEXAGON_GOT_HI16:
 	case R_HEXAGON_GOT_16:
-/* XXX_SM tls start ***  not clear that we need to do anything special here*** */
         case R_HEXAGON_GD_GOT_LO16:
         case R_HEXAGON_GD_GOT_HI16:
         case R_HEXAGON_IE_GOT_LO16:
         case R_HEXAGON_IE_GOT_HI16:
         case R_HEXAGON_GD_GOT_16:
         case R_HEXAGON_IE_GOT_16:
-/* XXX_SM tls end */
-
 	  offset = (relocation + rel->r_addend) & lmask & rmask;
 
 	  insn = hexagon_get_insn (ibfd, howto, contents + rel->r_offset);
