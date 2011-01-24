@@ -3382,7 +3382,7 @@ hexagon_elf_relocate_section
 
             /* offset (which is negative) will be added to the absolute
                address of the TLS area */
-            offset = tp_base - ((relocation + rel->r_addend + rel->r_offset));
+            offset = tpoff(info, relocation) + rel->r_addend;
             insn = hexagon_get_insn (ibfd, howto, contents + rel->r_offset);
 
             if (!hexagon_reloc_operand (howto, &insn, offset, NULL)
