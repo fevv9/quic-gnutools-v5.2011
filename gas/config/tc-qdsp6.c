@@ -2673,42 +2673,15 @@ void
 qdsp6_packet_write
 (qdsp6_packet *apacket)
 {
+  qdsp6_packet *zpacket;
   fragS *previous;
   char *first;
-  size_t max_skip, num_nops, num_padded_nops;
-  size_t req_insns;
   size_t i;
 
   apacket->faligned = qdsp6_faligning;
   qdsp6_faligning   = FALSE;
 
   qdsp6_packet_fold (apacket);
-
-  /* Determine if we can skip any NOP, for
-     at least 2 instructions are needed for :endloop0 and
-     at least 3 instructions for :endloop1; otherwise
-     all can be skipped and nothing is emitted. */
-  max_skip = qdsp6_packet_count (apacket)
-             - ((apacket->is_inner || apacket->is_outer)
-                ? (apacket->is_outer? 3: 2) : 0);
-
-  /* Calculate the number of NOP needed. */
-  for (i = 0, num_nops = 0, num_padded_nops = 0;
-       i < qdsp6_packet_count (apacket);
-       i++)
-    if (qdsp6_is_nop (apacket->insns [i].insn)
-        && !qdsp6_is_nop_keep (apacket, i))
-      {
-        num_nops++;
-
-        if (apacket->insns [i].pad)
-          num_padded_nops++;
-      }
-  max_skip = MIN (max_skip, MIN (num_nops, num_padded_nops));
-
-  /* Keep track of the number of emitted instructions to
-     determine which packet bits to set. */
-  req_insns = qdsp6_packet_count (apacket) - max_skip;
 
   /* Make sure that packet frags have nothing else. */
   if (obstack_object_size (&frchain_now->frch_obstack))
@@ -2722,62 +2695,52 @@ qdsp6_packet_write
   /* Make room for maximum packet size and possible padding. */
   previous = frag_now;
   frag_grow (2 * MAX_PACKET_INSNS * QDSP6_INSN_LEN);
-  first = frag_more (req_insns * QDSP6_INSN_LEN);
+  first = frag_more (qdsp6_packet_insns (apacket) * QDSP6_INSN_LEN);
   qdsp6_frag_init (frag_now, previous);
 
   /* Initialize scratch packet. */
-  frag_now->tc_frag_data->packet = *apacket;
-  frag_now->tc_frag_data->packet.size = 0;
+  zpacket = &frag_now->tc_frag_data->packet;
+  *zpacket = *apacket;
+  zpacket->size = 0;
 
   for (i = 0; i < qdsp6_packet_count (apacket); i++)
     {
-      size_t size = qdsp6_packet_count (&frag_now->tc_frag_data->packet);
-
-      /* Skip the pad NOP, not every NOP. */
-      if (max_skip
-	  && apacket->insns [i].pad
-	  && qdsp6_is_nop (apacket->insns [i].insn)
-	  && !qdsp6_is_nop_keep (apacket, i))
-	{
-	  max_skip--;
-	  continue;
-        }
+      /* Skip the paddings. */
+      if (apacket->insns [i].pad)
+	continue;
 
       /* Set proper packet bits. */
-      if (size == (1 - 1) && apacket->is_inner)
+      if (zpacket->size == (1 - 1) && apacket->is_inner)
 	apacket->insns [i].insn =
           QDSP6_END_PACKET_SET (apacket->insns [i].insn, QDSP6_END_LOOP);
-      else if (size == (2 - 1) && apacket->is_outer)
+      else if (zpacket->size == (2 - 1) && apacket->is_outer)
 	apacket->insns [i].insn =
           QDSP6_END_PACKET_SET (apacket->insns [i].insn, QDSP6_END_LOOP);
-      else if (size >= req_insns - 1
+      else if (zpacket->size >= qdsp6_packet_insns (apacket) - 1
                && QDSP6_END_PACKET_GET (apacket->insns [i].insn) != QDSP6_END_PAIR)
 	apacket->insns [i].insn =
           QDSP6_END_PACKET_SET (apacket->insns [i].insn, QDSP6_END_PACKET);
       /* Otherwise, leave the packet bits alone. */
 
-      apacket->insns [i].pad = FALSE;
-      frag_now->tc_frag_data->packet.insns [size] = apacket->insns [i];
-      qdsp6_insn_write (frag_now->tc_frag_data->packet.insns [size].insn,
-                        frag_now->tc_frag_data->packet.insns [size].fc,
-                        &frag_now->tc_frag_data->packet.insns [size].operand,
-                        &frag_now->tc_frag_data->packet.insns [size].exp,
-                        first, size * QDSP6_INSN_LEN,
-                        &frag_now->tc_frag_data->packet.insns [size].fix,
-                        frag_now->tc_frag_data->packet.insns [size].lineno);
+      zpacket->insns [zpacket->size] = apacket->insns [i];
+      qdsp6_insn_write (zpacket->insns [zpacket->size].insn,
+			zpacket->insns [zpacket->size].fc,
+			&zpacket->insns [zpacket->size].operand,
+			&zpacket->insns [zpacket->size].exp,
+			first, zpacket->size * QDSP6_INSN_LEN,
+			&zpacket->insns [zpacket->size].fix,
+			zpacket->insns [zpacket->size].lineno);
 
       /* Count insn as legit. */
-      frag_now->tc_frag_data->packet.size++;
+      zpacket->size++;
     }
 
   /* Emit current line number info at the beginning of the packet. */
-  dwarf2_emit_insn (frag_now->tc_frag_data->packet.size * QDSP6_INSN_LEN);
-
-  assert (req_insns == frag_now->tc_frag_data->packet.size);
+  dwarf2_emit_insn (zpacket->size * QDSP6_INSN_LEN);
 
   previous = frag_now;
   frag_var (rs_machine_dependent,
-            (2 * MAX_PACKET_INSNS - req_insns) * QDSP6_INSN_LEN,
+            (2 * MAX_PACKET_INSNS - zpacket->size) * QDSP6_INSN_LEN,
             0, 0, NULL, 0, first);
   qdsp6_frag_init (frag_now, previous);
   qdsp6_packet_init (&frag_now->tc_frag_data->packet);
@@ -2885,10 +2848,9 @@ qdsp6_packet_form
                 /* Skip an insn alredy inserted into the packet. */
                 continue;
 
-              if (!qdsp6_packet_cram (packet + k,
-                                      queue.insns + i, queue.prefixes + i,
-                                      queue.pairs + i,
-                                      FALSE))
+              if (!qdsp6_packet_cram
+		     (packet + k, queue.insns + i, queue.prefixes + i,
+		      queue.pairs + i, FALSE))
                 {
                   qdsp6_packet_init (packet + k);
                   ok = FALSE;
@@ -2920,10 +2882,9 @@ qdsp6_packet_form
             /* Skip an insn alredy inserted into the packet. */
             continue;
 
-          if (!qdsp6_packet_cram (apacket,
-                                  queue.insns + i, queue.prefixes + i,
-                                  queue.pairs + i,
-                                  FALSE))
+          if (!qdsp6_packet_cram
+	         (apacket, queue.insns + i, queue.prefixes + i,
+		  queue.pairs + i, FALSE))
             {
               ok = FALSE;
               break;
@@ -4356,7 +4317,7 @@ qdsp6_discard_dcfetch
                     as_warn_where (NULL, apacket->insns [i].lineno,
                                   _("extra `dcfetch' removed."));
 
-                    apacket->insns [i]        = qdsp6_nop_insn;
+                    apacket->insns [i] = qdsp6_nop_insn;
                     apacket->insns [i].pad = TRUE;
 
                     count++;
@@ -4374,7 +4335,7 @@ qdsp6_discard_dcfetch
               as_warn_where (NULL, apacket->insns [i].lineno,
                             _("`dcfetch' removed."));
 
-              apacket->insns [i]        = qdsp6_nop_insn;
+              apacket->insns [i] = qdsp6_nop_insn;
               apacket->insns [i].pad = TRUE;
 
               number--;
@@ -4566,8 +4527,13 @@ qdsp6_shuffle_prepare
     fromto [i] = MAX_PACKET_INSNS;
 
   /* Pad packet with NOPs. */
-  while (qdsp6_packet_insert (apacket, &qdsp6_nop_insn, NULL, NULL, TRUE))
-    ;
+  for (i = qdsp6_packet_count (apacket); i < MAX_PACKET_INSNS; i++)
+    {
+      int pad;
+
+      pad = !((apacket->is_inner && i < 2) || (apacket->is_outer && i < 3));
+      qdsp6_packet_insert (apacket, &qdsp6_nop_insn, NULL, NULL, pad);
+    }
 
   /* Reorder the instructions in the packet so that they start with
       slot #3 (index #0) instead of slot #0.
@@ -4664,10 +4630,10 @@ qdsp6_shuffle_do
 
       for (i = 0; i < MAX_PACKET_INSNS - 1; i++)
         if ((apacket->insns [i].opcode->attributes & A_RESTRICT_PREFERSLOT0))
-            as_warn_where (file, apacket->insns [i].lineno,
-                            _("instruction `%s' prefers slot #0, "
-                              "but has been assigned to slot #%u."),
-                            apacket->insns [i].opcode->syntax, i);
+	  as_warn_where (file, apacket->insns [i].lineno,
+			 _("instruction `%s' prefers slot #0, "
+			   "but has been assigned to slot #%u."),
+			 apacket->insns [i].opcode->syntax, i);
     }
 }
 
@@ -5343,12 +5309,12 @@ qdsp6_packet_end
                   "modify registers `C4/P3:0', `C8/USR', `SA0', `LC0' or `PC'."));
 
       /* Although it may be dangerous to modify P3 then, legacy code is full of this. */
-    /*
+      /*
       if (pArray [3])
         as_warn (_("packet marked with `:endloop0' that contain instructions that " \
-                  "modify register `p3' may have undefined results if "
-                  "ending a pipelined loop."));
-    */
+                   "modify register `p3' may have undefined results if "
+                   "ending a pipelined loop."));
+      */
 
       /* Check for a solo instruction in a packet with :endloop0. */
       if (qdsp6_has_solo (apacket))
