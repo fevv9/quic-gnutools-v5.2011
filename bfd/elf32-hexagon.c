@@ -142,6 +142,11 @@ static bfd_vma hexagon_elf_plt_sym_val
   PARAMS ((bfd_vma, const asection *, const arelent *));
 static bfd_boolean hexagon_elf_hash_symbol
   PARAMS ((struct elf_link_hash_entry *));
+/* TLS */
+static bfd_vma hexagon_elf_dtpoff
+  PARAMS ((struct bfd_link_info *, bfd_vma));
+static bfd_vma hexagon_elf_tpoff
+  PARAMS ((struct bfd_link_info *, bfd_vma));
 
 typedef struct elf_dyn_relocs hexagon_dyn_reloc;
 
@@ -150,12 +155,17 @@ typedef struct _hexagon_link_hash_entry
     struct elf_link_hash_entry elf;
     /* Hexagon data. */
     hexagon_dyn_reloc *dyn_relocs;
-    /* Break up of GOT references among TLS-specific ones. */
+    /* Break up of GOT references, including TLS-specific ones. */
     struct
       {
 	bfd_signed_vma refcount;
-      } gd_got, ie_got;
+      } ok_got, gd_got, ie_got;
   } hexagon_link_hash_entry;
+
+#define LGOT_OK(S, N) ((N) + 1 * (S)->sh_info)
+#define LGOT_GD(S, N) ((N) + 2 * (S)->sh_info)
+#define LGOT_IE(S, N) ((N) + 3 * (S)->sh_info)
+#define LGOT_SZ(S)    (      4 * (S)->sh_info)
 
 typedef struct _hexagon_link_hash_table
   {
@@ -1237,43 +1247,35 @@ hexagon_info_to_howto_rel
   cache_ptr->howto = hexagon_elf_howto_table + r_type;
 }
 
-/* XXX_SM tls start */
-/* TLS utility functions */
-/* Return the base VMA address which should be subtracted from real addresses
-   when resolving @dtpoff relocation.
-   This is PT_TLS segment p_vaddr.  */
-
+/**
+Return the DTPREL value.
+*/
 static bfd_vma
-dtpoff_base (struct bfd_link_info *info)
+hexagon_elf_dtpoff (struct bfd_link_info *info, bfd_vma address)
 {
-  if (elf_hash_table (info)->tls_sec == NULL)
-    {
-      BFD_FAIL();
-      return 0;
-    }
-  return elf_hash_table (info)->tls_sec->vma;
+  if (!elf_hash_table (info)->tls_sec)
+    return 0;
+  else
+   return (address
+	   - elf_hash_table (info)->tls_sec->vma);
 }
 
 
-/* Return the relocation value for @tpoff relocation
-   if STT_TLS virtual address is ADDRESS.  */
+/**
+Return the TPREL value.
+*/
 static bfd_vma
-tpoff (struct bfd_link_info *info, bfd_vma address)
+hexagon_elf_tpoff (struct bfd_link_info *info, bfd_vma address)
 {
-  struct elf_link_hash_table *htab = elf_hash_table (info);
-
-  if (htab->tls_sec == NULL)
-    {
-      BFD_FAIL();
-      return 0;
-    }
-
-  return (address - (htab->tls_sec->vma + htab->tls_size));
+  if (!elf_hash_table (info)->tls_sec)
+    return 0;
+  else
+    return (address
+	    - elf_hash_table (info)->tls_sec->vma
+	    - elf_hash_table (info)->tls_size);
 }
-/* XXX_SM tls end */
 
 /* Set the right machine number for an Hexagon ELF file.  */
-
 static bfd_boolean
 hexagon_elf_object_p
 (bfd *abfd)
@@ -2031,7 +2033,7 @@ hexagon_elf_relax_section
   bfd_byte *contents = NULL;
   Elf_Internal_Sym *isymbuf = NULL;
   struct elf_link_hash_entry **sym_hashes;
-  unsigned long r_symndx;
+  size_t r_symndx;
   struct elf_link_hash_entry *h;
   struct bfd_link_hash_entry *t_h;
   struct bfd_link_hash_table t_hash;
@@ -2430,6 +2432,7 @@ hexagon_elf_link_hash_newfunc
   if ((entry = _bfd_elf_link_hash_newfunc (entry, table, string)))
     {
       hexagon_hash_entry (entry)->dyn_relocs = NULL;
+      hexagon_hash_entry (entry)->ok_got.refcount = 0;
       hexagon_hash_entry (entry)->gd_got.refcount = 0;
       hexagon_hash_entry (entry)->ie_got.refcount = 0;
     }
@@ -2557,10 +2560,11 @@ hexagon_elf_relocate_section
     {
       unsigned int r_type;
       reloc_howto_type *howto;
-      unsigned long r_symndx;
+      size_t r_symndx;
       Elf_Internal_Sym *sym = NULL;
       asection *sec = NULL;
       struct elf_link_hash_entry *h = NULL;
+      hexagon_link_hash_entry *eh = NULL;
       bfd_vma relocation, offset;
       bfd_vma lmask = ~(bfd_vma) 0, rmask = ~(bfd_vma) 0;
       bfd_reloc_status_type r;
@@ -2608,6 +2612,7 @@ hexagon_elf_relocate_section
 	  while (h->root.type == bfd_link_hash_indirect
 		 || h->root.type == bfd_link_hash_warning)
 	    h = (struct elf_link_hash_entry *) h->root.u.i.link;
+	  eh = hexagon_hash_entry (h);
 
 	  name = h->root.root.string;
 
@@ -2808,11 +2813,7 @@ hexagon_elf_relocate_section
                   if ((offset & 1))
                     offset &= ~1;
                   else
-                    {
-                      bfd_put_32
-                        (obfd, relocation, htab->elf.sgot->contents + offset);
-                      h->got.offset |= 1;
-                    }
+		    h->got.offset |= 1;
                 }
             }
           else
@@ -3034,183 +3035,96 @@ hexagon_elf_relocate_section
       /* Mirrors what is done above for dynamic linking and preprocess the
          relocations for TLS types. */
       switch (r_type)
-      {
-          Elf_Internal_Rela outrel;
-          int indx;
-          bfd_byte *loc;
+        {
+	case R_HEXAGON_GD_GOT_LO16:
+	case R_HEXAGON_GD_GOT_HI16:
+	case R_HEXAGON_GD_GOT_32:
+	case R_HEXAGON_GD_GOT_16:
+	  if (h)
+	    {
+	      /* Global symbol. */
+	      BFD_ASSERT (h->got.offset != -(bfd_vma) 1);
+	      offset = h->got.offset;
 
-         /* GOT-relative TLS global-dynamic relocations for
-            the lower and the higher 16 bits, all 32 bits and the signed lower
-            16 bits of a 32-bit signed offset to a TLS_index structure in
-            consecutive GOT entries.
-          */
-          case R_HEXAGON_GD_GOT_LO16:
-          case R_HEXAGON_GD_GOT_HI16:
-          case R_HEXAGON_GD_GOT_32:
-          case R_HEXAGON_GD_GOT_16:
+	      if ((offset & 1))
+		offset &= ~1;
+	      else
+		h->got.offset |= 1;
+	    }
+	  else
+	    {
+	      /* Local symbol. */
+	      if (!local_got_offsets)
+		abort ();
+	      offset = local_got_offsets [r_symndx];
 
-            indx = (h && h->dynindx != -1) ? h->dynindx : 0;
+	      if ((offset & 1))
+		offset &= ~1;
+	      else
+		local_got_offsets [r_symndx] |= 1;
+	    }
 
-            if (h)
-              {
-              /* Global symbol. */
-                offset = h->got.offset;
-                BFD_ASSERT (offset != -(bfd_vma) 1);
-              }
-            else
-              {
-              /* Local symbol. */
-                if (local_got_offsets == NULL)
-                  abort ();
+	  relocation  = htab->elf.sgot->output_section->vma
+			+ htab->elf.sgot->output_offset
+			- htab->elf.sgotplt->output_section->vma
+			- htab->elf.sgotplt->output_offset
+			+ offset;
+	  break;
 
-                offset = local_got_offsets[r_symndx];
-              }
+	case R_HEXAGON_IE_GOT_LO16:
+	case R_HEXAGON_IE_GOT_HI16:
+	case R_HEXAGON_IE_GOT_32:
+	case R_HEXAGON_IE_GOT_16:
+	  {
+	    bfd_vma adjust = 0;
 
-            if ((offset & 1) != 0)
-              offset &= ~1;
-            else
-              {
-                sreloc = htab->elf.srelgot;
+	    if (h)
+	      {
+		/* Global symbol. */
+		BFD_ASSERT (h->got.offset != -(bfd_vma) 1);
+		offset = h->got.offset;
 
-                bfd_put_32 (obfd, 0, htab->elf.sgot->contents + offset);
+		if ((offset & 1))
+		  offset &= ~1;
+		else
+		  h->got.offset |= 1;
 
-                outrel.r_offset = (htab->elf.sgot->output_section->vma
-                                   + htab->elf.sgot->output_offset + offset);
-                outrel.r_addend = 0;
-                outrel.r_info = ELF32_R_INFO (indx, R_HEXAGON_DTPMOD_32);
+		if (eh->gd_got.refcount > 0)
+		  adjust = GOT_ENTRY_SIZE * 2;
+	      }
+	    else
+	      {
+		/* Local symbol. */
+		if (!local_got_offsets)
+		  abort ();
+		offset = local_got_offsets [r_symndx];
 
-                loc = sreloc->contents;
-                loc += sreloc->reloc_count++ * sizeof (Elf32_External_Rela);
+		if ((offset & 1))
+		  offset &= ~1;
+		else
+		  {
+		    bfd_put_32
+		      (obfd, hexagon_elf_tpoff (info, relocation),
+		       htab->elf.sgot->contents + offset + adjust);
 
-                /* Check that hexagon_allocate_dynrel accounts for this.*/
-                BFD_ASSERT (loc + sizeof (Elf32_External_Rela) <=
-                            sreloc->contents + sreloc->size);
-                bfd_elf32_swap_reloca_out (obfd, &outrel, loc);
+		    local_got_offsets [r_symndx] |= 1;
+		  }
+	      }
 
-                if (indx == 0)
-                  {
-                    bfd_put_32 (obfd, tpoff(info, relocation),
-                                htab->elf.sgot->contents + offset + GOT_ENTRY_SIZE);
-                  }
-                else
-                  {
-                    bfd_put_32(obfd, 0,
-                               htab->elf.sgot->contents + offset + GOT_ENTRY_SIZE);
-                    outrel.r_info = ELF32_R_INFO (indx, R_HEXAGON_DTPREL_32);
-                    outrel.r_offset += GOT_ENTRY_SIZE;
-                    sreloc->reloc_count++;
-                    loc += sizeof (Elf32_External_Rela);
+	    relocation  = htab->elf.sgot->output_section->vma
+			  + htab->elf.sgot->output_offset
+			  - htab->elf.sgotplt->output_section->vma
+			  - htab->elf.sgotplt->output_offset
+			  + offset + adjust;
+	  }
+	  break;
 
-                    /* Check that hexagon_allocate_dynrel accounts for this.*/
-                    BFD_ASSERT (loc + sizeof (Elf32_External_Rela) <=
-                                sreloc->contents + sreloc->size);
-                    bfd_elf32_swap_reloca_out (obfd, &outrel, loc);
-                  }
-
-                /* Use bit 0 to indicate that this has been handled */
-                if (h != NULL)
-                  h->got.offset |= 1;
-                else
-                  local_got_offsets[r_symndx] |= 1;
-              }
-
-              if (r_type == ELF32_R_TYPE (rel->r_info))
-                {
-                  relocation = htab->elf.sgot->output_section->vma + 
-                               htab->elf.sgot->output_offset + offset;
-                }
-              else
-                {
-                  (*_bfd_error_handler) (
-                    _("relocation for %s: r_type != rel->r_info"),
-                    h->root.root.string);
-                }
-
-            break;
-
-/* GOT-relative TLS initial-executable relocations for
-   the lower and the higher 16 bits, all 32 bits and the signed lower
-   16 bits of a 32-bit signed offset.
-*/
-          case R_HEXAGON_IE_GOT_LO16:
-          case R_HEXAGON_IE_GOT_HI16:
-          case R_HEXAGON_IE_GOT_32:
-          case R_HEXAGON_IE_GOT_16:
-            indx = h && h->dynindx != -1 ? h->dynindx : 0;
-
-            if (h)
-              {
-              /* Global symbol. */
-                offset = h->got.offset;
-                BFD_ASSERT (offset != -(bfd_vma) 1);
-              }
-            else
-              {
-              /* Local symbol. */
-                if (local_got_offsets == NULL)
-                  abort ();
-
-                offset = local_got_offsets[r_symndx];
-              }
-
-            if ((offset & 1))
-              offset &= ~1;
-            else
-              {
-                bfd_boolean dual_ref;
-                sreloc = htab->elf.srelgot;
-
-                if (h != NULL)
-                  h->got.offset |= 1;
-                else
-                  local_got_offsets[r_symndx] |= 1;
-
-                /* If referenced by different thread models use the 2nd
-                   entry. */
-                dual_ref = ((hexagon_hash_entry (h)->gd_got.refcount != 0)
-                           && (hexagon_hash_entry (h)->ie_got.refcount != 0));
-                if (dual_ref)
-                  offset += 4;
-
-                /* This places an entry into the GOT that will be the tls
-                   relative location of the variable referenced.
-
-                   If value == TLS [GOT[n]] then below we are storing a
-                   value *contained* in GOT[n].  (In the source below
-                   "offset" == n)  */
-                bfd_put_32 (obfd, relocation - dtpoff_base(info),
-                            htab->elf.sgot->contents + offset);
-
-                if (h && !dual_ref)
-                  {
-                    if ((indx == 0) || (h->def_regular))
-                      outrel.r_addend = relocation - dtpoff_base (info);
-                    else
-                      outrel.r_addend = 0;
-
-                    outrel.r_offset = (htab->elf.sgot->output_section->vma
-                                       + htab->elf.sgot->output_offset
-                                       + offset);
-                    outrel.r_info = ELF32_R_INFO (indx, R_HEXAGON_DTPREL_32);
-                    loc = htab->elf.srelgot->contents;
-                    loc += htab->elf.srelgot->reloc_count++
-                           * sizeof (Elf32_External_Rela);
-
-                    /* Check that hexagon_allocate_dynrel accounts for this.*/
-                    BFD_ASSERT (loc + sizeof (Elf32_External_Rela) <=
-                                sreloc->contents + sreloc->size);
-                    bfd_elf32_swap_reloca_out (obfd, &outrel, loc);
-
-                  }
-              }
-
-            /* The same calculation that is done for other GOT relocs */
-            relocation  = htab->elf.sgot->output_section->vma
-                         + htab->elf.sgot->output_offset
-                         - htab->elf.sgotplt->output_section->vma
-                         - htab->elf.sgotplt->output_offset
-                         + offset;
-            break;
+	case R_HEXAGON_TPREL_LO16:
+	case R_HEXAGON_TPREL_HI16:
+	case R_HEXAGON_TPREL_32:
+	case R_HEXAGON_TPREL_16:
+	  relocation = hexagon_elf_tpoff (info, relocation);
+	  break;
         }
 
       /* Apply relocation. */
@@ -3373,39 +3287,33 @@ hexagon_elf_relocate_section
             hexagon_put_insn (ibfd, howto, contents + rel->r_offset, insn);
 
 	  break;
-/* XXX_SM tls start (S + A - T) */
+
 	case R_HEXAGON_TPREL_LO16:
 	case R_HEXAGON_TPREL_HI16:
-	case R_HEXAGON_TPREL_32:
 	case R_HEXAGON_TPREL_16:
-          {
-            /* offset (which is negative) will be added to the absolute
-               address of the TLS area */
-            offset = tpoff(info, relocation) + rel->r_addend;
-            insn = hexagon_get_insn (ibfd, howto, contents + rel->r_offset);
+	  offset = relocation + rel->r_addend;
 
-            if (!hexagon_reloc_operand (howto, &insn, offset, NULL)
-                && h && h->root.type != bfd_link_hash_undefined)
-              r = info->callbacks->reloc_overflow
-                  (info, (h ? &h->root : NULL), name, howto->name, 0,
-                   ibfd, isection, rel->r_offset);
-            else
-              hexagon_put_insn (ibfd, howto, contents + rel->r_offset, insn);
+	  insn = hexagon_get_insn (ibfd, howto, contents + rel->r_offset);
 
-            break;
-          }
-/* XXX_SM tls end */
+	  if (!hexagon_reloc_operand (howto, &insn, offset, NULL)
+	      && h && h->root.type != bfd_link_hash_undefined)
+	    r = info->callbacks->reloc_overflow
+		  (info, (h? &h->root: NULL), name, howto->name, 0,
+		    ibfd, isection, rel->r_offset);
+	  else
+	    hexagon_put_insn (ibfd, howto, contents + rel->r_offset, insn);
+
+	  break;
 
 	case R_HEXAGON_32:
 	case R_HEXAGON_16:
 	case R_HEXAGON_8:
         case R_HEXAGON_32_PCREL:
-        case R_HEXAGON_GOTREL_32:
         case R_HEXAGON_GOT_32:
-/* XXX_SM tls start */
-        case R_HEXAGON_IE_GOT_32:
+        case R_HEXAGON_GOTREL_32:
         case R_HEXAGON_GD_GOT_32:
-/* XXX_SM tls end */
+        case R_HEXAGON_IE_GOT_32:
+	case R_HEXAGON_TPREL_32:
           /* Fall through. */
 
 	case R_HEXAGON_NONE:
@@ -3510,7 +3418,7 @@ hexagon_elf_check_relocs
   for (rel = relocs; rel < relocs + sec->reloc_count; rel++)
     {
       unsigned int r_type;
-      unsigned long r_symndx;
+      size_t r_symndx;
       hexagon_link_hash_entry *h;
       Elf_Internal_Sym *isym;
 
@@ -3539,7 +3447,7 @@ hexagon_elf_check_relocs
             h = (hexagon_link_hash_entry *) h->elf.root.u.i.link;
         }
 
-      /* Perform GOT and PLT accounting. */
+      /* Perform GOT, PLT and TLS accounting. */
       switch (r_type)
 	{
 	case R_HEXAGON_GOT_LO16:
@@ -3556,8 +3464,34 @@ hexagon_elf_check_relocs
 	case R_HEXAGON_IE_GOT_16:
           /* This symbol requires a GOT entry. */
           if (h)
-            /* Symbol is global. */
-            h->elf.got.refcount++;
+	    {
+	      /* Symbol is global. */
+	      h->elf.got.refcount++;
+
+	      switch (r_type)
+		{
+		case R_HEXAGON_GOT_LO16:
+		case R_HEXAGON_GOT_HI16:
+		case R_HEXAGON_GOT_32:
+		case R_HEXAGON_GOT_16:
+		  h->ok_got.refcount++;
+		  break;
+
+		case R_HEXAGON_GD_GOT_LO16:
+		case R_HEXAGON_GD_GOT_HI16:
+		case R_HEXAGON_GD_GOT_32:
+		case R_HEXAGON_GD_GOT_16:
+		  h->gd_got.refcount++;
+		  break;
+
+		case R_HEXAGON_IE_GOT_LO16:
+		case R_HEXAGON_IE_GOT_HI16:
+		case R_HEXAGON_IE_GOT_32:
+		case R_HEXAGON_IE_GOT_16:
+		  h->ie_got.refcount++;
+		  break;
+		}
+	    }
           else
             {
               /* Symbol is local. */
@@ -3569,17 +3503,40 @@ hexagon_elf_check_relocs
                 {
                   bfd_size_type size;
 
-                  size = symtab_hdr->sh_info;
-                  size *= sizeof (bfd_signed_vma) + sizeof (char);
+                  size = LGOT_SZ (symtab_hdr) * sizeof (*local_got_refcounts) + 1;
                   local_got_refcounts =
                     (bfd_signed_vma *) bfd_zalloc (abfd, size);
                   if (!local_got_refcounts)
                     return FALSE;
                   elf_local_got_refcounts (abfd) = local_got_refcounts;
                 }
-              local_got_refcounts [r_symndx]++;
-            }
 
+              local_got_refcounts [r_symndx]++;
+
+	      switch (r_type)
+		{
+		case R_HEXAGON_GOT_LO16:
+		case R_HEXAGON_GOT_HI16:
+		case R_HEXAGON_GOT_32:
+		case R_HEXAGON_GOT_16:
+		  local_got_refcounts [LGOT_OK (symtab_hdr, r_symndx)]++;
+		  break;
+
+		case R_HEXAGON_GD_GOT_LO16:
+		case R_HEXAGON_GD_GOT_HI16:
+		case R_HEXAGON_GD_GOT_32:
+		case R_HEXAGON_GD_GOT_16:
+		  local_got_refcounts [LGOT_GD (symtab_hdr, r_symndx)]++;
+		  break;
+
+		case R_HEXAGON_IE_GOT_LO16:
+		case R_HEXAGON_IE_GOT_HI16:
+		case R_HEXAGON_IE_GOT_32:
+		case R_HEXAGON_IE_GOT_16:
+		  local_got_refcounts [LGOT_IE (symtab_hdr, r_symndx)]++;
+		  break;
+		}
+            }
 	  /* Fall through */
 
         case R_HEXAGON_GOTREL_LO16:
@@ -3648,26 +3605,6 @@ hexagon_elf_check_relocs
 	    }
           break;
        }
-
-      /* Perform TLS accounting. */
-      switch (r_type)
-	{
-	case R_HEXAGON_GD_GOT_LO16:
-	case R_HEXAGON_GD_GOT_HI16:
-	case R_HEXAGON_GD_GOT_32:
-	case R_HEXAGON_GD_GOT_16:
-	  if (h)
-	    h->gd_got.refcount++;
-	  break;
-
-	case R_HEXAGON_IE_GOT_LO16:
-	case R_HEXAGON_IE_GOT_HI16:
-	case R_HEXAGON_IE_GOT_32:
-	case R_HEXAGON_IE_GOT_16:
-	  if (h)
-	    h->ie_got.refcount++;
-	  break;
-	}
 
       /* Perform copy-relocation checks. */
       switch (r_type)
@@ -3885,8 +3822,8 @@ hexagon_elf_gc_sweep_hook
 
   for (rel = relocs; rel < relocs + sec->reloc_count; rel++)
     {
-      unsigned long r_symndx;
       unsigned int r_type;
+      size_t r_symndx, l_symndx;
       struct elf_link_hash_entry *h = NULL;
       hexagon_link_hash_entry *eh = NULL;
 
@@ -3910,11 +3847,14 @@ hexagon_elf_gc_sweep_hook
       r_type = ELF32_R_TYPE (rel->r_info);
       switch (r_type)
 	{
+	case R_HEXAGON_GOT_LO16:
+	case R_HEXAGON_GOT_HI16:
+	case R_HEXAGON_GOT_32:
+	case R_HEXAGON_GOT_16:
 	case R_HEXAGON_GD_GOT_LO16:
 	case R_HEXAGON_GD_GOT_HI16:
 	case R_HEXAGON_GD_GOT_32:
 	case R_HEXAGON_GD_GOT_16:
-
 	case R_HEXAGON_IE_GOT_LO16:
 	case R_HEXAGON_IE_GOT_HI16:
 	case R_HEXAGON_IE_GOT_32:
@@ -3922,11 +3862,21 @@ hexagon_elf_gc_sweep_hook
 
 	  switch (r_type)
 	    {
+	    case R_HEXAGON_GOT_LO16:
+	    case R_HEXAGON_GOT_HI16:
+	    case R_HEXAGON_GOT_32:
+	    case R_HEXAGON_GOT_16:
+	      l_symndx = LGOT_OK (symtab_hdr, r_symndx);
+	      if (eh && eh->ok_got.refcount > 0)
+		eh->ok_got.refcount--;
+	      break;
+
 	    case R_HEXAGON_GD_GOT_LO16:
 	    case R_HEXAGON_GD_GOT_HI16:
 	    case R_HEXAGON_GD_GOT_32:
 	    case R_HEXAGON_GD_GOT_16:
-	      if (eh->gd_got.refcount > 0)
+	      l_symndx = LGOT_GD (symtab_hdr, r_symndx);
+	      if (eh && eh->gd_got.refcount > 0)
 		eh->gd_got.refcount--;
 	      break;
 
@@ -3934,18 +3884,12 @@ hexagon_elf_gc_sweep_hook
 	    case R_HEXAGON_IE_GOT_HI16:
 	    case R_HEXAGON_IE_GOT_32:
 	    case R_HEXAGON_IE_GOT_16:
-	      if (eh->ie_got.refcount > 0)
+	      l_symndx = LGOT_IE (symtab_hdr, r_symndx);
+	      if (eh && eh->ie_got.refcount > 0)
 		eh->ie_got.refcount--;
 	      break;
 	    }
 
-	  /* Fall-through. */
-
-	case R_HEXAGON_GOT_LO16:
-	case R_HEXAGON_GOT_HI16:
-	case R_HEXAGON_GOT_32:
-	case R_HEXAGON_GOT_16:
-	  /* FIXME: should the GOT shrink? */
 	  if (h)
 	    {
               /* Global symbol. */
@@ -3956,6 +3900,8 @@ hexagon_elf_gc_sweep_hook
 	    {
 	      if (local_got_refcounts [r_symndx] > 0)
 		local_got_refcounts [r_symndx]--;
+	      if (local_got_refcounts [l_symndx] > 0)
+		local_got_refcounts [l_symndx]--;
 	    }
 	  break;
 
@@ -4008,9 +3954,11 @@ hexagon_elf_finish_dynamic_symbol
  Elf_Internal_Sym *sym)
 {
   hexagon_link_hash_table *htab;
+  hexagon_link_hash_entry *eh;
   bfd *dynobj;
 
   htab = hexagon_hash_table (info);
+  eh = hexagon_hash_entry (h);
   dynobj = elf_hash_table (info)->dynobj;
 
   if (h->plt.offset != -(bfd_vma) 1)
@@ -4109,12 +4057,11 @@ hexagon_elf_finish_dynamic_symbol
   /* We don't emit GOT relocations for symbols that aren't in the
      dynamic-symbols table for an ordinary program and are either defined
      by the program or undefined weak symbols. */
-  if (h->got.offset != -(bfd_vma) 1
-      && h->got.refcount - hexagon_hash_entry (h)->gd_got.refcount -
-         hexagon_hash_entry (h)->ie_got.refcount > 0)
+  if (h->got.offset != -(bfd_vma) 1)
     {
       /* This symbol has a GOT entry. */
       Elf_Internal_Rela rela;
+      bfd_vma offset = h->got.offset & ~(bfd_vma) 1;
 
       /* This symbol has an entry in the GOT.  Set it up. */
       if (!htab->elf.sgot || !htab->elf.srelgot)
@@ -4122,39 +4069,134 @@ hexagon_elf_finish_dynamic_symbol
 
       rela.r_offset = htab->elf.sgot->output_section->vma
 		      + htab->elf.sgot->output_offset
-		      + (h->got.offset & ~(bfd_vma) 1);
+		      + offset;
 
       /* If this is a static link, or it is a -Bsymbolic link and the
 	 symbol is defined locally or was forced to be local because
 	 of a version file, we just want to emit a RELATIVE relocation.
 	 The entry in the GOT is initialized in relocate_section. */
       if (info->shared
-          && SYMBOL_REFERENCES_LOCAL (info, h))
+	  && SYMBOL_REFERENCES_LOCAL (info, h))
 	{
 	  BFD_ASSERT ((h->got.offset & 1));
 
-	  rela.r_info = ELF32_R_INFO (0, R_HEXAGON_RELATIVE);
-	  rela.r_addend = h->root.u.def.value
-			  + h->root.u.def.section->output_section->vma
-			  + h->root.u.def.section->output_offset;
+	  if (eh->ok_got.refcount > 0)
+	    {
+	      rela.r_info = ELF32_R_INFO (0, R_HEXAGON_RELATIVE);
+	      rela.r_addend = h->root.u.def.value
+			      + h->root.u.def.section->output_section->vma
+			      + h->root.u.def.section->output_offset;
 
-	  bfd_put_32
-	    (obfd, rela.r_addend, htab->elf.sgot->contents + h->got.offset);
+	      bfd_elf32_swap_reloca_out
+		(obfd, &rela, htab->elf.srelgot->contents
+			      + htab->elf.srelgot->reloc_count++
+			      * sizeof (Elf32_External_Rela));
+
+	      bfd_put_32 (obfd, rela.r_addend, htab->elf.sgot->contents + offset);
+	    }
+	  else
+	    {
+	      bfd_vma adjust = 0;
+
+	      if (eh->gd_got.refcount > 0)
+		{
+		  bfd_put_32 (obfd, 0, htab->elf.sgot->contents + offset);
+		  bfd_put_32
+		    (obfd, 0, htab->elf.sgot->contents + offset + GOT_ENTRY_SIZE);
+
+		  adjust = GOT_ENTRY_SIZE * 2;
+		}
+
+	      if (eh->ie_got.refcount > 0)
+		{
+		  bfd_put_32
+		    (obfd,
+		    hexagon_elf_tpoff
+		      (info, h->root.u.def.value
+			      + h->root.u.def.section->output_section->vma
+			      + h->root.u.def.section->output_offset),
+		    htab->elf.sgot->contents + offset + adjust);
+		}
+	    }
 	}
       else
 	{
-	  BFD_ASSERT (!(h->got.offset & 1));
+	  BFD_ASSERT (h->got.offset & 1);
 
-	  rela.r_info = ELF32_R_INFO (h->dynindx, R_HEXAGON_GLOB_DAT);
-	  rela.r_addend = 0;
+	  if (eh->ok_got.refcount > 0)
+	    {
+	      rela.r_info = ELF32_R_INFO (h->dynindx, R_HEXAGON_GLOB_DAT);
+	      rela.r_addend = 0;
 
-	  bfd_put_32 (obfd, 0, htab->elf.sgot->contents + h->got.offset);
+	      bfd_elf32_swap_reloca_out
+		(obfd, &rela, htab->elf.srelgot->contents
+			      + htab->elf.srelgot->reloc_count++
+			      * sizeof (Elf32_External_Rela));
+
+	      if (h->def_regular)
+		bfd_put_32
+		  (obfd,
+		   h->root.u.def.value
+		   + h->root.u.def.section->output_section->vma
+		   + h->root.u.def.section->output_offset,
+		   htab->elf.sgot->contents + offset);
+	    }
+	  else
+	    {
+	      bfd_vma adjust = 0;
+
+	      if (eh->gd_got.refcount > 0)
+		{
+		  rela.r_info = ELF32_R_INFO (h->dynindx, R_HEXAGON_DTPMOD_32);
+		  rela.r_addend = 0;
+
+		  bfd_elf32_swap_reloca_out
+		    (obfd, &rela, htab->elf.srelgot->contents
+				  + htab->elf.srelgot->reloc_count++
+				  * sizeof (Elf32_External_Rela));
+
+		  rela.r_offset += GOT_ENTRY_SIZE;
+		  rela.r_info = ELF32_R_INFO (h->dynindx, R_HEXAGON_DTPREL_32);
+		  rela.r_addend = 0;
+
+		  bfd_elf32_swap_reloca_out
+		    (obfd, &rela, htab->elf.srelgot->contents
+				  + htab->elf.srelgot->reloc_count++
+				  * sizeof (Elf32_External_Rela));
+
+		  if (h->def_regular)
+		    bfd_put_32
+		      (obfd,
+		      hexagon_elf_dtpoff
+			(info, h->root.u.def.value
+				+ h->root.u.def.section->output_section->vma
+				+ h->root.u.def.section->output_offset),
+			  htab->elf.sgot->contents + offset);
+
+		  adjust = GOT_ENTRY_SIZE * 2;
+		}
+
+	      if (eh->ie_got.refcount > 0)
+		{
+		  rela.r_info = ELF32_R_INFO (h->dynindx, R_HEXAGON_DTPREL_32);
+		  rela.r_addend = 0;
+
+		  bfd_elf32_swap_reloca_out
+		    (obfd, &rela, htab->elf.srelgot->contents
+				  + htab->elf.srelgot->reloc_count++
+				  * sizeof (Elf32_External_Rela));
+
+		  if (h->def_regular)
+		    bfd_put_32
+		      (obfd,
+		      hexagon_elf_tpoff
+			(info, h->root.u.def.value
+				+ h->root.u.def.section->output_section->vma
+				+ h->root.u.def.section->output_offset),
+			  htab->elf.sgot->contents + offset);
+		}
+	    }
 	}
-
-      bfd_elf32_swap_reloca_out
-        (obfd, &rela,
-         htab->elf.srelgot->contents
-         + htab->elf.srelgot->reloc_count++ * sizeof (Elf32_External_Rela));
     }
 
   if (h->needs_copy)
@@ -4560,7 +4602,7 @@ hexagon_allocate_dynrel
 	}
 
       if (info->shared
-          || WILL_CALL_FINISH_DYNAMIC_SYMBOL (TRUE, info, h))
+          || WILL_CALL_FINISH_DYNAMIC_SYMBOL (TRUE, info->shared, h))
         {
           /* If this is the first PLT entry, make room for the reserved entries. */
           if (!htab->elf.splt->size)
@@ -4600,8 +4642,6 @@ hexagon_allocate_dynrel
       h->needs_plt = FALSE;
     }
 
-  /* FIXME: other ports do a lot of TLS stuff here, which I hope to have
-     filtered properly. */
   if (h->got.refcount > 0)
     {
       /* Make sure this symbol is output as a dynamic symbol.  Undefined
@@ -4614,18 +4654,19 @@ hexagon_allocate_dynrel
         }
 
       h->got.offset = htab->elf.sgot->size;
-      htab->elf.sgot->size += GOT_ENTRY_SIZE;
-      if (eh->gd_got.refcount > 0)
-	htab->elf.sgot->size += GOT_ENTRY_SIZE;
+      htab->elf.sgot->size += GOT_ENTRY_SIZE
+                              * (eh->gd_got.refcount > 0
+				 ? (eh->ie_got.refcount > 0? 3: 2)
+				 : 1);
 
       if (info->shared
 	  || WILL_CALL_FINISH_DYNAMIC_SYMBOL
-               (htab->elf.dynamic_sections_created, info, h))
-	{
-	  htab->elf.srelgot->size += sizeof (Elf32_External_Rela);
-	  if (eh->gd_got.refcount > 0)
-	    htab->elf.srelgot->size += sizeof (Elf32_External_Rela);
-	}
+               (htab->elf.dynamic_sections_created, info->shared, h)
+	  || eh->gd_got.refcount > 0 || eh->ie_got.refcount > 0)
+	htab->elf.srelgot->size += sizeof (Elf32_External_Rela)
+				   * (eh->gd_got.refcount > 0
+				      ? (eh->ie_got.refcount > 0? 3: 2)
+				      : 1);
     }
   else
     h->got.offset = -(bfd_vma) 1;
@@ -4755,6 +4796,7 @@ hexagon_elf_size_dynamic_sections
   asection *s;
   bfd_boolean relocs;
   bfd *ibfd;
+  size_t i;
 
   htab = hexagon_hash_table (info);
   dynobj = htab->elf.dynobj;
@@ -4778,7 +4820,7 @@ hexagon_elf_size_dynamic_sections
      relocations.  */
   for (ibfd = info->input_bfds; ibfd; ibfd = ibfd->link_next)
     {
-      bfd_signed_vma *local_got;
+      bfd_signed_vma *local_got_refcounts;
       Elf_Internal_Shdr *symtab_hdr;
 
       if (bfd_get_flavour (ibfd) != bfd_target_elf_flavour)
@@ -4810,20 +4852,22 @@ hexagon_elf_size_dynamic_sections
 	}
 
       symtab_hdr = &elf_tdata (ibfd)->symtab_hdr;
-      for (local_got = elf_local_got_refcounts (ibfd);
-           local_got
-           && local_got < elf_local_got_refcounts (ibfd) + symtab_hdr->sh_info;
-           local_got++)
+      for (local_got_refcounts = elf_local_got_refcounts (ibfd), i = 0;
+           local_got_refcounts
+           && i < symtab_hdr->sh_info;
+           i++)
 	{
-	  if (*local_got > 0)
+	  if (local_got_refcounts [i] > 0)
 	    {
-	      *local_got = htab->elf.sgot->size;
-	      htab->elf.sgot->size += GOT_ENTRY_SIZE;
+	      local_got_refcounts [i] = htab->elf.sgot->size;
+	      htab->elf.sgot->size
+	        += GOT_ENTRY_SIZE
+		   * (local_got_refcounts [LGOT_GD (symtab_hdr, i)] > 0? 2: 1);
 	      if (info->shared)
 		htab->elf.srelgot->size += sizeof (Elf32_External_Rela);
 	    }
 	  else
-	    *local_got = -(bfd_vma) 1;
+	    local_got_refcounts [i] = -(bfd_vma) 1;
 	}
     }
 
