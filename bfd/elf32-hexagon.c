@@ -3081,6 +3081,9 @@ hexagon_elf_relocate_section
 	    if (h)
 	      {
 		/* Global symbol. */
+		if (eh->gd_got.refcount > 0)
+		  adjust = GOT_ENTRY_SIZE * 2;
+
 		BFD_ASSERT (h->got.offset != -(bfd_vma) 1);
 		offset = h->got.offset;
 
@@ -3088,9 +3091,6 @@ hexagon_elf_relocate_section
 		  offset &= ~1;
 		else
 		  h->got.offset |= 1;
-
-		if (eh->gd_got.refcount > 0)
-		  adjust = GOT_ENTRY_SIZE * 2;
 	      }
 	    else
 	      {
@@ -3102,14 +3102,11 @@ hexagon_elf_relocate_section
 		if ((offset & 1))
 		  offset &= ~1;
 		else
-		  {
-		    bfd_put_32
-		      (obfd, hexagon_elf_tpoff (info, relocation),
-		       htab->elf.sgot->contents + offset + adjust);
-
-		    local_got_offsets [r_symndx] |= 1;
-		  }
+		  local_got_offsets [r_symndx] |= 1;
 	      }
+
+	    bfd_put_32 (obfd, hexagon_elf_tpoff (info, relocation),
+			htab->elf.sgot->contents + offset + adjust);
 
 	    relocation  = htab->elf.sgot->output_section->vma
 			  + htab->elf.sgot->output_offset
