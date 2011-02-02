@@ -271,11 +271,12 @@ enum _hexagon_pairs_counters
 
 typedef enum _hexagon_suffix_type
   {
-    SUFFIX_NONE = 0,
+    SUF_NONE = 0,
     PIC_GOT,
     PIC_GOTREL,
     PIC_PLT,
     TLS_GD_GOT,
+    TLS_IE,
     TLS_IE_GOT,
     TLS_TPREL,
   } hexagon_suffix_type;
@@ -533,13 +534,13 @@ typedef enum _hexagon_relax_state
      \
      if (hexagon_relax) \
        { \
-         if ((R) == BFD_RELOC_HEXAGON_B7_PCREL && hexagon_relax_long) \
+         if ((R) == BFD_RELOC_HEX_B7_PCREL && hexagon_relax_long) \
            r = HEXAGON_RELAX_B7; \
-         else if ((R) == BFD_RELOC_HEXAGON_B9_PCREL) \
+         else if ((R) == BFD_RELOC_HEX_B9_PCREL) \
            r = HEXAGON_RELAX_B9; \
-         else if ((R) == BFD_RELOC_HEXAGON_B13_PCREL && hexagon_relax_long) \
+         else if ((R) == BFD_RELOC_HEX_B13_PCREL && hexagon_relax_long) \
            r = HEXAGON_RELAX_B13; \
-         else if ((R) == BFD_RELOC_HEXAGON_B15_PCREL && hexagon_relax_long) \
+         else if ((R) == BFD_RELOC_HEX_B15_PCREL && hexagon_relax_long) \
            r = HEXAGON_RELAX_B15; \
          else \
            r = HEXAGON_RELAX_NONE; \
@@ -1543,27 +1544,27 @@ hexagon_fix_adjustable (fixS *fixP)
   switch (fixP->fx_r_type)
     {
     /* PLT */
-    case BFD_RELOC_HEXAGON_PLT_B22_PCREL:
+    case BFD_RELOC_HEX_PLT_B22_PCREL:
     /* GOT */
-    case BFD_RELOC_HEXAGON_GOTREL_LO16:
-    case BFD_RELOC_HEXAGON_GOTREL_HI16:
+    case BFD_RELOC_HEX_GOTREL_LO16:
+    case BFD_RELOC_HEX_GOTREL_HI16:
     case BFD_RELOC_32_GOTOFF:
-    case BFD_RELOC_HEXAGON_GOT_LO16:
-    case BFD_RELOC_HEXAGON_GOT_HI16:
-    case BFD_RELOC_HEXAGON_GOT_32:
-    case BFD_RELOC_HEXAGON_GOT_16:
+    case BFD_RELOC_HEX_GOT_LO16:
+    case BFD_RELOC_HEX_GOT_HI16:
+    case BFD_RELOC_HEX_GOT_32:
+    case BFD_RELOC_HEX_GOT_16:
     /* TLS */
-    case BFD_RELOC_HEXAGON_GD_GOT_LO16:
-    case BFD_RELOC_HEXAGON_GD_GOT_HI16:
-    case BFD_RELOC_HEXAGON_GD_GOT_32:
-    case BFD_RELOC_HEXAGON_GD_GOT_16:
-    case BFD_RELOC_HEXAGON_IE_GOT_LO16:
-    case BFD_RELOC_HEXAGON_IE_GOT_HI16:
-    case BFD_RELOC_HEXAGON_IE_GOT_32:
-    case BFD_RELOC_HEXAGON_IE_GOT_16:
-    case BFD_RELOC_HEXAGON_TPREL_LO16:
-    case BFD_RELOC_HEXAGON_TPREL_HI16:
-    case BFD_RELOC_HEXAGON_TPREL_32:
+    case BFD_RELOC_HEX_GD_GOT_LO16:
+    case BFD_RELOC_HEX_GD_GOT_HI16:
+    case BFD_RELOC_HEX_GD_GOT_32:
+    case BFD_RELOC_HEX_GD_GOT_16:
+    case BFD_RELOC_HEX_IE_GOT_LO16:
+    case BFD_RELOC_HEX_IE_GOT_HI16:
+    case BFD_RELOC_HEX_IE_GOT_32:
+    case BFD_RELOC_HEX_IE_GOT_16:
+    case BFD_RELOC_HEX_TPREL_LO16:
+    case BFD_RELOC_HEX_TPREL_HI16:
+    case BFD_RELOC_HEX_TPREL_32:
       return FALSE;
 
     default:
@@ -1802,7 +1803,6 @@ hexagon_parse_immediate
     {
       input_line_pointer = str;
 
-      suffix_type = SUFFIX_NONE;
       suffix_line = hexagon_parse_suffix (&suffix_type, &str);
       if (suffix_line)
         input_line_pointer = suffix_line;
@@ -1824,6 +1824,8 @@ hexagon_parse_immediate
     operandx = hexagon_operand_find (operand, "plt");
   else if (suffix_type == TLS_GD_GOT)
     operandx = hexagon_operand_find (operand, "gdgot");
+  else if (suffix_type == TLS_IE)
+    operandx = hexagon_operand_find (operand, "ie");
   else if (suffix_type == TLS_IE_GOT)
     operandx = hexagon_operand_find (operand, "iegot");
   else if (suffix_type == TLS_TPREL)
@@ -4295,11 +4297,14 @@ hexagon_parse_suffix
       { "GOT",    PIC_GOT },
       { "PLT",    PIC_PLT },
       { "GDGOT",  TLS_GD_GOT },
-      { "IEGOT",  TLS_IE_GOT },
+      { "IEGOT",  TLS_IE_GOT }, /* This must precede "IE". */
+      { "IE",     TLS_IE },
       { "TPREL",  TLS_TPREL },
     };
   char *cp;
   size_t j;
+
+  *type = SUF_NONE;
 
   for (cp = input_line_pointer; *cp != '@'; cp++)
     if (is_end_of_line [(unsigned char) *cp])
@@ -4377,6 +4382,7 @@ hexagon_cons_fix_new
 	    save = input_line_pointer;
 	    if (!(strncmp (save, "@GOT", 4))
 	        || !(strncmp (save, "@GDGOT", 6))
+	        || !(strncmp (save, "@IE",    3))
 	        || !(strncmp (save, "@IEGOT", 6))
 	        || !(strncmp (save, "@TPREL", 6)))
               {
@@ -4391,13 +4397,15 @@ hexagon_cons_fix_new
                     if (suffix == PIC_GOTREL)
                       r_type = BFD_RELOC_32_GOTOFF;
                     else if (suffix == PIC_GOT)
-                      r_type = BFD_RELOC_HEXAGON_GOT_32;
+                      r_type = BFD_RELOC_HEX_GOT_32;
                     else if (suffix == TLS_GD_GOT)
-                      r_type = BFD_RELOC_HEXAGON_GD_GOT_32;
+                      r_type = BFD_RELOC_HEX_GD_GOT_32;
+                    else if (suffix == TLS_IE)
+                      r_type = BFD_RELOC_HEX_IE_32;
                     else if (suffix == TLS_IE_GOT)
-                      r_type = BFD_RELOC_HEXAGON_IE_GOT_32;
+                      r_type = BFD_RELOC_HEX_IE_GOT_32;
                     else if (suffix == TLS_TPREL)
-                      r_type = BFD_RELOC_HEXAGON_TPREL_32;
+                      r_type = BFD_RELOC_HEX_TPREL_32;
                   }
 
                 while (!is_end_of_line [(unsigned char) *save++])
@@ -4479,24 +4487,24 @@ md_apply_fix
 	  /* Hack around bfd_install_relocation brain damage.  */
 	  if (S_GET_SEGMENT (fixP->fx_addsy) != seg)
 	    value += md_pcrel_from (fixP);
-	  else if (fixP->fx_r_type != BFD_RELOC_HEXAGON_PLT_B22_PCREL)
+	  else if (fixP->fx_r_type != BFD_RELOC_HEX_PLT_B22_PCREL)
 	    fixP->fx_done = 1;
 	}
       else
 	switch (fixP->fx_r_type)
 	  {
-	  case BFD_RELOC_HEXAGON_GD_GOT_LO16:
-	  case BFD_RELOC_HEXAGON_GD_GOT_HI16:
-	  case BFD_RELOC_HEXAGON_GD_GOT_32:
-	  case BFD_RELOC_HEXAGON_GD_GOT_16:
-	  case BFD_RELOC_HEXAGON_IE_GOT_LO16:
-	  case BFD_RELOC_HEXAGON_IE_GOT_HI16:
-	  case BFD_RELOC_HEXAGON_IE_GOT_32:
-	  case BFD_RELOC_HEXAGON_IE_GOT_16:
-	  case BFD_RELOC_HEXAGON_TPREL_LO16:
-	  case BFD_RELOC_HEXAGON_TPREL_HI16:
-	  case BFD_RELOC_HEXAGON_TPREL_32:
-	  case BFD_RELOC_HEXAGON_TPREL_16:
+	  case BFD_RELOC_HEX_GD_GOT_LO16:
+	  case BFD_RELOC_HEX_GD_GOT_HI16:
+	  case BFD_RELOC_HEX_GD_GOT_32:
+	  case BFD_RELOC_HEX_GD_GOT_16:
+	  case BFD_RELOC_HEX_IE_GOT_LO16:
+	  case BFD_RELOC_HEX_IE_GOT_HI16:
+	  case BFD_RELOC_HEX_IE_GOT_32:
+	  case BFD_RELOC_HEX_IE_GOT_16:
+	  case BFD_RELOC_HEX_TPREL_LO16:
+	  case BFD_RELOC_HEX_TPREL_HI16:
+	  case BFD_RELOC_HEX_TPREL_32:
+	  case BFD_RELOC_HEX_TPREL_16:
 	    /* Implicitly set type to TLS. */
 	    S_SET_THREAD_LOCAL (fixP->fx_addsy);
 	    break;

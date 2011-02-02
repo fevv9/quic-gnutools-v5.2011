@@ -156,24 +156,24 @@ extern long hexagon_relax_frag (segT segment, fragS *fragP, long stretch);
    : number_to_chars_littleendian (buf, val, n))
 
 #define IS_GP_RELATIVE_RELOC(r) \
-  ((r) == BFD_RELOC_HEXAGON_GPREL16_3 \
-   || (r) == BFD_RELOC_HEXAGON_GPREL16_2 \
-   || (r) == BFD_RELOC_HEXAGON_GPREL16_1 \
-   || (r) == BFD_RELOC_HEXAGON_GPREL16_0)
+  ((r) == BFD_RELOC_HEX_GPREL16_3 \
+   || (r) == BFD_RELOC_HEX_GPREL16_2 \
+   || (r) == BFD_RELOC_HEX_GPREL16_1 \
+   || (r) == BFD_RELOC_HEX_GPREL16_0)
 
 /* Hexagon 7 bit pc-relative branch.
    The lowest 2 bits must be zero and are not stored in the instruction.*/
 #define IS_PC_RELATIVE_RELOC(r) \
-   ((r) == BFD_RELOC_HEXAGON_B32_PCREL_X \
-    || (r) == BFD_RELOC_HEXAGON_B22_PCREL \
-    || (r) == BFD_RELOC_HEXAGON_B22_PCREL_X \
-    || (r) == BFD_RELOC_HEXAGON_B15_PCREL \
-    || (r) == BFD_RELOC_HEXAGON_B15_PCREL_X \
-    || (r) == BFD_RELOC_HEXAGON_B13_PCREL \
-    || (r) == BFD_RELOC_HEXAGON_B13_PCREL_X \
-    || (r) == BFD_RELOC_HEXAGON_B9_PCREL \
-    || (r) == BFD_RELOC_HEXAGON_B9_PCREL_X \
-    || (r) == BFD_RELOC_HEXAGON_B7_PCREL)
+   ((r) == BFD_RELOC_HEX_B32_PCREL_X \
+    || (r) == BFD_RELOC_HEX_B22_PCREL \
+    || (r) == BFD_RELOC_HEX_B22_PCREL_X \
+    || (r) == BFD_RELOC_HEX_B15_PCREL \
+    || (r) == BFD_RELOC_HEX_B15_PCREL_X \
+    || (r) == BFD_RELOC_HEX_B13_PCREL \
+    || (r) == BFD_RELOC_HEX_B13_PCREL_X \
+    || (r) == BFD_RELOC_HEX_B9_PCREL \
+    || (r) == BFD_RELOC_HEX_B9_PCREL_X \
+    || (r) == BFD_RELOC_HEX_B7_PCREL)
 
 #ifdef OBJ_ELF
 #define ELF_TC_SPECIAL_SECTIONS \
