@@ -4598,103 +4598,121 @@ the dynamic object into the runtime process image.  */
   BFD_RELOC_MICROBLAZE_COPY,
 
 /* Relocation with 32 bits shifted right by 6.  */
-  BFD_RELOC_HEXAGON_32_6_X,
+  BFD_RELOC_HEX_32_6_X,
 
-/* Basic signed relocations extended by BFD_RELOC_HEXAGON_32_6_X, holding
+/* Basic signed relocations extended by BFD_RELOC_HEX_32_6_X, holding
 the lower 6 bits.  */
-  BFD_RELOC_HEXAGON_16_X,
-  BFD_RELOC_HEXAGON_12_X,
-  BFD_RELOC_HEXAGON_11_X,
-  BFD_RELOC_HEXAGON_10_X,
-  BFD_RELOC_HEXAGON_9_X,
-  BFD_RELOC_HEXAGON_8_X,
-  BFD_RELOC_HEXAGON_7_X,
-  BFD_RELOC_HEXAGON_6_X,
+  BFD_RELOC_HEX_16_X,
+  BFD_RELOC_HEX_12_X,
+  BFD_RELOC_HEX_11_X,
+  BFD_RELOC_HEX_10_X,
+  BFD_RELOC_HEX_9_X,
+  BFD_RELOC_HEX_8_X,
+  BFD_RELOC_HEX_7_X,
+  BFD_RELOC_HEX_6_X,
 
 /* PC-relative relocation with 32-bit signed offset.  */
-  BFD_RELOC_HEXAGON_32_PCREL,
+  BFD_RELOC_HEX_32_PCREL,
 
 /* PC-relative relocations with 24, 17, 15, 11 or 9-bit signed offset
 shifted right by 1.  */
-  BFD_RELOC_HEXAGON_B22_PCREL,
-  BFD_RELOC_HEXAGON_B15_PCREL,
-  BFD_RELOC_HEXAGON_B13_PCREL,
-  BFD_RELOC_HEXAGON_B9_PCREL,
-  BFD_RELOC_HEXAGON_B7_PCREL,
+  BFD_RELOC_HEX_B22_PCREL,
+  BFD_RELOC_HEX_B15_PCREL,
+  BFD_RELOC_HEX_B13_PCREL,
+  BFD_RELOC_HEX_B9_PCREL,
+  BFD_RELOC_HEX_B7_PCREL,
 
-/* PC-relative relocations with 23-bit signed offset
+/* PC-relative relocations with 24-bit signed offset
 shifted right by 1 to a PLT entry.  */
-  BFD_RELOC_HEXAGON_PLT_B22_PCREL,
+  BFD_RELOC_HEX_PLT_B22_PCREL,
 
 /* PC-relative relocations with 32-bit signed offset shifted right by 6.  */
-  BFD_RELOC_HEXAGON_B32_PCREL_X,
+  BFD_RELOC_HEX_B32_PCREL_X,
 
-/* PC-relative relocations extended by BFD_RELOC_HEXAGON_B32_PCREL_X,
+/* PC-relative relocations extended by BFD_RELOC_HEX_B32_PCREL_X,
 holding the lower 6 bits shifted right by 1.  */
-  BFD_RELOC_HEXAGON_B22_PCREL_X,
-  BFD_RELOC_HEXAGON_B15_PCREL_X,
-  BFD_RELOC_HEXAGON_B13_PCREL_X,
-  BFD_RELOC_HEXAGON_B9_PCREL_X,
-  BFD_RELOC_HEXAGON_B7_PCREL_X,
+  BFD_RELOC_HEX_B22_PCREL_X,
+  BFD_RELOC_HEX_B15_PCREL_X,
+  BFD_RELOC_HEX_B13_PCREL_X,
+  BFD_RELOC_HEX_B9_PCREL_X,
+  BFD_RELOC_HEX_B7_PCREL_X,
 
 /* Relocations for the lower and the higher 16 bits of a 32-bit address,
 applied to individual instructions or to a pair of instructions.  */
-  BFD_RELOC_HEXAGON_LO16,
-  BFD_RELOC_HEXAGON_HI16,
-  BFD_RELOC_HEXAGON_HL16,
+  BFD_RELOC_HEX_LO16,
+  BFD_RELOC_HEX_HI16,
+  BFD_RELOC_HEX_HL16,
 
 /* GOT-relative relocations for the lower and the higher 16 bits and
 all 32 bits of a 32-bit address.  */
-  BFD_RELOC_HEXAGON_GOTREL_LO16,
-  BFD_RELOC_HEXAGON_GOTREL_HI16,
-  BFD_RELOC_HEXAGON_GOTREL_32,
+  BFD_RELOC_HEX_GOTREL_LO16,
+  BFD_RELOC_HEX_GOTREL_HI16,
+  BFD_RELOC_HEX_GOTREL_32,
 
 /* GOT-relative relocations for the lower and the higher 16 bits,
 all 32 bits and the signed lower 16 bits of a signed 32-bit offset.  */
-  BFD_RELOC_HEXAGON_GOT_LO16,
-  BFD_RELOC_HEXAGON_GOT_HI16,
-  BFD_RELOC_HEXAGON_GOT_32,
-  BFD_RELOC_HEXAGON_GOT_16,
+  BFD_RELOC_HEX_GOT_LO16,
+  BFD_RELOC_HEX_GOT_HI16,
+  BFD_RELOC_HEX_GOT_32,
+  BFD_RELOC_HEX_GOT_16,
 
 /* GP-relative relocations with 16, 17, 18 or 19-bit unsigned offset
 shifted right by the access size.  */
-  BFD_RELOC_HEXAGON_GPREL16_0,
-  BFD_RELOC_HEXAGON_GPREL16_1,
-  BFD_RELOC_HEXAGON_GPREL16_2,
-  BFD_RELOC_HEXAGON_GPREL16_3,
+  BFD_RELOC_HEX_GPREL16_0,
+  BFD_RELOC_HEX_GPREL16_1,
+  BFD_RELOC_HEX_GPREL16_2,
+  BFD_RELOC_HEX_GPREL16_3,
 
 /* Relocations for dynamic linking support.  */
-  BFD_RELOC_HEXAGON_GLOB_DAT,
-  BFD_RELOC_HEXAGON_COPY,
-  BFD_RELOC_HEXAGON_JMP_SLOT,
-  BFD_RELOC_HEXAGON_RELATIVE,
+  BFD_RELOC_HEX_GLOB_DAT,
+  BFD_RELOC_HEX_COPY,
+  BFD_RELOC_HEX_JMP_SLOT,
+  BFD_RELOC_HEX_RELATIVE,
 
 /* TLS relocations that make up a TLS_index structure in consecutive GOT entries.  */
-  BFD_RELOC_HEXAGON_DTPMOD_32,
-  BFD_RELOC_HEXAGON_DTPREL_32,
+  BFD_RELOC_HEX_DTPMOD_32,
+  BFD_RELOC_HEX_DTPREL_32,
+
+/* TLS relocations for the lower and the higher 16 bits and all 32 bits
+of a 32-bit signed offset from the base of the TLS area.  */
+  BFD_RELOC_HEX_DTPREL_LO16,
+  BFD_RELOC_HEX_DTPREL_HI16,
+  BFD_RELOC_HEX_DTPREL_16,
+
+/* PC-relative relocations with 24-bit signed offset
+shifted right by 1 to a PLT entry
+for the function that returns the address of a TLS variable
+(usually __tls_get_addr).  */
+  BFD_RELOC_HEX_GD_PLT_B22_PCREL,
 
 /* GOT-relative TLS global-dynamic relocations for
 the lower and the higher 16 bits, all 32 bits and the signed lower 16 bits
 of a 32-bit signed offset to a TLS_index structure in consecutive GOT entries.  */
-  BFD_RELOC_HEXAGON_GD_GOT_LO16,
-  BFD_RELOC_HEXAGON_GD_GOT_HI16,
-  BFD_RELOC_HEXAGON_GD_GOT_32,
-  BFD_RELOC_HEXAGON_GD_GOT_16,
+  BFD_RELOC_HEX_GD_GOT_LO16,
+  BFD_RELOC_HEX_GD_GOT_HI16,
+  BFD_RELOC_HEX_GD_GOT_32,
+  BFD_RELOC_HEX_GD_GOT_16,
+
+/* TLS initial-executable relocations for
+the lower and the higher 16 bits and all 32 bits of a 32-bit address.  */
+  BFD_RELOC_HEX_IE_LO16,
+  BFD_RELOC_HEX_IE_HI16,
+  BFD_RELOC_HEX_IE_32,
 
 /* GOT-relative TLS initial-executable relocations for
 the lower and the higher 16 bits, all 32 bits and the signed lower 16 bits
 of a 32-bit signed offset.  */
-  BFD_RELOC_HEXAGON_IE_GOT_LO16,
-  BFD_RELOC_HEXAGON_IE_GOT_HI16,
-  BFD_RELOC_HEXAGON_IE_GOT_32,
-  BFD_RELOC_HEXAGON_IE_GOT_16,
+  BFD_RELOC_HEX_IE_GOT_LO16,
+  BFD_RELOC_HEX_IE_GOT_HI16,
+  BFD_RELOC_HEX_IE_GOT_32,
+  BFD_RELOC_HEX_IE_GOT_16,
 
 /* TLS relocations for the lower and the higher 16 bits and all 32 bits
 of a 32-bit signed offset from the base of the TLS template.  */
-  BFD_RELOC_HEXAGON_TPREL_LO16,
-  BFD_RELOC_HEXAGON_TPREL_HI16,
-  BFD_RELOC_HEXAGON_TPREL_32,
-  BFD_RELOC_HEXAGON_TPREL_16,
+  BFD_RELOC_HEX_TPREL_LO16,
+  BFD_RELOC_HEX_TPREL_HI16,
+  BFD_RELOC_HEX_TPREL_32,
+  BFD_RELOC_HEX_TPREL_16,
   BFD_RELOC_UNUSED };
 typedef enum bfd_reloc_code_real bfd_reloc_code_real_type;
 reloc_howto_type *bfd_reloc_type_lookup

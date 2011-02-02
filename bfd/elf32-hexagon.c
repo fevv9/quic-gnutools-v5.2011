@@ -234,864 +234,200 @@ static const hexagon_insn hexagon_plt_entry [PLT_ENTRY_LENGTH] =
 
 static reloc_howto_type hexagon_elf_howto_table [] =
 {
-  /* This reloc does nothing.  */
+  /* This relocation does nothing.  */
   EMPTY_HOWTO (R_HEXAGON_NONE),
-
-  /* A relative 22 bit branch. */
-  HOWTO (R_HEXAGON_B22_PCREL,	/* type  */
-	 2,			/* rightshift  */
-	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
-	 24,			/* bitsize  */
-	 TRUE,			/* pc_relative  */
-	 0,			/* bitpos  */
-	 complain_overflow_signed, /* complain_on_overflow  */
-	 hexagon_elf_reloc,	/* special_function  */
-	 "R_HEXAGON_B22_PCREL",	/* name  */
-	 FALSE,			/* partial_inplace  */
-	 -1L,			/* src_mask  */
-	 0x01ff3ffe,		/* dst_mask  */
-	 FALSE),		/* pcrel_offset  */
-
-  /* A relative 15 bit branch. */
-  HOWTO (R_HEXAGON_B15_PCREL,	/* type  */
-	 2,			/* rightshift  */
-	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
-	 17,			/* bitsize  */
-	 TRUE,			/* pc_relative  */
-	 0,			/* bitpos  */
-	 complain_overflow_signed, /* complain_on_overflow  */
-	 hexagon_elf_reloc,	/* special_function  */
-	 "R_HEXAGON_B15_PCREL",	/* name  */
-	 FALSE,			/* partial_inplace  */
-	 -1L,			/* src_mask  */
-	 0x00df20fe,		/* dst_mask  */
-	 FALSE),		/* pcrel_offset  */
-
-  /* v2: A relative 7 bit branch. */
-  HOWTO (R_HEXAGON_B7_PCREL,	/* type  */
-	 2,			/* rightshift  */
-	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
-	 9,			/* bitsize  */
-	 TRUE,			/* pc_relative  */
-	 0,			/* bitpos  */
-	 complain_overflow_signed, /* complain_on_overflow  */
-	 hexagon_elf_reloc,	/* special_function  */
-	 "R_HEXAGON_B7_PCREL",	/* name  */
-	 FALSE,			/* partial_inplace  */
-	 -1L,			/* src_mask  */
-	 0x00001f18,		/* dst_mask  */
-	 FALSE),		/* pcrel_offset  */
-
-  /* Low 16-bits of a 32-bit number. */
-  HOWTO (R_HEXAGON_LO16,	/* type  */
-	 0,			/* rightshift  */
-	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
-	 32,			/* bitsize  */
-	 FALSE,			/* pc_relative  */
-	 0,			/* bitpos  */
-	 complain_overflow_bitfield, /* complain_on_overflow  */
-	 hexagon_elf_reloc,	/* special_function  */
-	 "R_HEXAGON_LO16",	/* name  */
-	 FALSE,			/* partial_inplace  */
-	 -1L,			/* src_mask  */
-	 0x00c03fff,		/* dst_mask  */
-	 FALSE),		/* pcrel_offset  */
-
-  /* High 16-bits of a 32-bit number. */
-  HOWTO (R_HEXAGON_HI16,	/* type  */
-	 0,			/* rightshift  */
-	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
-	 32,			/* bitsize  */
-	 FALSE,			/* pc_relative  */
-	 0,			/* bitpos  */
-	 complain_overflow_bitfield, /* complain_on_overflow  */
-	 hexagon_elf_reloc,	/* special_function  */
-	 "R_HEXAGON_HI16",	/* name  */
-	 FALSE,			/* partial_inplace  */
-	 -1L,			/* src_mask  */
-	 0x00c03fff,		/* dst_mask  */
-	 FALSE),		/* pcrel_offset  */
-
-  /* A 32-bit number. */
-  HOWTO (R_HEXAGON_32,		/* type  */
-	 0,			/* rightshift  */
-	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
-	 32,			/* bitsize  */
-	 FALSE,			/* pc_relative  */
-	 0,			/* bitpos  */
-	 complain_overflow_bitfield, /* complain_on_overflow  */
-	 bfd_elf_generic_reloc,	/* special_function  */
-	 "R_HEXAGON_32",	/* name  */
-	 FALSE,			/* partial_inplace  */
-	 0,			/* src_mask  */
-	 0xffffffff,		/* dst_mask  */
-	 FALSE),		/* pcrel_offset  */
-
-  /* A 16-bit number. */
-  HOWTO (R_HEXAGON_16,		/* type  */
-	 0,			/* rightshift  */
-	 1,			/* size (0 = byte, 1 = short, 2 = long)  */
-	 16,			/* bitsize  */
-	 FALSE,			/* pc_relative  */
-	 0,			/* bitpos  */
-	 complain_overflow_bitfield, /* complain_on_overflow  */
-	 bfd_elf_generic_reloc,	/* special_function  */
-	 "R_HEXAGON_16",	/* name  */
-	 FALSE,			/* partial_inplace  */
-	 0,			/* src_mask  */
-	 0xffff,		/* dst_mask  */
-	 FALSE),		/* pcrel_offset  */
-
-  /* An 8 bit number. */
-  HOWTO (R_HEXAGON_8,		/* type  */
-	 0,			/* rightshift  */
-	 0,			/* size (0 = byte, 1 = short, 2 = long)  */
-	 8,			/* bitsize  */
-	 FALSE,			/* pc_relative  */
-	 0,			/* bitpos  */
-	 complain_overflow_bitfield, /* complain_on_overflow  */
-	 bfd_elf_generic_reloc,	/* special_function  */
-	 "R_HEXAGON_8",		/* name  */
-	 FALSE,			/* partial_inplace  */
-	 0,			/* src_mask  */
-	 0xff,			/* dst_mask  */
-	 FALSE),		/* pcrel_offset  */
-
-  /* An GP-relative offset for bytes. */
-  HOWTO (R_HEXAGON_GPREL16_0,	/* type  */
-	 0,			/* rightshift  */
-	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
-	 16,			/* bitsize  */
-	 FALSE,			/* pc_relative  */
-	 0,			/* bitpos  */
-	 complain_overflow_bitfield, /* complain_on_overflow  */
-	 hexagon_elf_reloc,	/* special_function  */
-	 "R_HEXAGON_GPREL16_0",	/* name  */
-	 FALSE,			/* partial_inplace  */
-	 -1L,			/* src_mask  */
-	 0x061f2ff,		/* dst_mask  */
-	 FALSE),		/* pcrel_offset  */
-
-  /* An GP-relative offset for halves. */
-  HOWTO (R_HEXAGON_GPREL16_1,	/* type  */
-	 1,			/* rightshift  */
-	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
-	 17,			/* bitsize  */
-	 FALSE,			/* pc_relative  */
-	 0,			/* bitpos  */
-	 complain_overflow_bitfield, /* complain_on_overflow  */
-	 hexagon_elf_reloc,	/* special_function  */
-	 "R_HEXAGON_GPREL16_1",	/* name  */
-	 FALSE,			/* partial_inplace  */
-	 -1L,			/* src_mask  */
-	 0x061f2ff,		/* dst_mask  */
-	 FALSE),		/* pcrel_offset  */
-
-  /* An GP-relative offset for words. */
-  HOWTO (R_HEXAGON_GPREL16_2,	/* type  */
-	 2,			/* rightshift  */
-	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
-	 18,			/* bitsize  */
-	 FALSE,			/* pc_relative  */
-	 -1L,			/* bitpos  */
-	 complain_overflow_bitfield, /* complain_on_overflow  */
-	 hexagon_elf_reloc,	/* special_function  */
-	 "R_HEXAGON_GPREL16_2",	/* name  */
-	 FALSE,			/* partial_inplace  */
-	 -1L,			/* src_mask  */
-	 0x061f2ff,		/* dst_mask  */
-	 FALSE),		/* pcrel_offset  */
-
-  /* An GP-relative offset for doublewords. */
-  HOWTO (R_HEXAGON_GPREL16_3,	/* type  */
-	 3,			/* rightshift  */
-	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
-	 19,			/* bitsize  */
-	 FALSE,			/* pc_relative  */
-	 0,			/* bitpos  */
-	 complain_overflow_bitfield, /* complain_on_overflow  */
-	 hexagon_elf_reloc,	/* special_function  */
-	 "R_HEXAGON_GPREL16_3",	/* name  */
-	 FALSE,			/* partial_inplace  */
-	 -1L,			/* src_mask  */
-	 0x061f2ff,		/* dst_mask  */
-	 FALSE),		/* pcrel_offset  */
-
-  /* High and low 16-bits of a 32-bit number applied to 2 insns back-to-back. */
-  HOWTO (R_HEXAGON_HL16,	/* type  */
-	 0,			/* rightshift  */
-	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
-	 32,			/* bitsize  */
-	 FALSE,			/* pc_relative  */
-	 0,			/* bitpos  */
-	 complain_overflow_bitfield, /* complain_on_overflow  */
-	 hexagon_elf_reloc,	/* special_function  */
-	 "R_HEXAGON_HL16",	/* name  */
-	 FALSE,			/* partial_inplace  */
-	 -1L,			/* src_mask  */
-	 0x00c03fff,		/* dst_mask  */
-	 FALSE),		/* pcrel_offset  */
-
-  /* A relative 13 bit branch. */
-  HOWTO (R_HEXAGON_B13_PCREL,	/* type  */
-	 2,			/* rightshift  */
-	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
-	 15,			/* bitsize  */
-	 TRUE,			/* pc_relative  */
-	 0,			/* bitpos  */
-	 complain_overflow_signed, /* complain_on_overflow  */
-	 hexagon_elf_reloc,	/* special_function  */
-	 "R_HEXAGON_B13_PCREL",	/* name  */
-	 FALSE,			/* partial_inplace  */
-	 -1L,			/* src_mask  */
-	 0x00202ffe,		/* dst_mask  */
-	 FALSE),		/* pcrel_offset  */
-
-  /* A relative 9 bit branch. */
-  HOWTO (R_HEXAGON_B9_PCREL,	/* type  */
-	 2,			/* rightshift  */
-	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
-	 11,			/* bitsize  */
-	 TRUE,			/* pc_relative  */
-	 0,			/* bitpos  */
-	 complain_overflow_signed, /* complain_on_overflow  */
-	 hexagon_elf_reloc,	/* special_function  */
-	 "R_HEXAGON_B9_PCREL",	/* name  */
-	 FALSE,			/* partial_inplace  */
-	 -1L,			/* src_mask  */
-	 0x00c000ff,		/* dst_mask  */
-	 FALSE),		/* pcrel_offset  */
-
-  /* A relative 32-bit extended branch. */
-  HOWTO (R_HEXAGON_B32_PCREL_X,	/* type  */
-	 6,			/* rightshift  */
-	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
-	 32,			/* bitsize  */
-	 TRUE,			/* pc_relative  */
-	 0,			/* bitpos  */
-	 complain_overflow_signed, /* complain_on_overflow  */
-	 hexagon_elf_reloc,	/* special_function  */
-	 "R_HEXAGON_B32_PCREL_X", /* name  */
-	 FALSE,			/* partial_inplace  */
-	 ~0x3f,			/* src_mask  */
-	 0x0fff3fff,		/* dst_mask  */
-	 FALSE),		/* pcrel_offset  */
-
-  /* An extended 32-bit number. */
-  HOWTO (R_HEXAGON_32_6_X,	/* type  */
-	 6,			/* rightshift  */
-	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
-	 32,			/* bitsize  */
-	 FALSE,			/* pc_relative  */
-	 0,			/* bitpos  */
-	 complain_overflow_bitfield, /* complain_on_overflow  */
-	 hexagon_elf_reloc,	/* special_function  */
-	 "R_HEXAGON_32_6_X",	/* name  */
-	 FALSE,			/* partial_inplace  */
-	 ~0x3f,			/* src_mask  */
-	 0x0fff3fff,		/* dst_mask  */
-	 FALSE),		/* pcrel_offset  */
-
-  /* An extended relative 22 bit branch. */
-  HOWTO (R_HEXAGON_B22_PCREL_X,	/* type  */
-	 2,			/* rightshift  */
-	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
-	 6,			/* bitsize  */
-	 TRUE,			/* pc_relative  */
-	 0,			/* bitpos  */
-	 complain_overflow_signed, /* complain_on_overflow  */
-	 hexagon_elf_reloc,	/* special_function  */
-	 "R_HEXAGON_B22_PCREL_X", /* name  */
-	 FALSE,			/* partial_inplace  */
-	 0x3f,			/* src_mask  */
-	 0x01ff3ffe,		/* dst_mask  */
-	 FALSE),		/* pcrel_offset  */
-
-  /* An extended relative 15 bit branch. */
-  HOWTO (R_HEXAGON_B15_PCREL_X,	/* type  */
-	 2,			/* rightshift  */
-	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
-	 6,			/* bitsize  */
-	 TRUE,			/* pc_relative  */
-	 0,			/* bitpos  */
-	 complain_overflow_signed, /* complain_on_overflow  */
-	 hexagon_elf_reloc,	/* special_function  */
-	 "R_HEXAGON_B15_PCREL_X", /* name  */
-	 FALSE,			/* partial_inplace  */
-	 0x3f,			/* src_mask  */
-	 0x00df20fe,		/* dst_mask  */
-	 FALSE),		/* pcrel_offset  */
-
-  /* An extended relative 13 bit branch. */
-  HOWTO (R_HEXAGON_B13_PCREL_X,	/* type  */
-	 2,			/* rightshift  */
-	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
-	 6,			/* bitsize  */
-	 TRUE,			/* pc_relative  */
-	 0,			/* bitpos  */
-	 complain_overflow_signed, /* complain_on_overflow  */
-	 hexagon_elf_reloc,	/* special_function  */
-	 "R_HEXAGON_B13_PCREL_X", /* name  */
-	 FALSE,			/* partial_inplace  */
-	 0x3f,			/* src_mask  */
-	 0x00202ffe,		/* dst_mask  */
-	 FALSE),		/* pcrel_offset  */
-
-  /* An extended relative 9 bit branch. */
-  HOWTO (R_HEXAGON_B9_PCREL_X,	/* type  */
-	 2,			/* rightshift  */
-	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
-	 6,			/* bitsize  */
-	 TRUE,			/* pc_relative  */
-	 0,			/* bitpos  */
-	 complain_overflow_signed, /* complain_on_overflow  */
-	 hexagon_elf_reloc,	/* special_function  */
-	 "R_HEXAGON_B9_PCREL_X", /* name  */
-	 FALSE,			/* partial_inplace  */
-	 0x3f,			/* src_mask  */
-	 0x00c000ff,		/* dst_mask  */
-	 FALSE),		/* pcrel_offset  */
-
-  /* An extended relative 7 bit branch. */
-  HOWTO (R_HEXAGON_B7_PCREL_X,	/* type  */
-	 2,			/* rightshift  */
-	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
-	 6,			/* bitsize  */
-	 TRUE,			/* pc_relative  */
-	 0,			/* bitpos  */
-	 complain_overflow_signed, /* complain_on_overflow  */
-	 hexagon_elf_reloc,	/* special_function  */
-	 "R_HEXAGON_B7_PCREL_X", /* name  */
-	 FALSE,			/* partial_inplace  */
-	 0x3f,			/* src_mask  */
-	 0x00001f18,		/* dst_mask  */
-	 FALSE),		/* pcrel_offset  */
-
-  /* An extended signed 16-bit number. */
-  HOWTO (R_HEXAGON_16_X,	/* type  */
-	 0,			/* rightshift  */
-	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
-	 6,			/* bitsize  */
-	 FALSE,			/* pc_relative  */
-	 0,			/* bitpos  */
-	 complain_overflow_bitfield, /* complain_on_overflow  */
-	 hexagon_elf_reloc,	/* special_function  */
-	 "R_HEXAGON_16_X",	/* name  */
-	 FALSE,			/* partial_inplace  */
-	 0x3f,			/* src_mask  */
-	 0,			/* dst_mask  */
-	 FALSE),		/* pcrel_offset  */
-
-  /* An extended signed 12 bit number. */
-  HOWTO (R_HEXAGON_12_X,	/* type  */
-	 0,			/* rightshift  */
-	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
-	 6,			/* bitsize  */
-	 FALSE,			/* pc_relative  */
-	 0,			/* bitpos  */
-	 complain_overflow_bitfield, /* complain_on_overflow  */
-	 hexagon_elf_reloc,	/* special_function  */
-	 "R_HEXAGON_12_X",	/* name  */
-	 FALSE,			/* partial_inplace  */
-	 0,			/* src_mask  */
-	 0,			/* dst_mask  */
-	 FALSE),		/* pcrel_offset  */
-
-  /* An extended 11 bit number for bytes. */
-  HOWTO (R_HEXAGON_11_X,	/* type  */
-	 0,			/* rightshift  */
-	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
-	 6,			/* bitsize  */
-	 FALSE,			/* pc_relative  */
-	 0,			/* bitpos  */
-	 complain_overflow_bitfield, /* complain_on_overflow  */
-	 hexagon_elf_reloc,	/* special_function  */
-	 "R_HEXAGON_11_X",	/* name  */
-	 FALSE,			/* partial_inplace  */
-	 0x3f,			/* src_mask  */
-	 0,			/* dst_mask  */
-	 FALSE),		/* pcrel_offset  */
-
-  /* An extended signed 10 bit number. */
-  HOWTO (R_HEXAGON_10_X,	/* type  */
-	 0,			/* rightshift  */
-	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
-	 6,			/* bitsize  */
-	 FALSE,			/* pc_relative  */
-	 0,			/* bitpos  */
-	 complain_overflow_bitfield, /* complain_on_overflow  */
-	 hexagon_elf_reloc,	/* special_function  */
-	 "R_HEXAGON_10_X",	/* name  */
-	 FALSE,			/* partial_inplace  */
-	 0x3f,			/* src_mask  */
-	 0,			/* dst_mask  */
-	 FALSE),		/* pcrel_offset  */
-
-  /* An extended signed 9 bit number. */
-  HOWTO (R_HEXAGON_9_X,		/* type  */
-	 0,			/* rightshift  */
-	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
-	 6,			/* bitsize  */
-	 FALSE,			/* pc_relative  */
-	 0,			/* bitpos  */
-	 complain_overflow_bitfield, /* complain_on_overflow  */
-	 hexagon_elf_reloc,	/* special_function  */
-	 "R_HEXAGON_9_X",	/* name  */
-	 FALSE,			/* partial_inplace  */
-	 0x3f,			/* src_mask  */
-	 0,			/* dst_mask  */
-	 FALSE),		/* pcrel_offset  */
-
-  /* An extended signed 8 bit number. */
-  HOWTO (R_HEXAGON_8_X,		/* type  */
-	 0,			/* rightshift  */
-	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
-	 6,			/* bitsize  */
-	 FALSE,			/* pc_relative  */
-	 0,			/* bitpos  */
-	 complain_overflow_bitfield, /* complain_on_overflow  */
-	 hexagon_elf_reloc,	/* special_function  */
-	 "R_HEXAGON_8_X",	/* name  */
-	 FALSE,			/* partial_inplace  */
-	 0x3f,			/* src_mask  */
-	 0,			/* dst_mask  */
-	 FALSE),		/* pcrel_offset  */
-
-  /* An extended signed 7 bit number. */
-  HOWTO (R_HEXAGON_7_X,		/* type  */
-	 0,			/* rightshift  */
-	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
-	 6,			/* bitsize  */
-	 FALSE,			/* pc_relative  */
-	 0,			/* bitpos  */
-	 complain_overflow_bitfield, /* complain_on_overflow  */
-	 hexagon_elf_reloc,	/* special_function  */
-	 "R_HEXAGON_7_X",	/* name  */
-	 FALSE,			/* partial_inplace  */
-	 0x3f,			/* src_mask  */
-	 0,			/* dst_mask  */
-	 FALSE),		/* pcrel_offset  */
-
-  /* An extended signed 6 bit number. */
-  HOWTO (R_HEXAGON_6_X,		/* type  */
-	 0,			/* rightshift  */
-	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
-	 6,			/* bitsize  */
-	 FALSE,			/* pc_relative  */
-	 0,			/* bitpos  */
-	 complain_overflow_bitfield, /* complain_on_overflow  */
-	 hexagon_elf_reloc,	/* special_function  */
-	 "R_HEXAGON_6_X",	/* name  */
-	 FALSE,			/* partial_inplace  */
-	 0x3f,			/* src_mask  */
-	 0,			/* dst_mask  */
-	 FALSE),		/* pcrel_offset  */
-
-  /* A 32-bit PC-relative number. */
-  HOWTO (R_HEXAGON_32_PCREL,	/* type  */
-	 0,			/* rightshift  */
-	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
-	 32,			/* bitsize  */
-	 TRUE,			/* pc_relative  */
-	 0,			/* bitpos  */
-	 complain_overflow_bitfield, /* complain_on_overflow  */
-	 bfd_elf_generic_reloc,	/* special_function  */
-	 "R_HEXAGON_32_PCREL",	/* name  */
-	 FALSE,			/* partial_inplace  */
-	 0,			/* src_mask  */
-	 0xffffffff,		/* dst_mask  */
-	 TRUE),			/* pcrel_offset  */
-
-  /* Copy initial value from copy in DSO. */
-  HOWTO (R_HEXAGON_COPY,	/* type  */
-	 0,			/* rightshift  */
-	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
-	 32,			/* bitsize  */
-	 FALSE,			/* pc_relative  */
-	 0,			/* bitpos  */
-	 complain_overflow_dont, /* complain_on_overflow  */
-	 bfd_elf_generic_reloc,	/* special_function  */
-	 "R_HEXAGON_COPY",	/* name  */
-	 FALSE,			/* partial_inplace  */
-	 0,			/* src_mask  */
-	 0xffffffff,		/* dst_mask  */
-	 FALSE),		/* pcrel_offset  */
-
+  /* PC-relative 22-bit branch. */
+  HOWTO (R_HEXAGON_B22_PCREL, 2, 2, 24, TRUE, 0, complain_overflow_signed,
+	 hexagon_elf_reloc, "R_HEXAGON_B22_PCREL", FALSE, -1L, 0x01ff3ffe, FALSE),
+  /* PC-relative 15-bit branch. */
+  HOWTO (R_HEXAGON_B15_PCREL, 2, 2, 17, TRUE, 0, complain_overflow_signed,
+	 hexagon_elf_reloc, "R_HEXAGON_B15_PCREL", FALSE, -1L, 0x00df20fe, FALSE),
+  /* PC-relative 7-bit branch. */
+  HOWTO (R_HEXAGON_B7_PCREL, 2, 2, 9, TRUE, 0, complain_overflow_signed,
+	 hexagon_elf_reloc, "R_HEXAGON_B7_PCREL", FALSE, -1L, 0x00001f18, FALSE),
+  /* Low 16-bit of a 32-bit address. */
+  HOWTO (R_HEXAGON_LO16, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
+	 hexagon_elf_reloc, "R_HEXAGON_LO16", FALSE, -1L, 0x00c03fff, FALSE),
+  /* High 16-bit of a 32-bit address. */
+  HOWTO (R_HEXAGON_HI16, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
+	 hexagon_elf_reloc, "R_HEXAGON_HI16", FALSE, -1L, 0x00c03fff, FALSE),
+  /* 32-bit address. */
+  HOWTO (R_HEXAGON_32, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
+	 bfd_elf_generic_reloc, "R_HEXAGON_32", FALSE, 0, 0xffffffff, FALSE),
+  /* 16-bit address. */
+  HOWTO (R_HEXAGON_16, 0, 1, 16, FALSE, 0, complain_overflow_bitfield,
+	 bfd_elf_generic_reloc, "R_HEXAGON_16", FALSE, 0, 0xffff, FALSE),
+  /* 8-bit address. */
+  HOWTO (R_HEXAGON_8, 0, 0, 8, FALSE, 0, complain_overflow_bitfield,
+	 bfd_elf_generic_reloc, "R_HEXAGON_8", FALSE, 0, 0xff, FALSE),
+  /* GP-relative offset for bytes. */
+  HOWTO (R_HEXAGON_GPREL16_0, 0, 2, 16, FALSE, 0, complain_overflow_bitfield,
+	 hexagon_elf_reloc, "R_HEXAGON_GPREL16_0", FALSE, -1L, 0x061f2ff, FALSE),
+  /* GP-relative offset for half-words. */
+  HOWTO (R_HEXAGON_GPREL16_1, 1, 2, 17, FALSE, 0, complain_overflow_bitfield,
+	 hexagon_elf_reloc, "R_HEXAGON_GPREL16_1", FALSE, -1L, 0x061f2ff, FALSE),
+  /* GP-relative offset for words. */
+  HOWTO (R_HEXAGON_GPREL16_2, 2, 2, 18, FALSE, 0, complain_overflow_bitfield,
+	 hexagon_elf_reloc, "R_HEXAGON_GPREL16_2", FALSE, -1L, 0x061f2ff, FALSE),		/* pcrel_offset  */
+  /* GP-relative offset for double-words. */
+  HOWTO (R_HEXAGON_GPREL16_3, 3, 2, 19, FALSE, 0, complain_overflow_bitfield,
+	 hexagon_elf_reloc, "R_HEXAGON_GPREL16_3", FALSE, -1L, 0x061f2ff, FALSE),
+  /* High and low 16-bit of a 32-bit number applied to 2 insns back-to-back. */
+  HOWTO (R_HEXAGON_HL16, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
+	 hexagon_elf_reloc, "R_HEXAGON_HL16", FALSE, -1L, 0x00c03fff, FALSE),
+  /* PC-relative 13-bit branch. */
+  HOWTO (R_HEXAGON_B13_PCREL, 2, 2, 15, TRUE, 0, complain_overflow_signed,
+	 hexagon_elf_reloc, "R_HEXAGON_B13_PCREL", FALSE, -1L, 0x00202ffe, FALSE),
+  /* PC-relative 9-bit branch. */
+  HOWTO (R_HEXAGON_B9_PCREL, 2, 2, 11, TRUE, 0, complain_overflow_signed,
+	 hexagon_elf_reloc, "R_HEXAGON_B9_PCREL", FALSE, -1L, 0x00c000ff, FALSE),
+  /* PC-relative 32-bit extended branch. */
+  HOWTO (R_HEXAGON_B32_PCREL_X, 6, 2, 32, TRUE, 0, complain_overflow_signed,
+	 hexagon_elf_reloc, "R_HEXAGON_B32_PCREL_X", FALSE, ~0x3f, 0x0fff3fff, FALSE),
+  /* Extended 32-bit address. */
+  HOWTO (R_HEXAGON_32_6_X, 6, 2, 32, FALSE, 0, complain_overflow_bitfield,
+	 hexagon_elf_reloc, "R_HEXAGON_32_6_X", FALSE, ~0x3f, 0x0fff3fff, FALSE),
+  /* Extended PC-relative 22-bit branch. */
+  HOWTO (R_HEXAGON_B22_PCREL_X, 2, 2, 6, TRUE, 0, complain_overflow_signed,
+	 hexagon_elf_reloc, "R_HEXAGON_B22_PCREL_X", FALSE, 0x3f, 0x01ff3ffe, FALSE),
+  /* Extended PC-relative 15-bit branch. */
+  HOWTO (R_HEXAGON_B15_PCREL_X, 2, 2, 6, TRUE, 0, complain_overflow_signed,
+         hexagon_elf_reloc, "R_HEXAGON_B15_PCREL_X", FALSE, 0x3f, 0x00df20fe, FALSE),
+  /* An extended relative 13-bit branch. */
+  HOWTO (R_HEXAGON_B13_PCREL_X, 2, 2, 6, TRUE, 0, complain_overflow_signed,
+         hexagon_elf_reloc, "R_HEXAGON_B13_PCREL_X", FALSE, 0x3f, 0x00202ffe, FALSE),
+  /* Extended PC-relative 9-bit branch. */
+  HOWTO (R_HEXAGON_B9_PCREL_X, 2, 2, 6, TRUE, 0, complain_overflow_signed,
+         hexagon_elf_reloc, "R_HEXAGON_B9_PCREL_X", FALSE, 0x3f, 0x00c000ff, FALSE),
+  /* Extended PC-relative 7-bit branch. */
+  HOWTO (R_HEXAGON_B7_PCREL_X, 2, 2, 6, TRUE, 0, complain_overflow_signed,
+         hexagon_elf_reloc, "R_HEXAGON_B7_PCREL_X", FALSE, 0x3f, 0x00001f18, FALSE),
+  /* Extended signed 16-bit address. */
+  HOWTO (R_HEXAGON_16_X, 0, 2, 6, FALSE, 0, complain_overflow_bitfield,
+         hexagon_elf_reloc, "R_HEXAGON_16_X", FALSE, 0x3f, 0, FALSE),
+  /* Extended signed 12-bit address. */
+  HOWTO (R_HEXAGON_12_X, 0, 2, 6, FALSE, 0, complain_overflow_bitfield,
+         hexagon_elf_reloc, "R_HEXAGON_12_X", FALSE, 0, 0, FALSE),
+  /* Extended 11-bit address for bytes. */
+  HOWTO (R_HEXAGON_11_X, 0, 2, 6, FALSE, 0, complain_overflow_bitfield,
+         hexagon_elf_reloc, "R_HEXAGON_11_X", FALSE, 0x3f, 0, FALSE),
+  /* Extended signed 10-bit address. */
+  HOWTO (R_HEXAGON_10_X, 0, 2, 6, FALSE, 0, complain_overflow_bitfield,
+         hexagon_elf_reloc, "R_HEXAGON_10_X", FALSE, 0x3f, 0, FALSE),
+  /* Extended signed 9-bit address. */
+  HOWTO (R_HEXAGON_9_X, 0, 2, 6, FALSE, 0, complain_overflow_bitfield,
+         hexagon_elf_reloc, "R_HEXAGON_9_X", FALSE, 0x3f, 0, FALSE),
+  /* Extended signed 8-bit address. */
+  HOWTO (R_HEXAGON_8_X, 0, 2, 6, FALSE, 0, complain_overflow_bitfield,
+         hexagon_elf_reloc, "R_HEXAGON_8_X", FALSE, 0x3f, 0, FALSE),
+  /* Extended signed 7-bit address. */
+  HOWTO (R_HEXAGON_7_X, 0, 2, 6, FALSE, 0, complain_overflow_bitfield,
+         hexagon_elf_reloc, "R_HEXAGON_7_X", FALSE, 0x3f, 0, FALSE),
+  /* Extended signed 6-bit address. */
+  HOWTO (R_HEXAGON_6_X, 0, 2, 6, FALSE, 0, complain_overflow_bitfield,
+         hexagon_elf_reloc, "R_HEXAGON_6_X", FALSE, 0x3f, 0, FALSE),
+  /* 32-bit PC-relative address. */
+  HOWTO (R_HEXAGON_32_PCREL, 0, 2, 32, TRUE, 0, complain_overflow_bitfield,
+         bfd_elf_generic_reloc, "R_HEXAGON_32_PCREL", FALSE, 0, 0xffffffff, TRUE),
+  /* Copy initial value from DSO. */
+  HOWTO (R_HEXAGON_COPY, 0, 2, 32, FALSE, 0, complain_overflow_dont,
+         bfd_elf_generic_reloc, "R_HEXAGON_COPY", FALSE, 0, 0xffffffff, FALSE),
   /* GOT entry. */
-  HOWTO (R_HEXAGON_GLOB_DAT,	/* type  */
-	 0,			/* rightshift  */
-	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
-	 32,			/* bitsize  */
-	 FALSE,			/* pc_relative  */
-	 0,			/* bitpos  */
-	 complain_overflow_dont, /* complain_on_overflow  */
-	 bfd_elf_generic_reloc,	/* special_function  */
-	 "R_HEXAGON_GLOB_DAT",	/* name  */
-	 FALSE,			/* partial_inplace  */
-	 0,			/* src_mask  */
-	 0xffffffff,		/* dst_mask  */
-	 FALSE),		/* pcrel_offset  */
-
+  HOWTO (R_HEXAGON_GLOB_DAT, 0, 2, 32, FALSE, 0, complain_overflow_dont,
+         bfd_elf_generic_reloc, "R_HEXAGON_GLOB_DAT", FALSE, 0, 0xffffffff, FALSE),
   /* GOT entry for a PLT entry. */
-  HOWTO (R_HEXAGON_JMP_SLOT,	/* type  */
-	 0,			/* rightshift  */
-	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
-	 32,			/* bitsize  */
-	 FALSE,			/* pc_relative  */
-	 0,			/* bitpos  */
-	 complain_overflow_dont, /* complain_on_overflow  */
-	 bfd_elf_generic_reloc,	/* special_function  */
-	 "R_HEXAGON_JMP_SLOT",	/* name  */
-	 FALSE,			/* partial_inplace  */
-	 0,			/* src_mask  */
-	 0xffffffff,		/* dst_mask  */
-	 FALSE),		/* pcrel_offset  */
-
-  /* PLT entry. */
-  HOWTO (R_HEXAGON_RELATIVE,	/* type  */
-	 0,			/* rightshift  */
-	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
-	 32,			/* bitsize  */
-	 FALSE,			/* pc_relative  */
-	 0,			/* bitpos  */
-	 complain_overflow_dont, /* complain_on_overflow  */
-	 bfd_elf_generic_reloc,	/* special_function  */
-	 "R_HEXAGON_RELATIVE",	/* name  */
-	 FALSE,			/* partial_inplace  */
-	 0,			/* src_mask  */
-	 0xffffffff,		/* dst_mask  */
-	 FALSE),		/* pcrel_offset  */
-
-  /* A relative 22 bit branch to a PLT entry. */
-  HOWTO (R_HEXAGON_PLT_B22_PCREL,	/* type  */
-	 2,			/* rightshift  */
-	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
-	 22,			/* bitsize  */
-	 TRUE,			/* pc_relative  */
-	 0,			/* bitpos  */
-	 complain_overflow_signed, /* complain_on_overflow  */
-	 hexagon_elf_reloc,	/* special_function  */
-	 "R_HEXAGON_PLT_B22_PCREL", /* name  */
-	 FALSE,			/* partial_inplace  */
-	 0,			/* src_mask  */
-	 0x01ff3ffe,		/* dst_mask  */
-	 FALSE),		/* pcrel_offset  */
-
-  /* Low 16-bits of a 32-bit offset from GOT. */
-  HOWTO (R_HEXAGON_GOTREL_LO16,	/* type  */
-	 0,			/* rightshift  */
-	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
-	 32,			/* bitsize  */
-	 FALSE,			/* pc_relative  */
-	 0,			/* bitpos  */
-	 complain_overflow_bitfield, /* complain_on_overflow  */
-	 hexagon_elf_reloc,	/* special_function  */
-	 "R_HEXAGON_GOTREL_LO16", /* name  */
-	 FALSE,			/* partial_inplace  */
-	 0,			/* src_mask  */
-	 0x00c03fff,		/* dst_mask  */
-	 FALSE),		/* pcrel_offset  */
-
-  /* High 16-bits of a 32-bit offset from GOT. */
-  HOWTO (R_HEXAGON_GOTREL_HI16,	/* type  */
-	 0,			/* rightshift  */
-	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
-	 32,			/* bitsize  */
-	 FALSE,			/* pc_relative  */
-	 0,			/* bitpos  */
-	 complain_overflow_bitfield, /* complain_on_overflow  */
-	 hexagon_elf_reloc,	/* special_function  */
-	 "R_HEXAGON_GOTREL_HI16", /* name  */
-	 FALSE,			/* partial_inplace  */
-	 0,			/* src_mask  */
-	 0x00c03fff,		/* dst_mask  */
-	 FALSE),		/* pcrel_offset  */
-
+  HOWTO (R_HEXAGON_JMP_SLOT, 0, 2, 32, FALSE, 0, complain_overflow_dont,
+         bfd_elf_generic_reloc, "R_HEXAGON_JMP_SLOT", FALSE, 0, 0xffffffff, FALSE),
+  /* 32-bit image-relative address. */
+  HOWTO (R_HEXAGON_RELATIVE, 0, 2, 32, FALSE, 0, complain_overflow_dont,
+         bfd_elf_generic_reloc, "R_HEXAGON_RELATIVE", FALSE, 0, 0xffffffff, FALSE),
+  /* PC-relative 22-bit branch to a PLT entry. */
+  HOWTO (R_HEXAGON_PLT_B22_PCREL, 2, 2, 22, TRUE, 0, complain_overflow_signed,
+         hexagon_elf_reloc, "R_HEXAGON_PLT_B22_PCREL", FALSE, 0, 0x01ff3ffe, FALSE),
+  /* Low 16-bit of a 32-bit offset from GOT. */
+  HOWTO (R_HEXAGON_GOTREL_LO16, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
+         hexagon_elf_reloc, "R_HEXAGON_GOTREL_LO16", FALSE, 0, 0x00c03fff, FALSE),
+  /* High 16-bit of a 32-bit offset from GOT. */
+  HOWTO (R_HEXAGON_GOTREL_HI16, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
+         hexagon_elf_reloc, "R_HEXAGON_GOTREL_HI16", FALSE, 0, 0x00c03fff, FALSE),
   /* 32-bit offset from GOT. */
-  HOWTO (R_HEXAGON_GOTREL_32,	/* type  */
-         0,                     /* rightshift  */
-         2,                     /* size (0 = byte, 1 = short, 2 = long)  */
-         32,                    /* bitsize  */
-         FALSE,                 /* pc_relative  */
-         0,                     /* bitpos  */
-         complain_overflow_bitfield, /* complain_on_overflow  */
-         bfd_elf_generic_reloc, /* special_function  */
-         "R_HEXAGON_GOTREL_32",	/* name  */
-         FALSE,                 /* partial_inplace  */
-         0,                     /* src_mask  */
-         0xffffffff,            /* dst_mask  */
-         FALSE),                /* pcrel_offset  */
-
-  /* Low 16-bits of a 32-bit offset of a GOT entry. */
-  HOWTO (R_HEXAGON_GOT_LO16,	/* type  */
-	 0,			/* rightshift  */
-	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
-	 32,			/* bitsize  */
-	 FALSE,			/* pc_relative  */
-	 0,			/* bitpos  */
-	 complain_overflow_bitfield, /* complain_on_overflow  */
-	 hexagon_elf_reloc,	/* special_function  */
-	 "R_HEXAGON_GOT_LO16",	/* name  */
-	 FALSE,			/* partial_inplace  */
-	 0,			/* src_mask  */
-	 0x00c03fff,		/* dst_mask  */
-	 FALSE),		/* pcrel_offset  */
-
-  /* High 16-bits of a 32-bit offset of a GOT entry. */
-  HOWTO (R_HEXAGON_GOT_HI16,	/* type  */
-	 0,			/* rightshift  */
-	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
-	 32,			/* bitsize  */
-	 FALSE,			/* pc_relative  */
-	 0,			/* bitpos  */
-	 complain_overflow_bitfield, /* complain_on_overflow  */
-	 hexagon_elf_reloc,	/* special_function  */
-	 "R_HEXAGON_GOT_HI16",	/* name  */
-	 FALSE,			/* partial_inplace  */
-	 0,			/* src_mask  */
-	 0x00c03fff,		/* dst_mask  */
-	 FALSE),		/* pcrel_offset  */
-
+  HOWTO (R_HEXAGON_GOTREL_32, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
+         bfd_elf_generic_reloc, "R_HEXAGON_GOTREL_32", FALSE, 0, 0xffffffff, FALSE),
+  /* Low 16-bit of a 32-bit offset of a GOT entry. */
+  HOWTO (R_HEXAGON_GOT_LO16, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
+         hexagon_elf_reloc, "R_HEXAGON_GOT_LO16", FALSE, 0, 0x00c03fff, FALSE),
+  /* High 16-bit of a 32-bit offset of a GOT entry. */
+  HOWTO (R_HEXAGON_GOT_HI16, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
+         hexagon_elf_reloc, "R_HEXAGON_GOT_HI16", FALSE, 0, 0x00c03fff, FALSE),
   /* 32-bit offset of a GOT entry. */
-  HOWTO (R_HEXAGON_GOT_32,	/* type  */
-         0,                     /* rightshift  */
-         2,                     /* size (0 = byte, 1 = short, 2 = long)  */
-         32,                    /* bitsize  */
-         FALSE,                 /* pc_relative  */
-         0,                     /* bitpos  */
-         complain_overflow_bitfield, /* complain_on_overflow  */
-         bfd_elf_generic_reloc, /* special_function  */
-         "R_HEXAGON_GOT_32",	/* name  */
-         FALSE,                 /* partial_inplace  */
-         0,                     /* src_mask  */
-         0xffffffff,            /* dst_mask  */
-         FALSE),                /* pcrel_offset  */
-
+  HOWTO (R_HEXAGON_GOT_32, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
+         bfd_elf_generic_reloc, "R_HEXAGON_GOT_32", FALSE, 0, 0xffffffff, FALSE),
   /* 16-bit offset of a GOT entry. */
-  HOWTO (R_HEXAGON_GOT_16,	/* type  */
-         0,                     /* rightshift  */
-         2,                     /* size (0 = byte, 1 = short, 2 = long)  */
-         16,                    /* bitsize  */
-         FALSE,                 /* pc_relative  */
-         0,                     /* bitpos  */
-         complain_overflow_signed, /* complain_on_overflow  */
-         hexagon_elf_reloc,	/* special_function  */
-         "R_HEXAGON_GOT_16",	/* name  */
-         FALSE,                 /* partial_inplace  */
-         0,                     /* src_mask  */
-         0x00c03fff,            /* dst_mask  */
-         FALSE),                /* pcrel_offset  */
-
+  HOWTO (R_HEXAGON_GOT_16, 0, 2, 16, FALSE, 0, complain_overflow_signed,
+         hexagon_elf_reloc, "R_HEXAGON_GOT_16", FALSE, 0, 0x00c03fff, FALSE),
   /* 32-bit TLS module ID. */
-  HOWTO (R_HEXAGON_DTPMOD_32,	/* type  */
-         0,                     /* rightshift  */
-         2,                     /* size (0 = byte, 1 = short, 2 = long)  */
-         32,                    /* bitsize  */
-         FALSE,                 /* pc_relative  */
-         0,                     /* bitpos  */
-         complain_overflow_bitfield, /* complain_on_overflow  */
-         bfd_elf_generic_reloc, /* special_function  */
-         "R_HEXAGON_DTPMOD_32",	/* name  */
-         FALSE,                 /* partial_inplace  */
-         0,                     /* src_mask  */
-         0xffffffff,            /* dst_mask  */
-         FALSE),                /* pcrel_offset  */
-
+  HOWTO (R_HEXAGON_DTPMOD_32, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
+         bfd_elf_generic_reloc, "R_HEXAGON_DTPMOD_32", FALSE, 0, 0xffffffff, FALSE),
+  /* Low 16-bit of a 32-bit TLS symbol offset. */
+  HOWTO (R_HEXAGON_DTPREL_LO16, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
+         bfd_elf_generic_reloc, "R_HEXAGON_DTPREL_LO16", FALSE, 0, 0x00c03fff, FALSE),
+  /* High 16-bit of a 32-bit TLS symbol offset. */
+  HOWTO (R_HEXAGON_DTPREL_HI16, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
+         bfd_elf_generic_reloc, "R_HEXAGON_DTPREL_HI16", FALSE, 0, 0x00c03fff, FALSE),
   /* 32-bit TLS symbol offset. */
-  HOWTO (R_HEXAGON_DTPREL_32,	/* type  */
-         0,                     /* rightshift  */
-         2,                     /* size (0 = byte, 1 = short, 2 = long)  */
-         32,                    /* bitsize  */
-         FALSE,                 /* pc_relative  */
-         0,                     /* bitpos  */
-         complain_overflow_bitfield, /* complain_on_overflow  */
-         bfd_elf_generic_reloc, /* special_function  */
-         "R_HEXAGON_DTPREL_32",	/* name  */
-         FALSE,                 /* partial_inplace  */
-         0,                     /* src_mask  */
-         0xffffffff,            /* dst_mask  */
-         FALSE),                /* pcrel_offset  */
-
-  /* Low 16-bits of a 32-bit offset of GOT entries for a TLS GD descriptor. */
-  HOWTO (R_HEXAGON_GD_GOT_LO16,	/* type  */
-	 0,			/* rightshift  */
-	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
-	 32,			/* bitsize  */
-	 FALSE,			/* pc_relative  */
-	 0,			/* bitpos  */
-	 complain_overflow_bitfield, /* complain_on_overflow  */
-	 hexagon_elf_reloc,	/* special_function  */
-	 "R_HEXAGON_GD_GOT_LO16", /* name  */
-	 FALSE,			/* partial_inplace  */
-	 0,			/* src_mask  */
-	 0x00c03fff,		/* dst_mask  */
-	 FALSE),		/* pcrel_offset  */
-
-  /* High 16-bits of a 32-bit offset of GOT entries for a TLS GD descriptor. */
-  HOWTO (R_HEXAGON_GD_GOT_HI16,	/* type  */
-	 0,			/* rightshift  */
-	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
-	 32,			/* bitsize  */
-	 FALSE,			/* pc_relative  */
-	 0,			/* bitpos  */
-	 complain_overflow_bitfield, /* complain_on_overflow  */
-	 hexagon_elf_reloc,	/* special_function  */
-	 "R_HEXAGON_GD_GOT_HI16", /* name  */
-	 FALSE,			/* partial_inplace  */
-	 0,			/* src_mask  */
-	 0x00c03fff,		/* dst_mask  */
-	 FALSE),		/* pcrel_offset  */
-
+  HOWTO (R_HEXAGON_DTPREL_32, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
+         bfd_elf_generic_reloc, "R_HEXAGON_DTPREL_32", FALSE, 0, 0xffffffff, FALSE),
+  /* 16-bit TLS symbol offset. */
+  HOWTO (R_HEXAGON_DTPREL_16, 0, 2, 16, FALSE, 0, complain_overflow_signed,
+         bfd_elf_generic_reloc, "R_HEXAGON_DTPREL_16", FALSE, 0, 0x00c03fff, FALSE),
+  /* PC-relative 22-bit branch to the TLS PLT entry. */
+  HOWTO (R_HEXAGON_GD_PLT_B22_PCREL, 2, 2, 22, TRUE, 0, complain_overflow_signed,
+         hexagon_elf_reloc, "R_HEXAGON_GD_PLT_B22_PCREL", FALSE, 0, 0x01ff3ffe, FALSE),
+  /* Low 16-bit of a 32-bit offset of GOT entries for a TLS GD descriptor. */
+  HOWTO (R_HEXAGON_GD_GOT_LO16, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
+         hexagon_elf_reloc, "R_HEXAGON_GD_GOT_LO16", FALSE, 0, 0x00c03fff, FALSE),
+  /* High 16-bit of a 32-bit offset of GOT entries for a TLS GD descriptor. */
+  HOWTO (R_HEXAGON_GD_GOT_HI16, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
+         hexagon_elf_reloc, "R_HEXAGON_GD_GOT_HI16", FALSE, 0, 0x00c03fff, FALSE),
   /* 32-bit offset of GOT entries for a TLS GD descriptor. */
-  HOWTO (R_HEXAGON_GD_GOT_32,	/* type  */
-         0,                     /* rightshift  */
-         2,                     /* size (0 = byte, 1 = short, 2 = long)  */
-         32,                    /* bitsize  */
-         FALSE,                 /* pc_relative  */
-         0,                     /* bitpos  */
-         complain_overflow_bitfield, /* complain_on_overflow  */
-         bfd_elf_generic_reloc, /* special_function  */
-         "R_HEXAGON_GD_GOT_32",	/* name  */
-         FALSE,                 /* partial_inplace  */
-         0,                     /* src_mask  */
-         0xffffffff,            /* dst_mask  */
-         FALSE),                /* pcrel_offset  */
-
+  HOWTO (R_HEXAGON_GD_GOT_32, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
+         bfd_elf_generic_reloc, "R_HEXAGON_GD_GOT_32", FALSE, 0, 0xffffffff, FALSE),
   /* 16-bit offset of GOT entries for a TLS GD descriptor. */
-  HOWTO (R_HEXAGON_GD_GOT_16,	/* type  */
-         0,                     /* rightshift  */
-         2,                     /* size (0 = byte, 1 = short, 2 = long)  */
-         16,                    /* bitsize  */
-         FALSE,                 /* pc_relative  */
-         0,                     /* bitpos  */
-         complain_overflow_signed, /* complain_on_overflow  */
-         hexagon_elf_reloc,	/* special_function  */
-         "R_HEXAGON_GD_GOT_16",	/* name  */
-         FALSE,                 /* partial_inplace  */
-         0,                     /* src_mask  */
-         0x00c03fff,            /* dst_mask  */
-         FALSE),                /* pcrel_offset  */
-
-  /* Low 16-bits of a 32-bit offset of a GOT entry for a TLS IE symbol. */
-  HOWTO (R_HEXAGON_IE_GOT_LO16,	/* type  */
-	 0,			/* rightshift  */
-	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
-	 32,			/* bitsize  */
-	 FALSE,			/* pc_relative  */
-	 0,			/* bitpos  */
-	 complain_overflow_bitfield, /* complain_on_overflow  */
-	 hexagon_elf_reloc,	/* special_function  */
-	 "R_HEXAGON_IE_GOT_LO16", /* name  */
-	 FALSE,			/* partial_inplace  */
-	 0,			/* src_mask  */
-	 0x00c03fff,		/* dst_mask  */
-	 FALSE),		/* pcrel_offset  */
-
-  /* High 16-bits of a 32-bit offset of GOT entry for a TLS IE symbol. */
-  HOWTO (R_HEXAGON_IE_GOT_HI16,	/* type  */
-	 0,			/* rightshift  */
-	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
-	 32,			/* bitsize  */
-	 FALSE,			/* pc_relative  */
-	 0,			/* bitpos  */
-	 complain_overflow_bitfield, /* complain_on_overflow  */
-	 hexagon_elf_reloc,	/* special_function  */
-	 "R_HEXAGON_IE_GOT_HI16", /* name  */
-	 FALSE,			/* partial_inplace  */
-	 0,			/* src_mask  */
-	 0x00c03fff,		/* dst_mask  */
-	 FALSE),		/* pcrel_offset  */
-
+  HOWTO (R_HEXAGON_GD_GOT_16, 0, 2, 16, FALSE, 0, complain_overflow_signed,
+         hexagon_elf_reloc, "R_HEXAGON_GD_GOT_16", FALSE, 0, 0x00c03fff, FALSE),
+  /* Low 16-bit of a 32-bit address of a GOT entry for a TLS IE symbol. */
+  HOWTO (R_HEXAGON_IE_LO16, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
+         hexagon_elf_reloc, "R_HEXAGON_IE_LO16", FALSE, 0, 0x00c03fff, FALSE),
+  /* High 16-bit of a 32-bit address of GOT entry for a TLS IE symbol. */
+  HOWTO (R_HEXAGON_IE_HI16, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
+         hexagon_elf_reloc, "R_HEXAGON_IE_HI16", FALSE, 0, 0x00c03fff, FALSE),
+  /* 32-bit address of GOT entry for a TLS IE symbol. */
+  HOWTO (R_HEXAGON_IE_32, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
+         bfd_elf_generic_reloc, "R_HEXAGON_IE_32", FALSE, 0, 0xffffffff, FALSE),
+  /* Low 16-bit of a 32-bit offset of a GOT entry for a TLS IE symbol. */
+  HOWTO (R_HEXAGON_IE_GOT_LO16, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
+         hexagon_elf_reloc, "R_HEXAGON_IE_GOT_LO16", FALSE, 0, 0x00c03fff, FALSE),
+  /* High 16-bit of a 32-bit offset of GOT entry for a TLS IE symbol. */
+  HOWTO (R_HEXAGON_IE_GOT_HI16, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
+         hexagon_elf_reloc, "R_HEXAGON_IE_GOT_HI16", FALSE, 0, 0x00c03fff, FALSE),
   /* 32-bit offset of GOT entry for a TLS IE symbol. */
-  HOWTO (R_HEXAGON_IE_GOT_32,	/* type  */
-         0,                     /* rightshift  */
-         2,                     /* size (0 = byte, 1 = short, 2 = long)  */
-         32,                    /* bitsize  */
-         FALSE,                 /* pc_relative  */
-         0,                     /* bitpos  */
-         complain_overflow_bitfield, /* complain_on_overflow  */
-         bfd_elf_generic_reloc, /* special_function  */
-         "R_HEXAGON_IE_GOT_32",	/* name  */
-         FALSE,                 /* partial_inplace  */
-         0,                     /* src_mask  */
-         0xffffffff,            /* dst_mask  */
-         FALSE),                /* pcrel_offset  */
-
+  HOWTO (R_HEXAGON_IE_GOT_32, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
+         bfd_elf_generic_reloc, "R_HEXAGON_IE_GOT_32", FALSE, 0, 0xffffffff, FALSE),
   /* 16-bit offset of GOT entry for a TLS IE symbol. */
-  HOWTO (R_HEXAGON_IE_GOT_16,	/* type  */
-         0,                     /* rightshift  */
-         2,                     /* size (0 = byte, 1 = short, 2 = long)  */
-         16,                    /* bitsize  */
-         FALSE,                 /* pc_relative  */
-         0,                     /* bitpos  */
-         complain_overflow_signed, /* complain_on_overflow  */
-         hexagon_elf_reloc,	/* special_function  */
-         "R_HEXAGON_IE_GOT_16",	/* name  */
-         FALSE,                 /* partial_inplace  */
-         0,                     /* src_mask  */
-         0x00c03fff,            /* dst_mask  */
-         FALSE),                /* pcrel_offset  */
-
-  /* Low 16-bits of a 32-bit offset from the TP. */
-  HOWTO (R_HEXAGON_TPREL_LO16,	/* type  */
-	 0,			/* rightshift  */
-	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
-	 32,			/* bitsize  */
-	 FALSE,			/* pc_relative  */
-	 0,			/* bitpos  */
-	 complain_overflow_bitfield, /* complain_on_overflow  */
-	 hexagon_elf_reloc,	/* special_function  */
-	 "R_HEXAGON_TPREL_LO16", /* name  */
-	 FALSE,			/* partial_inplace  */
-	 0,			/* src_mask  */
-	 0x00c03fff,		/* dst_mask  */
-	 FALSE),		/* pcrel_offset  */
-
-  /* High 16-bits of a 32-bit offset from the TP. */
-  HOWTO (R_HEXAGON_TPREL_HI16,	/* type  */
-	 0,			/* rightshift  */
-	 2,			/* size (0 = byte, 1 = short, 2 = long)  */
-	 32,			/* bitsize  */
-	 FALSE,			/* pc_relative  */
-	 0,			/* bitpos  */
-	 complain_overflow_bitfield, /* complain_on_overflow  */
-	 hexagon_elf_reloc,	/* special_function  */
-	 "R_HEXAGON_TPREL_HI16", /* name  */
-	 FALSE,			/* partial_inplace  */
-	 0,			/* src_mask  */
-	 0x00c03fff,		/* dst_mask  */
-	 FALSE),		/* pcrel_offset  */
-
+  HOWTO (R_HEXAGON_IE_GOT_16, 0, 2, 16, FALSE, 0, complain_overflow_signed,
+         hexagon_elf_reloc, "R_HEXAGON_IE_GOT_16", FALSE, 0, 0x00c03fff, FALSE),
+  /* Low 16-bit of a 32-bit offset from the TP. */
+  HOWTO (R_HEXAGON_TPREL_LO16, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
+         hexagon_elf_reloc, "R_HEXAGON_TPREL_LO16", FALSE, 0, 0x00c03fff, FALSE),
+  /* High 16-bit of a 32-bit offset from the TP. */
+  HOWTO (R_HEXAGON_TPREL_HI16, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
+         hexagon_elf_reloc, "R_HEXAGON_TPREL_HI16", FALSE, 0, 0x00c03fff, FALSE),
   /* 32-bit offset from the TP. */
-  HOWTO (R_HEXAGON_TPREL_32,	/* type  */
-         0,                     /* rightshift  */
-         2,                     /* size (0 = byte, 1 = short, 2 = long)  */
-         32,                    /* bitsize  */
-         FALSE,                 /* pc_relative  */
-         0,                     /* bitpos  */
-         complain_overflow_bitfield, /* complain_on_overflow  */
-         bfd_elf_generic_reloc, /* special_function  */
-         "R_HEXAGON_TPREL_32",	/* name  */
-         FALSE,                 /* partial_inplace  */
-         0,                     /* src_mask  */
-         0xffffffff,            /* dst_mask  */
-         FALSE),                /* pcrel_offset  */
-
+  HOWTO (R_HEXAGON_TPREL_32, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
+         bfd_elf_generic_reloc, "R_HEXAGON_TPREL_32", FALSE, 0, 0xffffffff, FALSE),
   /* 16-bit offset from the TP. */
-  HOWTO (R_HEXAGON_TPREL_16,	/* type  */
-         0,                     /* rightshift  */
-         2,                     /* size (0 = byte, 1 = short, 2 = long)  */
-         16,                    /* bitsize  */
-         FALSE,                 /* pc_relative  */
-         0,                     /* bitpos  */
-         complain_overflow_signed, /* complain_on_overflow  */
-         hexagon_elf_reloc,	/* special_function  */
-         "R_HEXAGON_TPREL_16",	/* name  */
-         FALSE,                 /* partial_inplace  */
-         0,                     /* src_mask  */
-         0x00c03fff,            /* dst_mask  */
-         FALSE),                /* pcrel_offset  */
-
+  HOWTO (R_HEXAGON_TPREL_16, 0, 2, 16, FALSE, 0, complain_overflow_signed,
+         hexagon_elf_reloc, "R_HEXAGON_TPREL_16", FALSE, 0, 0x00c03fff, FALSE),
 };
 
 /* Hexagon ELF uses two common sections.  One is the usual one, and the
@@ -1115,68 +451,75 @@ struct hexagon_reloc_map
 
 static const struct hexagon_reloc_map hexagon_reloc_map [] =
 {
-  { BFD_RELOC_NONE,                  R_HEXAGON_NONE,          0 },
-  { BFD_RELOC_HEXAGON_B32_PCREL_X,   R_HEXAGON_B32_PCREL_X,   0 }, /* K-ext */
-  { BFD_RELOC_HEXAGON_B22_PCREL,     R_HEXAGON_B22_PCREL,     0 },
-  { BFD_RELOC_HEXAGON_B22_PCREL_X,   R_HEXAGON_B22_PCREL_X,   HEXAGON_OPERAND_IS_KXED },
-  { BFD_RELOC_HEXAGON_B15_PCREL,     R_HEXAGON_B15_PCREL,     0 },
-  { BFD_RELOC_HEXAGON_B15_PCREL_X,   R_HEXAGON_B15_PCREL_X,   HEXAGON_OPERAND_IS_KXED },
-  { BFD_RELOC_HEXAGON_B13_PCREL,     R_HEXAGON_B13_PCREL,     0 },
-  { BFD_RELOC_HEXAGON_B13_PCREL_X,   R_HEXAGON_B13_PCREL_X,   HEXAGON_OPERAND_IS_KXED },
-  { BFD_RELOC_HEXAGON_B9_PCREL,      R_HEXAGON_B9_PCREL,      0 },
-  { BFD_RELOC_HEXAGON_B9_PCREL_X,    R_HEXAGON_B9_PCREL_X,    HEXAGON_OPERAND_IS_KXED },
-  { BFD_RELOC_HEXAGON_B7_PCREL,      R_HEXAGON_B7_PCREL,      0 },
-  { BFD_RELOC_HEXAGON_B7_PCREL_X,    R_HEXAGON_B7_PCREL_X,    HEXAGON_OPERAND_IS_KXED },
-  { BFD_RELOC_HEXAGON_LO16,          R_HEXAGON_LO16,          0 },
-  { BFD_RELOC_HEXAGON_HI16,          R_HEXAGON_HI16,          0 },
-  { BFD_RELOC_HEXAGON_HL16,          R_HEXAGON_HL16,          0 },
-  { BFD_RELOC_HEXAGON_32_6_X,        R_HEXAGON_32_6_X,        0 }, /* K-ext */
-  { BFD_RELOC_32_PCREL,              R_HEXAGON_32_PCREL,      0 },
-  { BFD_RELOC_32,                    R_HEXAGON_32,            0 },
-  { BFD_RELOC_16,                    R_HEXAGON_16,            0 },
-  { BFD_RELOC_8,                     R_HEXAGON_8,             0 },
-  { BFD_RELOC_HEXAGON_16_X,          R_HEXAGON_16_X,          HEXAGON_OPERAND_IS_KXED },
-  { BFD_RELOC_HEXAGON_12_X,          R_HEXAGON_12_X,          HEXAGON_OPERAND_IS_KXED },
-  { BFD_RELOC_HEXAGON_11_X,          R_HEXAGON_11_X,          HEXAGON_OPERAND_IS_KXED },
-  { BFD_RELOC_HEXAGON_10_X,          R_HEXAGON_10_X,          HEXAGON_OPERAND_IS_KXED },
-  { BFD_RELOC_HEXAGON_9_X,           R_HEXAGON_9_X,           HEXAGON_OPERAND_IS_KXED },
-  { BFD_RELOC_HEXAGON_8_X,           R_HEXAGON_8_X,           HEXAGON_OPERAND_IS_KXED },
-  { BFD_RELOC_HEXAGON_7_X,           R_HEXAGON_7_X,           HEXAGON_OPERAND_IS_KXED },
-  { BFD_RELOC_HEXAGON_6_X,           R_HEXAGON_6_X,           HEXAGON_OPERAND_IS_KXED },
-  { BFD_RELOC_HEXAGON_GPREL16_0,     R_HEXAGON_GPREL16_0,     0 },
-  { BFD_RELOC_HEXAGON_GPREL16_1,     R_HEXAGON_GPREL16_1,     0 },
-  { BFD_RELOC_HEXAGON_GPREL16_2,     R_HEXAGON_GPREL16_2,     0 },
-  { BFD_RELOC_HEXAGON_GPREL16_3,     R_HEXAGON_GPREL16_3,     0 },
+  { BFD_RELOC_NONE,                 R_HEXAGON_NONE,             0 },
+  { BFD_RELOC_HEX_B32_PCREL_X,      R_HEXAGON_B32_PCREL_X,      0 }, /* K-ext */
+  { BFD_RELOC_HEX_B22_PCREL,        R_HEXAGON_B22_PCREL,        0 },
+  { BFD_RELOC_HEX_B22_PCREL_X,      R_HEXAGON_B22_PCREL_X,      HEXAGON_OPERAND_IS_KXED },
+  { BFD_RELOC_HEX_B15_PCREL,        R_HEXAGON_B15_PCREL,        0 },
+  { BFD_RELOC_HEX_B15_PCREL_X,      R_HEXAGON_B15_PCREL_X,      HEXAGON_OPERAND_IS_KXED },
+  { BFD_RELOC_HEX_B13_PCREL,        R_HEXAGON_B13_PCREL,        0 },
+  { BFD_RELOC_HEX_B13_PCREL_X,      R_HEXAGON_B13_PCREL_X,      HEXAGON_OPERAND_IS_KXED },
+  { BFD_RELOC_HEX_B9_PCREL,         R_HEXAGON_B9_PCREL,         0 },
+  { BFD_RELOC_HEX_B9_PCREL_X,       R_HEXAGON_B9_PCREL_X,       HEXAGON_OPERAND_IS_KXED },
+  { BFD_RELOC_HEX_B7_PCREL,         R_HEXAGON_B7_PCREL,         0 },
+  { BFD_RELOC_HEX_B7_PCREL_X,       R_HEXAGON_B7_PCREL_X,       HEXAGON_OPERAND_IS_KXED },
+  { BFD_RELOC_HEX_LO16,             R_HEXAGON_LO16,             0 },
+  { BFD_RELOC_HEX_HI16,             R_HEXAGON_HI16,             0 },
+  { BFD_RELOC_HEX_HL16,             R_HEXAGON_HL16,             0 },
+  { BFD_RELOC_HEX_32_6_X,           R_HEXAGON_32_6_X,           0 }, /* K-ext */
+  { BFD_RELOC_32_PCREL,             R_HEXAGON_32_PCREL,         0 },
+  { BFD_RELOC_32,                   R_HEXAGON_32,               0 },
+  { BFD_RELOC_16,                   R_HEXAGON_16,               0 },
+  { BFD_RELOC_8,                    R_HEXAGON_8,                0 },
+  { BFD_RELOC_HEX_16_X,             R_HEXAGON_16_X,             HEXAGON_OPERAND_IS_KXED },
+  { BFD_RELOC_HEX_12_X,             R_HEXAGON_12_X,             HEXAGON_OPERAND_IS_KXED },
+  { BFD_RELOC_HEX_11_X,             R_HEXAGON_11_X,             HEXAGON_OPERAND_IS_KXED },
+  { BFD_RELOC_HEX_10_X,             R_HEXAGON_10_X,             HEXAGON_OPERAND_IS_KXED },
+  { BFD_RELOC_HEX_9_X,              R_HEXAGON_9_X,              HEXAGON_OPERAND_IS_KXED },
+  { BFD_RELOC_HEX_8_X,              R_HEXAGON_8_X,              HEXAGON_OPERAND_IS_KXED },
+  { BFD_RELOC_HEX_7_X,              R_HEXAGON_7_X,              HEXAGON_OPERAND_IS_KXED },
+  { BFD_RELOC_HEX_6_X,              R_HEXAGON_6_X,              HEXAGON_OPERAND_IS_KXED },
+  { BFD_RELOC_HEX_GPREL16_0,        R_HEXAGON_GPREL16_0,        0 },
+  { BFD_RELOC_HEX_GPREL16_1,        R_HEXAGON_GPREL16_1,        0 },
+  { BFD_RELOC_HEX_GPREL16_2,        R_HEXAGON_GPREL16_2,        0 },
+  { BFD_RELOC_HEX_GPREL16_3,        R_HEXAGON_GPREL16_3,        0 },
   /* DSO */
-  { BFD_RELOC_HEXAGON_COPY,          R_HEXAGON_COPY,          0 },
-  { BFD_RELOC_HEXAGON_GLOB_DAT,      R_HEXAGON_GLOB_DAT,      0 },
-  { BFD_RELOC_HEXAGON_JMP_SLOT,      R_HEXAGON_JMP_SLOT,      0 },
-  { BFD_RELOC_HEXAGON_RELATIVE,      R_HEXAGON_RELATIVE,      0 },
+  { BFD_RELOC_HEX_COPY,             R_HEXAGON_COPY,             0 },
+  { BFD_RELOC_HEX_GLOB_DAT,         R_HEXAGON_GLOB_DAT,         0 },
+  { BFD_RELOC_HEX_JMP_SLOT,         R_HEXAGON_JMP_SLOT,         0 },
+  { BFD_RELOC_HEX_RELATIVE,         R_HEXAGON_RELATIVE,         0 },
   /* PLT */
-  { BFD_RELOC_HEXAGON_PLT_B22_PCREL, R_HEXAGON_PLT_B22_PCREL, 0 },
+  { BFD_RELOC_HEX_PLT_B22_PCREL,    R_HEXAGON_PLT_B22_PCREL,    0 },
   /* GOT */
-  { BFD_RELOC_HEXAGON_GOTREL_LO16,   R_HEXAGON_GOTREL_LO16,   0 },
-  { BFD_RELOC_HEXAGON_GOTREL_HI16,   R_HEXAGON_GOTREL_HI16,   0 },
-  { BFD_RELOC_32_GOTOFF,             R_HEXAGON_GOTREL_32,     0 },
-  { BFD_RELOC_HEXAGON_GOT_LO16,      R_HEXAGON_GOT_LO16,      0 },
-  { BFD_RELOC_HEXAGON_GOT_HI16,      R_HEXAGON_GOT_HI16,      0 },
-  { BFD_RELOC_HEXAGON_GOT_32,        R_HEXAGON_GOT_32,        0 },
-  { BFD_RELOC_HEXAGON_GOT_16,        R_HEXAGON_GOT_16,        0 },
+  { BFD_RELOC_HEX_GOTREL_LO16,      R_HEXAGON_GOTREL_LO16,      0 },
+  { BFD_RELOC_HEX_GOTREL_HI16,      R_HEXAGON_GOTREL_HI16,      0 },
+  { BFD_RELOC_32_GOTOFF,            R_HEXAGON_GOTREL_32,        0 },
+  { BFD_RELOC_HEX_GOT_LO16,         R_HEXAGON_GOT_LO16,         0 },
+  { BFD_RELOC_HEX_GOT_HI16,         R_HEXAGON_GOT_HI16,         0 },
+  { BFD_RELOC_HEX_GOT_32,           R_HEXAGON_GOT_32,           0 },
+  { BFD_RELOC_HEX_GOT_16,           R_HEXAGON_GOT_16,           0 },
   /* TLS */
-  { BFD_RELOC_HEXAGON_DTPMOD_32,     R_HEXAGON_DTPMOD_32,     0 },
-  { BFD_RELOC_HEXAGON_DTPREL_32,     R_HEXAGON_DTPREL_32,     0 },
-  { BFD_RELOC_HEXAGON_GD_GOT_LO16,   R_HEXAGON_GD_GOT_LO16,   0 },
-  { BFD_RELOC_HEXAGON_GD_GOT_HI16,   R_HEXAGON_GD_GOT_HI16,   0 },
-  { BFD_RELOC_HEXAGON_GD_GOT_32,     R_HEXAGON_GD_GOT_32,     0 },
-  { BFD_RELOC_HEXAGON_GD_GOT_16,     R_HEXAGON_GD_GOT_16,     0 },
-  { BFD_RELOC_HEXAGON_IE_GOT_LO16,   R_HEXAGON_IE_GOT_LO16,   0 },
-  { BFD_RELOC_HEXAGON_IE_GOT_HI16,   R_HEXAGON_IE_GOT_HI16,   0 },
-  { BFD_RELOC_HEXAGON_IE_GOT_32,     R_HEXAGON_IE_GOT_32,     0 },
-  { BFD_RELOC_HEXAGON_IE_GOT_16,     R_HEXAGON_IE_GOT_16,     0 },
-  { BFD_RELOC_HEXAGON_TPREL_LO16,    R_HEXAGON_TPREL_LO16,    0 },
-  { BFD_RELOC_HEXAGON_TPREL_HI16,    R_HEXAGON_TPREL_HI16,    0 },
-  { BFD_RELOC_HEXAGON_TPREL_32,      R_HEXAGON_TPREL_32,      0 },
-  { BFD_RELOC_HEXAGON_TPREL_16,      R_HEXAGON_TPREL_16,      0 },
+  { BFD_RELOC_HEX_DTPMOD_32,        R_HEXAGON_DTPMOD_32,        0 },
+  { BFD_RELOC_HEX_DTPREL_LO16,      R_HEXAGON_DTPREL_LO16,      0 },
+  { BFD_RELOC_HEX_DTPREL_HI16,      R_HEXAGON_DTPREL_HI16,      0 },
+  { BFD_RELOC_HEX_DTPREL_32,        R_HEXAGON_DTPREL_32,        0 },
+  { BFD_RELOC_HEX_DTPREL_16,        R_HEXAGON_DTPREL_16,        0 },
+  { BFD_RELOC_HEX_GD_PLT_B22_PCREL, R_HEXAGON_GD_PLT_B22_PCREL, 0 },
+  { BFD_RELOC_HEX_GD_GOT_LO16,      R_HEXAGON_GD_GOT_LO16,      0 },
+  { BFD_RELOC_HEX_GD_GOT_HI16,      R_HEXAGON_GD_GOT_HI16,      0 },
+  { BFD_RELOC_HEX_GD_GOT_32,        R_HEXAGON_GD_GOT_32,        0 },
+  { BFD_RELOC_HEX_GD_GOT_16,        R_HEXAGON_GD_GOT_16,        0 },
+  { BFD_RELOC_HEX_IE_LO16,          R_HEXAGON_IE_LO16,          0 },
+  { BFD_RELOC_HEX_IE_HI16,          R_HEXAGON_IE_HI16,          0 },
+  { BFD_RELOC_HEX_IE_32,            R_HEXAGON_IE_32,            0 },
+  { BFD_RELOC_HEX_IE_GOT_LO16,      R_HEXAGON_IE_GOT_LO16,      0 },
+  { BFD_RELOC_HEX_IE_GOT_HI16,      R_HEXAGON_IE_GOT_HI16,      0 },
+  { BFD_RELOC_HEX_IE_GOT_32,        R_HEXAGON_IE_GOT_32,        0 },
+  { BFD_RELOC_HEX_IE_GOT_16,        R_HEXAGON_IE_GOT_16,        0 },
+  { BFD_RELOC_HEX_TPREL_LO16,       R_HEXAGON_TPREL_LO16,       0 },
+  { BFD_RELOC_HEX_TPREL_HI16,       R_HEXAGON_TPREL_HI16,       0 },
+  { BFD_RELOC_HEX_TPREL_32,         R_HEXAGON_TPREL_32,         0 },
+  { BFD_RELOC_HEX_TPREL_16,         R_HEXAGON_TPREL_16,         0 },
 };
 
 static reloc_howto_type *
@@ -3081,9 +2424,6 @@ hexagon_elf_relocate_section
 	    if (h)
 	      {
 		/* Global symbol. */
-		if (eh->gd_got.refcount > 0)
-		  adjust = GOT_ENTRY_SIZE * 2;
-
 		BFD_ASSERT (h->got.offset != -(bfd_vma) 1);
 		offset = h->got.offset;
 
@@ -3091,6 +2431,9 @@ hexagon_elf_relocate_section
 		  offset &= ~1;
 		else
 		  h->got.offset |= 1;
+
+		if (eh->gd_got.refcount > 0)
+		  adjust = GOT_ENTRY_SIZE * 2;
 	      }
 	    else
 	      {
