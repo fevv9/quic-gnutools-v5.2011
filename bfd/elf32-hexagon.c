@@ -1998,13 +1998,13 @@ hexagon_elf_relocate_section
 	              && (!SYMBOLIC_BIND (info, h)
 	                  || !h->def_regular)
 	              && (isection->flags & SEC_ALLOC))
-	            relocation = 0;
+	            relocation = FALSE;
 
 		  /* Fall-through. */
 
 	        case R_HEXAGON_PLT_B22_PCREL:
 	          if (h->plt.offset != -(bfd_vma) 1)
-	            relocation = 0;
+	            relocation = FALSE;
 		  break;
 
 	        case R_HEXAGON_GOT_LO16:
@@ -2012,10 +2012,9 @@ hexagon_elf_relocate_section
                 case R_HEXAGON_GOT_32:
 	        case R_HEXAGON_GOT_16:
 	          if (elf_hash_table (info)->dynamic_sections_created
-	              && (info->executable
-	                  || !SYMBOLIC_BIND (info, h)
-	                  || !h->def_regular))
-	            relocation = 0;
+	              && !SYMBOLIC_BIND (info, h)
+	              && !h->def_regular)
+	            relocation = FALSE;
 		  break;
 
                 case R_HEXAGON_32:
@@ -2024,13 +2023,13 @@ hexagon_elf_relocate_section
                           || !SYMBOLIC_BIND (info, h)
                           || !h->def_regular)
 		      && !h->non_got_ref)
-                    relocation = 0;
+                    relocation = FALSE;
                   break;
 
 	        default:
 		  if (!h->root.u.def.section->output_section)
 		    {
-		      relocation = 0;
+		      relocation = FALSE;
 		      (*_bfd_error_handler)
 			(_("%B: relocation %s for symbol `%s\' in section `%A\' " \
 			   "cannot be resolved"),
@@ -2414,6 +2413,9 @@ hexagon_elf_relocate_section
 			+ offset;
 	  break;
 
+	case R_HEXAGON_IE_LO16:
+	case R_HEXAGON_IE_HI16:
+	case R_HEXAGON_IE_32:
 	case R_HEXAGON_IE_GOT_LO16:
 	case R_HEXAGON_IE_GOT_HI16:
 	case R_HEXAGON_IE_GOT_32:
@@ -2451,11 +2453,27 @@ hexagon_elf_relocate_section
 	    bfd_put_32 (obfd, hexagon_elf_tpoff (info, relocation),
 			htab->elf.sgot->contents + offset + adjust);
 
-	    relocation  = htab->elf.sgot->output_section->vma
-			  + htab->elf.sgot->output_offset
-			  - htab->elf.sgotplt->output_section->vma
-			  - htab->elf.sgotplt->output_offset
-			  + offset + adjust;
+	    switch (r_type)
+	      {
+	      case R_HEXAGON_IE_LO16:
+	      case R_HEXAGON_IE_HI16:
+	      case R_HEXAGON_IE_32:
+		relocation  = htab->elf.sgot->output_section->vma
+			      + htab->elf.sgot->output_offset
+			      + offset + adjust;
+		break;
+
+	      case R_HEXAGON_IE_GOT_LO16:
+	      case R_HEXAGON_IE_GOT_HI16:
+	      case R_HEXAGON_IE_GOT_32:
+	      case R_HEXAGON_IE_GOT_16:
+		relocation  = htab->elf.sgot->output_section->vma
+			      + htab->elf.sgot->output_offset
+			      - htab->elf.sgotplt->output_section->vma
+			      - htab->elf.sgotplt->output_offset
+			      + offset + adjust;
+		break;
+	      }
 	  }
 	  break;
 
@@ -2496,9 +2514,11 @@ hexagon_elf_relocate_section
 	case R_HEXAGON_GOT_16:
         case R_HEXAGON_GD_GOT_LO16:
         case R_HEXAGON_GD_GOT_HI16:
+        case R_HEXAGON_GD_GOT_16:
+        case R_HEXAGON_IE_LO16:
+        case R_HEXAGON_IE_HI16:
         case R_HEXAGON_IE_GOT_LO16:
         case R_HEXAGON_IE_GOT_HI16:
-        case R_HEXAGON_GD_GOT_16:
         case R_HEXAGON_IE_GOT_16:
 	  offset = (relocation + rel->r_addend) & lmask & rmask;
 
@@ -2652,6 +2672,7 @@ hexagon_elf_relocate_section
         case R_HEXAGON_GOT_32:
         case R_HEXAGON_GOTREL_32:
         case R_HEXAGON_GD_GOT_32:
+        case R_HEXAGON_IE_32:
         case R_HEXAGON_IE_GOT_32:
 	case R_HEXAGON_TPREL_32:
           /* Fall through. */
@@ -2798,6 +2819,9 @@ hexagon_elf_check_relocs
 	case R_HEXAGON_GD_GOT_HI16:
 	case R_HEXAGON_GD_GOT_32:
 	case R_HEXAGON_GD_GOT_16:
+	case R_HEXAGON_IE_LO16:
+	case R_HEXAGON_IE_HI16:
+	case R_HEXAGON_IE_32:
 	case R_HEXAGON_IE_GOT_LO16:
 	case R_HEXAGON_IE_GOT_HI16:
 	case R_HEXAGON_IE_GOT_32:
@@ -2824,6 +2848,9 @@ hexagon_elf_check_relocs
 		  h->gd_got.refcount++;
 		  break;
 
+		case R_HEXAGON_IE_LO16:
+		case R_HEXAGON_IE_HI16:
+		case R_HEXAGON_IE_32:
 		case R_HEXAGON_IE_GOT_LO16:
 		case R_HEXAGON_IE_GOT_HI16:
 		case R_HEXAGON_IE_GOT_32:
@@ -2869,6 +2896,9 @@ hexagon_elf_check_relocs
 		  local_got_refcounts [LGOT_GD (symtab_hdr, r_symndx)]++;
 		  break;
 
+		case R_HEXAGON_IE_LO16:
+		case R_HEXAGON_IE_HI16:
+		case R_HEXAGON_IE_32:
 		case R_HEXAGON_IE_GOT_LO16:
 		case R_HEXAGON_IE_GOT_HI16:
 		case R_HEXAGON_IE_GOT_32:
@@ -3124,6 +3154,9 @@ hexagon_elf_check_relocs
             }
           break;
 
+	case R_HEXAGON_IE_LO16:
+	case R_HEXAGON_IE_HI16:
+	case R_HEXAGON_IE_32:
 	case R_HEXAGON_IE_GOT_LO16:
 	case R_HEXAGON_IE_GOT_HI16:
 	case R_HEXAGON_IE_GOT_32:
@@ -3195,6 +3228,9 @@ hexagon_elf_gc_sweep_hook
 	case R_HEXAGON_GD_GOT_HI16:
 	case R_HEXAGON_GD_GOT_32:
 	case R_HEXAGON_GD_GOT_16:
+	case R_HEXAGON_IE_LO16:
+	case R_HEXAGON_IE_HI16:
+	case R_HEXAGON_IE_32:
 	case R_HEXAGON_IE_GOT_LO16:
 	case R_HEXAGON_IE_GOT_HI16:
 	case R_HEXAGON_IE_GOT_32:
@@ -3220,6 +3256,9 @@ hexagon_elf_gc_sweep_hook
 		eh->gd_got.refcount--;
 	      break;
 
+	    case R_HEXAGON_IE_LO16:
+	    case R_HEXAGON_IE_HI16:
+	    case R_HEXAGON_IE_32:
 	    case R_HEXAGON_IE_GOT_LO16:
 	    case R_HEXAGON_IE_GOT_HI16:
 	    case R_HEXAGON_IE_GOT_32:
