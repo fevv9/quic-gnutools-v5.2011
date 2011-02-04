@@ -1558,6 +1558,9 @@ hexagon_fix_adjustable (fixS *fixP)
     case BFD_RELOC_HEX_GD_GOT_HI16:
     case BFD_RELOC_HEX_GD_GOT_32:
     case BFD_RELOC_HEX_GD_GOT_16:
+    case BFD_RELOC_HEX_IE_LO16:
+    case BFD_RELOC_HEX_IE_HI16:
+    case BFD_RELOC_HEX_IE_32:
     case BFD_RELOC_HEX_IE_GOT_LO16:
     case BFD_RELOC_HEX_IE_GOT_HI16:
     case BFD_RELOC_HEX_IE_GOT_32:
@@ -4497,6 +4500,9 @@ md_apply_fix
 	  case BFD_RELOC_HEX_GD_GOT_HI16:
 	  case BFD_RELOC_HEX_GD_GOT_32:
 	  case BFD_RELOC_HEX_GD_GOT_16:
+	  case BFD_RELOC_HEX_IE_LO16:
+	  case BFD_RELOC_HEX_IE_HI16:
+	  case BFD_RELOC_HEX_IE_32:
 	  case BFD_RELOC_HEX_IE_GOT_LO16:
 	  case BFD_RELOC_HEX_IE_GOT_HI16:
 	  case BFD_RELOC_HEX_IE_GOT_32:
