@@ -2007,10 +2007,18 @@ hexagon_elf_relocate_section
 	            relocation = FALSE;
 		  break;
 
-	        case R_HEXAGON_GOT_LO16:
-	        case R_HEXAGON_GOT_HI16:
-                case R_HEXAGON_GOT_32:
-	        case R_HEXAGON_GOT_16:
+		case R_HEXAGON_GOT_LO16:
+		case R_HEXAGON_GOT_HI16:
+		case R_HEXAGON_GOT_32:
+		case R_HEXAGON_GOT_16:
+		case R_HEXAGON_GD_GOT_LO16:
+		case R_HEXAGON_GD_GOT_HI16:
+		case R_HEXAGON_GD_GOT_32:
+		case R_HEXAGON_GD_GOT_16:
+		case R_HEXAGON_IE_GOT_LO16:
+		case R_HEXAGON_IE_GOT_HI16:
+		case R_HEXAGON_IE_GOT_32:
+		case R_HEXAGON_IE_GOT_16:
 	          if (elf_hash_table (info)->dynamic_sections_created
 	              && !SYMBOLIC_BIND (info, h)
 	              && !h->def_regular)
