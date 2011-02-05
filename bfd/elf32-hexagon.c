@@ -2015,6 +2015,9 @@ hexagon_elf_relocate_section
 		case R_HEXAGON_GD_GOT_HI16:
 		case R_HEXAGON_GD_GOT_32:
 		case R_HEXAGON_GD_GOT_16:
+		case R_HEXAGON_IE_LO16:
+		case R_HEXAGON_IE_HI16:
+		case R_HEXAGON_IE_32:
 		case R_HEXAGON_IE_GOT_LO16:
 		case R_HEXAGON_IE_GOT_HI16:
 		case R_HEXAGON_IE_GOT_32:
