@@ -278,6 +278,7 @@ typedef enum _hexagon_suffix_type
     TLS_GD_GOT,
     TLS_IE,
     TLS_IE_GOT,
+    TLS_DTPREL,
     TLS_TPREL,
   } hexagon_suffix_type;
 
@@ -466,43 +467,43 @@ struct option md_longopts [] =
     { "EB", no_argument, NULL, OPTION_EB },
 #define OPTION_EL (OPTION_MD_BASE + 1)
     { "EL", no_argument, NULL, OPTION_EL },
-#define OPTION_HEXAGON_PAIR_INFO (OPTION_MD_BASE + 2)
-    { "mpairing-info", no_argument, NULL, OPTION_HEXAGON_PAIR_INFO },
-#define OPTION_HEXAGON_FALIGN_INFO_NEW (OPTION_MD_BASE + 3)
-    { "mfalign-info", no_argument, NULL, OPTION_HEXAGON_FALIGN_INFO_NEW },
-#define OPTION_HEXAGON_FALIGN_MORE_INFO (OPTION_MD_BASE + 4)
-    { "mfalign-more-info", no_argument, NULL, OPTION_HEXAGON_FALIGN_MORE_INFO },
-#define OPTION_HEXAGON_NO_2MEMORY (OPTION_MD_BASE + 5)
-    { "mno-dual-memory", no_argument, NULL, OPTION_HEXAGON_NO_2MEMORY },
+#define OPTION_HEX_PAIR_INFO (OPTION_MD_BASE + 2)
+    { "mpairing-info", no_argument, NULL, OPTION_HEX_PAIR_INFO },
+#define OPTION_HEX_FALIGN_INFO_NEW (OPTION_MD_BASE + 3)
+    { "mfalign-info", no_argument, NULL, OPTION_HEX_FALIGN_INFO_NEW },
+#define OPTION_HEX_FALIGN_MORE_INFO (OPTION_MD_BASE + 4)
+    { "mfalign-more-info", no_argument, NULL, OPTION_HEX_FALIGN_MORE_INFO },
+#define OPTION_HEX_NO_2MEMORY (OPTION_MD_BASE + 5)
+    { "mno-dual-memory", no_argument, NULL, OPTION_HEX_NO_2MEMORY },
 /* Code in md_parse_option () assumes that the -mv* options, are sequential. */
-#define OPTION_HEXAGON_MV2 (OPTION_MD_BASE + 6)
-    { "mv2", no_argument, NULL, OPTION_HEXAGON_MV2 },
-#define OPTION_HEXAGON_MV3 (OPTION_MD_BASE + 7)
-    { "mv3", no_argument, NULL, OPTION_HEXAGON_MV3 },
-#define OPTION_HEXAGON_MV4 (OPTION_MD_BASE + 8)
-    { "mv4", no_argument, NULL, OPTION_HEXAGON_MV4 },
-#define OPTION_HEXAGON_MARCH (OPTION_MD_BASE + 9)
-    { "march", required_argument, NULL, OPTION_HEXAGON_MARCH },
-#define OPTION_HEXAGON_MCPU (OPTION_MD_BASE + 10)
-    { "mcpu", required_argument, NULL, OPTION_HEXAGON_MCPU },
-#define OPTION_HEXAGON_MSORT_SDA (OPTION_MD_BASE + 11)
-    { "msort-sda", no_argument, NULL, OPTION_HEXAGON_MSORT_SDA },
-#define OPTION_HEXAGON_MNO_SORT_SDA (OPTION_MD_BASE + 12)
-    { "mno-sort-sda", no_argument, NULL, OPTION_HEXAGON_MNO_SORT_SDA },
-#define OPTION_HEXAGON_MNO_EXTENDER (OPTION_MD_BASE + 13)
-    { "mno-extender", no_argument, NULL, OPTION_HEXAGON_MNO_EXTENDER },
-#define OPTION_HEXAGON_MNO_PAIRING (OPTION_MD_BASE + 14)
-    { "mno-pairing", no_argument, NULL, OPTION_HEXAGON_MNO_PAIRING },
-#define OPTION_HEXAGON_MNO_PAIRING_B (OPTION_MD_BASE + 15)
-    { "mno-pairing-branch", no_argument, NULL, OPTION_HEXAGON_MNO_PAIRING_B },
-#define OPTION_HEXAGON_MNO_PAIRING_2 (OPTION_MD_BASE + 16)
-    { "mno-pairing-duplex", no_argument, NULL, OPTION_HEXAGON_MNO_PAIRING_2 },
-#define OPTION_HEXAGON_MNO_JUMPS (OPTION_MD_BASE + 17)
-    { "mno-jumps", no_argument, NULL, OPTION_HEXAGON_MNO_JUMPS },
-#define OPTION_HEXAGON_MNO_JUMPS_LONG (OPTION_MD_BASE + 18)
-    { "mno-jumps-long", no_argument, NULL, OPTION_HEXAGON_MNO_JUMPS_LONG },
-#define OPTION_HEXAGON_MNO_FALIGN (OPTION_MD_BASE + 19)
-    { "mno-falign", no_argument, NULL, OPTION_HEXAGON_MNO_FALIGN },
+#define OPTION_HEX_MV2 (OPTION_MD_BASE + 6)
+    { "mv2", no_argument, NULL, OPTION_HEX_MV2 },
+#define OPTION_HEX_MV3 (OPTION_MD_BASE + 7)
+    { "mv3", no_argument, NULL, OPTION_HEX_MV3 },
+#define OPTION_HEX_MV4 (OPTION_MD_BASE + 8)
+    { "mv4", no_argument, NULL, OPTION_HEX_MV4 },
+#define OPTION_HEX_MARCH (OPTION_MD_BASE + 9)
+    { "march", required_argument, NULL, OPTION_HEX_MARCH },
+#define OPTION_HEX_MCPU (OPTION_MD_BASE + 10)
+    { "mcpu", required_argument, NULL, OPTION_HEX_MCPU },
+#define OPTION_HEX_MSORT_SDA (OPTION_MD_BASE + 11)
+    { "msort-sda", no_argument, NULL, OPTION_HEX_MSORT_SDA },
+#define OPTION_HEX_MNO_SORT_SDA (OPTION_MD_BASE + 12)
+    { "mno-sort-sda", no_argument, NULL, OPTION_HEX_MNO_SORT_SDA },
+#define OPTION_HEX_MNO_EXTENDER (OPTION_MD_BASE + 13)
+    { "mno-extender", no_argument, NULL, OPTION_HEX_MNO_EXTENDER },
+#define OPTION_HEX_MNO_PAIRING (OPTION_MD_BASE + 14)
+    { "mno-pairing", no_argument, NULL, OPTION_HEX_MNO_PAIRING },
+#define OPTION_HEX_MNO_PAIRING_B (OPTION_MD_BASE + 15)
+    { "mno-pairing-branch", no_argument, NULL, OPTION_HEX_MNO_PAIRING_B },
+#define OPTION_HEX_MNO_PAIRING_2 (OPTION_MD_BASE + 16)
+    { "mno-pairing-duplex", no_argument, NULL, OPTION_HEX_MNO_PAIRING_2 },
+#define OPTION_HEX_MNO_JUMPS (OPTION_MD_BASE + 17)
+    { "mno-jumps", no_argument, NULL, OPTION_HEX_MNO_JUMPS },
+#define OPTION_HEX_MNO_JUMPS_LONG (OPTION_MD_BASE + 18)
+    { "mno-jumps-long", no_argument, NULL, OPTION_HEX_MNO_JUMPS_LONG },
+#define OPTION_HEX_MNO_FALIGN (OPTION_MD_BASE + 19)
+    { "mno-falign", no_argument, NULL, OPTION_HEX_MNO_FALIGN },
   };
 size_t md_longopts_size = sizeof (md_longopts);
 
@@ -514,13 +515,13 @@ typedef enum _hexagon_relax_state
   {
     /* Matching the respective entries in hexagon_relax_table. */
     HEXAGON_RELAX_NONE = 0,
-    /* Relax state for R_HEXAGON_B7_PCREL. */
+    /* Relax state for R_HEX_B7_PCREL. */
     HEXAGON_RELAX_B7, HEXAGON_RELAX_B7_A,
-    /* Relax state for R_HEXAGON_B9_PCREL. */
+    /* Relax state for R_HEX_B9_PCREL. */
     HEXAGON_RELAX_B9, HEXAGON_RELAX_B9_A,
-    /* Relax state for R_HEXAGON_B13_PCREL. */
+    /* Relax state for R_HEX_B13_PCREL. */
     HEXAGON_RELAX_B13, HEXAGON_RELAX_B13_A,
-    /* Relax state for R_HEXAGON_B15_PCREL. */
+    /* Relax state for R_HEX_B15_PCREL. */
     HEXAGON_RELAX_B15, HEXAGON_RELAX_B15_A,
     /* Other relax state pairs go here. */
     /* Done relaxing. */
@@ -561,22 +562,22 @@ const struct relax_type hexagon_relax_table [] =
     /* Dummy entry. */
     {              0L,                0L,
                     0,  HEXAGON_RELAX_NONE},
-    /* Entries for R_HEXAGON_B7_PCREL. */
+    /* Entries for R_HEX_B7_PCREL. */
     {HEXAGON_RANGE  (9),  -HEXAGON_RANGE (9),
                     0, HEXAGON_RELAX_B7_A},
     {              0L,                0L,
        HEXAGON_INSN_LEN,  HEXAGON_RELAX_DONE},
-    /* Entries for R_HEXAGON_B9_PCREL. */
+    /* Entries for R_HEX_B9_PCREL. */
     {HEXAGON_RANGE (11), -HEXAGON_RANGE (11),
                     0, HEXAGON_RELAX_B9_A},
     {              0L,                0L,
        HEXAGON_INSN_LEN,  HEXAGON_RELAX_DONE},
-    /* Entries for R_HEXAGON_B13_PCREL. */
+    /* Entries for R_HEX_B13_PCREL. */
     {HEXAGON_RANGE (15),  -HEXAGON_RANGE (15),
                     0, HEXAGON_RELAX_B13_A},
     {              0L,                0L,
        HEXAGON_INSN_LEN,  HEXAGON_RELAX_DONE},
-    /* Entries for R_HEXAGON_B15_PCREL. */
+    /* Entries for R_HEX_B15_PCREL. */
     {HEXAGON_RANGE (17),  -HEXAGON_RANGE (17),
                     0, HEXAGON_RELAX_B15_A},
     {              0L,                0L,
@@ -669,7 +670,7 @@ md_parse_option
       hexagon_target_format = "elf32-littlehexagon";
       break;
 
-    case OPTION_HEXAGON_PAIR_INFO:
+    case OPTION_HEX_PAIR_INFO:
       hexagon_pairs_info = TRUE;
       if (!post_stats)
         {
@@ -678,11 +679,11 @@ md_parse_option
         }
       break;
 
-    case OPTION_HEXAGON_FALIGN_MORE_INFO:
+    case OPTION_HEX_FALIGN_MORE_INFO:
       hexagon_falign_more = TRUE;
       /* Fall through. */
 
-    case OPTION_HEXAGON_FALIGN_INFO_NEW:
+    case OPTION_HEX_FALIGN_INFO_NEW:
       hexagon_falign_info = TRUE;
       if (!post_stats)
         {
@@ -691,19 +692,19 @@ md_parse_option
         }
       break;
 
-    case OPTION_HEXAGON_MV2:
-    case OPTION_HEXAGON_MV3:
-    case OPTION_HEXAGON_MV4:
-    case OPTION_HEXAGON_MARCH:
-    case OPTION_HEXAGON_MCPU:
+    case OPTION_HEX_MV2:
+    case OPTION_HEX_MV3:
+    case OPTION_HEX_MV4:
+    case OPTION_HEX_MARCH:
+    case OPTION_HEX_MCPU:
       switch (c)
         {
-          case OPTION_HEXAGON_MV2:
-          case OPTION_HEXAGON_MV3:
-          case OPTION_HEXAGON_MV4:
+          case OPTION_HEX_MV2:
+          case OPTION_HEX_MV3:
+          case OPTION_HEX_MV4:
             /* -mv* options. */
             temp_hexagon_mach_type
-              = hexagon_marchs [c - OPTION_HEXAGON_MV2].march_name_be;
+              = hexagon_marchs [c - OPTION_HEX_MV2].march_name_be;
             break;
 
           default:
@@ -746,43 +747,43 @@ md_parse_option
       }
       break;
 
-    case OPTION_HEXAGON_MSORT_SDA:
+    case OPTION_HEX_MSORT_SDA:
       hexagon_sort_sda = TRUE;
       break;
 
-    case OPTION_HEXAGON_MNO_SORT_SDA:
+    case OPTION_HEX_MNO_SORT_SDA:
       hexagon_sort_sda = FALSE;
       break;
 
-    case OPTION_HEXAGON_NO_2MEMORY:
+    case OPTION_HEX_NO_2MEMORY:
       hexagon_no_dual_memory = TRUE;
       break;
 
-    case OPTION_HEXAGON_MNO_EXTENDER:
+    case OPTION_HEX_MNO_EXTENDER:
       hexagon_extender = FALSE;
       break;
 
-    case OPTION_HEXAGON_MNO_PAIRING:
+    case OPTION_HEX_MNO_PAIRING:
       hexagon_pairing = hexagon_pairing_branch = hexagon_pairing_duplex = FALSE;
       break;
 
-    case OPTION_HEXAGON_MNO_PAIRING_B:
+    case OPTION_HEX_MNO_PAIRING_B:
       hexagon_pairing_branch = FALSE;
       break;
 
-    case OPTION_HEXAGON_MNO_PAIRING_2:
+    case OPTION_HEX_MNO_PAIRING_2:
       hexagon_pairing_duplex = FALSE;
       break;
 
-    case OPTION_HEXAGON_MNO_JUMPS:
+    case OPTION_HEX_MNO_JUMPS:
       hexagon_relax = FALSE;
       break;
 
-    case OPTION_HEXAGON_MNO_JUMPS_LONG:
+    case OPTION_HEX_MNO_JUMPS_LONG:
       hexagon_relax_long = FALSE;
       break;
 
-    case OPTION_HEXAGON_MNO_FALIGN:
+    case OPTION_HEX_MNO_FALIGN:
       hexagon_fetch_align = FALSE;
       break;
 
@@ -1831,6 +1832,8 @@ hexagon_parse_immediate
     operandx = hexagon_operand_find (operand, "ie");
   else if (suffix_type == TLS_IE_GOT)
     operandx = hexagon_operand_find (operand, "iegot");
+  else if (suffix_type == TLS_DTPREL)
+    operandx = hexagon_operand_find (operand, "dtprel");
   else if (suffix_type == TLS_TPREL)
     operandx = hexagon_operand_find (operand, "tprel");
 
@@ -4302,6 +4305,7 @@ hexagon_parse_suffix
       { "GDGOT",  TLS_GD_GOT },
       { "IEGOT",  TLS_IE_GOT }, /* This must precede "IE". */
       { "IE",     TLS_IE },
+      { "DTPREL", TLS_DTPREL },
       { "TPREL",  TLS_TPREL },
     };
   char *cp;
@@ -4407,6 +4411,8 @@ hexagon_cons_fix_new
                       r_type = BFD_RELOC_HEX_IE_32;
                     else if (suffix == TLS_IE_GOT)
                       r_type = BFD_RELOC_HEX_IE_GOT_32;
+                    else if (suffix == TLS_DTPREL)
+                      r_type = BFD_RELOC_HEX_DTPREL_32;
                     else if (suffix == TLS_TPREL)
                       r_type = BFD_RELOC_HEX_TPREL_32;
                   }
@@ -4507,6 +4513,10 @@ md_apply_fix
 	  case BFD_RELOC_HEX_IE_GOT_HI16:
 	  case BFD_RELOC_HEX_IE_GOT_32:
 	  case BFD_RELOC_HEX_IE_GOT_16:
+	  case BFD_RELOC_HEX_DTPREL_LO16:
+	  case BFD_RELOC_HEX_DTPREL_HI16:
+	  case BFD_RELOC_HEX_DTPREL_32:
+	  case BFD_RELOC_HEX_DTPREL_16:
 	  case BFD_RELOC_HEX_TPREL_LO16:
 	  case BFD_RELOC_HEX_TPREL_HI16:
 	  case BFD_RELOC_HEX_TPREL_32:
