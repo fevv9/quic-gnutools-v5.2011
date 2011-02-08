@@ -4694,10 +4694,12 @@ of a 32-bit signed offset to a TLS_index structure in consecutive GOT entries.  
   BFD_RELOC_HEX_GD_GOT_16,
 
 /* TLS initial-executable relocations for
-the lower and the higher 16 bits and all 32 bits of a 32-bit address.  */
+the lower and the higher 16 bits, all 32 bits and the signed lower 16 bits
+of a 32-bit signed offset.  */
   BFD_RELOC_HEX_IE_LO16,
   BFD_RELOC_HEX_IE_HI16,
   BFD_RELOC_HEX_IE_32,
+  BFD_RELOC_HEX_IE_16,
 
 /* GOT-relative TLS initial-executable relocations for
 the lower and the higher 16 bits, all 32 bits and the signed lower 16 bits

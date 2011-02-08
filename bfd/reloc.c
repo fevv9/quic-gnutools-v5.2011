@@ -5428,9 +5428,12 @@ ENUMX
   BFD_RELOC_HEX_IE_HI16
 ENUMX
   BFD_RELOC_HEX_IE_32
+ENUMX
+  BFD_RELOC_HEX_IE_16
 ENUMDOC
   TLS initial-executable relocations for
-  the lower and the higher 16 bits and all 32 bits of a 32-bit address.
+  the lower and the higher 16 bits, all 32 bits and the signed lower 16 bits
+  of a 32-bit signed offset.
 
 ENUM
   BFD_RELOC_HEX_IE_GOT_LO16

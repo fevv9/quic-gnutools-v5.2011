@@ -1579,8 +1579,8 @@ get_hexagon_dynamic_type (unsigned long type)
 {
   switch (type)
     {
-    case DT_HEXAGON_SYMSZ: return "HEXAGON_SYMSZ";
-    case DT_HEXAGON_VER:   return "HEXAGON_VER";
+    case DT_HEX_SYMSZ: return "HEX_SYMSZ";
+    case DT_HEX_VER:   return "HEX_VER";
     default:
       return NULL;
     }
@@ -2458,12 +2458,12 @@ get_machine_flags (unsigned e_flags, unsigned e_machine)
 	  break;
 
         case EM_HEXAGON:
-          switch (EF_HEXAGON_MACH_VER (e_flags))
+          switch (EF_HEX_MACH_VER (e_flags))
             {
-	      case EF_HEXAGON_MACH_V1: strcat (buf, ", V1"); break;
-	      case EF_HEXAGON_MACH_V2: strcat (buf, ", V2"); break;
-	      case EF_HEXAGON_MACH_V3: strcat (buf, ", V3"); break;
-	      case EF_HEXAGON_MACH_V4: strcat (buf, ", V4"); break;
+	      case EF_HEX_MACH_V1: strcat (buf, ", V1"); break;
+	      case EF_HEX_MACH_V2: strcat (buf, ", V2"); break;
+	      case EF_HEX_MACH_V3: strcat (buf, ", V3"); break;
+	      case EF_HEX_MACH_V4: strcat (buf, ", V4"); break;
             }
           break;
 
@@ -2590,9 +2590,9 @@ get_hexagon_segment_type
 {
   switch (type)
     {
-      /* PT_HEXAGON_EBI, as the default memory type, is the same as PT_LOAD. */
-      case PT_HEXAGON_SMI:       return "HEXAGON_SMI";
-      case PT_HEXAGON_TCM:       return "HEXAGON_TCM";
+      /* PT_HEX_EBI, as the default memory type, is the same as PT_LOAD. */
+      case PT_HEX_SMI:       return "HEX_SMI";
+      case PT_HEX_TCM:       return "HEX_TCM";
     }
 
   return NULL;
@@ -5890,12 +5890,12 @@ dynamic_section_hexagon_val (Elf_Internal_Dyn * entry)
 {
   switch (entry->d_tag)
     {
-    case DT_HEXAGON_SYMSZ:
+    case DT_HEX_SYMSZ:
       print_vma (entry->d_un.d_ptr, UNSIGNED);
       printf (" (bytes)");
       break;
 
-    case DT_HEXAGON_VER:
+    case DT_HEX_VER:
       print_vma (entry->d_un.d_ptr, UNSIGNED);
       break;
 
@@ -8126,7 +8126,7 @@ is_32bit_abs_reloc (unsigned int reloc_type)
     case EM_PPC:
       return reloc_type == 1; /* R_PPC_ADDR32.  */
     case EM_HEXAGON:
-      return reloc_type == 6; /* R_HEXAGON_32.  */
+      return reloc_type == 6; /* R_HEX_32.  */
     case EM_S370:
       return reloc_type == 1; /* R_I370_ADDR31.  */
     case EM_S390_OLD:
