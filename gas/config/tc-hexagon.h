@@ -177,8 +177,8 @@ extern long hexagon_relax_frag (segT segment, fragS *fragP, long stretch);
 
 #ifdef OBJ_ELF
 #define ELF_TC_SPECIAL_SECTIONS \
-  { ".sdata", SHT_PROGBITS, SHF_ALLOC + SHF_WRITE + SHF_HEXAGON_GPREL }, \
-  { ".sbss",  SHT_NOBITS,   SHF_ALLOC + SHF_WRITE + SHF_HEXAGON_GPREL },
+  { ".sdata", SHT_PROGBITS, SHF_ALLOC + SHF_WRITE + SHF_HEX_GPREL }, \
+  { ".sbss",  SHT_NOBITS,   SHF_ALLOC + SHF_WRITE + SHF_HEX_GPREL },
 #endif
 
 /* The upper limit is arbitrarily set to 17 because that is what

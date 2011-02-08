@@ -20,8 +20,8 @@
    along with GAS or GDB; see the file COPYING.	If not, write to
    the Free Software Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.  */
 
-#ifndef OPCODES_HEXAGON_H
-#define OPCODES_HEXAGON_H 1
+#ifndef OPCODE_HEXAGON_H
+#define OPCODE_HEXAGON_H 1
 
 /* List of the various cpu types.
    The tables currently use bit masks to say whether the instruction or
@@ -490,4 +490,4 @@ extern const hexagon_operand *hexagon_operand_find
 /* We don't put the packet header in the opcode table */
 extern const hexagon_opcode hexagon_packet_header_opcode;
 
-#endif /* OPCODES_HEXAGON_H */
+#endif /* OPCODE_HEXAGON_H */

@@ -191,7 +191,7 @@ typedef struct
 static const hexagon_trampoline hexagon_trampolines [] =
   {
     {
-      R_HEXAGON_HL16, 2 * sizeof (hexagon_insn), 7,
+      R_HEX_HL16, 2 * sizeof (hexagon_insn), 7,
       {
         /* This trampoline requires 1 special relocation. */
         0xbffd7f1d, /*  { sp = add (sp, #-8)      */
@@ -235,199 +235,199 @@ static const hexagon_insn hexagon_plt_entry [PLT_ENTRY_LENGTH] =
 static reloc_howto_type hexagon_elf_howto_table [] =
 {
   /* This relocation does nothing.  */
-  EMPTY_HOWTO (R_HEXAGON_NONE),
+  EMPTY_HOWTO (R_HEX_NONE),
   /* PC-relative 22-bit branch. */
-  HOWTO (R_HEXAGON_B22_PCREL, 2, 2, 24, TRUE, 0, complain_overflow_signed,
-	 hexagon_elf_reloc, "R_HEXAGON_B22_PCREL", FALSE, -1L, 0x01ff3ffe, FALSE),
+  HOWTO (R_HEX_B22_PCREL, 2, 2, 24, TRUE, 0, complain_overflow_signed,
+	 hexagon_elf_reloc, "R_HEX_B22_PCREL", FALSE, -1L, 0x01ff3ffe, FALSE),
   /* PC-relative 15-bit branch. */
-  HOWTO (R_HEXAGON_B15_PCREL, 2, 2, 17, TRUE, 0, complain_overflow_signed,
-	 hexagon_elf_reloc, "R_HEXAGON_B15_PCREL", FALSE, -1L, 0x00df20fe, FALSE),
+  HOWTO (R_HEX_B15_PCREL, 2, 2, 17, TRUE, 0, complain_overflow_signed,
+	 hexagon_elf_reloc, "R_HEX_B15_PCREL", FALSE, -1L, 0x00df20fe, FALSE),
   /* PC-relative 7-bit branch. */
-  HOWTO (R_HEXAGON_B7_PCREL, 2, 2, 9, TRUE, 0, complain_overflow_signed,
-	 hexagon_elf_reloc, "R_HEXAGON_B7_PCREL", FALSE, -1L, 0x00001f18, FALSE),
+  HOWTO (R_HEX_B7_PCREL, 2, 2, 9, TRUE, 0, complain_overflow_signed,
+	 hexagon_elf_reloc, "R_HEX_B7_PCREL", FALSE, -1L, 0x00001f18, FALSE),
   /* Low 16-bit of a 32-bit address. */
-  HOWTO (R_HEXAGON_LO16, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
-	 hexagon_elf_reloc, "R_HEXAGON_LO16", FALSE, -1L, 0x00c03fff, FALSE),
+  HOWTO (R_HEX_LO16, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
+	 hexagon_elf_reloc, "R_HEX_LO16", FALSE, -1L, 0x00c03fff, FALSE),
   /* High 16-bit of a 32-bit address. */
-  HOWTO (R_HEXAGON_HI16, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
-	 hexagon_elf_reloc, "R_HEXAGON_HI16", FALSE, -1L, 0x00c03fff, FALSE),
+  HOWTO (R_HEX_HI16, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
+	 hexagon_elf_reloc, "R_HEX_HI16", FALSE, -1L, 0x00c03fff, FALSE),
   /* 32-bit address. */
-  HOWTO (R_HEXAGON_32, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
-	 bfd_elf_generic_reloc, "R_HEXAGON_32", FALSE, 0, 0xffffffff, FALSE),
+  HOWTO (R_HEX_32, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
+	 bfd_elf_generic_reloc, "R_HEX_32", FALSE, 0, 0xffffffff, FALSE),
   /* 16-bit address. */
-  HOWTO (R_HEXAGON_16, 0, 1, 16, FALSE, 0, complain_overflow_bitfield,
-	 bfd_elf_generic_reloc, "R_HEXAGON_16", FALSE, 0, 0xffff, FALSE),
+  HOWTO (R_HEX_16, 0, 1, 16, FALSE, 0, complain_overflow_bitfield,
+	 bfd_elf_generic_reloc, "R_HEX_16", FALSE, 0, 0xffff, FALSE),
   /* 8-bit address. */
-  HOWTO (R_HEXAGON_8, 0, 0, 8, FALSE, 0, complain_overflow_bitfield,
-	 bfd_elf_generic_reloc, "R_HEXAGON_8", FALSE, 0, 0xff, FALSE),
+  HOWTO (R_HEX_8, 0, 0, 8, FALSE, 0, complain_overflow_bitfield,
+	 bfd_elf_generic_reloc, "R_HEX_8", FALSE, 0, 0xff, FALSE),
   /* GP-relative offset for bytes. */
-  HOWTO (R_HEXAGON_GPREL16_0, 0, 2, 16, FALSE, 0, complain_overflow_bitfield,
-	 hexagon_elf_reloc, "R_HEXAGON_GPREL16_0", FALSE, -1L, 0x061f2ff, FALSE),
+  HOWTO (R_HEX_GPREL16_0, 0, 2, 16, FALSE, 0, complain_overflow_bitfield,
+	 hexagon_elf_reloc, "R_HEX_GPREL16_0", FALSE, -1L, 0x061f2ff, FALSE),
   /* GP-relative offset for half-words. */
-  HOWTO (R_HEXAGON_GPREL16_1, 1, 2, 17, FALSE, 0, complain_overflow_bitfield,
-	 hexagon_elf_reloc, "R_HEXAGON_GPREL16_1", FALSE, -1L, 0x061f2ff, FALSE),
+  HOWTO (R_HEX_GPREL16_1, 1, 2, 17, FALSE, 0, complain_overflow_bitfield,
+	 hexagon_elf_reloc, "R_HEX_GPREL16_1", FALSE, -1L, 0x061f2ff, FALSE),
   /* GP-relative offset for words. */
-  HOWTO (R_HEXAGON_GPREL16_2, 2, 2, 18, FALSE, 0, complain_overflow_bitfield,
-	 hexagon_elf_reloc, "R_HEXAGON_GPREL16_2", FALSE, -1L, 0x061f2ff, FALSE),		/* pcrel_offset  */
+  HOWTO (R_HEX_GPREL16_2, 2, 2, 18, FALSE, 0, complain_overflow_bitfield,
+	 hexagon_elf_reloc, "R_HEX_GPREL16_2", FALSE, -1L, 0x061f2ff, FALSE),		/* pcrel_offset  */
   /* GP-relative offset for double-words. */
-  HOWTO (R_HEXAGON_GPREL16_3, 3, 2, 19, FALSE, 0, complain_overflow_bitfield,
-	 hexagon_elf_reloc, "R_HEXAGON_GPREL16_3", FALSE, -1L, 0x061f2ff, FALSE),
+  HOWTO (R_HEX_GPREL16_3, 3, 2, 19, FALSE, 0, complain_overflow_bitfield,
+	 hexagon_elf_reloc, "R_HEX_GPREL16_3", FALSE, -1L, 0x061f2ff, FALSE),
   /* High and low 16-bit of a 32-bit number applied to 2 insns back-to-back. */
-  HOWTO (R_HEXAGON_HL16, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
-	 hexagon_elf_reloc, "R_HEXAGON_HL16", FALSE, -1L, 0x00c03fff, FALSE),
+  HOWTO (R_HEX_HL16, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
+	 hexagon_elf_reloc, "R_HEX_HL16", FALSE, -1L, 0x00c03fff, FALSE),
   /* PC-relative 13-bit branch. */
-  HOWTO (R_HEXAGON_B13_PCREL, 2, 2, 15, TRUE, 0, complain_overflow_signed,
-	 hexagon_elf_reloc, "R_HEXAGON_B13_PCREL", FALSE, -1L, 0x00202ffe, FALSE),
+  HOWTO (R_HEX_B13_PCREL, 2, 2, 15, TRUE, 0, complain_overflow_signed,
+	 hexagon_elf_reloc, "R_HEX_B13_PCREL", FALSE, -1L, 0x00202ffe, FALSE),
   /* PC-relative 9-bit branch. */
-  HOWTO (R_HEXAGON_B9_PCREL, 2, 2, 11, TRUE, 0, complain_overflow_signed,
-	 hexagon_elf_reloc, "R_HEXAGON_B9_PCREL", FALSE, -1L, 0x00c000ff, FALSE),
+  HOWTO (R_HEX_B9_PCREL, 2, 2, 11, TRUE, 0, complain_overflow_signed,
+	 hexagon_elf_reloc, "R_HEX_B9_PCREL", FALSE, -1L, 0x00c000ff, FALSE),
   /* PC-relative 32-bit extended branch. */
-  HOWTO (R_HEXAGON_B32_PCREL_X, 6, 2, 32, TRUE, 0, complain_overflow_signed,
-	 hexagon_elf_reloc, "R_HEXAGON_B32_PCREL_X", FALSE, ~0x3f, 0x0fff3fff, FALSE),
+  HOWTO (R_HEX_B32_PCREL_X, 6, 2, 32, TRUE, 0, complain_overflow_signed,
+	 hexagon_elf_reloc, "R_HEX_B32_PCREL_X", FALSE, ~0x3f, 0x0fff3fff, FALSE),
   /* Extended 32-bit address. */
-  HOWTO (R_HEXAGON_32_6_X, 6, 2, 32, FALSE, 0, complain_overflow_bitfield,
-	 hexagon_elf_reloc, "R_HEXAGON_32_6_X", FALSE, ~0x3f, 0x0fff3fff, FALSE),
+  HOWTO (R_HEX_32_6_X, 6, 2, 32, FALSE, 0, complain_overflow_bitfield,
+	 hexagon_elf_reloc, "R_HEX_32_6_X", FALSE, ~0x3f, 0x0fff3fff, FALSE),
   /* Extended PC-relative 22-bit branch. */
-  HOWTO (R_HEXAGON_B22_PCREL_X, 2, 2, 6, TRUE, 0, complain_overflow_signed,
-	 hexagon_elf_reloc, "R_HEXAGON_B22_PCREL_X", FALSE, 0x3f, 0x01ff3ffe, FALSE),
+  HOWTO (R_HEX_B22_PCREL_X, 2, 2, 6, TRUE, 0, complain_overflow_signed,
+	 hexagon_elf_reloc, "R_HEX_B22_PCREL_X", FALSE, 0x3f, 0x01ff3ffe, FALSE),
   /* Extended PC-relative 15-bit branch. */
-  HOWTO (R_HEXAGON_B15_PCREL_X, 2, 2, 6, TRUE, 0, complain_overflow_signed,
-         hexagon_elf_reloc, "R_HEXAGON_B15_PCREL_X", FALSE, 0x3f, 0x00df20fe, FALSE),
+  HOWTO (R_HEX_B15_PCREL_X, 2, 2, 6, TRUE, 0, complain_overflow_signed,
+         hexagon_elf_reloc, "R_HEX_B15_PCREL_X", FALSE, 0x3f, 0x00df20fe, FALSE),
   /* An extended relative 13-bit branch. */
-  HOWTO (R_HEXAGON_B13_PCREL_X, 2, 2, 6, TRUE, 0, complain_overflow_signed,
-         hexagon_elf_reloc, "R_HEXAGON_B13_PCREL_X", FALSE, 0x3f, 0x00202ffe, FALSE),
+  HOWTO (R_HEX_B13_PCREL_X, 2, 2, 6, TRUE, 0, complain_overflow_signed,
+         hexagon_elf_reloc, "R_HEX_B13_PCREL_X", FALSE, 0x3f, 0x00202ffe, FALSE),
   /* Extended PC-relative 9-bit branch. */
-  HOWTO (R_HEXAGON_B9_PCREL_X, 2, 2, 6, TRUE, 0, complain_overflow_signed,
-         hexagon_elf_reloc, "R_HEXAGON_B9_PCREL_X", FALSE, 0x3f, 0x00c000ff, FALSE),
+  HOWTO (R_HEX_B9_PCREL_X, 2, 2, 6, TRUE, 0, complain_overflow_signed,
+         hexagon_elf_reloc, "R_HEX_B9_PCREL_X", FALSE, 0x3f, 0x00c000ff, FALSE),
   /* Extended PC-relative 7-bit branch. */
-  HOWTO (R_HEXAGON_B7_PCREL_X, 2, 2, 6, TRUE, 0, complain_overflow_signed,
-         hexagon_elf_reloc, "R_HEXAGON_B7_PCREL_X", FALSE, 0x3f, 0x00001f18, FALSE),
+  HOWTO (R_HEX_B7_PCREL_X, 2, 2, 6, TRUE, 0, complain_overflow_signed,
+         hexagon_elf_reloc, "R_HEX_B7_PCREL_X", FALSE, 0x3f, 0x00001f18, FALSE),
   /* Extended signed 16-bit address. */
-  HOWTO (R_HEXAGON_16_X, 0, 2, 6, FALSE, 0, complain_overflow_bitfield,
-         hexagon_elf_reloc, "R_HEXAGON_16_X", FALSE, 0x3f, 0, FALSE),
+  HOWTO (R_HEX_16_X, 0, 2, 6, FALSE, 0, complain_overflow_bitfield,
+         hexagon_elf_reloc, "R_HEX_16_X", FALSE, 0x3f, 0, FALSE),
   /* Extended signed 12-bit address. */
-  HOWTO (R_HEXAGON_12_X, 0, 2, 6, FALSE, 0, complain_overflow_bitfield,
-         hexagon_elf_reloc, "R_HEXAGON_12_X", FALSE, 0, 0, FALSE),
+  HOWTO (R_HEX_12_X, 0, 2, 6, FALSE, 0, complain_overflow_bitfield,
+         hexagon_elf_reloc, "R_HEX_12_X", FALSE, 0, 0, FALSE),
   /* Extended 11-bit address for bytes. */
-  HOWTO (R_HEXAGON_11_X, 0, 2, 6, FALSE, 0, complain_overflow_bitfield,
-         hexagon_elf_reloc, "R_HEXAGON_11_X", FALSE, 0x3f, 0, FALSE),
+  HOWTO (R_HEX_11_X, 0, 2, 6, FALSE, 0, complain_overflow_bitfield,
+         hexagon_elf_reloc, "R_HEX_11_X", FALSE, 0x3f, 0, FALSE),
   /* Extended signed 10-bit address. */
-  HOWTO (R_HEXAGON_10_X, 0, 2, 6, FALSE, 0, complain_overflow_bitfield,
-         hexagon_elf_reloc, "R_HEXAGON_10_X", FALSE, 0x3f, 0, FALSE),
+  HOWTO (R_HEX_10_X, 0, 2, 6, FALSE, 0, complain_overflow_bitfield,
+         hexagon_elf_reloc, "R_HEX_10_X", FALSE, 0x3f, 0, FALSE),
   /* Extended signed 9-bit address. */
-  HOWTO (R_HEXAGON_9_X, 0, 2, 6, FALSE, 0, complain_overflow_bitfield,
-         hexagon_elf_reloc, "R_HEXAGON_9_X", FALSE, 0x3f, 0, FALSE),
+  HOWTO (R_HEX_9_X, 0, 2, 6, FALSE, 0, complain_overflow_bitfield,
+         hexagon_elf_reloc, "R_HEX_9_X", FALSE, 0x3f, 0, FALSE),
   /* Extended signed 8-bit address. */
-  HOWTO (R_HEXAGON_8_X, 0, 2, 6, FALSE, 0, complain_overflow_bitfield,
-         hexagon_elf_reloc, "R_HEXAGON_8_X", FALSE, 0x3f, 0, FALSE),
+  HOWTO (R_HEX_8_X, 0, 2, 6, FALSE, 0, complain_overflow_bitfield,
+         hexagon_elf_reloc, "R_HEX_8_X", FALSE, 0x3f, 0, FALSE),
   /* Extended signed 7-bit address. */
-  HOWTO (R_HEXAGON_7_X, 0, 2, 6, FALSE, 0, complain_overflow_bitfield,
-         hexagon_elf_reloc, "R_HEXAGON_7_X", FALSE, 0x3f, 0, FALSE),
+  HOWTO (R_HEX_7_X, 0, 2, 6, FALSE, 0, complain_overflow_bitfield,
+         hexagon_elf_reloc, "R_HEX_7_X", FALSE, 0x3f, 0, FALSE),
   /* Extended signed 6-bit address. */
-  HOWTO (R_HEXAGON_6_X, 0, 2, 6, FALSE, 0, complain_overflow_bitfield,
-         hexagon_elf_reloc, "R_HEXAGON_6_X", FALSE, 0x3f, 0, FALSE),
+  HOWTO (R_HEX_6_X, 0, 2, 6, FALSE, 0, complain_overflow_bitfield,
+         hexagon_elf_reloc, "R_HEX_6_X", FALSE, 0x3f, 0, FALSE),
   /* 32-bit PC-relative address. */
-  HOWTO (R_HEXAGON_32_PCREL, 0, 2, 32, TRUE, 0, complain_overflow_bitfield,
-         bfd_elf_generic_reloc, "R_HEXAGON_32_PCREL", FALSE, 0, 0xffffffff, TRUE),
+  HOWTO (R_HEX_32_PCREL, 0, 2, 32, TRUE, 0, complain_overflow_bitfield,
+         bfd_elf_generic_reloc, "R_HEX_32_PCREL", FALSE, 0, 0xffffffff, TRUE),
   /* Copy initial value from DSO. */
-  HOWTO (R_HEXAGON_COPY, 0, 2, 32, FALSE, 0, complain_overflow_dont,
-         bfd_elf_generic_reloc, "R_HEXAGON_COPY", FALSE, 0, 0xffffffff, FALSE),
+  HOWTO (R_HEX_COPY, 0, 2, 32, FALSE, 0, complain_overflow_dont,
+         bfd_elf_generic_reloc, "R_HEX_COPY", FALSE, 0, 0xffffffff, FALSE),
   /* GOT entry. */
-  HOWTO (R_HEXAGON_GLOB_DAT, 0, 2, 32, FALSE, 0, complain_overflow_dont,
-         bfd_elf_generic_reloc, "R_HEXAGON_GLOB_DAT", FALSE, 0, 0xffffffff, FALSE),
+  HOWTO (R_HEX_GLOB_DAT, 0, 2, 32, FALSE, 0, complain_overflow_dont,
+         bfd_elf_generic_reloc, "R_HEX_GLOB_DAT", FALSE, 0, 0xffffffff, FALSE),
   /* GOT entry for a PLT entry. */
-  HOWTO (R_HEXAGON_JMP_SLOT, 0, 2, 32, FALSE, 0, complain_overflow_dont,
-         bfd_elf_generic_reloc, "R_HEXAGON_JMP_SLOT", FALSE, 0, 0xffffffff, FALSE),
+  HOWTO (R_HEX_JMP_SLOT, 0, 2, 32, FALSE, 0, complain_overflow_dont,
+         bfd_elf_generic_reloc, "R_HEX_JMP_SLOT", FALSE, 0, 0xffffffff, FALSE),
   /* 32-bit image-relative address. */
-  HOWTO (R_HEXAGON_RELATIVE, 0, 2, 32, FALSE, 0, complain_overflow_dont,
-         bfd_elf_generic_reloc, "R_HEXAGON_RELATIVE", FALSE, 0, 0xffffffff, FALSE),
+  HOWTO (R_HEX_RELATIVE, 0, 2, 32, FALSE, 0, complain_overflow_dont,
+         bfd_elf_generic_reloc, "R_HEX_RELATIVE", FALSE, 0, 0xffffffff, FALSE),
   /* PC-relative 22-bit branch to a PLT entry. */
-  HOWTO (R_HEXAGON_PLT_B22_PCREL, 2, 2, 22, TRUE, 0, complain_overflow_signed,
-         hexagon_elf_reloc, "R_HEXAGON_PLT_B22_PCREL", FALSE, 0, 0x01ff3ffe, FALSE),
+  HOWTO (R_HEX_PLT_B22_PCREL, 2, 2, 22, TRUE, 0, complain_overflow_signed,
+         hexagon_elf_reloc, "R_HEX_PLT_B22_PCREL", FALSE, 0, 0x01ff3ffe, FALSE),
   /* Low 16-bit of a 32-bit offset from GOT. */
-  HOWTO (R_HEXAGON_GOTREL_LO16, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
-         hexagon_elf_reloc, "R_HEXAGON_GOTREL_LO16", FALSE, 0, 0x00c03fff, FALSE),
+  HOWTO (R_HEX_GOTREL_LO16, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
+         hexagon_elf_reloc, "R_HEX_GOTREL_LO16", FALSE, 0, 0x00c03fff, FALSE),
   /* High 16-bit of a 32-bit offset from GOT. */
-  HOWTO (R_HEXAGON_GOTREL_HI16, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
-         hexagon_elf_reloc, "R_HEXAGON_GOTREL_HI16", FALSE, 0, 0x00c03fff, FALSE),
+  HOWTO (R_HEX_GOTREL_HI16, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
+         hexagon_elf_reloc, "R_HEX_GOTREL_HI16", FALSE, 0, 0x00c03fff, FALSE),
   /* 32-bit offset from GOT. */
-  HOWTO (R_HEXAGON_GOTREL_32, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
-         bfd_elf_generic_reloc, "R_HEXAGON_GOTREL_32", FALSE, 0, 0xffffffff, FALSE),
+  HOWTO (R_HEX_GOTREL_32, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
+         bfd_elf_generic_reloc, "R_HEX_GOTREL_32", FALSE, 0, 0xffffffff, FALSE),
   /* Low 16-bit of a 32-bit offset of a GOT entry. */
-  HOWTO (R_HEXAGON_GOT_LO16, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
-         hexagon_elf_reloc, "R_HEXAGON_GOT_LO16", FALSE, 0, 0x00c03fff, FALSE),
+  HOWTO (R_HEX_GOT_LO16, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
+         hexagon_elf_reloc, "R_HEX_GOT_LO16", FALSE, 0, 0x00c03fff, FALSE),
   /* High 16-bit of a 32-bit offset of a GOT entry. */
-  HOWTO (R_HEXAGON_GOT_HI16, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
-         hexagon_elf_reloc, "R_HEXAGON_GOT_HI16", FALSE, 0, 0x00c03fff, FALSE),
+  HOWTO (R_HEX_GOT_HI16, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
+         hexagon_elf_reloc, "R_HEX_GOT_HI16", FALSE, 0, 0x00c03fff, FALSE),
   /* 32-bit offset of a GOT entry. */
-  HOWTO (R_HEXAGON_GOT_32, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
-         bfd_elf_generic_reloc, "R_HEXAGON_GOT_32", FALSE, 0, 0xffffffff, FALSE),
+  HOWTO (R_HEX_GOT_32, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
+         bfd_elf_generic_reloc, "R_HEX_GOT_32", FALSE, 0, 0xffffffff, FALSE),
   /* 16-bit offset of a GOT entry. */
-  HOWTO (R_HEXAGON_GOT_16, 0, 2, 16, FALSE, 0, complain_overflow_signed,
-         hexagon_elf_reloc, "R_HEXAGON_GOT_16", FALSE, 0, 0x00c03fff, FALSE),
+  HOWTO (R_HEX_GOT_16, 0, 2, 16, FALSE, 0, complain_overflow_signed,
+         hexagon_elf_reloc, "R_HEX_GOT_16", FALSE, 0, 0x00c03fff, FALSE),
   /* 32-bit TLS module ID. */
-  HOWTO (R_HEXAGON_DTPMOD_32, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
-         bfd_elf_generic_reloc, "R_HEXAGON_DTPMOD_32", FALSE, 0, 0xffffffff, FALSE),
+  HOWTO (R_HEX_DTPMOD_32, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
+         bfd_elf_generic_reloc, "R_HEX_DTPMOD_32", FALSE, 0, 0xffffffff, FALSE),
   /* Low 16-bit of a 32-bit TLS symbol offset. */
-  HOWTO (R_HEXAGON_DTPREL_LO16, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
-         bfd_elf_generic_reloc, "R_HEXAGON_DTPREL_LO16", FALSE, 0, 0x00c03fff, FALSE),
+  HOWTO (R_HEX_DTPREL_LO16, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
+         bfd_elf_generic_reloc, "R_HEX_DTPREL_LO16", FALSE, 0, 0x00c03fff, FALSE),
   /* High 16-bit of a 32-bit TLS symbol offset. */
-  HOWTO (R_HEXAGON_DTPREL_HI16, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
-         bfd_elf_generic_reloc, "R_HEXAGON_DTPREL_HI16", FALSE, 0, 0x00c03fff, FALSE),
+  HOWTO (R_HEX_DTPREL_HI16, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
+         bfd_elf_generic_reloc, "R_HEX_DTPREL_HI16", FALSE, 0, 0x00c03fff, FALSE),
   /* 32-bit TLS symbol offset. */
-  HOWTO (R_HEXAGON_DTPREL_32, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
-         bfd_elf_generic_reloc, "R_HEXAGON_DTPREL_32", FALSE, 0, 0xffffffff, FALSE),
+  HOWTO (R_HEX_DTPREL_32, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
+         bfd_elf_generic_reloc, "R_HEX_DTPREL_32", FALSE, 0, 0xffffffff, FALSE),
   /* 16-bit TLS symbol offset. */
-  HOWTO (R_HEXAGON_DTPREL_16, 0, 2, 16, FALSE, 0, complain_overflow_signed,
-         bfd_elf_generic_reloc, "R_HEXAGON_DTPREL_16", FALSE, 0, 0x00c03fff, FALSE),
+  HOWTO (R_HEX_DTPREL_16, 0, 2, 16, FALSE, 0, complain_overflow_signed,
+         bfd_elf_generic_reloc, "R_HEX_DTPREL_16", FALSE, 0, 0x00c03fff, FALSE),
   /* PC-relative 22-bit branch to the TLS PLT entry. */
-  HOWTO (R_HEXAGON_GD_PLT_B22_PCREL, 2, 2, 22, TRUE, 0, complain_overflow_signed,
-         hexagon_elf_reloc, "R_HEXAGON_GD_PLT_B22_PCREL", FALSE, 0, 0x01ff3ffe, FALSE),
+  HOWTO (R_HEX_GD_PLT_B22_PCREL, 2, 2, 22, TRUE, 0, complain_overflow_signed,
+         hexagon_elf_reloc, "R_HEX_GD_PLT_B22_PCREL", FALSE, 0, 0x01ff3ffe, FALSE),
   /* Low 16-bit of a 32-bit offset of GOT entries for a TLS GD descriptor. */
-  HOWTO (R_HEXAGON_GD_GOT_LO16, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
-         hexagon_elf_reloc, "R_HEXAGON_GD_GOT_LO16", FALSE, 0, 0x00c03fff, FALSE),
+  HOWTO (R_HEX_GD_GOT_LO16, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
+         hexagon_elf_reloc, "R_HEX_GD_GOT_LO16", FALSE, 0, 0x00c03fff, FALSE),
   /* High 16-bit of a 32-bit offset of GOT entries for a TLS GD descriptor. */
-  HOWTO (R_HEXAGON_GD_GOT_HI16, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
-         hexagon_elf_reloc, "R_HEXAGON_GD_GOT_HI16", FALSE, 0, 0x00c03fff, FALSE),
+  HOWTO (R_HEX_GD_GOT_HI16, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
+         hexagon_elf_reloc, "R_HEX_GD_GOT_HI16", FALSE, 0, 0x00c03fff, FALSE),
   /* 32-bit offset of GOT entries for a TLS GD descriptor. */
-  HOWTO (R_HEXAGON_GD_GOT_32, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
-         bfd_elf_generic_reloc, "R_HEXAGON_GD_GOT_32", FALSE, 0, 0xffffffff, FALSE),
+  HOWTO (R_HEX_GD_GOT_32, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
+         bfd_elf_generic_reloc, "R_HEX_GD_GOT_32", FALSE, 0, 0xffffffff, FALSE),
   /* 16-bit offset of GOT entries for a TLS GD descriptor. */
-  HOWTO (R_HEXAGON_GD_GOT_16, 0, 2, 16, FALSE, 0, complain_overflow_signed,
-         hexagon_elf_reloc, "R_HEXAGON_GD_GOT_16", FALSE, 0, 0x00c03fff, FALSE),
+  HOWTO (R_HEX_GD_GOT_16, 0, 2, 16, FALSE, 0, complain_overflow_signed,
+         hexagon_elf_reloc, "R_HEX_GD_GOT_16", FALSE, 0, 0x00c03fff, FALSE),
   /* Low 16-bit of a 32-bit address of a GOT entry for a TLS IE symbol. */
-  HOWTO (R_HEXAGON_IE_LO16, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
-         hexagon_elf_reloc, "R_HEXAGON_IE_LO16", FALSE, 0, 0x00c03fff, FALSE),
+  HOWTO (R_HEX_IE_LO16, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
+         hexagon_elf_reloc, "R_HEX_IE_LO16", FALSE, 0, 0x00c03fff, FALSE),
   /* High 16-bit of a 32-bit address of GOT entry for a TLS IE symbol. */
-  HOWTO (R_HEXAGON_IE_HI16, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
-         hexagon_elf_reloc, "R_HEXAGON_IE_HI16", FALSE, 0, 0x00c03fff, FALSE),
+  HOWTO (R_HEX_IE_HI16, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
+         hexagon_elf_reloc, "R_HEX_IE_HI16", FALSE, 0, 0x00c03fff, FALSE),
   /* 32-bit address of GOT entry for a TLS IE symbol. */
-  HOWTO (R_HEXAGON_IE_32, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
-         bfd_elf_generic_reloc, "R_HEXAGON_IE_32", FALSE, 0, 0xffffffff, FALSE),
+  HOWTO (R_HEX_IE_32, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
+         bfd_elf_generic_reloc, "R_HEX_IE_32", FALSE, 0, 0xffffffff, FALSE),
   /* Low 16-bit of a 32-bit offset of a GOT entry for a TLS IE symbol. */
-  HOWTO (R_HEXAGON_IE_GOT_LO16, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
-         hexagon_elf_reloc, "R_HEXAGON_IE_GOT_LO16", FALSE, 0, 0x00c03fff, FALSE),
+  HOWTO (R_HEX_IE_GOT_LO16, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
+         hexagon_elf_reloc, "R_HEX_IE_GOT_LO16", FALSE, 0, 0x00c03fff, FALSE),
   /* High 16-bit of a 32-bit offset of GOT entry for a TLS IE symbol. */
-  HOWTO (R_HEXAGON_IE_GOT_HI16, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
-         hexagon_elf_reloc, "R_HEXAGON_IE_GOT_HI16", FALSE, 0, 0x00c03fff, FALSE),
+  HOWTO (R_HEX_IE_GOT_HI16, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
+         hexagon_elf_reloc, "R_HEX_IE_GOT_HI16", FALSE, 0, 0x00c03fff, FALSE),
   /* 32-bit offset of GOT entry for a TLS IE symbol. */
-  HOWTO (R_HEXAGON_IE_GOT_32, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
-         bfd_elf_generic_reloc, "R_HEXAGON_IE_GOT_32", FALSE, 0, 0xffffffff, FALSE),
+  HOWTO (R_HEX_IE_GOT_32, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
+         bfd_elf_generic_reloc, "R_HEX_IE_GOT_32", FALSE, 0, 0xffffffff, FALSE),
   /* 16-bit offset of GOT entry for a TLS IE symbol. */
-  HOWTO (R_HEXAGON_IE_GOT_16, 0, 2, 16, FALSE, 0, complain_overflow_signed,
-         hexagon_elf_reloc, "R_HEXAGON_IE_GOT_16", FALSE, 0, 0x00c03fff, FALSE),
+  HOWTO (R_HEX_IE_GOT_16, 0, 2, 16, FALSE, 0, complain_overflow_signed,
+         hexagon_elf_reloc, "R_HEX_IE_GOT_16", FALSE, 0, 0x00c03fff, FALSE),
   /* Low 16-bit of a 32-bit offset from the TP. */
-  HOWTO (R_HEXAGON_TPREL_LO16, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
-         hexagon_elf_reloc, "R_HEXAGON_TPREL_LO16", FALSE, 0, 0x00c03fff, FALSE),
+  HOWTO (R_HEX_TPREL_LO16, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
+         hexagon_elf_reloc, "R_HEX_TPREL_LO16", FALSE, 0, 0x00c03fff, FALSE),
   /* High 16-bit of a 32-bit offset from the TP. */
-  HOWTO (R_HEXAGON_TPREL_HI16, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
-         hexagon_elf_reloc, "R_HEXAGON_TPREL_HI16", FALSE, 0, 0x00c03fff, FALSE),
+  HOWTO (R_HEX_TPREL_HI16, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
+         hexagon_elf_reloc, "R_HEX_TPREL_HI16", FALSE, 0, 0x00c03fff, FALSE),
   /* 32-bit offset from the TP. */
-  HOWTO (R_HEXAGON_TPREL_32, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
-         bfd_elf_generic_reloc, "R_HEXAGON_TPREL_32", FALSE, 0, 0xffffffff, FALSE),
+  HOWTO (R_HEX_TPREL_32, 0, 2, 32, FALSE, 0, complain_overflow_bitfield,
+         bfd_elf_generic_reloc, "R_HEX_TPREL_32", FALSE, 0, 0xffffffff, FALSE),
   /* 16-bit offset from the TP. */
-  HOWTO (R_HEXAGON_TPREL_16, 0, 2, 16, FALSE, 0, complain_overflow_signed,
-         hexagon_elf_reloc, "R_HEXAGON_TPREL_16", FALSE, 0, 0x00c03fff, FALSE),
+  HOWTO (R_HEX_TPREL_16, 0, 2, 16, FALSE, 0, complain_overflow_signed,
+         hexagon_elf_reloc, "R_HEX_TPREL_16", FALSE, 0, 0x00c03fff, FALSE),
 };
 
 /* Hexagon ELF uses two common sections.  One is the usual one, and the
@@ -435,9 +435,9 @@ static reloc_howto_type hexagon_elf_howto_table [] =
    together, and then referenced via the GP-register, which yields
    faster assembler code.  This is what we use for the small common
    section.  This approach is copied from ecoff.c.  */
-static asection    hexagon_scom_section [SHN_HEXAGON_SCOMMON_8 - SHN_HEXAGON_SCOMMON + 1];
-static asymbol     hexagon_scom_symbol  [SHN_HEXAGON_SCOMMON_8 - SHN_HEXAGON_SCOMMON + 1];
-static const char *hexagon_scom_name    [SHN_HEXAGON_SCOMMON_8 - SHN_HEXAGON_SCOMMON + 1] =
+static asection    hexagon_scom_section [SHN_HEX_SCOMMON_8 - SHN_HEX_SCOMMON + 1];
+static asymbol     hexagon_scom_symbol  [SHN_HEX_SCOMMON_8 - SHN_HEX_SCOMMON + 1];
+static const char *hexagon_scom_name    [SHN_HEX_SCOMMON_8 - SHN_HEX_SCOMMON + 1] =
   {".scommon", ".scommon.1", ".scommon.2", ".scommon.4", ".scommon.8"};
 
 /* Map BFD reloc types to Hexagon ELF reloc types.  */
@@ -451,75 +451,75 @@ struct hexagon_reloc_map
 
 static const struct hexagon_reloc_map hexagon_reloc_map [] =
 {
-  { BFD_RELOC_NONE,                 R_HEXAGON_NONE,             0 },
-  { BFD_RELOC_HEX_B32_PCREL_X,      R_HEXAGON_B32_PCREL_X,      0 }, /* K-ext */
-  { BFD_RELOC_HEX_B22_PCREL,        R_HEXAGON_B22_PCREL,        0 },
-  { BFD_RELOC_HEX_B22_PCREL_X,      R_HEXAGON_B22_PCREL_X,      HEXAGON_OPERAND_IS_KXED },
-  { BFD_RELOC_HEX_B15_PCREL,        R_HEXAGON_B15_PCREL,        0 },
-  { BFD_RELOC_HEX_B15_PCREL_X,      R_HEXAGON_B15_PCREL_X,      HEXAGON_OPERAND_IS_KXED },
-  { BFD_RELOC_HEX_B13_PCREL,        R_HEXAGON_B13_PCREL,        0 },
-  { BFD_RELOC_HEX_B13_PCREL_X,      R_HEXAGON_B13_PCREL_X,      HEXAGON_OPERAND_IS_KXED },
-  { BFD_RELOC_HEX_B9_PCREL,         R_HEXAGON_B9_PCREL,         0 },
-  { BFD_RELOC_HEX_B9_PCREL_X,       R_HEXAGON_B9_PCREL_X,       HEXAGON_OPERAND_IS_KXED },
-  { BFD_RELOC_HEX_B7_PCREL,         R_HEXAGON_B7_PCREL,         0 },
-  { BFD_RELOC_HEX_B7_PCREL_X,       R_HEXAGON_B7_PCREL_X,       HEXAGON_OPERAND_IS_KXED },
-  { BFD_RELOC_HEX_LO16,             R_HEXAGON_LO16,             0 },
-  { BFD_RELOC_HEX_HI16,             R_HEXAGON_HI16,             0 },
-  { BFD_RELOC_HEX_HL16,             R_HEXAGON_HL16,             0 },
-  { BFD_RELOC_HEX_32_6_X,           R_HEXAGON_32_6_X,           0 }, /* K-ext */
-  { BFD_RELOC_32_PCREL,             R_HEXAGON_32_PCREL,         0 },
-  { BFD_RELOC_32,                   R_HEXAGON_32,               0 },
-  { BFD_RELOC_16,                   R_HEXAGON_16,               0 },
-  { BFD_RELOC_8,                    R_HEXAGON_8,                0 },
-  { BFD_RELOC_HEX_16_X,             R_HEXAGON_16_X,             HEXAGON_OPERAND_IS_KXED },
-  { BFD_RELOC_HEX_12_X,             R_HEXAGON_12_X,             HEXAGON_OPERAND_IS_KXED },
-  { BFD_RELOC_HEX_11_X,             R_HEXAGON_11_X,             HEXAGON_OPERAND_IS_KXED },
-  { BFD_RELOC_HEX_10_X,             R_HEXAGON_10_X,             HEXAGON_OPERAND_IS_KXED },
-  { BFD_RELOC_HEX_9_X,              R_HEXAGON_9_X,              HEXAGON_OPERAND_IS_KXED },
-  { BFD_RELOC_HEX_8_X,              R_HEXAGON_8_X,              HEXAGON_OPERAND_IS_KXED },
-  { BFD_RELOC_HEX_7_X,              R_HEXAGON_7_X,              HEXAGON_OPERAND_IS_KXED },
-  { BFD_RELOC_HEX_6_X,              R_HEXAGON_6_X,              HEXAGON_OPERAND_IS_KXED },
-  { BFD_RELOC_HEX_GPREL16_0,        R_HEXAGON_GPREL16_0,        0 },
-  { BFD_RELOC_HEX_GPREL16_1,        R_HEXAGON_GPREL16_1,        0 },
-  { BFD_RELOC_HEX_GPREL16_2,        R_HEXAGON_GPREL16_2,        0 },
-  { BFD_RELOC_HEX_GPREL16_3,        R_HEXAGON_GPREL16_3,        0 },
+  { BFD_RELOC_NONE,                 R_HEX_NONE,             0 },
+  { BFD_RELOC_HEX_B32_PCREL_X,      R_HEX_B32_PCREL_X,      0 }, /* K-ext */
+  { BFD_RELOC_HEX_B22_PCREL,        R_HEX_B22_PCREL,        0 },
+  { BFD_RELOC_HEX_B22_PCREL_X,      R_HEX_B22_PCREL_X,      HEXAGON_OPERAND_IS_KXED },
+  { BFD_RELOC_HEX_B15_PCREL,        R_HEX_B15_PCREL,        0 },
+  { BFD_RELOC_HEX_B15_PCREL_X,      R_HEX_B15_PCREL_X,      HEXAGON_OPERAND_IS_KXED },
+  { BFD_RELOC_HEX_B13_PCREL,        R_HEX_B13_PCREL,        0 },
+  { BFD_RELOC_HEX_B13_PCREL_X,      R_HEX_B13_PCREL_X,      HEXAGON_OPERAND_IS_KXED },
+  { BFD_RELOC_HEX_B9_PCREL,         R_HEX_B9_PCREL,         0 },
+  { BFD_RELOC_HEX_B9_PCREL_X,       R_HEX_B9_PCREL_X,       HEXAGON_OPERAND_IS_KXED },
+  { BFD_RELOC_HEX_B7_PCREL,         R_HEX_B7_PCREL,         0 },
+  { BFD_RELOC_HEX_B7_PCREL_X,       R_HEX_B7_PCREL_X,       HEXAGON_OPERAND_IS_KXED },
+  { BFD_RELOC_HEX_LO16,             R_HEX_LO16,             0 },
+  { BFD_RELOC_HEX_HI16,             R_HEX_HI16,             0 },
+  { BFD_RELOC_HEX_HL16,             R_HEX_HL16,             0 },
+  { BFD_RELOC_HEX_32_6_X,           R_HEX_32_6_X,           0 }, /* K-ext */
+  { BFD_RELOC_32_PCREL,             R_HEX_32_PCREL,         0 },
+  { BFD_RELOC_32,                   R_HEX_32,               0 },
+  { BFD_RELOC_16,                   R_HEX_16,               0 },
+  { BFD_RELOC_8,                    R_HEX_8,                0 },
+  { BFD_RELOC_HEX_16_X,             R_HEX_16_X,             HEXAGON_OPERAND_IS_KXED },
+  { BFD_RELOC_HEX_12_X,             R_HEX_12_X,             HEXAGON_OPERAND_IS_KXED },
+  { BFD_RELOC_HEX_11_X,             R_HEX_11_X,             HEXAGON_OPERAND_IS_KXED },
+  { BFD_RELOC_HEX_10_X,             R_HEX_10_X,             HEXAGON_OPERAND_IS_KXED },
+  { BFD_RELOC_HEX_9_X,              R_HEX_9_X,              HEXAGON_OPERAND_IS_KXED },
+  { BFD_RELOC_HEX_8_X,              R_HEX_8_X,              HEXAGON_OPERAND_IS_KXED },
+  { BFD_RELOC_HEX_7_X,              R_HEX_7_X,              HEXAGON_OPERAND_IS_KXED },
+  { BFD_RELOC_HEX_6_X,              R_HEX_6_X,              HEXAGON_OPERAND_IS_KXED },
+  { BFD_RELOC_HEX_GPREL16_0,        R_HEX_GPREL16_0,        0 },
+  { BFD_RELOC_HEX_GPREL16_1,        R_HEX_GPREL16_1,        0 },
+  { BFD_RELOC_HEX_GPREL16_2,        R_HEX_GPREL16_2,        0 },
+  { BFD_RELOC_HEX_GPREL16_3,        R_HEX_GPREL16_3,        0 },
   /* DSO */
-  { BFD_RELOC_HEX_COPY,             R_HEXAGON_COPY,             0 },
-  { BFD_RELOC_HEX_GLOB_DAT,         R_HEXAGON_GLOB_DAT,         0 },
-  { BFD_RELOC_HEX_JMP_SLOT,         R_HEXAGON_JMP_SLOT,         0 },
-  { BFD_RELOC_HEX_RELATIVE,         R_HEXAGON_RELATIVE,         0 },
+  { BFD_RELOC_HEX_COPY,             R_HEX_COPY,             0 },
+  { BFD_RELOC_HEX_GLOB_DAT,         R_HEX_GLOB_DAT,         0 },
+  { BFD_RELOC_HEX_JMP_SLOT,         R_HEX_JMP_SLOT,         0 },
+  { BFD_RELOC_HEX_RELATIVE,         R_HEX_RELATIVE,         0 },
   /* PLT */
-  { BFD_RELOC_HEX_PLT_B22_PCREL,    R_HEXAGON_PLT_B22_PCREL,    0 },
+  { BFD_RELOC_HEX_PLT_B22_PCREL,    R_HEX_PLT_B22_PCREL,    0 },
   /* GOT */
-  { BFD_RELOC_HEX_GOTREL_LO16,      R_HEXAGON_GOTREL_LO16,      0 },
-  { BFD_RELOC_HEX_GOTREL_HI16,      R_HEXAGON_GOTREL_HI16,      0 },
-  { BFD_RELOC_32_GOTOFF,            R_HEXAGON_GOTREL_32,        0 },
-  { BFD_RELOC_HEX_GOT_LO16,         R_HEXAGON_GOT_LO16,         0 },
-  { BFD_RELOC_HEX_GOT_HI16,         R_HEXAGON_GOT_HI16,         0 },
-  { BFD_RELOC_HEX_GOT_32,           R_HEXAGON_GOT_32,           0 },
-  { BFD_RELOC_HEX_GOT_16,           R_HEXAGON_GOT_16,           0 },
+  { BFD_RELOC_HEX_GOTREL_LO16,      R_HEX_GOTREL_LO16,      0 },
+  { BFD_RELOC_HEX_GOTREL_HI16,      R_HEX_GOTREL_HI16,      0 },
+  { BFD_RELOC_32_GOTOFF,            R_HEX_GOTREL_32,        0 },
+  { BFD_RELOC_HEX_GOT_LO16,         R_HEX_GOT_LO16,         0 },
+  { BFD_RELOC_HEX_GOT_HI16,         R_HEX_GOT_HI16,         0 },
+  { BFD_RELOC_HEX_GOT_32,           R_HEX_GOT_32,           0 },
+  { BFD_RELOC_HEX_GOT_16,           R_HEX_GOT_16,           0 },
   /* TLS */
-  { BFD_RELOC_HEX_DTPMOD_32,        R_HEXAGON_DTPMOD_32,        0 },
-  { BFD_RELOC_HEX_DTPREL_LO16,      R_HEXAGON_DTPREL_LO16,      0 },
-  { BFD_RELOC_HEX_DTPREL_HI16,      R_HEXAGON_DTPREL_HI16,      0 },
-  { BFD_RELOC_HEX_DTPREL_32,        R_HEXAGON_DTPREL_32,        0 },
-  { BFD_RELOC_HEX_DTPREL_16,        R_HEXAGON_DTPREL_16,        0 },
-  { BFD_RELOC_HEX_GD_PLT_B22_PCREL, R_HEXAGON_GD_PLT_B22_PCREL, 0 },
-  { BFD_RELOC_HEX_GD_GOT_LO16,      R_HEXAGON_GD_GOT_LO16,      0 },
-  { BFD_RELOC_HEX_GD_GOT_HI16,      R_HEXAGON_GD_GOT_HI16,      0 },
-  { BFD_RELOC_HEX_GD_GOT_32,        R_HEXAGON_GD_GOT_32,        0 },
-  { BFD_RELOC_HEX_GD_GOT_16,        R_HEXAGON_GD_GOT_16,        0 },
-  { BFD_RELOC_HEX_IE_LO16,          R_HEXAGON_IE_LO16,          0 },
-  { BFD_RELOC_HEX_IE_HI16,          R_HEXAGON_IE_HI16,          0 },
-  { BFD_RELOC_HEX_IE_32,            R_HEXAGON_IE_32,            0 },
-  { BFD_RELOC_HEX_IE_GOT_LO16,      R_HEXAGON_IE_GOT_LO16,      0 },
-  { BFD_RELOC_HEX_IE_GOT_HI16,      R_HEXAGON_IE_GOT_HI16,      0 },
-  { BFD_RELOC_HEX_IE_GOT_32,        R_HEXAGON_IE_GOT_32,        0 },
-  { BFD_RELOC_HEX_IE_GOT_16,        R_HEXAGON_IE_GOT_16,        0 },
-  { BFD_RELOC_HEX_TPREL_LO16,       R_HEXAGON_TPREL_LO16,       0 },
-  { BFD_RELOC_HEX_TPREL_HI16,       R_HEXAGON_TPREL_HI16,       0 },
-  { BFD_RELOC_HEX_TPREL_32,         R_HEXAGON_TPREL_32,         0 },
-  { BFD_RELOC_HEX_TPREL_16,         R_HEXAGON_TPREL_16,         0 },
+  { BFD_RELOC_HEX_DTPMOD_32,        R_HEX_DTPMOD_32,        0 },
+  { BFD_RELOC_HEX_DTPREL_LO16,      R_HEX_DTPREL_LO16,      0 },
+  { BFD_RELOC_HEX_DTPREL_HI16,      R_HEX_DTPREL_HI16,      0 },
+  { BFD_RELOC_HEX_DTPREL_32,        R_HEX_DTPREL_32,        0 },
+  { BFD_RELOC_HEX_DTPREL_16,        R_HEX_DTPREL_16,        0 },
+  { BFD_RELOC_HEX_GD_PLT_B22_PCREL, R_HEX_GD_PLT_B22_PCREL, 0 },
+  { BFD_RELOC_HEX_GD_GOT_LO16,      R_HEX_GD_GOT_LO16,      0 },
+  { BFD_RELOC_HEX_GD_GOT_HI16,      R_HEX_GD_GOT_HI16,      0 },
+  { BFD_RELOC_HEX_GD_GOT_32,        R_HEX_GD_GOT_32,        0 },
+  { BFD_RELOC_HEX_GD_GOT_16,        R_HEX_GD_GOT_16,        0 },
+  { BFD_RELOC_HEX_IE_LO16,          R_HEX_IE_LO16,          0 },
+  { BFD_RELOC_HEX_IE_HI16,          R_HEX_IE_HI16,          0 },
+  { BFD_RELOC_HEX_IE_32,            R_HEX_IE_32,            0 },
+  { BFD_RELOC_HEX_IE_GOT_LO16,      R_HEX_IE_GOT_LO16,      0 },
+  { BFD_RELOC_HEX_IE_GOT_HI16,      R_HEX_IE_GOT_HI16,      0 },
+  { BFD_RELOC_HEX_IE_GOT_32,        R_HEX_IE_GOT_32,        0 },
+  { BFD_RELOC_HEX_IE_GOT_16,        R_HEX_IE_GOT_16,        0 },
+  { BFD_RELOC_HEX_TPREL_LO16,       R_HEX_TPREL_LO16,       0 },
+  { BFD_RELOC_HEX_TPREL_HI16,       R_HEX_TPREL_HI16,       0 },
+  { BFD_RELOC_HEX_TPREL_32,         R_HEX_TPREL_32,         0 },
+  { BFD_RELOC_HEX_TPREL_16,         R_HEX_TPREL_16,         0 },
 };
 
 static reloc_howto_type *
@@ -585,7 +585,7 @@ hexagon_info_to_howto_rel
   unsigned int r_type;
 
   r_type = ELF32_R_TYPE (dst->r_info);
-  BFD_ASSERT (r_type < (unsigned int) R_HEXAGON_max);
+  BFD_ASSERT (r_type < (unsigned int) R_HEX_max);
 
   cache_ptr->howto = hexagon_elf_howto_table + r_type;
 }
@@ -628,24 +628,24 @@ hexagon_elf_object_p
   /* Set our target machine number. */
   if (elf_elfheader (abfd)->e_machine == EM_HEXAGON)
     {
-      unsigned long arch = elf_elfheader (abfd)->e_flags & EF_HEXAGON_MACH;
+      unsigned long arch = elf_elfheader (abfd)->e_flags & EF_HEX_MACH;
 
-      switch (EF_HEXAGON_MACH_VER (arch))
+      switch (EF_HEX_MACH_VER (arch))
 	{
-          case EF_HEXAGON_MACH_V2:
+          case EF_HEX_MACH_V2:
             mach = bfd_mach_hexagon_v2;
             break;
 
-          case EF_HEXAGON_MACH_V3:
+          case EF_HEX_MACH_V3:
             mach = bfd_mach_hexagon_v3;
             break;
 
-          case EF_HEXAGON_MACH_V4:
+          case EF_HEX_MACH_V4:
             mach = bfd_mach_hexagon_v4;
             break;
 
           default:
-            if (elf_elfheader (abfd)->e_type != ET_HEXAGON_IR)
+            if (elf_elfheader (abfd)->e_type != ET_HEX_IR)
               {
                 /* Unless the object is a WHIRL, barf. */
                 fprintf (stderr, "Unsupported machine architecure %ld\n", arch);
@@ -669,15 +669,15 @@ hexagon_elf_final_write_processing
   switch (bfd_get_mach (abfd))
     {
       case bfd_mach_hexagon_v2:
-        val = EF_HEXAGON_MACH_V2;
+        val = EF_HEX_MACH_V2;
         break;
 
       case bfd_mach_hexagon_v3:
-        val = EF_HEXAGON_MACH_V3;
+        val = EF_HEX_MACH_V3;
         break;
 
       case bfd_mach_hexagon_v4:
-        val = EF_HEXAGON_MACH_V4;
+        val = EF_HEX_MACH_V4;
         break;
 
       default:
@@ -685,7 +685,7 @@ hexagon_elf_final_write_processing
         abort ();
     }
 
-  elf_elfheader (abfd)->e_flags &= ~EF_HEXAGON_MACH;
+  elf_elfheader (abfd)->e_flags &= ~EF_HEX_MACH;
   elf_elfheader (abfd)->e_flags |= val;
 }
 
@@ -877,10 +877,10 @@ hexagon_elf_reloc
      symbol we are relocating against, plus any addend.  */
 
 
-  if ((howto->type == R_HEXAGON_GPREL16_0) ||
-      (howto->type == R_HEXAGON_GPREL16_1) ||
-      (howto->type == R_HEXAGON_GPREL16_2) ||
-      (howto->type == R_HEXAGON_GPREL16_3))
+  if ((howto->type == R_HEX_GPREL16_0) ||
+      (howto->type == R_HEX_GPREL16_1) ||
+      (howto->type == R_HEX_GPREL16_2) ||
+      (howto->type == R_HEX_GPREL16_3))
     {
       bfd_vma sda_base;
 
@@ -1042,7 +1042,7 @@ hexagon_elf_fake_sections
 (bfd *abfd ATTRIBUTE_UNUSED, Elf_Internal_Shdr *shdr, asection *asect)
 {
   if ((asect->flags & SEC_SORT_ENTRIES))
-    shdr->sh_type = SHT_HEXAGON_ORDERED;
+    shdr->sh_type = SHT_HEX_ORDERED;
 
   return TRUE;
 }
@@ -1062,7 +1062,7 @@ hexagon_elf_section_from_shdr
   newsect = hdr->bfd_section;
   flags = bfd_get_section_flags (abfd, newsect);
 
-  if (hdr->sh_type == SHT_HEXAGON_ORDERED)
+  if (hdr->sh_type == SHT_HEX_ORDERED)
     flags |= SEC_SORT_ENTRIES;
 
   bfd_set_section_flags (abfd, newsect, flags);
@@ -1092,27 +1092,27 @@ hexagon_elf_add_symbol_hook
 
             /* Choose which section to place them in. */
             if (sym->st_size > 8)
-              sym->st_shndx = SHN_HEXAGON_SCOMMON;
+              sym->st_shndx = SHN_HEX_SCOMMON;
             else if (sym->st_size > 4)
-              sym->st_shndx = SHN_HEXAGON_SCOMMON_8;
+              sym->st_shndx = SHN_HEX_SCOMMON_8;
             else if (sym->st_size > 2)
-              sym->st_shndx = SHN_HEXAGON_SCOMMON_4;
+              sym->st_shndx = SHN_HEX_SCOMMON_4;
             else if (sym->st_size > 1)
-              sym->st_shndx = SHN_HEXAGON_SCOMMON_2;
+              sym->st_shndx = SHN_HEX_SCOMMON_2;
             else
-              sym->st_shndx = SHN_HEXAGON_SCOMMON_1;
+              sym->st_shndx = SHN_HEX_SCOMMON_1;
 
             /* Fall through. */
 
-          case SHN_HEXAGON_SCOMMON:
-          case SHN_HEXAGON_SCOMMON_8:
-          case SHN_HEXAGON_SCOMMON_4:
-          case SHN_HEXAGON_SCOMMON_2:
-          case SHN_HEXAGON_SCOMMON_1:
+          case SHN_HEX_SCOMMON:
+          case SHN_HEX_SCOMMON_8:
+          case SHN_HEX_SCOMMON_4:
+          case SHN_HEX_SCOMMON_2:
+          case SHN_HEX_SCOMMON_1:
             /* Small common symbols are placed in their originally intended
 	       .scommon sections. */
             *secp = bfd_make_section_old_way
-                      (abfd, hexagon_scom_name [sym->st_shndx - SHN_HEXAGON_SCOMMON]);
+                      (abfd, hexagon_scom_name [sym->st_shndx - SHN_HEX_SCOMMON]);
             bfd_set_section_flags
               (abfd, *secp, SEC_ALLOC | SEC_IS_COMMON | SEC_LINKER_CREATED);
             *valp = sym->st_size;
@@ -1135,49 +1135,49 @@ hexagon_elf_symbol_processing
     {
     case SHN_COMMON:
       /* Common symbols less than the GP size are automatically
-	 treated as SHN_HEXAGON_SCOMMON symbols.  */
+	 treated as SHN_HEX_SCOMMON symbols.  */
       if (asym->value > elf_gp_size (abfd))
         break;
 
       /* Choose which section to place them in. */
       if (elfsym->internal_elf_sym.st_size > 8)
-        elfsym->internal_elf_sym.st_shndx = SHN_HEXAGON_SCOMMON;
+        elfsym->internal_elf_sym.st_shndx = SHN_HEX_SCOMMON;
       if (elfsym->internal_elf_sym.st_size > 4)
-        elfsym->internal_elf_sym.st_shndx = SHN_HEXAGON_SCOMMON_8;
+        elfsym->internal_elf_sym.st_shndx = SHN_HEX_SCOMMON_8;
       else if (elfsym->internal_elf_sym.st_size > 2)
-        elfsym->internal_elf_sym.st_shndx = SHN_HEXAGON_SCOMMON_4;
+        elfsym->internal_elf_sym.st_shndx = SHN_HEX_SCOMMON_4;
       else if (elfsym->internal_elf_sym.st_size > 1)
-        elfsym->internal_elf_sym.st_shndx = SHN_HEXAGON_SCOMMON_2;
+        elfsym->internal_elf_sym.st_shndx = SHN_HEX_SCOMMON_2;
       else
-        elfsym->internal_elf_sym.st_shndx = SHN_HEXAGON_SCOMMON_1;
+        elfsym->internal_elf_sym.st_shndx = SHN_HEX_SCOMMON_1;
 
       /* Fall through.  */
 
-    case SHN_HEXAGON_SCOMMON:
-    case SHN_HEXAGON_SCOMMON_8:
-    case SHN_HEXAGON_SCOMMON_4:
-    case SHN_HEXAGON_SCOMMON_2:
-    case SHN_HEXAGON_SCOMMON_1:
+    case SHN_HEX_SCOMMON:
+    case SHN_HEX_SCOMMON_8:
+    case SHN_HEX_SCOMMON_4:
+    case SHN_HEX_SCOMMON_2:
+    case SHN_HEX_SCOMMON_1:
         {
 	  /* Small common symbols are placed in their originally intended
 	     .scommon sections. */
           asection *scom_section = hexagon_scom_section
                                    + elfsym->internal_elf_sym.st_shndx
-                                   - SHN_HEXAGON_SCOMMON;
+                                   - SHN_HEX_SCOMMON;
           asymbol *scom_symbol = hexagon_scom_symbol
                                  + elfsym->internal_elf_sym.st_shndx
-                                 - SHN_HEXAGON_SCOMMON;
+                                 - SHN_HEX_SCOMMON;
 
           if (!scom_section->name)
             {
               const char *scom_name =
-                hexagon_scom_name [elfsym->internal_elf_sym.st_shndx - SHN_HEXAGON_SCOMMON];
+                hexagon_scom_name [elfsym->internal_elf_sym.st_shndx - SHN_HEX_SCOMMON];
 
               /* Initialize the small common section.  */
               scom_section->name           = scom_name;
               scom_section->flags          = (SEC_IS_COMMON | SEC_SMALL_DATA)
                                              | (elfsym->internal_elf_sym.st_shndx
-                                                > SHN_HEXAGON_SCOMMON
+                                                > SHN_HEX_SCOMMON
                                                 ? (SEC_LOAD | SEC_DATA): 0);
               scom_section->output_section = scom_section;
               scom_section->symbol         = scom_symbol;
@@ -1200,16 +1200,16 @@ hexagon_elf_common_definition
 (Elf_Internal_Sym *sym)
 {
   return (sym->st_shndx == SHN_COMMON
-          || sym->st_shndx == SHN_HEXAGON_SCOMMON
-          || sym->st_shndx == SHN_HEXAGON_SCOMMON_8
-          || sym->st_shndx == SHN_HEXAGON_SCOMMON_4
-          || sym->st_shndx == SHN_HEXAGON_SCOMMON_2
-          || sym->st_shndx == SHN_HEXAGON_SCOMMON_1);
+          || sym->st_shndx == SHN_HEX_SCOMMON
+          || sym->st_shndx == SHN_HEX_SCOMMON_8
+          || sym->st_shndx == SHN_HEX_SCOMMON_4
+          || sym->st_shndx == SHN_HEX_SCOMMON_2
+          || sym->st_shndx == SHN_HEX_SCOMMON_1);
 }
 
 
 /* Work over a section just before writing it out. FIXME: We recognize
-   sections that need the SHF_HEXAGON_GPREL flag by name; there has to be
+   sections that need the SHF_HEX_GPREL flag by name; there has to be
    a better way.  */
 
 bfd_boolean
@@ -1222,12 +1222,12 @@ hexagon_elf_section_processing
 
       if (CONST_STRNEQ (name, ".sdata"))
 	{
-	  hdr->sh_flags |= SHF_ALLOC | SHF_WRITE | SHF_HEXAGON_GPREL;
+	  hdr->sh_flags |= SHF_ALLOC | SHF_WRITE | SHF_HEX_GPREL;
 	  hdr->sh_type = SHT_PROGBITS;
 	}
       else if (CONST_STRNEQ (name, ".sbss"))
 	{
-	  hdr->sh_flags |= SHF_ALLOC | SHF_WRITE | SHF_HEXAGON_GPREL;
+	  hdr->sh_flags |= SHF_ALLOC | SHF_WRITE | SHF_HEX_GPREL;
 	  hdr->sh_type = SHT_NOBITS;
 	}
     }
@@ -1244,16 +1244,16 @@ hexagon_elf_section_from_bfd_section
 
   if (CONST_STRNEQ (name, hexagon_scom_name [0]))
     {
-      if (!strcmp (name, hexagon_scom_name [SHN_HEXAGON_SCOMMON_8 - SHN_HEXAGON_SCOMMON]))
-        *retval = SHN_HEXAGON_SCOMMON_8;
-      else if (!strcmp (name, hexagon_scom_name [SHN_HEXAGON_SCOMMON_4 - SHN_HEXAGON_SCOMMON]))
-        *retval = SHN_HEXAGON_SCOMMON_4;
-      else if (!strcmp (name, hexagon_scom_name [SHN_HEXAGON_SCOMMON_2 - SHN_HEXAGON_SCOMMON]))
-        *retval = SHN_HEXAGON_SCOMMON_2;
-      else if (!strcmp (name, hexagon_scom_name [SHN_HEXAGON_SCOMMON_1 - SHN_HEXAGON_SCOMMON]))
-        *retval = SHN_HEXAGON_SCOMMON_1;
+      if (!strcmp (name, hexagon_scom_name [SHN_HEX_SCOMMON_8 - SHN_HEX_SCOMMON]))
+        *retval = SHN_HEX_SCOMMON_8;
+      else if (!strcmp (name, hexagon_scom_name [SHN_HEX_SCOMMON_4 - SHN_HEX_SCOMMON]))
+        *retval = SHN_HEX_SCOMMON_4;
+      else if (!strcmp (name, hexagon_scom_name [SHN_HEX_SCOMMON_2 - SHN_HEX_SCOMMON]))
+        *retval = SHN_HEX_SCOMMON_2;
+      else if (!strcmp (name, hexagon_scom_name [SHN_HEX_SCOMMON_1 - SHN_HEX_SCOMMON]))
+        *retval = SHN_HEX_SCOMMON_1;
       else
-        *retval = SHN_HEXAGON_SCOMMON;
+        *retval = SHN_HEX_SCOMMON;
 
       return TRUE;
     }
@@ -1277,16 +1277,16 @@ hexagon_elf_link_output_symbol_hook
       && sym->st_size > elf_gp_size (info->output_bfd)
       && CONST_STRNEQ (input_sec->name, hexagon_scom_name [0]))
     {
-      if (!strcmp (name, hexagon_scom_name [SHN_HEXAGON_SCOMMON_8 - SHN_HEXAGON_SCOMMON]))
-        sym->st_shndx = SHN_HEXAGON_SCOMMON_8;
-      else if (!strcmp (name, hexagon_scom_name [SHN_HEXAGON_SCOMMON_4 - SHN_HEXAGON_SCOMMON]))
-        sym->st_shndx = SHN_HEXAGON_SCOMMON_4;
-      else if (!strcmp (name, hexagon_scom_name [SHN_HEXAGON_SCOMMON_2 - SHN_HEXAGON_SCOMMON]))
-        sym->st_shndx = SHN_HEXAGON_SCOMMON_2;
-      else if (!strcmp (name, hexagon_scom_name [SHN_HEXAGON_SCOMMON_1 - SHN_HEXAGON_SCOMMON]))
-        sym->st_shndx = SHN_HEXAGON_SCOMMON_1;
+      if (!strcmp (name, hexagon_scom_name [SHN_HEX_SCOMMON_8 - SHN_HEX_SCOMMON]))
+        sym->st_shndx = SHN_HEX_SCOMMON_8;
+      else if (!strcmp (name, hexagon_scom_name [SHN_HEX_SCOMMON_4 - SHN_HEX_SCOMMON]))
+        sym->st_shndx = SHN_HEX_SCOMMON_4;
+      else if (!strcmp (name, hexagon_scom_name [SHN_HEX_SCOMMON_2 - SHN_HEX_SCOMMON]))
+        sym->st_shndx = SHN_HEX_SCOMMON_2;
+      else if (!strcmp (name, hexagon_scom_name [SHN_HEX_SCOMMON_1 - SHN_HEX_SCOMMON]))
+        sym->st_shndx = SHN_HEX_SCOMMON_1;
       else
-        sym->st_shndx = SHN_HEXAGON_SCOMMON;
+        sym->st_shndx = SHN_HEX_SCOMMON;
     }
 
   return TRUE;
@@ -1430,15 +1430,15 @@ hexagon_elf_relax_section
       /* Look into relocation overflows at branches and add trampolines if needed. */
       r_type = ELF32_R_TYPE (irel->r_info);
       if (info->hexagon_trampolines
-          && (r_type == R_HEXAGON_B32_PCREL_X
-              || r_type == R_HEXAGON_B22_PCREL_X
-              || r_type == R_HEXAGON_B15_PCREL_X
-              || r_type == R_HEXAGON_B13_PCREL_X
-              || r_type == R_HEXAGON_B9_PCREL_X
-              || r_type == R_HEXAGON_B22_PCREL
-              || r_type == R_HEXAGON_B15_PCREL
-              || r_type == R_HEXAGON_B13_PCREL
-              || r_type == R_HEXAGON_B9_PCREL))
+          && (r_type == R_HEX_B32_PCREL_X
+              || r_type == R_HEX_B22_PCREL_X
+              || r_type == R_HEX_B15_PCREL_X
+              || r_type == R_HEX_B13_PCREL_X
+              || r_type == R_HEX_B9_PCREL_X
+              || r_type == R_HEX_B22_PCREL
+              || r_type == R_HEX_B15_PCREL
+              || r_type == R_HEX_B13_PCREL
+              || r_type == R_HEX_B9_PCREL))
         {
           isec_size = bfd_section_size (ibfd, isec);
 
@@ -1538,19 +1538,19 @@ hexagon_elf_relax_section
 
           /* Check if the target is beyond reach. */
           offset = llabs ((to + to_base) - (from + at_base));
-          if ((is_def && (((r_type == R_HEXAGON_B32_PCREL_X
-	                    || r_type == R_HEXAGON_B22_PCREL_X
-	                    || r_type == R_HEXAGON_B15_PCREL_X
-	                    || r_type == R_HEXAGON_B13_PCREL_X
-	                    || r_type == R_HEXAGON_B9_PCREL_X)
+          if ((is_def && (((r_type == R_HEX_B32_PCREL_X
+	                    || r_type == R_HEX_B22_PCREL_X
+	                    || r_type == R_HEX_B15_PCREL_X
+	                    || r_type == R_HEX_B13_PCREL_X
+	                    || r_type == R_HEX_B9_PCREL_X)
                            && HEXAGON_TRAMPOLINE_NEEDED (offset, 32))
-                          || ((r_type == R_HEXAGON_B22_PCREL)
+                          || ((r_type == R_HEX_B22_PCREL)
                               && HEXAGON_TRAMPOLINE_NEEDED (offset, 24))
-                          || ((r_type == R_HEXAGON_B15_PCREL)
+                          || ((r_type == R_HEX_B15_PCREL)
                               && HEXAGON_TRAMPOLINE_NEEDED (offset, 17))
-                          || ((r_type == R_HEXAGON_B13_PCREL)
+                          || ((r_type == R_HEX_B13_PCREL)
                               && HEXAGON_TRAMPOLINE_NEEDED (offset, 15))
-                          || ((r_type == R_HEXAGON_B9_PCREL)
+                          || ((r_type == R_HEX_B9_PCREL)
                               && HEXAGON_TRAMPOLINE_NEEDED (offset, 11))))
               || !is_def)
 	    {
@@ -1597,19 +1597,19 @@ hexagon_elf_relax_section
                 {
                   t_at = isec_size;
 
-                  if (((r_type == R_HEXAGON_B32_PCREL_X
-		        || r_type == R_HEXAGON_B22_PCREL_X
-		        || r_type == R_HEXAGON_B15_PCREL_X
-		        || r_type == R_HEXAGON_B13_PCREL_X
-		        || r_type == R_HEXAGON_B9_PCREL_X)
+                  if (((r_type == R_HEX_B32_PCREL_X
+		        || r_type == R_HEX_B22_PCREL_X
+		        || r_type == R_HEX_B15_PCREL_X
+		        || r_type == R_HEX_B13_PCREL_X
+		        || r_type == R_HEX_B9_PCREL_X)
                        && HEXAGON_TRAMPOLINE_NEEDED (t_at - from, 31))
-                      || ((r_type == R_HEXAGON_B22_PCREL)
+                      || ((r_type == R_HEX_B22_PCREL)
                           && HEXAGON_TRAMPOLINE_NEEDED (t_at - from, 23))
-                      || ((r_type == R_HEXAGON_B15_PCREL)
+                      || ((r_type == R_HEX_B15_PCREL)
                           && HEXAGON_TRAMPOLINE_NEEDED (t_at - from, 16))
-                      || ((r_type == R_HEXAGON_B13_PCREL)
+                      || ((r_type == R_HEX_B13_PCREL)
                           && HEXAGON_TRAMPOLINE_NEEDED (t_at - from, 14))
-                      || ((r_type == R_HEXAGON_B9_PCREL)
+                      || ((r_type == R_HEX_B9_PCREL)
                           && HEXAGON_TRAMPOLINE_NEEDED (t_at - from, 10)))
                     /* No room for a trampoline. */
                     goto error_return;
@@ -1656,7 +1656,7 @@ hexagon_elf_relax_section
                 /* Remove the offending relocation. */
                 /* FIXME: Could this relocation be zeroed up??? */
                 irel->r_info =
-                  ELF32_R_INFO (ELF32_R_SYM (irel->r_info), R_HEXAGON_NONE);
+                  ELF32_R_INFO (ELF32_R_SYM (irel->r_info), R_HEX_NONE);
 
               free (t_name);
 
@@ -1917,7 +1917,7 @@ hexagon_elf_relocate_section
       r_type = ELF32_R_TYPE (rel->r_info);
       r_symndx = ELF32_R_SYM (rel->r_info);
 
-      if (r_type >= R_HEXAGON_max)
+      if (r_type >= R_HEX_max)
 	{
 	  bfd_set_error (bfd_error_bad_value);
 	  return FALSE;
@@ -1989,10 +1989,10 @@ hexagon_elf_relocate_section
               relocation = TRUE;
 	      switch (r_type)
 		{
-	        case R_HEXAGON_B22_PCREL:
-	        case R_HEXAGON_B15_PCREL:
-	        case R_HEXAGON_B13_PCREL:
-	        case R_HEXAGON_B7_PCREL:
+	        case R_HEX_B22_PCREL:
+	        case R_HEX_B15_PCREL:
+	        case R_HEX_B13_PCREL:
+	        case R_HEX_B7_PCREL:
                   /* TODO: In PPC the tests in all cases include visibility too. */
 	          if (info->shared
 	              && (!SYMBOLIC_BIND (info, h)
@@ -2002,33 +2002,33 @@ hexagon_elf_relocate_section
 
 		  /* Fall-through. */
 
-	        case R_HEXAGON_PLT_B22_PCREL:
+	        case R_HEX_PLT_B22_PCREL:
 	          if (h->plt.offset != -(bfd_vma) 1)
 	            relocation = FALSE;
 		  break;
 
-		case R_HEXAGON_GOT_LO16:
-		case R_HEXAGON_GOT_HI16:
-		case R_HEXAGON_GOT_32:
-		case R_HEXAGON_GOT_16:
-		case R_HEXAGON_GD_GOT_LO16:
-		case R_HEXAGON_GD_GOT_HI16:
-		case R_HEXAGON_GD_GOT_32:
-		case R_HEXAGON_GD_GOT_16:
-		case R_HEXAGON_IE_LO16:
-		case R_HEXAGON_IE_HI16:
-		case R_HEXAGON_IE_32:
-		case R_HEXAGON_IE_GOT_LO16:
-		case R_HEXAGON_IE_GOT_HI16:
-		case R_HEXAGON_IE_GOT_32:
-		case R_HEXAGON_IE_GOT_16:
+		case R_HEX_GOT_LO16:
+		case R_HEX_GOT_HI16:
+		case R_HEX_GOT_32:
+		case R_HEX_GOT_16:
+		case R_HEX_GD_GOT_LO16:
+		case R_HEX_GD_GOT_HI16:
+		case R_HEX_GD_GOT_32:
+		case R_HEX_GD_GOT_16:
+		case R_HEX_IE_LO16:
+		case R_HEX_IE_HI16:
+		case R_HEX_IE_32:
+		case R_HEX_IE_GOT_LO16:
+		case R_HEX_IE_GOT_HI16:
+		case R_HEX_IE_GOT_32:
+		case R_HEX_IE_GOT_16:
 	          if (elf_hash_table (info)->dynamic_sections_created
 	              && !SYMBOLIC_BIND (info, h)
 	              && !h->def_regular)
 	            relocation = FALSE;
 		  break;
 
-                case R_HEXAGON_32:
+                case R_HEX_32:
                   if (h->dynindx != -1
                       && (info->executable
                           || !SYMBOLIC_BIND (info, h)
@@ -2078,9 +2078,9 @@ hexagon_elf_relocate_section
       /* Check relocations for correctness. */
       switch (r_type)
         {
-	case R_HEXAGON_GOTREL_LO16:
-	case R_HEXAGON_GOTREL_HI16:
-	case R_HEXAGON_GOTREL_32:
+	case R_HEX_GOTREL_LO16:
+	case R_HEX_GOTREL_HI16:
+	case R_HEX_GOTREL_32:
 	  /* This can happen if we get a link error with the input ELF
 	     variant mismatching the output variant.  Emit an error so
 	     it's noticed if it happens elsewhere.  */
@@ -2096,9 +2096,9 @@ hexagon_elf_relocate_section
 	    }
           break;
 
-        case R_HEXAGON_B15_PCREL:
-        case R_HEXAGON_B13_PCREL:
-        case R_HEXAGON_B7_PCREL:
+        case R_HEX_B15_PCREL:
+        case R_HEX_B13_PCREL:
+        case R_HEX_B7_PCREL:
 	  if (!h || ELF_ST_VISIBILITY (h->other) != STV_DEFAULT)
             /* If the symbol was local, we need no DSO-specific handling.  */
 	    break;
@@ -2126,15 +2126,15 @@ hexagon_elf_relocate_section
       /* Preprocess relocations for dynamic linking. */
       switch (r_type)
         {
-        case R_HEXAGON_GOT_LO16:
-        case R_HEXAGON_GOT_HI16:
-        case R_HEXAGON_GOT_32:
-        case R_HEXAGON_GOT_16:
+        case R_HEX_GOT_LO16:
+        case R_HEX_GOT_HI16:
+        case R_HEX_GOT_32:
+        case R_HEX_GOT_16:
           if (h)
             {
               /* Global symbol. */
+              BFD_ASSERT (h->got.offset != -(bfd_vma) 1);
               offset = h->got.offset;
-              BFD_ASSERT (offset != -(bfd_vma) 1);
 
 	      if (!WILL_CALL_FINISH_DYNAMIC_SYMBOL
 	             (htab->elf.dynamic_sections_created, info->shared, h)
@@ -2174,7 +2174,6 @@ hexagon_elf_relocate_section
               /* Local symbol. */
               BFD_ASSERT (local_got_offsets
                           && local_got_offsets [r_symndx] != -(bfd_vma) 1);
-
               offset = local_got_offsets [r_symndx];
 
               /* Since the offset must always be a multiple of 4, the least
@@ -2200,7 +2199,7 @@ hexagon_elf_relocate_section
                       outrel.r_offset = htab->elf.sgot->output_section->vma
                                         + htab->elf.sgot->output_offset
                                         + offset;
-                      outrel.r_info = ELF32_R_INFO (0, R_HEXAGON_RELATIVE);
+                      outrel.r_info = ELF32_R_INFO (0, R_HEX_RELATIVE);
                       outrel.r_addend = relocation;
                       loc = s->contents
                             + s->reloc_count++ * sizeof (Elf32_External_Rela);
@@ -2217,9 +2216,9 @@ hexagon_elf_relocate_section
                        + offset;
           break;
 
-	case R_HEXAGON_GOTREL_LO16:
-	case R_HEXAGON_GOTREL_HI16:
-	case R_HEXAGON_GOTREL_32:
+	case R_HEX_GOTREL_LO16:
+	case R_HEX_GOTREL_HI16:
+	case R_HEX_GOTREL_32:
 	  /* These relocations are like a PC-relative one, except the
 	     reference point is the location of _GLOBAL_OFFSET_TABLE_.  Note
 	     that sgot->output_offset is not involved in this calculation.
@@ -2230,11 +2229,11 @@ hexagon_elf_relocate_section
 	                + htab->elf.sgotplt->output_offset;
 	  break;
 
-        case R_HEXAGON_PLT_B22_PCREL:
-        case R_HEXAGON_B22_PCREL:
-        case R_HEXAGON_B15_PCREL:
-        case R_HEXAGON_B13_PCREL:
-        case R_HEXAGON_B7_PCREL:
+        case R_HEX_PLT_B22_PCREL:
+        case R_HEX_B22_PCREL:
+        case R_HEX_B15_PCREL:
+        case R_HEX_B13_PCREL:
+        case R_HEX_B7_PCREL:
 	  /* Relocation is to the entry for this symbol in the PLT. */
 	  if (!h || ELF_ST_VISIBILITY (h->other) != STV_DEFAULT)
             /* Resolve a PLT relocation against a local symbol directly,
@@ -2252,17 +2251,17 @@ hexagon_elf_relocate_section
               break;
             }
 
-          if (r_type == R_HEXAGON_PLT_B22_PCREL)
+          if (r_type == R_HEX_PLT_B22_PCREL)
 	    break;
 
 	  /* Fall-through.  */
 
-        case R_HEXAGON_LO16:
-        case R_HEXAGON_HI16:
-        case R_HEXAGON_HL16:
-        case R_HEXAGON_32:
-        case R_HEXAGON_16:
-        case R_HEXAGON_8:
+        case R_HEX_LO16:
+        case R_HEX_HI16:
+        case R_HEX_HL16:
+        case R_HEX_32:
+        case R_HEX_16:
+        case R_HEX_8:
 	  /* r_symndx will be zero only for relocations against symbols from
 	     removed link-once sections or from sections discarded by the
 	     linker script. */
@@ -2273,10 +2272,10 @@ hexagon_elf_relocate_section
 	       && (!h
 		   || ELF_ST_VISIBILITY (h->other) == STV_DEFAULT
 		   || h->root.type != bfd_link_hash_undefweak)
-	       && ((r_type != R_HEXAGON_B22_PCREL
-		    && r_type != R_HEXAGON_B15_PCREL
-		    && r_type != R_HEXAGON_B13_PCREL
-		    && r_type != R_HEXAGON_B7_PCREL)
+	       && ((r_type != R_HEX_B22_PCREL
+		    && r_type != R_HEX_B15_PCREL
+		    && r_type != R_HEX_B13_PCREL
+		    && r_type != R_HEX_B7_PCREL)
 		   || !SYMBOL_CALLS_LOCAL (info, h)))
 	      || (ELIMINATE_COPY_RELOCS
 		  && info->executable
@@ -2314,10 +2313,10 @@ hexagon_elf_relocate_section
 	      /* h->dynindx may be -1 if the symbol was marked to become local.  */
 	      else if (h
 		       && h->dynindx != -1
-		       && (r_type == R_HEXAGON_B22_PCREL
-			   || r_type == R_HEXAGON_B15_PCREL
-			   || r_type == R_HEXAGON_B13_PCREL
-			   || r_type == R_HEXAGON_B7_PCREL
+		       && (r_type == R_HEX_B22_PCREL
+			   || r_type == R_HEX_B15_PCREL
+			   || r_type == R_HEX_B13_PCREL
+			   || r_type == R_HEX_B7_PCREL
 			   || info->executable
 			   || !SYMBOLIC_BIND (info, h)
 			   || !h->def_regular))
@@ -2327,10 +2326,10 @@ hexagon_elf_relocate_section
 		}
 	      else
 		{
-		  if (r_type == R_HEXAGON_32)
+		  if (r_type == R_HEX_32)
 		    {
 		      relocate = TRUE;
-		      outrel.r_info = ELF32_R_INFO (0, R_HEXAGON_RELATIVE);
+		      outrel.r_info = ELF32_R_INFO (0, R_HEX_RELATIVE);
 		      outrel.r_addend = relocation + rel->r_addend;
 		    }
 		  else
@@ -2377,8 +2376,8 @@ hexagon_elf_relocate_section
 	      bfd_elf32_swap_reloca_out (obfd, &outrel, loc);
 
 	      /* This reloc will be computed at runtime, so there's no
-                 need to do anything now, except for R_HEXAGON_32 relocations
-                 that have been turned into R_HEXAGON_RELATIVE.  */
+                 need to do anything now, except for R_HEX_32 relocations
+                 that have been turned into R_HEX_RELATIVE.  */
 	      if (!relocate)
 		continue;
 	    }
@@ -2389,10 +2388,10 @@ hexagon_elf_relocate_section
          relocations for TLS types. */
       switch (r_type)
         {
-	case R_HEXAGON_GD_GOT_LO16:
-	case R_HEXAGON_GD_GOT_HI16:
-	case R_HEXAGON_GD_GOT_32:
-	case R_HEXAGON_GD_GOT_16:
+	case R_HEX_GD_GOT_LO16:
+	case R_HEX_GD_GOT_HI16:
+	case R_HEX_GD_GOT_32:
+	case R_HEX_GD_GOT_16:
 	  if (h)
 	    {
 	      /* Global symbol. */
@@ -2424,13 +2423,13 @@ hexagon_elf_relocate_section
 			+ offset;
 	  break;
 
-	case R_HEXAGON_IE_LO16:
-	case R_HEXAGON_IE_HI16:
-	case R_HEXAGON_IE_32:
-	case R_HEXAGON_IE_GOT_LO16:
-	case R_HEXAGON_IE_GOT_HI16:
-	case R_HEXAGON_IE_GOT_32:
-	case R_HEXAGON_IE_GOT_16:
+	case R_HEX_IE_LO16:
+	case R_HEX_IE_HI16:
+	case R_HEX_IE_32:
+	case R_HEX_IE_GOT_LO16:
+	case R_HEX_IE_GOT_HI16:
+	case R_HEX_IE_GOT_32:
+	case R_HEX_IE_GOT_16:
 	  {
 	    bfd_vma adjust = 0;
 
@@ -2451,8 +2450,8 @@ hexagon_elf_relocate_section
 	    else
 	      {
 		/* Local symbol. */
-		if (!local_got_offsets)
-		  abort ();
+		BFD_ASSERT (local_got_offsets
+			    && local_got_offsets [r_symndx] != -(bfd_vma) 1);
 		offset = local_got_offsets [r_symndx];
 
 		if ((offset & 1))
@@ -2461,23 +2460,26 @@ hexagon_elf_relocate_section
 		  local_got_offsets [r_symndx] |= 1;
 	      }
 
-	    bfd_put_32 (obfd, hexagon_elf_tpoff (info, relocation),
-			htab->elf.sgot->contents + offset + adjust);
+	    if (relocation)
+	      bfd_put_32 (obfd, hexagon_elf_tpoff (info, relocation),
+			  htab->elf.sgot->contents + offset + adjust);
 
 	    switch (r_type)
 	      {
-	      case R_HEXAGON_IE_LO16:
-	      case R_HEXAGON_IE_HI16:
-	      case R_HEXAGON_IE_32:
+	      case R_HEX_IE_LO16:
+	      case R_HEX_IE_HI16:
+	      case R_HEX_IE_32:
+		/* Resolves to the address of a GOT entry. */
 		relocation  = htab->elf.sgot->output_section->vma
 			      + htab->elf.sgot->output_offset
 			      + offset + adjust;
 		break;
 
-	      case R_HEXAGON_IE_GOT_LO16:
-	      case R_HEXAGON_IE_GOT_HI16:
-	      case R_HEXAGON_IE_GOT_32:
-	      case R_HEXAGON_IE_GOT_16:
+	      case R_HEX_IE_GOT_LO16:
+	      case R_HEX_IE_GOT_HI16:
+	      case R_HEX_IE_GOT_32:
+	      case R_HEX_IE_GOT_16:
+		/* Resolves to the offset of a GOT entry. */
 		relocation  = htab->elf.sgot->output_section->vma
 			      + htab->elf.sgot->output_offset
 			      - htab->elf.sgotplt->output_section->vma
@@ -2488,10 +2490,17 @@ hexagon_elf_relocate_section
 	  }
 	  break;
 
-	case R_HEXAGON_TPREL_LO16:
-	case R_HEXAGON_TPREL_HI16:
-	case R_HEXAGON_TPREL_32:
-	case R_HEXAGON_TPREL_16:
+	case R_HEX_DTPREL_LO16:
+	case R_HEX_DTPREL_HI16:
+	case R_HEX_DTPREL_32:
+	case R_HEX_DTPREL_16:
+	  relocation = hexagon_elf_dtpoff (info, relocation);
+	  break;
+
+	case R_HEX_TPREL_LO16:
+	case R_HEX_TPREL_HI16:
+	case R_HEX_TPREL_32:
+	case R_HEX_TPREL_16:
 	  relocation = hexagon_elf_tpoff (info, relocation);
 	  break;
         }
@@ -2501,36 +2510,42 @@ hexagon_elf_relocate_section
 	{
 	  hexagon_insn insn;
 
-        case R_HEXAGON_32_6_X:
+        case R_HEX_32_6_X:
           rmask = howto->src_mask;
           /* Fall through. */
 
-        case R_HEXAGON_6_X:
-        case R_HEXAGON_7_X:
-        case R_HEXAGON_8_X:
-        case R_HEXAGON_9_X:
-        case R_HEXAGON_10_X:
-        case R_HEXAGON_11_X:
-        case R_HEXAGON_12_X:
-        case R_HEXAGON_16_X:
+        case R_HEX_6_X:
+        case R_HEX_7_X:
+        case R_HEX_8_X:
+        case R_HEX_9_X:
+        case R_HEX_10_X:
+        case R_HEX_11_X:
+        case R_HEX_12_X:
+        case R_HEX_16_X:
           lmask = ~(~(bfd_vma) 0 << howto->bitsize);
           /* Fall through. */
 
-	case R_HEXAGON_LO16:
-	case R_HEXAGON_HI16:
-	case R_HEXAGON_GOTREL_LO16:
-	case R_HEXAGON_GOTREL_HI16:
-	case R_HEXAGON_GOT_LO16:
-	case R_HEXAGON_GOT_HI16:
-	case R_HEXAGON_GOT_16:
-        case R_HEXAGON_GD_GOT_LO16:
-        case R_HEXAGON_GD_GOT_HI16:
-        case R_HEXAGON_GD_GOT_16:
-        case R_HEXAGON_IE_LO16:
-        case R_HEXAGON_IE_HI16:
-        case R_HEXAGON_IE_GOT_LO16:
-        case R_HEXAGON_IE_GOT_HI16:
-        case R_HEXAGON_IE_GOT_16:
+	case R_HEX_LO16:
+	case R_HEX_HI16:
+	case R_HEX_GOTREL_LO16:
+	case R_HEX_GOTREL_HI16:
+	case R_HEX_GOT_LO16:
+	case R_HEX_GOT_HI16:
+	case R_HEX_GOT_16:
+        case R_HEX_GD_GOT_LO16:
+        case R_HEX_GD_GOT_HI16:
+        case R_HEX_GD_GOT_16:
+        case R_HEX_IE_LO16:
+        case R_HEX_IE_HI16:
+        case R_HEX_IE_GOT_LO16:
+        case R_HEX_IE_GOT_HI16:
+        case R_HEX_IE_GOT_16:
+	case R_HEX_DTPREL_LO16:
+	case R_HEX_DTPREL_HI16:
+	case R_HEX_DTPREL_16:
+	case R_HEX_TPREL_LO16:
+	case R_HEX_TPREL_HI16:
+	case R_HEX_TPREL_16:
 	  offset = (relocation + rel->r_addend) & lmask & rmask;
 
 	  insn = hexagon_get_insn (ibfd, howto, contents + rel->r_offset);
@@ -2545,45 +2560,45 @@ hexagon_elf_relocate_section
 
 	  break;
 
-        case R_HEXAGON_HL16:
+        case R_HEX_HL16:
 	  offset = relocation + rel->r_addend;
 
           /* First instruction (HI). */
-	  insn = hexagon_get_insn (ibfd, hexagon_elf_howto_table + R_HEXAGON_HI16,
+	  insn = hexagon_get_insn (ibfd, hexagon_elf_howto_table + R_HEX_HI16,
                                  contents + rel->r_offset + 0);
 
 	  if (!hexagon_reloc_operand
-	         (hexagon_elf_howto_table + R_HEXAGON_HI16, &insn, offset, NULL)
+	         (hexagon_elf_howto_table + R_HEX_HI16, &insn, offset, NULL)
               && h && h->root.type != bfd_link_hash_undefined)
             r = info->callbacks->reloc_overflow
                   (info, (h ? &h->root : NULL), name,
-                   hexagon_elf_howto_table [R_HEXAGON_HI16].name, 0,
+                   hexagon_elf_howto_table [R_HEX_HI16].name, 0,
                    ibfd, isection, rel->r_offset + sizeof (insn));
 	  else
-            hexagon_put_insn (ibfd, hexagon_elf_howto_table + R_HEXAGON_HI16,
+            hexagon_put_insn (ibfd, hexagon_elf_howto_table + R_HEX_HI16,
                             contents + rel->r_offset + 0, insn);
 
           /* Second instruction (LO). */
-	  insn = hexagon_get_insn (ibfd, hexagon_elf_howto_table + R_HEXAGON_LO16,
+	  insn = hexagon_get_insn (ibfd, hexagon_elf_howto_table + R_HEX_LO16,
                                  contents + rel->r_offset + sizeof (insn));
 
 	  if (!hexagon_reloc_operand
-	         (hexagon_elf_howto_table + R_HEXAGON_LO16, &insn, offset, NULL)
+	         (hexagon_elf_howto_table + R_HEX_LO16, &insn, offset, NULL)
               && h && h->root.type != bfd_link_hash_undefined)
             r = info->callbacks->reloc_overflow
                   (info, (h ? &h->root : NULL), name,
-                   hexagon_elf_howto_table [R_HEXAGON_LO16].name, 0,
+                   hexagon_elf_howto_table [R_HEX_LO16].name, 0,
                    ibfd, isection, rel->r_offset + sizeof (insn));
 	  else
-            hexagon_put_insn (ibfd, hexagon_elf_howto_table + R_HEXAGON_LO16,
+            hexagon_put_insn (ibfd, hexagon_elf_howto_table + R_HEX_LO16,
                             contents + rel->r_offset + sizeof (insn), insn);
 
           break;
 
-	case R_HEXAGON_GPREL16_0:
-	case R_HEXAGON_GPREL16_1:
-	case R_HEXAGON_GPREL16_2:
-	case R_HEXAGON_GPREL16_3:
+	case R_HEX_GPREL16_0:
+	case R_HEX_GPREL16_1:
+	case R_HEX_GPREL16_2:
+	case R_HEX_GPREL16_3:
 	  {
 	    bfd_vma base;
 	    struct bfd_link_hash_entry *h;
@@ -2624,23 +2639,23 @@ hexagon_elf_relocate_section
 
           break;
 
-        case R_HEXAGON_B32_PCREL_X:
-        case R_HEXAGON_B22_PCREL_X:
-        case R_HEXAGON_B15_PCREL_X:
-        case R_HEXAGON_B13_PCREL_X:
-        case R_HEXAGON_B9_PCREL_X:
-          if (r_type == R_HEXAGON_B32_PCREL_X)
+        case R_HEX_B32_PCREL_X:
+        case R_HEX_B22_PCREL_X:
+        case R_HEX_B15_PCREL_X:
+        case R_HEX_B13_PCREL_X:
+        case R_HEX_B9_PCREL_X:
+          if (r_type == R_HEX_B32_PCREL_X)
             rmask = ~(bfd_vma) 0 << howto->rightshift;
           else
             lmask = ~(~(bfd_vma) 0 << howto->bitsize);
           /* Fall through. */
 
-	case R_HEXAGON_PLT_B22_PCREL:
-	case R_HEXAGON_B22_PCREL:
-	case R_HEXAGON_B15_PCREL:
-	case R_HEXAGON_B13_PCREL:
-        case R_HEXAGON_B9_PCREL:
-	case R_HEXAGON_B7_PCREL:
+	case R_HEX_PLT_B22_PCREL:
+	case R_HEX_B22_PCREL:
+	case R_HEX_B15_PCREL:
+	case R_HEX_B13_PCREL:
+        case R_HEX_B9_PCREL:
+	case R_HEX_B7_PCREL:
 	  offset = ((relocation + rel->r_addend)
                     - (isection->output_section->vma
                        + isection->output_offset
@@ -2659,36 +2674,20 @@ hexagon_elf_relocate_section
 
 	  break;
 
-	case R_HEXAGON_TPREL_LO16:
-	case R_HEXAGON_TPREL_HI16:
-	case R_HEXAGON_TPREL_16:
-	  offset = relocation + rel->r_addend;
-
-	  insn = hexagon_get_insn (ibfd, howto, contents + rel->r_offset);
-
-	  if (!hexagon_reloc_operand (howto, &insn, offset, NULL)
-	      && h && h->root.type != bfd_link_hash_undefined)
-	    r = info->callbacks->reloc_overflow
-		  (info, (h? &h->root: NULL), name, howto->name, 0,
-		    ibfd, isection, rel->r_offset);
-	  else
-	    hexagon_put_insn (ibfd, howto, contents + rel->r_offset, insn);
-
-	  break;
-
-	case R_HEXAGON_32:
-	case R_HEXAGON_16:
-	case R_HEXAGON_8:
-        case R_HEXAGON_32_PCREL:
-        case R_HEXAGON_GOT_32:
-        case R_HEXAGON_GOTREL_32:
-        case R_HEXAGON_GD_GOT_32:
-        case R_HEXAGON_IE_32:
-        case R_HEXAGON_IE_GOT_32:
-	case R_HEXAGON_TPREL_32:
+	case R_HEX_32:
+	case R_HEX_16:
+	case R_HEX_8:
+        case R_HEX_32_PCREL:
+        case R_HEX_GOT_32:
+        case R_HEX_GOTREL_32:
+        case R_HEX_GD_GOT_32:
+        case R_HEX_IE_32:
+        case R_HEX_IE_GOT_32:
+	case R_HEX_DTPREL_32:
+	case R_HEX_TPREL_32:
           /* Fall through. */
 
-	case R_HEXAGON_NONE:
+	case R_HEX_NONE:
           /* Default relocation handling. */
           r = _bfd_final_link_relocate (howto, ibfd, isection,
                                         contents, rel->r_offset,
@@ -2822,21 +2821,21 @@ hexagon_elf_check_relocs
       /* Perform GOT, PLT and TLS accounting. */
       switch (r_type)
 	{
-	case R_HEXAGON_GOT_LO16:
-	case R_HEXAGON_GOT_HI16:
-	case R_HEXAGON_GOT_32:
-	case R_HEXAGON_GOT_16:
-	case R_HEXAGON_GD_GOT_LO16:
-	case R_HEXAGON_GD_GOT_HI16:
-	case R_HEXAGON_GD_GOT_32:
-	case R_HEXAGON_GD_GOT_16:
-	case R_HEXAGON_IE_LO16:
-	case R_HEXAGON_IE_HI16:
-	case R_HEXAGON_IE_32:
-	case R_HEXAGON_IE_GOT_LO16:
-	case R_HEXAGON_IE_GOT_HI16:
-	case R_HEXAGON_IE_GOT_32:
-	case R_HEXAGON_IE_GOT_16:
+	case R_HEX_GOT_LO16:
+	case R_HEX_GOT_HI16:
+	case R_HEX_GOT_32:
+	case R_HEX_GOT_16:
+	case R_HEX_GD_GOT_LO16:
+	case R_HEX_GD_GOT_HI16:
+	case R_HEX_GD_GOT_32:
+	case R_HEX_GD_GOT_16:
+	case R_HEX_IE_LO16:
+	case R_HEX_IE_HI16:
+	case R_HEX_IE_32:
+	case R_HEX_IE_GOT_LO16:
+	case R_HEX_IE_GOT_HI16:
+	case R_HEX_IE_GOT_32:
+	case R_HEX_IE_GOT_16:
           /* This symbol requires a GOT entry. */
           if (h)
 	    {
@@ -2845,27 +2844,27 @@ hexagon_elf_check_relocs
 
 	      switch (r_type)
 		{
-		case R_HEXAGON_GOT_LO16:
-		case R_HEXAGON_GOT_HI16:
-		case R_HEXAGON_GOT_32:
-		case R_HEXAGON_GOT_16:
+		case R_HEX_GOT_LO16:
+		case R_HEX_GOT_HI16:
+		case R_HEX_GOT_32:
+		case R_HEX_GOT_16:
 		  h->ok_got.refcount++;
 		  break;
 
-		case R_HEXAGON_GD_GOT_LO16:
-		case R_HEXAGON_GD_GOT_HI16:
-		case R_HEXAGON_GD_GOT_32:
-		case R_HEXAGON_GD_GOT_16:
+		case R_HEX_GD_GOT_LO16:
+		case R_HEX_GD_GOT_HI16:
+		case R_HEX_GD_GOT_32:
+		case R_HEX_GD_GOT_16:
 		  h->gd_got.refcount++;
 		  break;
 
-		case R_HEXAGON_IE_LO16:
-		case R_HEXAGON_IE_HI16:
-		case R_HEXAGON_IE_32:
-		case R_HEXAGON_IE_GOT_LO16:
-		case R_HEXAGON_IE_GOT_HI16:
-		case R_HEXAGON_IE_GOT_32:
-		case R_HEXAGON_IE_GOT_16:
+		case R_HEX_IE_LO16:
+		case R_HEX_IE_HI16:
+		case R_HEX_IE_32:
+		case R_HEX_IE_GOT_LO16:
+		case R_HEX_IE_GOT_HI16:
+		case R_HEX_IE_GOT_32:
+		case R_HEX_IE_GOT_16:
 		  h->ie_got.refcount++;
 		  break;
 		}
@@ -2893,36 +2892,36 @@ hexagon_elf_check_relocs
 
 	      switch (r_type)
 		{
-		case R_HEXAGON_GOT_LO16:
-		case R_HEXAGON_GOT_HI16:
-		case R_HEXAGON_GOT_32:
-		case R_HEXAGON_GOT_16:
+		case R_HEX_GOT_LO16:
+		case R_HEX_GOT_HI16:
+		case R_HEX_GOT_32:
+		case R_HEX_GOT_16:
 		  local_got_refcounts [LGOT_OK (symtab_hdr, r_symndx)]++;
 		  break;
 
-		case R_HEXAGON_GD_GOT_LO16:
-		case R_HEXAGON_GD_GOT_HI16:
-		case R_HEXAGON_GD_GOT_32:
-		case R_HEXAGON_GD_GOT_16:
+		case R_HEX_GD_GOT_LO16:
+		case R_HEX_GD_GOT_HI16:
+		case R_HEX_GD_GOT_32:
+		case R_HEX_GD_GOT_16:
 		  local_got_refcounts [LGOT_GD (symtab_hdr, r_symndx)]++;
 		  break;
 
-		case R_HEXAGON_IE_LO16:
-		case R_HEXAGON_IE_HI16:
-		case R_HEXAGON_IE_32:
-		case R_HEXAGON_IE_GOT_LO16:
-		case R_HEXAGON_IE_GOT_HI16:
-		case R_HEXAGON_IE_GOT_32:
-		case R_HEXAGON_IE_GOT_16:
+		case R_HEX_IE_LO16:
+		case R_HEX_IE_HI16:
+		case R_HEX_IE_32:
+		case R_HEX_IE_GOT_LO16:
+		case R_HEX_IE_GOT_HI16:
+		case R_HEX_IE_GOT_32:
+		case R_HEX_IE_GOT_16:
 		  local_got_refcounts [LGOT_IE (symtab_hdr, r_symndx)]++;
 		  break;
 		}
             }
 	  /* Fall through */
 
-        case R_HEXAGON_GOTREL_LO16:
-        case R_HEXAGON_GOTREL_HI16:
-        case R_HEXAGON_GOTREL_32:
+        case R_HEX_GOTREL_LO16:
+        case R_HEX_GOTREL_HI16:
+        case R_HEX_GOTREL_32:
           /* This symbol requires a GOT. */
 	  if (!htab->elf.sgotplt)
 	    {
@@ -2934,17 +2933,17 @@ hexagon_elf_check_relocs
 	    }
 	  break;
 
-        case R_HEXAGON_GPREL16_0:
-        case R_HEXAGON_GPREL16_1:
-        case R_HEXAGON_GPREL16_2:
-        case R_HEXAGON_GPREL16_3:
+        case R_HEX_GPREL16_0:
+        case R_HEX_GPREL16_1:
+        case R_HEX_GPREL16_2:
+        case R_HEX_GPREL16_3:
 
-        case R_HEXAGON_LO16:
-        case R_HEXAGON_HI16:
-        case R_HEXAGON_HL16:
-	case R_HEXAGON_32:
-        case R_HEXAGON_16:
-        case R_HEXAGON_8:
+        case R_HEX_LO16:
+        case R_HEX_HI16:
+        case R_HEX_HL16:
+	case R_HEX_32:
+        case R_HEX_16:
+        case R_HEX_8:
 	  if (h && info->executable)
 	    {
 	      /* If this relocation is in a read-only section, we might
@@ -2961,10 +2960,10 @@ hexagon_elf_check_relocs
 	    }
           break;
 
-	case R_HEXAGON_B22_PCREL:
-	case R_HEXAGON_B15_PCREL:
-	case R_HEXAGON_B13_PCREL:
-	case R_HEXAGON_B7_PCREL:
+	case R_HEX_B22_PCREL:
+	case R_HEX_B15_PCREL:
+	case R_HEX_B13_PCREL:
+	case R_HEX_B7_PCREL:
 	  if (h) /* && info->executable) */
 	    {
 	      /* A PLT entry may be needed if this relocation refers to
@@ -2973,7 +2972,7 @@ hexagon_elf_check_relocs
 	    }
           break;
 
-	case R_HEXAGON_PLT_B22_PCREL:
+	case R_HEX_PLT_B22_PCREL:
 	  /* This symbol requires a PLT entry.  We actually build the entry
 	     in adjust_dynamic_symbol because this might be a case of
 	     linking PIC code which is never referenced by a dynamic object,
@@ -2990,23 +2989,23 @@ hexagon_elf_check_relocs
       /* Perform copy-relocation checks. */
       switch (r_type)
 	{
-        case R_HEXAGON_GPREL16_0:
-        case R_HEXAGON_GPREL16_1:
-        case R_HEXAGON_GPREL16_2:
-        case R_HEXAGON_GPREL16_3:
+        case R_HEX_GPREL16_0:
+        case R_HEX_GPREL16_1:
+        case R_HEX_GPREL16_2:
+        case R_HEX_GPREL16_3:
 
-        case R_HEXAGON_LO16:
-        case R_HEXAGON_HI16:
-        case R_HEXAGON_HL16:
-	case R_HEXAGON_32:
-        case R_HEXAGON_16:
-        case R_HEXAGON_8:
+        case R_HEX_LO16:
+        case R_HEX_HI16:
+        case R_HEX_HL16:
+	case R_HEX_32:
+        case R_HEX_16:
+        case R_HEX_8:
 
-        /* FIXME: How about R_HEXAGON_32_PCREL? */
-	case R_HEXAGON_B22_PCREL:
-	case R_HEXAGON_B15_PCREL:
-	case R_HEXAGON_B13_PCREL:
-	case R_HEXAGON_B7_PCREL:
+        /* FIXME: How about R_HEX_32_PCREL? */
+	case R_HEX_B22_PCREL:
+	case R_HEX_B15_PCREL:
+	case R_HEX_B13_PCREL:
+	case R_HEX_B7_PCREL:
 	  /* If we are creating a shared library, and this is a relocation
 	     against a global symbol, or a non PC-relative relocation
 	     against a local symbol, then we need to copy the relocation
@@ -3027,10 +3026,10 @@ hexagon_elf_check_relocs
 	     we manage to avoid copy relocations for the symbol.  */
 	  if ((info->shared
 	       && (sec->flags & SEC_ALLOC)
-	       && (((r_type != R_HEXAGON_B22_PCREL)
-		    && (r_type != R_HEXAGON_B15_PCREL)
-		    && (r_type != R_HEXAGON_B13_PCREL)
-		    && (r_type != R_HEXAGON_B7_PCREL))
+	       && (((r_type != R_HEX_B22_PCREL)
+		    && (r_type != R_HEX_B15_PCREL)
+		    && (r_type != R_HEX_B13_PCREL)
+		    && (r_type != R_HEX_B7_PCREL))
 		   || (h
 		       && (!SYMBOLIC_BIND (info, &h->elf)
 			   || h->elf.root.type == bfd_link_hash_defweak
@@ -3094,11 +3093,11 @@ hexagon_elf_check_relocs
 		  p->sec = sec;
 		}
 
-	      if (r_type == R_HEXAGON_32_PCREL
-		  || r_type == R_HEXAGON_B22_PCREL
-		  || r_type == R_HEXAGON_B15_PCREL
-		  || r_type == R_HEXAGON_B13_PCREL
-		  || r_type == R_HEXAGON_B7_PCREL)
+	      if (r_type == R_HEX_32_PCREL
+		  || r_type == R_HEX_B22_PCREL
+		  || r_type == R_HEX_B15_PCREL
+		  || r_type == R_HEX_B13_PCREL
+		  || r_type == R_HEX_B7_PCREL)
 		p->pc_count++;
               else
                 p->count++;
@@ -3109,24 +3108,24 @@ hexagon_elf_check_relocs
       /* Validate relocations. */
       switch (r_type)
 	{
-        case R_HEXAGON_GPREL16_0:
-        case R_HEXAGON_GPREL16_1:
-        case R_HEXAGON_GPREL16_2:
-        case R_HEXAGON_GPREL16_3:
+        case R_HEX_GPREL16_0:
+        case R_HEX_GPREL16_1:
+        case R_HEX_GPREL16_2:
+        case R_HEX_GPREL16_3:
           /* These relocations cannot be used in shared libraries because
              there should not be an SDA in a shared library for the time being. */
 
-        case R_HEXAGON_LO16:
-        case R_HEXAGON_HI16:
+        case R_HEX_LO16:
+        case R_HEX_HI16:
           /* These relocations cannot be used in shared libraries. */
 
-        case R_HEXAGON_HL16:
-        case R_HEXAGON_16:
-        case R_HEXAGON_8:
+        case R_HEX_HL16:
+        case R_HEX_16:
+        case R_HEX_8:
           /* These relocations cannot be used in shared libraries or for
              symbols in shared libraries. */
 
-	case R_HEXAGON_32_PCREL:
+	case R_HEX_32_PCREL:
 	  /* This relocation cannot be used for symbols in shared libraries. */
 
           /* Do not complain about sections that we don't care about, such as
@@ -3134,7 +3133,7 @@ hexagon_elf_check_relocs
           if (info->shared
               && (sec->flags & SEC_ALLOC)
               && (sec->flags & SEC_READONLY)
-              && r_type != R_HEXAGON_32_PCREL)
+              && r_type != R_HEX_32_PCREL)
             {
               (*_bfd_error_handler)
                 (_("%B: relocation %s%s%s%s in section `%A\' cannot be handled " \
@@ -3165,13 +3164,13 @@ hexagon_elf_check_relocs
             }
           break;
 
-	case R_HEXAGON_IE_LO16:
-	case R_HEXAGON_IE_HI16:
-	case R_HEXAGON_IE_32:
-	case R_HEXAGON_IE_GOT_LO16:
-	case R_HEXAGON_IE_GOT_HI16:
-	case R_HEXAGON_IE_GOT_32:
-	case R_HEXAGON_IE_GOT_16:
+	case R_HEX_IE_LO16:
+	case R_HEX_IE_HI16:
+	case R_HEX_IE_32:
+	case R_HEX_IE_GOT_LO16:
+	case R_HEX_IE_GOT_HI16:
+	case R_HEX_IE_GOT_32:
+	case R_HEX_IE_GOT_16:
 	  /* These relocations require that a DSO is of type Initial Exec.
 	     Like in other targets, this flag is not reset even if they are
 	     garbage-collected. */
@@ -3231,49 +3230,49 @@ hexagon_elf_gc_sweep_hook
       r_type = ELF32_R_TYPE (rel->r_info);
       switch (r_type)
 	{
-	case R_HEXAGON_GOT_LO16:
-	case R_HEXAGON_GOT_HI16:
-	case R_HEXAGON_GOT_32:
-	case R_HEXAGON_GOT_16:
-	case R_HEXAGON_GD_GOT_LO16:
-	case R_HEXAGON_GD_GOT_HI16:
-	case R_HEXAGON_GD_GOT_32:
-	case R_HEXAGON_GD_GOT_16:
-	case R_HEXAGON_IE_LO16:
-	case R_HEXAGON_IE_HI16:
-	case R_HEXAGON_IE_32:
-	case R_HEXAGON_IE_GOT_LO16:
-	case R_HEXAGON_IE_GOT_HI16:
-	case R_HEXAGON_IE_GOT_32:
-	case R_HEXAGON_IE_GOT_16:
+	case R_HEX_GOT_LO16:
+	case R_HEX_GOT_HI16:
+	case R_HEX_GOT_32:
+	case R_HEX_GOT_16:
+	case R_HEX_GD_GOT_LO16:
+	case R_HEX_GD_GOT_HI16:
+	case R_HEX_GD_GOT_32:
+	case R_HEX_GD_GOT_16:
+	case R_HEX_IE_LO16:
+	case R_HEX_IE_HI16:
+	case R_HEX_IE_32:
+	case R_HEX_IE_GOT_LO16:
+	case R_HEX_IE_GOT_HI16:
+	case R_HEX_IE_GOT_32:
+	case R_HEX_IE_GOT_16:
 
 	  switch (r_type)
 	    {
-	    case R_HEXAGON_GOT_LO16:
-	    case R_HEXAGON_GOT_HI16:
-	    case R_HEXAGON_GOT_32:
-	    case R_HEXAGON_GOT_16:
+	    case R_HEX_GOT_LO16:
+	    case R_HEX_GOT_HI16:
+	    case R_HEX_GOT_32:
+	    case R_HEX_GOT_16:
 	      l_symndx = LGOT_OK (symtab_hdr, r_symndx);
 	      if (eh && eh->ok_got.refcount > 0)
 		eh->ok_got.refcount--;
 	      break;
 
-	    case R_HEXAGON_GD_GOT_LO16:
-	    case R_HEXAGON_GD_GOT_HI16:
-	    case R_HEXAGON_GD_GOT_32:
-	    case R_HEXAGON_GD_GOT_16:
+	    case R_HEX_GD_GOT_LO16:
+	    case R_HEX_GD_GOT_HI16:
+	    case R_HEX_GD_GOT_32:
+	    case R_HEX_GD_GOT_16:
 	      l_symndx = LGOT_GD (symtab_hdr, r_symndx);
 	      if (eh && eh->gd_got.refcount > 0)
 		eh->gd_got.refcount--;
 	      break;
 
-	    case R_HEXAGON_IE_LO16:
-	    case R_HEXAGON_IE_HI16:
-	    case R_HEXAGON_IE_32:
-	    case R_HEXAGON_IE_GOT_LO16:
-	    case R_HEXAGON_IE_GOT_HI16:
-	    case R_HEXAGON_IE_GOT_32:
-	    case R_HEXAGON_IE_GOT_16:
+	    case R_HEX_IE_LO16:
+	    case R_HEX_IE_HI16:
+	    case R_HEX_IE_32:
+	    case R_HEX_IE_GOT_LO16:
+	    case R_HEX_IE_GOT_HI16:
+	    case R_HEX_IE_GOT_32:
+	    case R_HEX_IE_GOT_16:
 	      l_symndx = LGOT_IE (symtab_hdr, r_symndx);
 	      if (eh && eh->ie_got.refcount > 0)
 		eh->ie_got.refcount--;
@@ -3295,29 +3294,29 @@ hexagon_elf_gc_sweep_hook
 	    }
 	  break;
 
-	case R_HEXAGON_LO16:
-	case R_HEXAGON_HI16:
-	case R_HEXAGON_HL16:
-	case R_HEXAGON_32:
-	case R_HEXAGON_16:
-	case R_HEXAGON_8:
+	case R_HEX_LO16:
+	case R_HEX_HI16:
+	case R_HEX_HL16:
+	case R_HEX_32:
+	case R_HEX_16:
+	case R_HEX_8:
 
 /*
-	case R_HEXAGON_B22_PCREL:
-	case R_HEXAGON_B15_PCREL:
-	case R_HEXAGON_B13_PCREL:
-	case R_HEXAGON_B7_PCREL:
+	case R_HEX_B22_PCREL:
+	case R_HEX_B15_PCREL:
+	case R_HEX_B13_PCREL:
+	case R_HEX_B7_PCREL:
 */
 	  if (info->shared)
 	    break;
 
 	  /* Fall thru */
 
-	case R_HEXAGON_PLT_B22_PCREL:
-	case R_HEXAGON_B22_PCREL:
-	case R_HEXAGON_B15_PCREL:
-	case R_HEXAGON_B13_PCREL:
-	case R_HEXAGON_B7_PCREL:
+	case R_HEX_PLT_B22_PCREL:
+	case R_HEX_B22_PCREL:
+	case R_HEX_B15_PCREL:
+	case R_HEX_B13_PCREL:
+	case R_HEX_B7_PCREL:
 	  /* FIXME: should symbol visibility matter? */
 	  if (h)
             /* Global symbol. */
@@ -3376,7 +3375,7 @@ hexagon_elf_finish_dynamic_symbol
       /* A couple of insns contain the difference between the address of
          its corresponding GOT entry and the address of the PLT entry. */
       hexagon_reloc_operand
-        (hexagon_elf_howto_table + R_HEXAGON_HI16,
+        (hexagon_elf_howto_table + R_HEX_HI16,
          (hexagon_insn *) (htab->elf.splt->contents + h->plt.offset
                          + 1 * sizeof (*hexagon_plt_entry)),
          htab->elf.sgotplt->output_section->vma + htab->elf.sgotplt->output_offset
@@ -3385,7 +3384,7 @@ hexagon_elf_finish_dynamic_symbol
          - h->plt.offset,
          NULL);
       hexagon_reloc_operand
-        (hexagon_elf_howto_table + R_HEXAGON_LO16,
+        (hexagon_elf_howto_table + R_HEX_LO16,
          (hexagon_insn *) (htab->elf.splt->contents + h->plt.offset
                          + 2 * sizeof (*hexagon_plt_entry)),
          htab->elf.sgotplt->output_section->vma + htab->elf.sgotplt->output_offset
@@ -3417,7 +3416,7 @@ hexagon_elf_finish_dynamic_symbol
       rela.r_offset = htab->elf.sgotplt->output_section->vma
                       + htab->elf.sgotplt->output_offset
                       + got_offset;
-      rela.r_info = ELF32_R_INFO (h->dynindx, R_HEXAGON_JMP_SLOT);
+      rela.r_info = ELF32_R_INFO (h->dynindx, R_HEX_JMP_SLOT);
       rela.r_addend = 0;
       bfd_elf32_swap_reloca_out
         (obfd, &rela, htab->elf.srelplt->contents
@@ -3472,7 +3471,7 @@ hexagon_elf_finish_dynamic_symbol
 
 	  if (eh->ok_got.refcount > 0)
 	    {
-	      rela.r_info = ELF32_R_INFO (0, R_HEXAGON_RELATIVE);
+	      rela.r_info = ELF32_R_INFO (0, R_HEX_RELATIVE);
 	      rela.r_addend = h->root.u.def.value
 			      + h->root.u.def.section->output_section->vma
 			      + h->root.u.def.section->output_offset;
@@ -3490,9 +3489,22 @@ hexagon_elf_finish_dynamic_symbol
 
 	      if (eh->gd_got.refcount > 0)
 		{
-		  bfd_put_32 (obfd, 0, htab->elf.sgot->contents + offset);
-		  bfd_put_32
-		    (obfd, 0, htab->elf.sgot->contents + offset + GOT_ENTRY_SIZE);
+		  rela.r_info = ELF32_R_INFO (0, R_HEX_DTPMOD_32);
+		  rela.r_addend = 0;
+
+		  bfd_elf32_swap_reloca_out
+		    (obfd, &rela, htab->elf.srelgot->contents
+				  + htab->elf.srelgot->reloc_count++
+				  * sizeof (Elf32_External_Rela));
+
+		  if (h->def_regular)
+		    bfd_put_32
+		      (obfd,
+		       hexagon_elf_dtpoff
+			 (info, h->root.u.def.value
+				+ h->root.u.def.section->output_section->vma
+				+ h->root.u.def.section->output_offset),
+		       htab->elf.sgot->contents + offset + GOT_ENTRY_SIZE);
 
 		  adjust = GOT_ENTRY_SIZE * 2;
 		}
@@ -3501,11 +3513,11 @@ hexagon_elf_finish_dynamic_symbol
 		{
 		  bfd_put_32
 		    (obfd,
-		    hexagon_elf_tpoff
-		      (info, h->root.u.def.value
+		     hexagon_elf_tpoff
+		       (info, h->root.u.def.value
 			      + h->root.u.def.section->output_section->vma
 			      + h->root.u.def.section->output_offset),
-		    htab->elf.sgot->contents + offset + adjust);
+		     htab->elf.sgot->contents + offset + adjust);
 		}
 	    }
 	}
@@ -3515,7 +3527,7 @@ hexagon_elf_finish_dynamic_symbol
 
 	  if (eh->ok_got.refcount > 0)
 	    {
-	      rela.r_info = ELF32_R_INFO (h->dynindx, R_HEXAGON_GLOB_DAT);
+	      rela.r_info = ELF32_R_INFO (h->dynindx, R_HEX_GLOB_DAT);
 	      rela.r_addend = 0;
 
 	      bfd_elf32_swap_reloca_out
@@ -3537,7 +3549,7 @@ hexagon_elf_finish_dynamic_symbol
 
 	      if (eh->gd_got.refcount > 0)
 		{
-		  rela.r_info = ELF32_R_INFO (h->dynindx, R_HEXAGON_DTPMOD_32);
+		  rela.r_info = ELF32_R_INFO (h->dynindx, R_HEX_DTPMOD_32);
 		  rela.r_addend = 0;
 
 		  bfd_elf32_swap_reloca_out
@@ -3546,7 +3558,7 @@ hexagon_elf_finish_dynamic_symbol
 				  * sizeof (Elf32_External_Rela));
 
 		  rela.r_offset += GOT_ENTRY_SIZE;
-		  rela.r_info = ELF32_R_INFO (h->dynindx, R_HEXAGON_DTPREL_32);
+		  rela.r_info = ELF32_R_INFO (h->dynindx, R_HEX_DTPREL_32);
 		  rela.r_addend = 0;
 
 		  bfd_elf32_swap_reloca_out
@@ -3559,16 +3571,16 @@ hexagon_elf_finish_dynamic_symbol
 		      (obfd,
 		      hexagon_elf_dtpoff
 			(info, h->root.u.def.value
-				+ h->root.u.def.section->output_section->vma
-				+ h->root.u.def.section->output_offset),
-			  htab->elf.sgot->contents + offset);
+			       + h->root.u.def.section->output_section->vma
+			       + h->root.u.def.section->output_offset),
+			 htab->elf.sgot->contents + offset + GOT_ENTRY_SIZE);
 
 		  adjust = GOT_ENTRY_SIZE * 2;
 		}
 
 	      if (eh->ie_got.refcount > 0)
 		{
-		  rela.r_info = ELF32_R_INFO (h->dynindx, R_HEXAGON_DTPREL_32);
+		  rela.r_info = ELF32_R_INFO (h->dynindx, R_HEX_TPREL_32);
 		  rela.r_addend = 0;
 
 		  bfd_elf32_swap_reloca_out
@@ -3581,9 +3593,9 @@ hexagon_elf_finish_dynamic_symbol
 		      (obfd,
 		      hexagon_elf_tpoff
 			(info, h->root.u.def.value
-				+ h->root.u.def.section->output_section->vma
-				+ h->root.u.def.section->output_offset),
-			  htab->elf.sgot->contents + offset);
+			       + h->root.u.def.section->output_section->vma
+			       + h->root.u.def.section->output_offset),
+			 htab->elf.sgot->contents + offset);
 		}
 	    }
 	}
@@ -3608,7 +3620,7 @@ hexagon_elf_finish_dynamic_symbol
       rela.r_offset = h->root.u.def.value
 		      + h->root.u.def.section->output_section->vma
 		      + h->root.u.def.section->output_offset;
-      rela.r_info = ELF32_R_INFO (h->dynindx, R_HEXAGON_COPY);
+      rela.r_info = ELF32_R_INFO (h->dynindx, R_HEX_COPY);
       rela.r_addend = 0;
       bfd_elf32_swap_reloca_out
         (obfd, &rela, s->contents
@@ -3704,7 +3716,7 @@ hexagon_elf_finish_dynamic_sections
                 dyn.d_un.d_ptr += htab->elf.srelplt->size;
 	      break;
 
-	    case DT_HEXAGON_SYMSZ:
+	    case DT_HEX_SYMSZ:
               if (sdynsym)
                 {
                   dyn.d_un.d_val = get_section_size_now (obfd, sdynsym);
@@ -3713,7 +3725,7 @@ hexagon_elf_finish_dynamic_sections
               else
                 continue;
 
-            case DT_HEXAGON_VER:
+            case DT_HEX_VER:
               dyn.d_un.d_val = 3;
 	    }
 
@@ -3737,7 +3749,7 @@ hexagon_elf_finish_dynamic_sections
 	  /* A couple of insns contain the difference between the address of the
 	     PLT and of the GOT. */
           hexagon_reloc_operand
-            (hexagon_elf_howto_table + R_HEXAGON_HI16,
+            (hexagon_elf_howto_table + R_HEX_HI16,
             (hexagon_insn *) (htab->elf.splt->contents
                             + 1 * sizeof (*hexagon_plt_initial_entry)),
             htab->elf.splt->output_section->vma
@@ -3746,7 +3758,7 @@ hexagon_elf_finish_dynamic_sections
             - htab->elf.sgotplt->output_offset,
             NULL);
           hexagon_reloc_operand
-            (hexagon_elf_howto_table + R_HEXAGON_LO16,
+            (hexagon_elf_howto_table + R_HEX_LO16,
             (hexagon_insn *) (htab->elf.splt->contents
                             + 2 * sizeof (*hexagon_plt_initial_entry)),
             htab->elf.splt->output_section->vma
@@ -3923,7 +3935,7 @@ hexagon_elf_adjust_dynamic_symbol
      the dynamic object and the regular object will refer to the same memory
      location for the variable.  */
 
-  /* We must generate a R_HEXAGON_COPY reloc to tell the dynamic linker
+  /* We must generate a R_HEX_COPY reloc to tell the dynamic linker
      to copy the initial value out of the dynamic object and into the
      runtime process image.  */
   if ((h->root.u.def.section->flags & SEC_ALLOC))
@@ -3937,7 +3949,7 @@ hexagon_elf_adjust_dynamic_symbol
       h->needs_copy = 1;
     }
 
-  /* If a symbol has no size and does not require a PLT entry, R_HEXAGON_COPY
+  /* If a symbol has no size and does not require a PLT entry, R_HEX_COPY
      would probably do the wrong thing. */
   if (!h->size
       && !h->needs_plt)
@@ -4316,7 +4328,7 @@ hexagon_elf_size_dynamic_sections
       /* Allocate memory for the section contents.  We use bfd_zalloc here
          in case unused entries are not reclaimed before the contents of the
          section are written out.  This should not happen, but if
-         it does, we get a R_HEXAGON_NONE relocATION instead of garbage.  */
+         it does, we get a R_HEX_NONE relocATION instead of garbage.  */
       s->contents = (bfd_byte *) bfd_zalloc (dynobj, s->size);
       if (!s->contents)
 	return FALSE;
@@ -4369,11 +4381,11 @@ hexagon_elf_size_dynamic_sections
          adamant about it, then add it. */
       if (FALSE)
         {
-          if (!_bfd_elf_add_dynamic_entry (info, DT_HEXAGON_SYMSZ, 0))
+          if (!_bfd_elf_add_dynamic_entry (info, DT_HEX_SYMSZ, 0))
             return FALSE;
         }
 
-      if (!_bfd_elf_add_dynamic_entry (info, DT_HEXAGON_VER, 0))
+      if (!_bfd_elf_add_dynamic_entry (info, DT_HEX_VER, 0))
         return FALSE;
     }
 
@@ -4391,11 +4403,11 @@ hexagon_elf_reloc_type_class
 {
   switch ((int) ELF32_R_TYPE (rela->r_info))
     {
-    case R_HEXAGON_RELATIVE:
+    case R_HEX_RELATIVE:
       return reloc_class_relative;
-    case R_HEXAGON_JMP_SLOT:
+    case R_HEX_JMP_SLOT:
       return reloc_class_plt;
-    case R_HEXAGON_COPY:
+    case R_HEX_COPY:
       return reloc_class_copy;
     default:
       return reloc_class_normal;
