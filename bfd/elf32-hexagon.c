@@ -2183,9 +2183,6 @@ hexagon_elf_relocate_section
                 offset &= ~1;
               else
                 {
-                  bfd_put_32
-                    (obfd, relocation, htab->elf.sgot->contents + offset);
-
                   if (info->shared)
                     {
                       asection *s;
@@ -2206,9 +2203,13 @@ hexagon_elf_relocate_section
                       bfd_elf32_swap_reloca_out (obfd, &outrel, loc);
                     }
 
+		  bfd_put_32 (obfd, relocation,
+			      htab->elf.sgot->contents + offset);
+
                   local_got_offsets [r_symndx] |= 1;
                 }
             }
+
           relocation = htab->elf.sgot->output_section->vma
                        + htab->elf.sgot->output_offset
                        - htab->elf.sgotplt->output_section->vma
@@ -2406,14 +2407,37 @@ hexagon_elf_relocate_section
 	  else
 	    {
 	      /* Local symbol. */
-	      if (!local_got_offsets)
-		abort ();
+              BFD_ASSERT (local_got_offsets
+                          && local_got_offsets [r_symndx] != -(bfd_vma) 1);
 	      offset = local_got_offsets [r_symndx];
 
 	      if ((offset & 1))
 		offset &= ~1;
 	      else
-		local_got_offsets [r_symndx] |= 1;
+                {
+		  asection *s;
+		  Elf_Internal_Rela outrel;
+		  bfd_byte *loc;
+
+		  s = bfd_get_section_by_name
+			(elf_hash_table (info)->dynobj, ".rela.got");
+		  BFD_ASSERT (s);
+
+		  outrel.r_offset = htab->elf.sgot->output_section->vma
+				    + htab->elf.sgot->output_offset
+				    + offset;
+		  outrel.r_info = ELF32_R_INFO (0, R_HEX_DTPMOD_32);
+		  outrel.r_addend = 0;
+		  loc = s->contents
+			+ s->reloc_count++ * sizeof (Elf32_External_Rela);
+		  bfd_elf32_swap_reloca_out (obfd, &outrel, loc);
+
+		  bfd_put_32
+		    (obfd, hexagon_elf_dtpoff (info, relocation),
+		    htab->elf.sgot->contents + offset + GOT_ENTRY_SIZE);
+
+		  local_got_offsets [r_symndx] |= 1;
+		}
 	    }
 
 	  relocation  = htab->elf.sgot->output_section->vma
@@ -2457,12 +2481,13 @@ hexagon_elf_relocate_section
 		if ((offset & 1))
 		  offset &= ~1;
 		else
-		  local_got_offsets [r_symndx] |= 1;
-	      }
+		  {
+		    bfd_put_32 (obfd, hexagon_elf_tpoff (info, relocation),
+				htab->elf.sgot->contents + offset + adjust);
 
-	    if (relocation)
-	      bfd_put_32 (obfd, hexagon_elf_tpoff (info, relocation),
-			  htab->elf.sgot->contents + offset + adjust);
+		    local_got_offsets [r_symndx] |= 1;
+		  }
+	      }
 
 	    switch (r_type)
 	      {
@@ -3467,8 +3492,6 @@ hexagon_elf_finish_dynamic_symbol
       if (info->shared
 	  && SYMBOL_REFERENCES_LOCAL (info, h))
 	{
-	  BFD_ASSERT ((h->got.offset & 1));
-
 	  if (eh->ok_got.refcount > 0)
 	    {
 	      rela.r_info = ELF32_R_INFO (0, R_HEX_RELATIVE);
@@ -3523,8 +3546,6 @@ hexagon_elf_finish_dynamic_symbol
 	}
       else
 	{
-	  BFD_ASSERT (h->got.offset & 1);
-
 	  if (eh->ok_got.refcount > 0)
 	    {
 	      rela.r_info = ELF32_R_INFO (h->dynindx, R_HEX_GLOB_DAT);
