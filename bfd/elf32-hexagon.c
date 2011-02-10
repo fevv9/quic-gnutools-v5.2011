@@ -2166,7 +2166,12 @@ hexagon_elf_relocate_section
                   if ((offset & 1))
                     offset &= ~1;
                   else
-		    h->got.offset |= 1;
+		    {
+		      bfd_put_32 (obfd, relocation,
+				  htab->elf.sgot->contents + offset);
+
+		      h->got.offset |= 1;
+		    }
                 }
             }
           else
@@ -2202,9 +2207,9 @@ hexagon_elf_relocate_section
                             + s->reloc_count++ * sizeof (Elf32_External_Rela);
                       bfd_elf32_swap_reloca_out (obfd, &outrel, loc);
                     }
-
-		  bfd_put_32 (obfd, relocation,
-			      htab->elf.sgot->contents + offset);
+		  else
+		    bfd_put_32 (obfd, relocation,
+				htab->elf.sgot->contents + offset);
 
                   local_got_offsets [r_symndx] |= 1;
                 }
