@@ -350,7 +350,6 @@ int qdsp6_has_store_not (const qdsp6_packet *);
 int qdsp6_has_but_ax (const qdsp6_packet *);
 int qdsp6_has_solo (const qdsp6_packet *);
 addressT qdsp6_frag_fix_addr (void);
-int qdsp6_is_nop_keep (const qdsp6_packet *, int);
 int qdsp6_find_noslot1 (const qdsp6_packet *, size_t);
 void qdsp6_check_register
   (qdsp6_reg_score *, int, const char *, int,
@@ -2112,12 +2111,17 @@ qdsp6_has_duplex_clash
   for (i = 0; i < aqueue->size; i++)
     if (!aqueue->insns [i].pad && !ainsn->pad)
       if (((aqueue->insns [i].opcode->flags & QDSP6_CODE_IS_DUPLEX)
-           && (ainsn->opcode->slots & QDSP6_SLOTS_DUPLEX)
-           && !(ainsn->opcode->slots & ~QDSP6_SLOTS_DUPLEX))
-          || ((ainsn->opcode->flags & QDSP6_CODE_IS_DUPLEX)
-              && (aqueue->insns [i].opcode->slots & QDSP6_SLOTS_DUPLEX)
-              && !(aqueue->insns [i].opcode->slots & ~QDSP6_SLOTS_DUPLEX)))
-        return TRUE;
+	   && (ainsn->opcode->slots & QDSP6_SLOTS_DUPLEX)
+	   && !(ainsn->opcode->slots & ~QDSP6_SLOTS_DUPLEX))
+	  || ((ainsn->opcode->flags & QDSP6_CODE_IS_DUPLEX)
+	      && (aqueue->insns [i].opcode->slots & QDSP6_SLOTS_DUPLEX)
+	      && !(aqueue->insns [i].opcode->slots & ~QDSP6_SLOTS_DUPLEX))
+	  /* FIXME: ideally, duplex insns that have only A and X types should be so marked. */
+	  || ((aqueue->insns [i].opcode->flags & QDSP6_CODE_IS_DUPLEX)
+	      && (ainsn->opcode->attributes & A_RESTRICT_PACKET_AXOK))
+	  || ((ainsn->opcode->flags & QDSP6_CODE_IS_DUPLEX)
+	      && (aqueue->insns [i].opcode->attributes & A_RESTRICT_PACKET_AXOK)))
+	return TRUE;
 
   return FALSE;
 }
@@ -2244,40 +2248,6 @@ qdsp6_has_but_ax
     }
 
   return (!axok || ((axok + count) == qdsp6_packet_count (apacket)));
-}
-
-int
-qdsp6_is_nop_keep
-(const qdsp6_packet *apacket, int current)
-{
-  int found = FALSE;
-  int prev = current - 1;
-  int next = current + 1;
-
-  if (next < MAX_PACKET_INSNS)
-    {
-      while (prev >= 0)
-        {
-          if (!qdsp6_is_nop (apacket->insns [prev].insn))
-            {
-              found = TRUE;
-              break;
-            }
-          prev--;
-        }
-
-      /* A_RESTRICT_NOSLOT1: the next instruction cannot be in ndx 1
-         For V2, only when the next instruction can be put in ndx 1
-         that should the current nop be kept. */
-      if (found
-	  && (apacket->insns [next].opcode->attributes & A_RESTRICT_NOSLOT1))
-        {
-              if ((apacket->insns [next].opcode->slots & QDSP6_SLOTS_1))
-                return TRUE;
-        }
-    }
-
-  return FALSE;
 }
 
 /** Add insn to current packet.
@@ -4527,11 +4497,14 @@ qdsp6_shuffle_prepare
     fromto [i] = MAX_PACKET_INSNS;
 
   /* Pad packet with NOPs. */
-  for (i = qdsp6_packet_count (apacket); i < MAX_PACKET_INSNS; i++)
+  for (i = qdsp6_packet_count (apacket), j = qdsp6_packet_length (apacket);
+       i < MAX_PACKET_INSNS;
+       i++)
     {
       int pad;
 
-      pad = !((apacket->is_inner && i < 2) || (apacket->is_outer && i < 3));
+      pad = i < j
+	    || !((apacket->is_inner && i < 2) || (apacket->is_outer && i < 3));
       qdsp6_packet_insert (apacket, &qdsp6_nop_insn, NULL, NULL, pad);
     }
 
