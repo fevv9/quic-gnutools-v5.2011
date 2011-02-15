@@ -1742,6 +1742,13 @@ hexagon_elf_copy_indirect_symbol
       eind->dyn_relocs = NULL;
     }
 
+  if (ind->root.type == bfd_link_hash_indirect)
+    {
+      edir->ok_got.refcount += eind->ok_got.refcount; eind->ok_got.refcount = 0;
+      edir->gd_got.refcount += eind->gd_got.refcount; eind->gd_got.refcount = 0;
+      edir->ie_got.refcount += eind->ie_got.refcount; eind->ie_got.refcount = 0;
+    }
+
   if (ELIMINATE_COPY_RELOCS
       && ind->root.type != bfd_link_hash_indirect
       && dir->dynamic_adjusted)
