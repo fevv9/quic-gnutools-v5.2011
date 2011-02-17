@@ -2414,7 +2414,14 @@ hexagon_elf_relocate_section
 	      if ((offset & 1))
 		offset &= ~1;
 	      else
-		h->got.offset |= 1;
+		{
+		  if (relocation)
+		    bfd_put_32
+		      (obfd, hexagon_elf_dtpoff (info, relocation),
+		       htab->elf.sgot->contents + offset + GOT_ENTRY_SIZE);
+
+		  h->got.offset |= 1;
+		}
 	    }
 	  else
 	    {
@@ -2475,13 +2482,18 @@ hexagon_elf_relocate_section
 		BFD_ASSERT (h->got.offset != -(bfd_vma) 1);
 		offset = h->got.offset;
 
+		if (eh->gd_got.refcount > 0)
+		  adjust = GOT_ENTRY_SIZE * 2;
+
 		if ((offset & 1))
 		  offset &= ~1;
 		else
-		  h->got.offset |= 1;
-
-		if (eh->gd_got.refcount > 0)
-		  adjust = GOT_ENTRY_SIZE * 2;
+		  {
+		    if (relocation)
+		      bfd_put_32 (obfd, hexagon_elf_tpoff (info, relocation),
+				  htab->elf.sgot->contents + offset + adjust);
+		    h->got.offset |= 1;
+		  }
 	      }
 	    else
 	      {
@@ -2836,8 +2848,7 @@ hexagon_elf_check_relocs
       if (r_symndx < symtab_hdr->sh_info)
 	{
           /* Symbol is local. */
-	  isym = bfd_sym_from_r_symndx (&htab->sym_cache,
-					abfd, r_symndx);
+	  isym = bfd_sym_from_r_symndx (&htab->sym_cache, abfd, r_symndx);
 	  if (!isym)
 	    return FALSE;
 
@@ -3154,7 +3165,11 @@ hexagon_elf_check_relocs
 
         case R_HEX_LO16:
         case R_HEX_HI16:
-          /* These relocations cannot be used in shared libraries. */
+
+	case R_HEX_IE_LO16:
+	case R_HEX_IE_HI16:
+	case R_HEX_IE_32:
+           /* These relocations cannot be used in shared libraries. */
 
         case R_HEX_HL16:
         case R_HEX_16:
@@ -3200,7 +3215,11 @@ hexagon_elf_check_relocs
               return FALSE;
             }
           break;
+	}
 
+      /* Mark file with the kind of TLS scheme that it uses. */
+      switch (r_type)
+	{
 	case R_HEX_IE_LO16:
 	case R_HEX_IE_HI16:
 	case R_HEX_IE_32:
@@ -4434,7 +4453,7 @@ static enum elf_reloc_type_class
 hexagon_elf_reloc_type_class
 (const Elf_Internal_Rela *rela)
 {
-  switch ((int) ELF32_R_TYPE (rela->r_info))
+  switch (ELF32_R_TYPE (rela->r_info))
     {
     case R_HEX_RELATIVE:
       return reloc_class_relative;
@@ -4465,7 +4484,7 @@ hexagon_elf_create_dynamic_sections
   if (!_bfd_elf_create_dynamic_sections (abfd, info))
     return FALSE;
 
-  if (!bfd_set_section_alignment (abfd, htab->elf.splt, 4))
+  if (!bfd_set_section_alignment (abfd, htab->elf.splt, bfd_log2 (PLT_ENTRY_SIZE)))
     return FALSE;
 
   if (get_elf_backend_data (abfd)->want_plt_sym)
@@ -4486,7 +4505,8 @@ hexagon_elf_create_dynamic_sections
         {
           htab->sbss.r = bfd_make_section_with_flags
                           (abfd, ".rela.sbss", flags | SEC_READONLY);
-          if (!bfd_set_section_alignment (abfd, htab->sbss.r, 2))
+          if (!bfd_set_section_alignment
+		 (abfd, htab->sbss.r, bfd_log2 (elf_gp_size (htab->elf.dynobj))))
             return FALSE;
         }
 
