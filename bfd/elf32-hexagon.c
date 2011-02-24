@@ -2064,11 +2064,11 @@ hexagon_elf_relocate_section
                              + h->root.u.def.section->output_offset;
 	    }
 	  else if (h->root.type == bfd_link_hash_undefweak)
-            relocation = 0;
+            relocation = FALSE;
 	  else if (info->shared
 		   && info->unresolved_syms_in_objects <= RM_IGNORE
 		   && ELF_ST_VISIBILITY (h->other) == STV_DEFAULT)
-            relocation = 0;
+            relocation = FALSE;
           else
 	    {
 	      if (!((*info->callbacks->undefined_symbol)
@@ -2078,7 +2078,7 @@ hexagon_elf_relocate_section
 		       || info->unresolved_syms_in_objects >= RM_GENERATE_WARNING
 		       || ELF_ST_VISIBILITY (h->other))))
 		return FALSE;
-	      relocation = 0;
+	      relocation = FALSE;
 	    }
 	}
 
@@ -2174,8 +2174,9 @@ hexagon_elf_relocate_section
                     offset &= ~1;
                   else
 		    {
-		      bfd_put_32 (obfd, relocation,
-				  htab->elf.sgot->contents + offset);
+		      if (relocation)
+			bfd_put_32 (obfd, relocation,
+				    htab->elf.sgot->contents + offset);
 
 		      h->got.offset |= 1;
 		    }
@@ -2197,21 +2198,17 @@ hexagon_elf_relocate_section
                 {
                   if (info->shared)
                     {
-                      asection *s;
                       Elf_Internal_Rela outrel;
                       bfd_byte *loc;
 
-                      s = bfd_get_section_by_name
-                            (elf_hash_table (info)->dynobj, ".rela.got");
-                      BFD_ASSERT (s);
-
+                      outrel.r_info = ELF32_R_INFO (0, R_HEX_RELATIVE);
                       outrel.r_offset = htab->elf.sgot->output_section->vma
                                         + htab->elf.sgot->output_offset
                                         + offset;
-                      outrel.r_info = ELF32_R_INFO (0, R_HEX_RELATIVE);
                       outrel.r_addend = relocation;
-                      loc = s->contents
-                            + s->reloc_count++ * sizeof (Elf32_External_Rela);
+                      loc = htab->elf.srelgot->contents
+                            + htab->elf.srelgot->reloc_count++
+			      * sizeof (Elf32_External_Rela);
                       bfd_elf32_swap_reloca_out (obfd, &outrel, loc);
                     }
 		  else
@@ -2347,7 +2344,7 @@ hexagon_elf_relocate_section
 		    }
 		  else
 		    {
-		      long indx;
+		      int indx;
 
 		      if (!h)
 			sec = local_sections [r_symndx];
@@ -2357,6 +2354,7 @@ hexagon_elf_relocate_section
 				      || (h->root.type == bfd_link_hash_defweak));
 			  sec = h->root.u.def.section;
 			}
+
 		      if (sec && bfd_is_abs_section (sec))
 			indx = 0;
 		      else if (!sec || !sec->owner)
@@ -2434,21 +2432,17 @@ hexagon_elf_relocate_section
 		offset &= ~1;
 	      else
                 {
-		  asection *s;
 		  Elf_Internal_Rela outrel;
 		  bfd_byte *loc;
 
-		  s = bfd_get_section_by_name
-			(elf_hash_table (info)->dynobj, ".rela.got");
-		  BFD_ASSERT (s);
-
+		  outrel.r_info = ELF32_R_INFO (0, R_HEX_DTPMOD_32);
 		  outrel.r_offset = htab->elf.sgot->output_section->vma
 				    + htab->elf.sgot->output_offset
 				    + offset;
-		  outrel.r_info = ELF32_R_INFO (0, R_HEX_DTPMOD_32);
 		  outrel.r_addend = 0;
-		  loc = s->contents
-			+ s->reloc_count++ * sizeof (Elf32_External_Rela);
+		  loc = htab->elf.srelgot->contents
+			+ htab->elf.srelgot->reloc_count++
+			  * sizeof (Elf32_External_Rela);
 		  bfd_elf32_swap_reloca_out (obfd, &outrel, loc);
 
 		  bfd_put_32
@@ -2475,6 +2469,9 @@ hexagon_elf_relocate_section
 	case R_HEX_IE_GOT_16:
 	  {
 	    bfd_vma adjust = 0;
+	    int indx;
+
+	    indx = h && h->dynindx != -1? h->dynindx: 0;
 
 	    if (h)
 	      {
@@ -2492,6 +2489,7 @@ hexagon_elf_relocate_section
 		    if (relocation)
 		      bfd_put_32 (obfd, hexagon_elf_tpoff (info, relocation),
 				  htab->elf.sgot->contents + offset + adjust);
+
 		    h->got.offset |= 1;
 		  }
 	      }
@@ -2506,8 +2504,24 @@ hexagon_elf_relocate_section
 		  offset &= ~1;
 		else
 		  {
-		    bfd_put_32 (obfd, hexagon_elf_tpoff (info, relocation),
-				htab->elf.sgot->contents + offset + adjust);
+		    if (info->shared)
+		      {
+			Elf_Internal_Rela outrel;
+			bfd_byte *loc;
+
+			outrel.r_info = ELF32_R_INFO (0, R_HEX_TPREL_32);
+			outrel.r_offset = htab->elf.sgot->output_section->vma
+					  + htab->elf.sgot->output_offset
+					  + offset;
+			outrel.r_addend = hexagon_elf_dtpoff (info, relocation);
+			loc = htab->elf.srelgot->contents
+			      + htab->elf.srelgot->reloc_count++
+				* sizeof (Elf32_External_Rela);
+			bfd_elf32_swap_reloca_out (obfd, &outrel, loc);
+		      }
+		    else
+		      bfd_put_32 (obfd, hexagon_elf_tpoff (info, relocation),
+				  htab->elf.sgot->contents + offset + adjust);
 
 		    local_got_offsets [r_symndx] |= 1;
 		  }
@@ -3163,14 +3177,17 @@ hexagon_elf_check_relocs
           /* These relocations cannot be used in shared libraries because
              there should not be an SDA in a shared library for the time being. */
 
-        case R_HEX_LO16:
-        case R_HEX_HI16:
-
 	case R_HEX_IE_LO16:
 	case R_HEX_IE_HI16:
 	case R_HEX_IE_32:
+	case R_HEX_TPREL_LO16:
+	case R_HEX_TPREL_HI16:
+	case R_HEX_TPREL_32:
+	case R_HEX_TPREL_16:
            /* These relocations cannot be used in shared libraries. */
 
+        case R_HEX_LO16:
+        case R_HEX_HI16:
         case R_HEX_HL16:
         case R_HEX_16:
         case R_HEX_8:
