@@ -597,10 +597,9 @@ static bfd_vma
 hexagon_elf_dtpoff (struct bfd_link_info *info, bfd_vma address)
 {
   if (!elf_hash_table (info)->tls_sec)
-    return 0;
+    return (0);
   else
-   return (address
-	   - elf_hash_table (info)->tls_sec->vma);
+   return (address - elf_hash_table (info)->tls_sec->vma);
 }
 
 
@@ -611,11 +610,9 @@ static bfd_vma
 hexagon_elf_tpoff (struct bfd_link_info *info, bfd_vma address)
 {
   if (!elf_hash_table (info)->tls_sec)
-    return 0;
+    return (0);
   else
-    return (address
-	    - elf_hash_table (info)->tls_sec->vma
-	    - elf_hash_table (info)->tls_size);
+    return (hexagon_elf_dtpoff (info, address) - elf_hash_table (info)->tls_size);
 }
 
 /* Set the right machine number for an Hexagon ELF file.  */
@@ -2206,10 +2203,14 @@ hexagon_elf_relocate_section
                                         + htab->elf.sgot->output_offset
                                         + offset;
                       outrel.r_addend = relocation;
+
                       loc = htab->elf.srelgot->contents
                             + htab->elf.srelgot->reloc_count++
 			      * sizeof (Elf32_External_Rela);
                       bfd_elf32_swap_reloca_out (obfd, &outrel, loc);
+		      BFD_ASSERT (htab->elf.srelgot->reloc_count
+				  * sizeof (Elf32_External_Rela)
+				  <= htab->elf.srelgot->size);
                     }
 		  else
 		    bfd_put_32 (obfd, relocation,
@@ -2385,6 +2386,8 @@ hexagon_elf_relocate_section
 	      loc = sreloc->contents
 	            + sreloc->reloc_count++ * sizeof (Elf32_External_Rela);
 	      bfd_elf32_swap_reloca_out (obfd, &outrel, loc);
+	      BFD_ASSERT (sreloc->reloc_count * sizeof (Elf32_External_Rela)
+			  <= sreloc->size);
 
 	      /* This reloc will be computed at runtime, so there's no
                  need to do anything now, except for R_HEX_32 relocations
@@ -2444,6 +2447,9 @@ hexagon_elf_relocate_section
 			+ htab->elf.srelgot->reloc_count++
 			  * sizeof (Elf32_External_Rela);
 		  bfd_elf32_swap_reloca_out (obfd, &outrel, loc);
+		  BFD_ASSERT (htab->elf.srelgot->reloc_count
+			      * sizeof (Elf32_External_Rela)
+			      <= htab->elf.srelgot->size);
 
 		  bfd_put_32
 		    (obfd, hexagon_elf_dtpoff (info, relocation),
@@ -2512,12 +2518,16 @@ hexagon_elf_relocate_section
 			outrel.r_info = ELF32_R_INFO (0, R_HEX_TPREL_32);
 			outrel.r_offset = htab->elf.sgot->output_section->vma
 					  + htab->elf.sgot->output_offset
-					  + offset;
+					  + offset + adjust;
 			outrel.r_addend = hexagon_elf_dtpoff (info, relocation);
+
 			loc = htab->elf.srelgot->contents
 			      + htab->elf.srelgot->reloc_count++
 				* sizeof (Elf32_External_Rela);
 			bfd_elf32_swap_reloca_out (obfd, &outrel, loc);
+			BFD_ASSERT (htab->elf.srelgot->reloc_count
+				    * sizeof (Elf32_External_Rela)
+				    <= htab->elf.srelgot->size);
 		      }
 		    else
 		      bfd_put_32 (obfd, hexagon_elf_tpoff (info, relocation),
@@ -3551,6 +3561,9 @@ hexagon_elf_finish_dynamic_symbol
 		(obfd, &rela, htab->elf.srelgot->contents
 			      + htab->elf.srelgot->reloc_count++
 			      * sizeof (Elf32_External_Rela));
+	      BFD_ASSERT (htab->elf.srelgot->reloc_count
+			  * sizeof (Elf32_External_Rela)
+			  <= htab->elf.srelgot->size);
 
 	      bfd_put_32 (obfd, rela.r_addend, htab->elf.sgot->contents + offset);
 	    }
@@ -3567,6 +3580,9 @@ hexagon_elf_finish_dynamic_symbol
 		    (obfd, &rela, htab->elf.srelgot->contents
 				  + htab->elf.srelgot->reloc_count++
 				  * sizeof (Elf32_External_Rela));
+		  BFD_ASSERT (htab->elf.srelgot->reloc_count
+			      * sizeof (Elf32_External_Rela)
+			      <= htab->elf.srelgot->size);
 
 		  if (h->def_regular)
 		    bfd_put_32
@@ -3603,6 +3619,9 @@ hexagon_elf_finish_dynamic_symbol
 		(obfd, &rela, htab->elf.srelgot->contents
 			      + htab->elf.srelgot->reloc_count++
 			      * sizeof (Elf32_External_Rela));
+	      BFD_ASSERT (htab->elf.srelgot->reloc_count
+			  * sizeof (Elf32_External_Rela)
+			  <= htab->elf.srelgot->size);
 
 	      if (h->def_regular)
 		bfd_put_32
@@ -3625,6 +3644,9 @@ hexagon_elf_finish_dynamic_symbol
 		    (obfd, &rela, htab->elf.srelgot->contents
 				  + htab->elf.srelgot->reloc_count++
 				  * sizeof (Elf32_External_Rela));
+		  BFD_ASSERT (htab->elf.srelgot->reloc_count
+			      * sizeof (Elf32_External_Rela)
+			      <= htab->elf.srelgot->size);
 
 		  rela.r_offset += GOT_ENTRY_SIZE;
 		  rela.r_info = ELF32_R_INFO (h->dynindx, R_HEX_DTPREL_32);
@@ -3634,6 +3656,9 @@ hexagon_elf_finish_dynamic_symbol
 		    (obfd, &rela, htab->elf.srelgot->contents
 				  + htab->elf.srelgot->reloc_count++
 				  * sizeof (Elf32_External_Rela));
+		  BFD_ASSERT (htab->elf.srelgot->reloc_count
+			      * sizeof (Elf32_External_Rela)
+			      <= htab->elf.srelgot->size);
 
 		  if (h->def_regular)
 		    bfd_put_32
@@ -3656,6 +3681,9 @@ hexagon_elf_finish_dynamic_symbol
 		    (obfd, &rela, htab->elf.srelgot->contents
 				  + htab->elf.srelgot->reloc_count++
 				  * sizeof (Elf32_External_Rela));
+		  BFD_ASSERT (htab->elf.srelgot->reloc_count
+			      * sizeof (Elf32_External_Rela)
+			      <= htab->elf.srelgot->size);
 
 		  if (h->def_regular)
 		    bfd_put_32
@@ -3694,6 +3722,7 @@ hexagon_elf_finish_dynamic_symbol
       bfd_elf32_swap_reloca_out
         (obfd, &rela, s->contents
                       + s->reloc_count++ * sizeof (Elf32_External_Rela));
+      BFD_ASSERT (s->reloc_count * sizeof (Elf32_External_Rela) <= s->size);
     }
 
   /* Mark _DYNAMIC and _GLOBAL_OFFSET_TABLE_ as absolute.  */
