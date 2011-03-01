@@ -810,7 +810,7 @@ hexagon_elf_reloc
      but it is better not to modify the common code. */
   if (bfd_is_und_section (symbol->section)
       && (symbol->flags & BSF_WEAK) == 0
-      && obfd == (bfd *) NULL)
+      && !obfd)
     return bfd_reloc_undefined;
 
   /* If linking, back up the final symbol address by the address of the
@@ -818,7 +818,7 @@ hexagon_elf_reloc
      field to TRUE, as bfd_install_relocation will detect this and refuse
      to install the offset in the first place, but bfd_perform_relocation
      will still insist on removing it.  */
-  if (obfd == (bfd *) NULL && howto->pc_relative)
+  if (!obfd && howto->pc_relative)
     reloc_entry->addend -= reloc_entry->address;
 
   /* Fall through to the default elf reloc handler.  */
@@ -828,7 +828,7 @@ hexagon_elf_reloc
     return status;
 
   /* Handle PC relative relocatable output. */
-  if (obfd != (bfd *) NULL
+  if (obfd
       && reloc_entry->howto->pc_relative
       && (!reloc_entry->howto->partial_inplace
           || !reloc_entry->addend))
@@ -860,7 +860,7 @@ hexagon_elf_reloc
 
   /* Convert input-section-relative symbol value to absolute.  */
   if ((obfd && !howto->partial_inplace)
-      || reloc_target_output_section == NULL)
+      || !reloc_target_output_section)
     output_base = 0;
   else
     output_base = reloc_target_output_section->vma;
@@ -926,7 +926,7 @@ hexagon_elf_reloc
         relocation -= reloc_entry->address;
     }
 
-  if (obfd != (bfd *) NULL)
+  if (obfd)
     {
       if (!howto->partial_inplace)
         {
@@ -963,7 +963,7 @@ hexagon_elf_reloc
      if (howto->pc_relative
          && bfd_is_und_section (symbol->section)
          && (symbol->flags & BSF_WEAK)
-         && obfd == (bfd *) NULL)
+         && !obfd)
        {
          relocation = 0;
        }
@@ -1015,7 +1015,7 @@ hexagon_elf_reloc
       return bfd_reloc_other;
     }
 
-  return bfd_reloc_ok;
+  return (bfd_reloc_ok);
 }
 
 /* Wrapper for _bfd_elf_set_arch_mach
@@ -2283,10 +2283,7 @@ hexagon_elf_relocate_section
 	       && (!h
 		   || ELF_ST_VISIBILITY (h->other) == STV_DEFAULT
 		   || h->root.type != bfd_link_hash_undefweak)
-	       && ((r_type != R_HEX_B22_PCREL
-		    && r_type != R_HEX_B15_PCREL
-		    && r_type != R_HEX_B13_PCREL
-		    && r_type != R_HEX_B7_PCREL)
+	       && (!howto->pc_relative
 		   || !SYMBOL_CALLS_LOCAL (info, h)))
 	      || (ELIMINATE_COPY_RELOCS
 		  && info->executable
@@ -2305,6 +2302,23 @@ hexagon_elf_relocate_section
 	      bfd_byte *loc;
 	      bfd_boolean skip, relocate;
 
+	      sreloc = elf_section_data (isection)->sreloc;
+	      /* FIXME: This can happen when creating a DSO and an object
+	         contains a non-PLT branch to a symbol in another DSO.
+	         The same condition is harmless when creating a program. */
+	      if (!sreloc || !sreloc->contents)
+		{
+		  if (info->shared)
+		    sreloc = _bfd_elf_get_dynamic_reloc_section
+			      (ibfd, isection, TRUE);
+
+		  if (!sreloc || !sreloc->contents)
+		    {
+		      bfd_set_error (bfd_error_bad_value);
+		      return FALSE;
+		    }
+		}
+
 	      skip = FALSE;
 	      relocate = FALSE;
 
@@ -2320,14 +2334,11 @@ hexagon_elf_relocate_section
                                  + isection->output_offset;
 
 	      if (skip)
-		memset (&outrel, 0, sizeof (Elf32_External_Rela));
+		memset (&outrel, 0, sizeof (outrel));
 	      /* h->dynindx may be -1 if the symbol was marked to become local.  */
 	      else if (h
 		       && h->dynindx != -1
-		       && (r_type == R_HEX_B22_PCREL
-			   || r_type == R_HEX_B15_PCREL
-			   || r_type == R_HEX_B13_PCREL
-			   || r_type == R_HEX_B7_PCREL
+		       && (howto->pc_relative
 			   || info->executable
 			   || !SYMBOLIC_BIND (info, h)
 			   || !h->def_regular))
@@ -2365,10 +2376,10 @@ hexagon_elf_relocate_section
 			}
 		      else
 			{
-			  asection *osec;
-
-			  osec = sec->output_section;
-			  indx = elf_section_data (osec)->dynindx;
+			  indx = elf_section_data (sec->output_section)->dynindx;
+			  if (!indx)
+			    indx = elf_section_data
+				     (htab->elf.text_index_section)->dynindx;
 			  BFD_ASSERT (indx > 0);
 			}
 
@@ -2377,19 +2388,13 @@ hexagon_elf_relocate_section
 		    }
 		}
 
-	      sreloc = elf_section_data (isection)->sreloc;
-	      /* FIXME: This can happen when creating a DSO and an object
-	         contains a non-PLT branch to a symbol in another DSO.
-	         The same condition is harmless when creating a program. */
-	      BFD_ASSERT (sreloc && sreloc->contents);
-
 	      BFD_ASSERT (sreloc->reloc_count * sizeof (Elf32_External_Rela)
 			  < sreloc->size);
 	      loc = sreloc->contents
 	            + sreloc->reloc_count++ * sizeof (Elf32_External_Rela);
 	      bfd_elf32_swap_reloca_out (obfd, &outrel, loc);
 
-	      /* This reloc will be computed at runtime, so there's no
+	      /* This relocation will be computed at runtime, so there's no
                  need to do anything now, except for R_HEX_32 relocations
                  that have been turned into R_HEX_RELATIVE.  */
 	      if (!relocate)
@@ -2864,11 +2869,14 @@ hexagon_elf_check_relocs
     {
       unsigned int r_type;
       size_t r_symndx;
+      reloc_howto_type *howto;
       hexagon_link_hash_entry *h;
       Elf_Internal_Sym *isym;
 
       r_type = ELF32_R_TYPE (rel->r_info);
       r_symndx = ELF32_R_SYM (rel->r_info);
+
+      howto = hexagon_elf_howto_table + r_type;
 
       if (r_symndx < symtab_hdr->sh_info)
 	{
@@ -3099,10 +3107,7 @@ hexagon_elf_check_relocs
 	     we manage to avoid copy relocations for the symbol.  */
 	  if ((info->shared
 	       && (sec->flags & SEC_ALLOC)
-	       && (((r_type != R_HEX_B22_PCREL)
-		    && (r_type != R_HEX_B15_PCREL)
-		    && (r_type != R_HEX_B13_PCREL)
-		    && (r_type != R_HEX_B7_PCREL))
+	       && ((!howto->pc_relative)
 		   || (h
 		       && (!SYMBOLIC_BIND (info, &h->elf)
 			   || h->elf.root.type == bfd_link_hash_defweak
@@ -3166,11 +3171,7 @@ hexagon_elf_check_relocs
 		  p->sec = sec;
 		}
 
-	      if (r_type == R_HEX_32_PCREL
-		  || r_type == R_HEX_B22_PCREL
-		  || r_type == R_HEX_B15_PCREL
-		  || r_type == R_HEX_B13_PCREL
-		  || r_type == R_HEX_B7_PCREL)
+	      if (howto->pc_relative)
 		p->pc_count++;
               else
                 p->count++;
@@ -4384,8 +4385,16 @@ hexagon_elf_size_dynamic_sections
 	      htab->elf.sgot->size
 	        += GOT_ENTRY_SIZE
 		   * (local_got_refcounts [LGOT_GD (symtab_hdr, i)] > 0? 2: 1);
-	      if (info->shared)
-		htab->elf.srelgot->size += sizeof (Elf32_External_Rela);
+
+	      if (info->shared
+		  || local_got_refcounts [LGOT_GD (symtab_hdr, i)] > 0
+		  || local_got_refcounts [LGOT_IE (symtab_hdr, i)] > 0)
+		htab->elf.srelgot->size
+		  += sizeof (Elf32_External_Rela)
+		     * (local_got_refcounts [LGOT_GD (symtab_hdr, i)] > 0
+			? (local_got_refcounts [LGOT_IE (symtab_hdr, i)] > 0
+			   ? 3: 2)
+			: 1);
 	    }
 	  else
 	    local_got_refcounts [i] = -(bfd_vma) 1;
