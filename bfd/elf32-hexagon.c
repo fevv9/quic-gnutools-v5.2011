@@ -2310,7 +2310,7 @@ hexagon_elf_relocate_section
 		{
 		  if (info->shared)
 		    sreloc = _bfd_elf_get_dynamic_reloc_section
-			      (ibfd, isection, TRUE);
+			       (ibfd, isection, TRUE);
 
 		  if (!sreloc || !sreloc->contents)
 		    {
@@ -2456,10 +2456,6 @@ hexagon_elf_relocate_section
 			+ htab->elf.srelgot->reloc_count++
 			  * sizeof (Elf32_External_Rela);
 		  bfd_elf32_swap_reloca_out (obfd, &outrel, loc);
-
-		  bfd_put_32
-		    (obfd, hexagon_elf_dtpoff (info, relocation),
-		    htab->elf.sgot->contents + offset + GOT_ENTRY_SIZE);
 
 		  local_got_offsets [r_symndx] |= 1;
 		}
@@ -4386,6 +4382,7 @@ hexagon_elf_size_dynamic_sections
 	        += GOT_ENTRY_SIZE
 		   * (local_got_refcounts [LGOT_GD (symtab_hdr, i)] > 0? 2: 1);
 
+	      /* FIXME: perhaps not when IE. */
 	      if (info->shared
 		  || local_got_refcounts [LGOT_GD (symtab_hdr, i)] > 0
 		  || local_got_refcounts [LGOT_IE (symtab_hdr, i)] > 0)
