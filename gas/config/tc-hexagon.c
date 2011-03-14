@@ -276,6 +276,7 @@ typedef enum _hexagon_suffix_type
     PIC_GOTREL,
     PIC_PLT,
     TLS_GD_GOT,
+    TLS_GD_PLT,
     TLS_IE,
     TLS_IE_GOT,
     TLS_DTPREL,
@@ -1828,6 +1829,8 @@ hexagon_parse_immediate
     operandx = hexagon_operand_find (operand, "plt");
   else if (suffix_type == TLS_GD_GOT)
     operandx = hexagon_operand_find (operand, "gdgot");
+  else if (suffix_type == TLS_GD_PLT)
+    operandx = hexagon_operand_find (operand, "gdplt");
   else if (suffix_type == TLS_IE)
     operandx = hexagon_operand_find (operand, "ie");
   else if (suffix_type == TLS_IE_GOT)
@@ -4303,6 +4306,7 @@ hexagon_parse_suffix
       { "GOT",    PIC_GOT },
       { "PLT",    PIC_PLT },
       { "GDGOT",  TLS_GD_GOT },
+      { "GDPLT",  TLS_GD_PLT },
       { "IEGOT",  TLS_IE_GOT }, /* This must precede "IE". */
       { "IE",     TLS_IE },
       { "DTPREL", TLS_DTPREL },
@@ -4502,6 +4506,7 @@ md_apply_fix
       else
 	switch (fixP->fx_r_type)
 	  {
+	  case BFD_RELOC_HEX_GD_PLT_B22_PCREL:
 	  case BFD_RELOC_HEX_GD_GOT_LO16:
 	  case BFD_RELOC_HEX_GD_GOT_HI16:
 	  case BFD_RELOC_HEX_GD_GOT_32:
