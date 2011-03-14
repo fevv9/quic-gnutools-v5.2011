@@ -2026,9 +2026,9 @@ hexagon_elf_relocate_section
 		case R_HEX_IE_GOT_HI16:
 		case R_HEX_IE_GOT_32:
 		case R_HEX_IE_GOT_16:
-	          if (elf_hash_table (info)->dynamic_sections_created
-	              && !SYMBOLIC_BIND (info, h)
-	              && !h->def_regular)
+	          if (htab->elf.dynamic_sections_created
+	              && (!SYMBOLIC_BIND (info, h)
+			  || !h->def_regular))
 	            relocation = FALSE;
 		  break;
 
@@ -2150,7 +2150,7 @@ hexagon_elf_relocate_section
                   /* This wasn't checked above for non-shared, but must hold
                      true through here: the symbol must be defined in the
                      program, or be weakly undefined. */
-                  BFD_ASSERT (!elf_hash_table (info)->dynamic_sections_created
+                  BFD_ASSERT (!htab->elf.dynamic_sections_created
                               || info->shared
                               || h->def_regular
                               || h->root.type == bfd_link_hash_undefweak);
@@ -2845,16 +2845,6 @@ hexagon_elf_check_relocs
   if (info->relocatable)
     return TRUE;
 
-#if 0
-  /* Create the linker generated sections all the time so that the
-     special symbols are created.  */
-  if (!elf_hash_table (info)->dynamic_sections_created)
-    {
-      if (!hexagon_elf_create_dynamic_sections (abfd, info))
-	return FALSE;
-    }
-#endif
-
   htab = hexagon_hash_table (info);
 
   symtab_hdr = &elf_tdata (abfd)->symtab_hdr;
@@ -3429,7 +3419,7 @@ hexagon_elf_finish_dynamic_symbol
 
   htab = hexagon_hash_table (info);
   eh = hexagon_hash_entry (h);
-  dynobj = elf_hash_table (info)->dynobj;
+  dynobj = htab->elf.dynobj;
 
   if (h->plt.offset != -(bfd_vma) 1)
     {
