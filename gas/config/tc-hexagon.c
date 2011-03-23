@@ -1841,7 +1841,7 @@ hexagon_parse_immediate
     operandx = hexagon_operand_find (operand, "tprel");
 
   if (operandx)
-    /* Get new PIC operand. */
+    /* Get new PIC/TLS operand. */
     operand = operandx;
 
   if (is_lo16 || is_hi16)
@@ -4307,6 +4307,8 @@ hexagon_parse_suffix
       { "PLT",    PIC_PLT },
       { "GDGOT",  TLS_GD_GOT },
       { "GDPLT",  TLS_GD_PLT },
+      { "LDGOT",  TLS_GD_GOT },
+      { "LDPLT",  TLS_GD_PLT },
       { "IEGOT",  TLS_IE_GOT }, /* This must precede "IE". */
       { "IE",     TLS_IE },
       { "DTPREL", TLS_DTPREL },
@@ -4392,10 +4394,12 @@ hexagon_cons_fix_new
 
 	    save = input_line_pointer;
 	    if (!(strncmp (save, "@GOT", 4))
-	        || !(strncmp (save, "@GDGOT", 6))
-	        || !(strncmp (save, "@IE",    3))
-	        || !(strncmp (save, "@IEGOT", 6))
-	        || !(strncmp (save, "@TPREL", 6)))
+	        || !(strncmp (save, "@GDGOT",  6))
+	        || !(strncmp (save, "@LDGOT",  6))
+	        || !(strncmp (save, "@IE",     3))
+	        || !(strncmp (save, "@IEGOT",  6))
+	        || !(strncmp (save, "@DTPREL", 7))
+	        || !(strncmp (save, "@TPREL",  6)))
               {
                 /* Handle GOT and PLT expressions. */
                 suffix_line = hexagon_parse_suffix (&suffix, NULL);

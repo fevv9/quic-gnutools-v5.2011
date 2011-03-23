@@ -43,8 +43,7 @@
   ((bfd_signed_vma) llabs (D) \
    > (~(~(bfd_signed_vma) 0 << ((B) - 1)) & -(MAX_PACKET_INSNS * HEXAGON_INSN_LEN)))
 
-/* The name of the dynamic interpreter.  This is put in the .interp
-   section.  */
+/* The name of the dynamic interpreter.  This is put in the .interp section. */
 #define ELF_DYNAMIC_INTERPRETER "/lib/ld.so"
 
 /* The size in insns of an entry in the PLT, per the ABI. */
@@ -2069,13 +2068,14 @@ hexagon_elf_relocate_section
           else
 	    {
 	      if (!((*info->callbacks->undefined_symbol)
-		      (info, h->root.root.string, ibfd,
-		       isection, rel->r_offset,
+		      (info, h->root.root.string, ibfd, isection, rel->r_offset,
 		       info->executable
 		       || info->unresolved_syms_in_objects >= RM_GENERATE_WARNING
 		       || ELF_ST_VISIBILITY (h->other))))
 		return FALSE;
+
 	      relocation = FALSE;
+	      continue;
 	    }
 	}
 
@@ -2403,8 +2403,7 @@ hexagon_elf_relocate_section
 	  break;
         }
 
-      /* Mirrors what is done above for dynamic linking and preprocess the
-         relocations for TLS types. */
+      /* Preprocess the relocations for TLS types. */
       switch (r_type)
         {
 	case R_HEX_GD_GOT_LO16:
@@ -3463,17 +3462,6 @@ hexagon_elf_finish_dynamic_symbol
          - htab->elf.splt->output_section->vma - htab->elf.splt->output_offset
          - h->plt.offset,
          NULL);
-/*
-      bfd_put_32 (obfd,
-                  htab->elf.sgotplt->output_section->vma
-                  + htab->elf.sgotplt->output_offset
-                  + got_offset
-                  - htab->elf.splt->output_section->vma
-                  - htab->elf.splt->output_offset
-                  - h->plt.offset,
-                  htab->elf.splt->contents + h->plt.offset
-                  + sizeof (hexagon_plt_entry) - sizeof (*hexagon_plt_entry));
-*/
 
       /* Intialize the GOT entry corresponding to this PLT entry to initially
          point to the 0th PLT entry, which marshalls the dynamic linker
@@ -3872,16 +3860,6 @@ hexagon_elf_finish_dynamic_sections
             - htab->elf.sgotplt->output_section->vma
             - htab->elf.sgotplt->output_offset,
             NULL);
-/*
-	  bfd_put_32 (obfd,
-		      htab->elf.splt->output_section->vma
-		      + htab->elf.splt->output_offset
-		      - htab->elf.sgotplt->output_section->vma
-		      - htab->elf.sgotplt->output_offset,
-		      htab->elf.splt->contents
-		      + sizeof (hexagon_plt_initial_entry)
-		      - sizeof (*hexagon_plt_initial_entry));
-*/
 
 	  elf_section_data (htab->elf.splt->output_section)->this_hdr.sh_entsize
 	    = PLT_ENTRY_SIZE;
