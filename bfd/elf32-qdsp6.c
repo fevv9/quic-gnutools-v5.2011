@@ -2123,12 +2123,7 @@ qdsp6_elf_relax_section
       /* Look into relocation overflows at branches and add trampolines if needed. */
       rtype = ELF32_R_TYPE (irel->r_info);
       if (link_info->qdsp6_trampolines
-          && (rtype == R_QDSP6_B32_PCREL_X
-              || rtype == R_QDSP6_B22_PCREL_X
-              || rtype == R_QDSP6_B15_PCREL_X
-              || rtype == R_QDSP6_B13_PCREL_X
-              || rtype == R_QDSP6_B9_PCREL_X
-              || rtype == R_QDSP6_B22_PCREL
+          && (rtype == R_QDSP6_B22_PCREL
               || rtype == R_QDSP6_B15_PCREL
               || rtype == R_QDSP6_B13_PCREL
               || rtype == R_QDSP6_B9_PCREL))
@@ -2231,14 +2226,8 @@ qdsp6_elf_relax_section
 
           /* Check if the target is beyond reach. */
           ioffset = llabs ((to + to_base) - (from + at_base));
-          if ((is_def && (((rtype == R_QDSP6_B32_PCREL_X
-			    || rtype == R_QDSP6_B22_PCREL_X
-			    || rtype == R_QDSP6_B15_PCREL_X
-			    || rtype == R_QDSP6_B13_PCREL_X
-			    || rtype == R_QDSP6_B9_PCREL_X)
-                           && QDSP6_TRAMPOLINE_NEEDED (ioffset, 32))
-                          || ((rtype == R_QDSP6_B22_PCREL)
-                              && QDSP6_TRAMPOLINE_NEEDED (ioffset, 24))
+          if ((is_def && (((rtype == R_QDSP6_B22_PCREL)
+			   && QDSP6_TRAMPOLINE_NEEDED (ioffset, 24))
                           || ((rtype == R_QDSP6_B15_PCREL)
                               && QDSP6_TRAMPOLINE_NEEDED (ioffset, 17))
                           || ((rtype == R_QDSP6_B13_PCREL)
@@ -2290,14 +2279,8 @@ qdsp6_elf_relax_section
                 {
                   t_at = isec_size;
 
-                  if (((rtype == R_QDSP6_B32_PCREL_X
-			|| rtype == R_QDSP6_B22_PCREL_X
-			|| rtype == R_QDSP6_B15_PCREL_X
-			|| rtype == R_QDSP6_B13_PCREL_X
-			|| rtype == R_QDSP6_B9_PCREL_X)
-                       && QDSP6_TRAMPOLINE_NEEDED (t_at - from, 31))
-                      || ((rtype == R_QDSP6_B22_PCREL)
-			  && QDSP6_TRAMPOLINE_NEEDED (t_at - from, 23))
+                  if (((rtype == R_QDSP6_B22_PCREL)
+		       && QDSP6_TRAMPOLINE_NEEDED (t_at - from, 23))
                       || ((rtype == R_QDSP6_B15_PCREL)
                           && QDSP6_TRAMPOLINE_NEEDED (t_at - from, 16))
                       || ((rtype == R_QDSP6_B13_PCREL)

@@ -19,6 +19,7 @@
 
 #include <assert.h>
 #include <limits.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -1518,7 +1519,7 @@ qdsp6_encode_operand
   ptrdiff_t i;
   static char buf [500];
 
-  value.s = avalue;
+  value.s = is_rel? (int32_t) avalue: avalue;
 
   is_x = is_x && xvalue;
   is_s = (operand->flags & QDSP6_OPERAND_IS_SIGNED);
@@ -1564,10 +1565,10 @@ qdsp6_encode_operand
   /* Make sure the value is within the proper range
      Must include the shift count */
   bits = operand->bits + operand->shift_count;
-  smax = ~(~0L << (bits - 1));
-  smin =  (~0L << (bits - 1)) + ((operand->flags & QDSP6_OPERAND_IS_NEGATIVE)? 1: 0);
-  umax = ~(~0UL << bits);
-  umin = 0UL;
+  smax = ~(~0 << (bits - 1));
+  smin =  (~0 << (bits - 1)) + ((operand->flags & QDSP6_OPERAND_IS_NEGATIVE)? 1: 0);
+  umax = ~(~0U << bits);
+  umin = 0U;
 
   xed = value.s;
   xer = qdsp6_extend (&xed, bits, is_s);
