@@ -29,6 +29,7 @@
 #include <sys/param.h>
 #include "as.h"
 #include "dwarf2dbg.h"
+#include "dw2gencfi.h"
 #include "elf/hexagon.h"
 #include "libiberty.h"
 #include "libbfd.h"
@@ -5895,4 +5896,43 @@ hexagon_statistics
     {
       as_warn (_("%u instruction pairings."), n_pairs [HEXAGON_PAIRS_TOTAL]);
     }
+}
+
+void
+hexagon_cfi_frame_initial_instructions (void)
+{
+  /* On hexagon, the CFA is located at fp+#8 */
+  /* (Not to be confused with r29 of the previous stack frame) */
+  cfi_add_CFA_def_cfa (30, 8);
+
+  /* The return address in 4 bytes below the CFA. */
+  cfi_add_CFA_offset (DWARF2_DEFAULT_RETURN_COLUMN, -4);
+}
+
+/* Given a string register name, return a number */
+int
+hexagon_regname_to_dw2regnum (char *regname)
+{
+  unsigned int regnum = -1;
+  unsigned int i;
+  const char *p;
+  char *q;
+  static struct { char *name; int dw2regnum; } regnames[] =
+    {
+      { "sp", 29 }, { "fp", 30 }, { "lr", 31 },
+    };
+
+  for (i = 0; i < ARRAY_SIZE (regnames); ++i)
+    if (strcmp (regnames[i].name, regname) == 0)
+      return regnames[i].dw2regnum;
+
+  if (regname[0] == 'r')
+    {
+      p = regname + 1;
+      regnum = strtoul (p, &q, 10);
+      if (p == q || *q || regnum >= 32)
+        return -1;
+    }
+
+  return regnum;
 }

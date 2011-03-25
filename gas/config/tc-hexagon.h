@@ -185,4 +185,20 @@ extern long hexagon_relax_frag (segT segment, fragS *fragP, long stretch);
    it was in 2.14 */
 #define TC_ALIGN_LIMIT 17
 
+/* We want .cfi_* pseudo-ops for generating unwind info.  */
+#define TARGET_USE_CFIPOP 1
+
+/* r31 holds the return address */
+#define DWARF2_DEFAULT_RETURN_COLUMN 31
+
+/* Both code and data are aligned on 4-byte boundaries */
+#define DWARF2_CIE_DATA_ALIGNMENT       4
+#define DWARF2_LINE_MIN_INSN_LENGTH     4
+
+#define tc_regname_to_dw2regnum hexagon_regname_to_dw2regnum
+extern int hexagon_regname_to_dw2regnum (char *regname);
+
+#define tc_cfi_frame_initial_instructions hexagon_cfi_frame_initial_instructions
+extern void hexagon_cfi_frame_initial_instructions (void);
+
 #endif /* TC_HEXAGON */
