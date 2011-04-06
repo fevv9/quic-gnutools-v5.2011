@@ -199,7 +199,8 @@ enum _qdsp6_insn_flag
 /** Packet house keeping. */
 typedef struct
   {
-    size_t size; /* Number of insns. */
+    size_t size; /* Number of items in insn arrays. */
+    size_t count; /* Number of insns. */
     size_t prefix; /* Number of k-extenders. */
     size_t duplex; /* Number of duplex insns. */
     size_t relax; /* Number of reserved slots. */
@@ -307,8 +308,6 @@ void qdsp6_packet_finish (qdsp6_packet *);
 int qdsp6_packet_falign (size_t);
 size_t qdsp6_packet_slots (const qdsp6_packet *);
 size_t qdsp6_packet_length (const qdsp6_packet *);
-size_t qdsp6_packet_count (const qdsp6_packet *);
-size_t qdsp6_packet_size (const qdsp6_packet *);
 size_t qdsp6_packet_insns (const qdsp6_packet *);
 int qdsp6_packet_insert
   (qdsp6_packet *, const qdsp6_packet_insn *, const qdsp6_packet_insn *,
@@ -896,17 +895,20 @@ qdsp6_relax_branch
   int fix;
   size_t i, j;
 
-  fix = fragP->fr_fix;
-
   apacket = &fragP->tc_frag_data->packet;
   if (!apacket->relax || !apacket->drlx)
     return FALSE;
 
-  /* Sanity check. */
-  assert (apacket->drlx + qdsp6_packet_length (apacket) - apacket->relax
-          <= MAX_PACKET_INSNS);
+  fix = fragP->fr_fix;
 
-  for (i = 0, fx = NULL; i < apacket->size; i++)
+  /* Sanity check. */
+/* FIXME: any remaining branch left not relaxed will fault. /
+  assert (apacket->drlx + qdsp6_packet_length (apacket) <= MAX_PACKET_INSNS);
+*/
+
+  for (i = 0, fx = NULL;
+       i < apacket->size && apacket->size < MAX_PACKET_INSNS;
+       i++)
     if (apacket->insns [i].flags & QDSP6_INSN_IS_RELAX
         && apacket->insns [i].fc)
       {
@@ -958,9 +960,13 @@ qdsp6_relax_branch
         md_number_to_chars (fragP->fr_literal + i * QDSP6_INSN_LEN,
                             apacket->insns [i].insn, QDSP6_INSN_LEN);
 
+	/* Sanity check. */
+	assert (apacket->size < MAX_PACKET_INSNS);
+	apacket->size++;
+	apacket->prefix++;
         apacket->relax--;
         apacket->drlx--;
-        apacket->size++;
+
         fragP->fr_fix += QDSP6_INSN_LEN;
 
         /* Skip extended branch. */
@@ -968,7 +974,7 @@ qdsp6_relax_branch
         apacket->insns [i].relax = QDSP6_RELAX_DONE;
       }
 
-  apacket->ddrlx = 0;
+  apacket->relax = apacket->drlx = apacket->ddrlx = 0;
 
   return (fragP->fr_fix - fix);
 }
@@ -996,7 +1002,9 @@ qdsp6_relax_branch_try
   if (!apacket->relax)
     return FALSE;
 
-  for (i = 0, delta = 0; i < apacket->size; i++)
+  for (i = 0, delta = 0;
+       i < apacket->size && apacket->size + apacket->drlx < MAX_PACKET_INSNS;
+       i++)
     if (apacket->insns [i].flags & QDSP6_INSN_IS_RELAX
         && apacket->insns [i].fc)
       {
@@ -1073,8 +1081,7 @@ qdsp6_relax_falign
     return FALSE;
 
   /* Sanity checks. */
-  assert (apacket->dpad + qdsp6_packet_length (apacket) - apacket->relax
-          <= MAX_PACKET_INSNS);
+  assert (apacket->dpad + qdsp6_packet_length (apacket) <= MAX_PACKET_INSNS);
   assert (apacket->dpkt <= MAX_PACKET_INSNS);
 
   packet = *apacket;
@@ -1137,52 +1144,46 @@ qdsp6_relax_falign
     after = apacket->size;
 
   /* Emit padding packet. */
-  while (packet.dpkt)
-    {
-      if (packet.dpkt % MAX_PACKET_INSNS != 1)
-        md_number_to_chars ((void *)(((qdsp6_insn *) fragP->fr_literal) + after++),
-                            qdsp6_nop_insn.insn, QDSP6_INSN_LEN);
-      else
-        md_number_to_chars ((void *)(((qdsp6_insn *) fragP->fr_literal) + after++),
-                            QDSP6_END_PACKET_SET (qdsp6_nop_insn.insn, QDSP6_END_PACKET),
-                            QDSP6_INSN_LEN);
-      packet.dpkt--;
-    }
+  for (; packet.dpkt; packet.dpkt--)
+    md_number_to_chars
+      ((void *)(((qdsp6_insn *) fragP->fr_literal) + after++),
+       (packet.dpkt % MAX_PACKET_INSNS != 1)
+       ? qdsp6_nop_insn.insn
+       : QDSP6_END_PACKET_SET (qdsp6_nop_insn.insn, QDSP6_END_PACKET),
+       QDSP6_INSN_LEN);
 
   fragP->fr_fix += (apacket->dpad + apacket->dpkt) * QDSP6_INSN_LEN;
 
   apacket->dpad = apacket->ddpad = 0;
   apacket->dpkt = apacket->ddpkt = 0;
 
-  /* Collect .falign stats. */
-  {
-    /* Find packet requesting .falign. */
-    for (previous = fragP, fpacket = NULL;
-         previous
-         && previous->tc_frag_data
-         && (fpacket = &previous->tc_frag_data->packet)
-         && !fpacket->faligned;
-         previous = previous->tc_frag_data->previous)
-      ;
+  /* Find packet requesting .falign. */
+  for (previous = fragP, fpacket = NULL;
+       previous
+       && previous->tc_frag_data
+       && (fpacket = &previous->tc_frag_data->packet)
+       && !fpacket->faligned;
+       previous = previous->tc_frag_data->previous)
+    ;
 
-    if (fpacket)
-      {
+  /* Collect .falign stats. */
+  if (fpacket)
+    {
       if ((pad || pkt)
-          && !(fpacket->stats & QDSP6_STATS_FALIGN)
-          && (fpacket->stats |= QDSP6_STATS_FALIGN))
-          n_falign [QDSP6_FALIGN_NEED]++;
+	  && !(fpacket->stats & QDSP6_STATS_FALIGN)
+	  && (fpacket->stats |= QDSP6_STATS_FALIGN))
+	  n_falign [QDSP6_FALIGN_NEED]++;
 
       if (pad
-          && !(fpacket->stats & QDSP6_STATS_PAD)
-          && (fpacket->stats |= QDSP6_STATS_PAD))
-          n_falign [QDSP6_FALIGN_PAD]++;
+	  && !(fpacket->stats & QDSP6_STATS_PAD)
+	  && (fpacket->stats |= QDSP6_STATS_PAD))
+	  n_falign [QDSP6_FALIGN_PAD]++;
 
       if (pkt
-          && !(fpacket->stats & QDSP6_STATS_PACK)
-          && (fpacket->stats |= QDSP6_STATS_PACK))
-          n_falign [QDSP6_FALIGN_PACK]++;
-      }
-  }
+	  && !(fpacket->stats & QDSP6_STATS_PACK)
+	  && (fpacket->stats |= QDSP6_STATS_PACK))
+	  n_falign [QDSP6_FALIGN_PACK]++;
+    }
 
   return TRUE;
 }
@@ -1249,9 +1250,10 @@ qdsp6_relax_falign_try
 
               if (left)
                 {
-                  size = qdsp6_packet_size (zpacket) - zpacket->relax
-                         + zpacket->dpad + zpacket->ddpad
-                         + zpacket->drlx + zpacket->ddrlx;
+		  size = MAX (qdsp6_packet_length (zpacket)
+			      + zpacket->drlx + zpacket->ddrlx,
+			      qdsp6_packet_slots (zpacket))
+			 + zpacket->dpad + zpacket->ddpad;
                   assert (size <= MAX_PACKET_INSNS);
 
                   if (zpacket->faligned)
@@ -1269,9 +1271,10 @@ qdsp6_relax_falign_try
                       left           -= MIN (left, room);
                     }
 
-                  size = qdsp6_packet_size (zpacket) - zpacket->relax
-                         + zpacket->dpad + zpacket->ddpad
-                         + zpacket->drlx + zpacket->ddrlx;
+		  size = MAX (qdsp6_packet_length (zpacket)
+			      + zpacket->drlx + zpacket->ddrlx,
+			      qdsp6_packet_slots (zpacket))
+			 + zpacket->dpad + zpacket->ddpad;
                   assert (size <= MAX_PACKET_INSNS);
                 }
 
@@ -1337,14 +1340,14 @@ qdsp6_estimate_size_before_relax
       symbolS *sym;
       size_t i;
 
-      for (i = 0, sym = NULL; i < apacket->size; i++)
+      for (i = 0, sym = NULL;
+	   i < apacket->size && apacket->size + apacket->drlx < MAX_PACKET_INSNS;
+	   i++)
         if (apacket->insns [i].flags & QDSP6_INSN_IS_RELAX
             && apacket->insns [i].fc)
           {
             if (apacket->insns [i].relax == QDSP6_RELAX_DONE)
               continue;
-
-            sym = apacket->insns [i].fix->fx_addsy;
 
             if (apacket->insns [i].relax == QDSP6_RELAX_NONE)
               {
@@ -1352,6 +1355,8 @@ qdsp6_estimate_size_before_relax
                   = ENCODE_RELAX (apacket->insns [i].operand.reloc_type);
                 if (apacket->insns [i].relax == QDSP6_RELAX_NONE)
                   continue;
+
+		sym = apacket->insns [i].fix->fx_addsy;
 
                 if (S_GET_SEGMENT (sym) != segment
                     || (OUTPUT_FLAVOR == bfd_target_elf_flavour
@@ -1364,6 +1369,7 @@ qdsp6_estimate_size_before_relax
                     apacket->insns [i].relax
                       = qdsp6_relax_table [apacket->insns [i].relax].rlx_more;
                   }
+
                 delta += qdsp6_relax_table [apacket->insns [i].relax].rlx_length;
               }
         }
@@ -1990,7 +1996,7 @@ qdsp6_has_single
   int count;
 
   /* Count number of memory ops in this packet. */
-  for (i = count = 0; i < qdsp6_packet_count (apacket); i++)
+  for (i = count = 0; i < apacket->size; i++)
     if (apacket->insns [i].opcode->attributes & A_RESTRICT_SINGLE_MEM_FIRST)
       count++;
 
@@ -2010,7 +2016,7 @@ qdsp6_has_prefix
   int count;
 
   /* Count number of memory ops in this packet. */
-  for (i = count = 0; i < qdsp6_packet_count (apacket); i++)
+  for (i = count = 0; i < apacket->size; i++)
     if (apacket->insns [i].opcode->attributes & A_IT_EXTENDER)
       count++;
 
@@ -2030,7 +2036,7 @@ qdsp6_has_pair
   int count;
 
   /* Count number of duplex insns in this packet. */
-  for (i = count = 0; i < qdsp6_packet_count (apacket); i++)
+  for (i = count = 0; i < apacket->size; i++)
     if (apacket->insns [i].opcode->attributes & PACKED)
       count++;
 
@@ -2050,7 +2056,7 @@ qdsp6_has_duplex
   int count;
 
   /* Count number of duplex insns in this packet. */
-  for (i = count = 0; i < qdsp6_packet_count (apacket); i++)
+  for (i = count = 0; i < apacket->size; i++)
     if (apacket->insns [i].opcode->flags & QDSP6_CODE_IS_DUPLEX)
       count++;
 
@@ -2072,7 +2078,7 @@ qdsp6_has_duplex_hits
   size_t i;
 
   /* Count number of memory ops in this packet. */
-  for (i = 0; i < qdsp6_packet_count (apacket); i++)
+  for (i = 0; i < apacket->size; i++)
     if (((apacket->insns [i].opcode->flags & QDSP6_CODE_IS_DUPLEX)
          && (ainsn->opcode->slots & QDSP6_SLOTS_DUPLEX)
          && !(ainsn->opcode->slots & ~QDSP6_SLOTS_DUPLEX))
@@ -2139,7 +2145,7 @@ qdsp6_has_rnew
   size_t i;
 
   /* Count number of R.NEW insns in this packet. */
-  for (i = 0; i < qdsp6_packet_count (apacket); i++)
+  for (i = 0; i < apacket->size; i++)
     if (apacket->insns [i].flags & QDSP6_INSN_IN_RNEW)
       {
         if (insn)
@@ -2164,7 +2170,7 @@ qdsp6_has_mem
   int count;
 
   /* Count number of memory ops in this packet. */
-  for (i = count = 0; i < qdsp6_packet_count (apacket); i++)
+  for (i = count = 0; i < apacket->size; i++)
     if (apacket->insns [i].opcode
         && (apacket->insns [i].opcode->attributes & A_RESTRICT_SINGLE_MEM_FIRST))
       count++;
@@ -2185,7 +2191,7 @@ qdsp6_has_store
   int count;
 
   /* Count number of duplex insns in this packet. */
-  for (i = count = 0; i < qdsp6_packet_count (apacket); i++)
+  for (i = count = 0; i < apacket->size; i++)
     if (apacket->insns [i].opcode->attributes & A_STORE)
       count++;
 
@@ -2205,7 +2211,7 @@ qdsp6_has_store_not
   int count;
 
   /* Count number of duplex insns in this packet. */
-  for (i = count = 0; i < qdsp6_packet_count (apacket); i++)
+  for (i = count = 0; i < apacket->size; i++)
     if (apacket->insns [i].opcode->attributes & A_RESTRICT_NOSLOT1_STORE)
       count++;
 
@@ -2226,7 +2232,7 @@ qdsp6_has_but_ax
   size_t axok, count;
 
   /* Count number of non-A and non-X insns in this packet. */
-  for (i = axok = count = 0; i < qdsp6_packet_count (apacket); i++)
+  for (i = axok = count = 0; i < apacket->size; i++)
     {
       if (apacket->insns [i].opcode->attributes & A_RESTRICT_PACKET_AXOK)
         /* Check for special cases. */
@@ -2247,7 +2253,7 @@ qdsp6_has_but_ax
         count++;
     }
 
-  return (!axok || ((axok + count) == qdsp6_packet_count (apacket)));
+  return (!axok || ((axok + count) == apacket->size));
 }
 
 /** Add insn to current packet.
@@ -2269,8 +2275,8 @@ qdsp6_packet_insert
                  ? 1: 0;
   int duplex   = (insn->opcode->flags & QDSP6_CODE_IS_DUPLEX)? 1: 0;
   int relax    = (insn->flags & QDSP6_INSN_IS_RELAX)? 1: 0;
-  int size     = pad? qdsp6_packet_count (packet): qdsp6_packet_slots (packet);
-  int length   = pad? qdsp6_packet_count (packet): qdsp6_packet_length (packet);
+  int size     = pad? packet->size: qdsp6_packet_slots (packet);
+  int length   = pad? packet->size: qdsp6_packet_length (packet);
 
   if (duplex && packet->duplex)
     /* Limit duplex insns to one per packet. */
@@ -2279,25 +2285,25 @@ qdsp6_packet_insert
   if ((size + duplex + relax < MAX_PACKET_INSNS)
       && (length + prefixed + relax < MAX_PACKET_INSNS))
     {
-      packet->insns [qdsp6_packet_count (packet)] = *insn;
-      packet->insns [qdsp6_packet_count (packet)].pad = pad;
+      packet->insns [packet->size] = *insn;
+      packet->insns [packet->size].pad = pad;
 
       if (prefixed)
         {
-          packet->insns [qdsp6_packet_count (packet)].flags |= QDSP6_INSN_IS_KXED;
+          packet->insns [packet->size].flags |= QDSP6_INSN_IS_KXED;
 
-          packet->prefixes [qdsp6_packet_count (packet)] = *prefix;
-          packet->prefixes [qdsp6_packet_count (packet)].pad = pad;
-          packet->prefixes [qdsp6_packet_count (packet)].lineno
-            = packet->insns [qdsp6_packet_count (packet)].lineno;
+          packet->prefixes [packet->size] = *prefix;
+          packet->prefixes [packet->size].pad = pad;
+          packet->prefixes [packet->size].lineno
+            = packet->insns [packet->size].lineno;
 
           packet->prefix++;
         }
 
       if (pair)
         {
-          packet->pairs [qdsp6_packet_count (packet)].left  = pair->left;
-          packet->pairs [qdsp6_packet_count (packet)].right = pair->right;
+          packet->pairs [packet->size].left  = pair->left;
+          packet->pairs [packet->size].right = pair->right;
         }
 
       packet->lineno = insn->lineno > packet->lineno
@@ -2306,9 +2312,10 @@ qdsp6_packet_insert
       packet->is_inner |= insn->is_inner;
       packet->is_outer |= insn->is_outer;
 
-      packet->duplex += duplex;
-      packet->relax  += relax;
       packet->size++;
+      packet->count  += pad? 0: 1;
+      packet->duplex += pad? 0: duplex;
+      packet->relax  += pad? 0: relax;
       return TRUE;
     }
 
@@ -2454,10 +2461,9 @@ qdsp6_packet_unfold
   size_t size;
   size_t i;
 
-  size = qdsp6_packet_count (apacket);
-
+  size = apacket->size;
   /* Ignore an empty packet. */
-  if (!qdsp6_packet_count (apacket))
+  if (!size)
     return;
 
   qdsp6_packet_init (&packet);
@@ -2500,11 +2506,11 @@ qdsp6_packet_unfold
                                                : 0;
         }
 
-      /* Insert the insn. */
-      packet.insns [packet.size] = apacket->insns [i];
-      packet.size++;
       /* Sanity check. */
-      assert (packet.size <= MAX_PACKET_INSNS);
+      assert (packet.size < MAX_PACKET_INSNS);
+      /* Insert the insn. */
+      packet.insns [packet.size++] = apacket->insns [i];
+      packet.count++;
     }
 
   /* Copy new insn array and new prefix array. */
@@ -2513,6 +2519,7 @@ qdsp6_packet_unfold
 
   /* Update housekeeping. */
   apacket->size   = packet.size;
+  apacket->count  = packet.count;
   apacket->prefix = packet.prefix;
 }
 
@@ -2530,8 +2537,9 @@ qdsp6_packet_fold
   size_t size, prefix;
   size_t i;
 
-  size = qdsp6_packet_count (apacket);
+  size = apacket->size;
   prefix = apacket->prefix;
+  /* Ignore an empty packet or one devoid of prefixes. */
   if (!size || !prefix)
     return;
 
@@ -2558,25 +2566,27 @@ qdsp6_packet_fold
                    ? (packet.size - i) * QDSP6_INSN_LEN: 0;
             }
 
+          /* Sanity check. */
+          assert (packet.size < MAX_PACKET_INSNS - 1);
           /* Insert the prefix. */
           packet.insns [packet.size++] = apacket->prefixes [i];
-          /* Sanity check. */
-          assert (packet.size < MAX_PACKET_INSNS);
           packet.prefix++;
         }
 
       if (apacket->insns [i].fc && apacket->insns [i].fix)
         {
-          apacket->insns [i].fix->fx_where   = packet.size * QDSP6_INSN_LEN;
-          apacket->insns [i].fix->fx_offset += apacket->insns [i].fix->fx_pcrel
-                                               ? (packet.size - i) * QDSP6_INSN_LEN
-                                               : 0;
+	  apacket->insns [i].fix->fx_where
+	    = packet.size * QDSP6_INSN_LEN;
+	  apacket->insns [i].fix->fx_offset
+	    += apacket->insns [i].fix->fx_pcrel
+	       ? (packet.size - i) * QDSP6_INSN_LEN : 0;
         }
 
+      /* Sanity check. */
+      assert (packet.size < MAX_PACKET_INSNS);
       /* Insert the insn. */
       packet.insns [packet.size++] = apacket->insns [i];
-      /* Sanity check. */
-      assert (packet.size <= MAX_PACKET_INSNS);
+      packet.count += apacket->insns [i].pad? 0: 1;
     }
 
   /* Copy new insn array and clear the prefix array. */
@@ -2585,7 +2595,8 @@ qdsp6_packet_fold
 
   /* Update housekeeping. */
   apacket->size   = packet.size;
-  apacket->prefix = 0;
+  apacket->count  = packet.count;
+  apacket->prefix = packet.prefix;
 }
 
 /** Remove pad insns.
@@ -2602,7 +2613,7 @@ qdsp6_packet_unpad
   size_t size;
   size_t i;
 
-  size = qdsp6_packet_count (apacket);
+  size = apacket->size;
   if (!size)
     return;
 
@@ -2665,7 +2676,7 @@ qdsp6_packet_write
   /* Make room for maximum packet size and possible padding. */
   previous = frag_now;
   frag_grow (2 * MAX_PACKET_INSNS * QDSP6_INSN_LEN);
-  first = frag_more (qdsp6_packet_insns (apacket) * QDSP6_INSN_LEN);
+  first = frag_more (qdsp6_packet_length (apacket) * QDSP6_INSN_LEN);
   qdsp6_frag_init (frag_now, previous);
 
   /* Initialize scratch packet. */
@@ -2673,7 +2684,7 @@ qdsp6_packet_write
   *zpacket = *apacket;
   zpacket->size = 0;
 
-  for (i = 0; i < qdsp6_packet_count (apacket); i++)
+  for (i = 0; i < apacket->size; i++)
     {
       /* Skip the paddings. */
       if (apacket->insns [i].pad)
@@ -2686,7 +2697,7 @@ qdsp6_packet_write
       else if (zpacket->size == (2 - 1) && apacket->is_outer)
 	apacket->insns [i].insn =
           QDSP6_END_PACKET_SET (apacket->insns [i].insn, QDSP6_END_LOOP);
-      else if (zpacket->size >= qdsp6_packet_insns (apacket) - 1
+      else if (zpacket->size >= qdsp6_packet_length (apacket) - 1
                && QDSP6_END_PACKET_GET (apacket->insns [i].insn) != QDSP6_END_PAIR)
 	apacket->insns [i].insn =
           QDSP6_END_PACKET_SET (apacket->insns [i].insn, QDSP6_END_PACKET);
@@ -4241,13 +4252,13 @@ tc_gen_reloc
 */
 int
 qdsp6_find_noslot1
-(const qdsp6_packet *packet, size_t current)
+(const qdsp6_packet *apacket, size_t current)
 {
   size_t i;
 
-  for (i = 0; i < qdsp6_packet_count (packet); i++)
-    if (i != current && !packet->insns [i].used )
-      if (packet->insns [i].opcode->attributes & A_RESTRICT_NOSLOT1)
+  for (i = 0; i < apacket->size; i++)
+    if (i != current && !apacket->insns [i].used )
+      if (apacket->insns [i].opcode->attributes & A_RESTRICT_NOSLOT1)
 	return (i);
 
   return (-1);
@@ -4267,11 +4278,11 @@ qdsp6_discard_dcfetch
   int count = 0, found = 0;
   size_t i;
 
-  if (!qdsp6_if_arch_v1 () && qdsp6_packet_count (apacket) > 1)
+  if (!qdsp6_if_arch_v1 () && apacket->size > 1)
     {
       if (!number)
         /* Discard all but one DCFETCH instruction. */
-        for (i = 0; i < qdsp6_packet_count (apacket); i++)
+        for (i = 0; i < apacket->size; i++)
           {
             if (!strncasecmp (apacket->insns [i].opcode->syntax,
                               QDSP6_DCFETCH, QDSP6_DCFETCH_LEN))
@@ -4290,13 +4301,16 @@ qdsp6_discard_dcfetch
                     apacket->insns [i] = qdsp6_nop_insn;
                     apacket->insns [i].pad = TRUE;
 
-                    count++;
+		    assert (apacket->count);
+		    apacket->count--;
+		    assert (apacket->count);
+		    count++;
                   }
               }
           }
       else
         /* Discard specified number of DCFETCH. */
-        for (i = 0; number && i < qdsp6_packet_count (apacket); i++)
+        for (i = 0; number && i < apacket->size; i++)
           if (!strncasecmp (apacket->insns [i].opcode->syntax,
                             QDSP6_DCFETCH, QDSP6_DCFETCH_LEN))
             {
@@ -4308,8 +4322,11 @@ qdsp6_discard_dcfetch
               apacket->insns [i] = qdsp6_nop_insn;
               apacket->insns [i].pad = TRUE;
 
-              number--;
+	      assert (apacket->count);
+	      apacket->count--;
+	      assert (apacket->count);
               count++;
+              number--;
             }
     }
 
@@ -4381,7 +4398,7 @@ qdsp6_shuffle_helper
   int changed;
   size_t i;
 
-  if (slot_num >= qdsp6_packet_count (packet))
+  if (slot_num >= packet->size)
     return TRUE;
 
   /* Don't touch a packet with prefixes. */
@@ -4413,7 +4430,7 @@ qdsp6_shuffle_helper
 
   store_mask = QDSP6_SLOTS_STORES;
   for (i = 0, changed = FALSE;
-       i < qdsp6_packet_count (packet) && !changed;
+       i < packet->size && !changed;
        i++)
     {
       temp_mask = packet->insns [i].opcode->slots;
@@ -4497,7 +4514,7 @@ qdsp6_shuffle_prepare
     fromto [i] = MAX_PACKET_INSNS;
 
   /* Pad packet with NOPs. */
-  for (i = qdsp6_packet_count (apacket), j = qdsp6_packet_length (apacket);
+  for (i = apacket->size, j = qdsp6_packet_length (apacket);
        i < MAX_PACKET_INSNS;
        i++)
     {
@@ -5178,7 +5195,7 @@ size_t
 qdsp6_packet_slots
 (const qdsp6_packet *apacket)
 {
-  return (apacket->size + apacket->duplex);
+  return (apacket->count + apacket->duplex);
 }
 
 /** Return the number of words.
@@ -5189,29 +5206,7 @@ size_t
 qdsp6_packet_length
 (const qdsp6_packet *apacket)
 {
-  return (apacket->size + apacket->prefix + apacket->relax);
-}
-
-/** Return the size taken up by a packet.
-
-@param apacket A packet reference.
-*/
-size_t
-qdsp6_packet_size
-(const qdsp6_packet *apacket)
-{
-  return (apacket->size + apacket->duplex + apacket->prefix + apacket->relax);
-}
-
-/** Return the number of insns.
-
-@param apacket A packet reference.
-*/
-size_t
-qdsp6_packet_count
-(const qdsp6_packet *apacket)
-{
-  return (apacket->size);
+  return (apacket->count + apacket->prefix);
 }
 
 /** Return the number of effective insns.
@@ -5222,13 +5217,7 @@ size_t
 qdsp6_packet_insns
 (const qdsp6_packet *apacket)
 {
-  size_t i, n;
-
-  for (i = n = 0; i < apacket->size; i++)
-    if (!apacket->insns [i].pad)
-      n++;
-
-  return (n);
+  return (apacket->count);
 }
 
 /* Used to handle packet begin/end syntax */
