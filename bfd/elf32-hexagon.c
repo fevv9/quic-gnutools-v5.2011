@@ -209,16 +209,15 @@ static const hexagon_trampoline hexagon_trampolines [] =
    binding. */
 static const hexagon_insn hexagon_plt_initial_entry [PLT_INITIAL_ENTRY_LENGTH] =
   {
-    0x6a09400c, /*  { r12 = pc                # address of PLT          */
-    0x723cc000, /*    r28.h = #hi (PLT@GOTOFF) }                        */
-    0x713cc000, /*  r28.l = #lo (PLT@GOTOFF)  # offset of PLT from GOT  */
-    0xf33ccc1c, /*  r28 = sub (r12, r28)      # address of GOT          */
-    0xf33c4e0e, /*  { r14 = sub (r14, r28)    # offset of @GOT from GOT */
-    0x919cc04f, /*    r15 = memw (r28 + #8) } # object ID at GOT [2]    */
-    0xbfee7e0d, /*  { r13 = add (r14, #-16)                             */
-    0x919cc03c, /*    r28 = memw (r28 + #4) } # dynamic link at GOT [1] */
-    0x8c0d420d, /*  { r13 = asr (r13, #2)     # index of @PLT           */
-    0x529cc000, /*    jumpr r28 }             # call dynamic link       */
+    0x6a09400f, /* { r15 = pc                # address of PLT          */
+    0x723cc000, /*   r28.h = #hi (PLT@GOTOFF) }                        */
+    0x713cc000, /* r28.l = #lo (PLT@GOTOFF)  # offset of PLT from GOT  */
+    0xf33ccf1c, /* r28 = sub (r15, r28)      # address of GOT          */
+    0xe29c420e, /* { r14 -= add (r28, #16))  # offset of GOT# from GOT */
+    0x919cc04f, /*   r15 = memw (r28 + #8) } # object ID at GOT [2]    */
+    0x8c0e420e, /* { r14 = asr (r14, #2)     # index of PLT#           */
+    0x919cc03c, /*   r28 = memw (r28 + #4) } # dynamic link at GOT [1] */
+    0x529cc000, /* jumpr r28                 # call dynamic link       */
   };
 
 /* Default PLT entry */
@@ -3810,7 +3809,7 @@ hexagon_elf_finish_dynamic_sections
 
 	    case DT_RELA:
 	      /* We may not be using the standard ELF linker script.
-		 If .rel.plt is the first .rel section, we adjust
+		 If .rela.plt is the first .rela section, we adjust
 		 DT_REL to not include it.  */
 	      if (!htab->elf.srelplt)
 		continue;
@@ -4288,6 +4287,7 @@ hexagon_readonly_dynrel
 	  return FALSE;
 	}
     }
+
   return TRUE;
 }
 
@@ -4547,7 +4547,10 @@ hexagon_elf_create_dynamic_sections
   if (!_bfd_elf_create_dynamic_sections (abfd, info))
     return FALSE;
 
-  if (!bfd_set_section_alignment (abfd, htab->elf.splt, bfd_log2 (PLT_ENTRY_SIZE)))
+  /* Some addressing modes are shifted by the data size, so offsets from
+     the GOT must be a multiple of its natural alignment.  Since the largest
+     native data size is 8, make sure that the GOT is thusly aligned. */
+  if (!bfd_set_section_alignment (abfd, htab->elf.sgotplt, bfd_log2 (8)))
     return FALSE;
 
   if (get_elf_backend_data (abfd)->want_plt_sym)
@@ -4631,6 +4634,7 @@ hexagon_elf_hash_symbol
 #define elf_backend_can_refcount		1
 #define elf_backend_got_header_size		GOT_INITIAL_ENTRY_SIZE
 #define elf_backend_plt_header_size		PLT_INITIAL_ENTRY_SIZE
+#define elf_backend_plt_alignment		4
 #define elf_backend_plt_readonly		1
 #define elf_backend_want_got_plt		1
 #define elf_backend_want_plt_sym		1
