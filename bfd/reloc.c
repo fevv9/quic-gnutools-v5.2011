@@ -5282,13 +5282,19 @@ ENUMX
 ENUMX
   BFD_RELOC_HEX_6_X
 ENUMDOC
-  Basic signed relocations extended by BFD_RELOC_HEX_32_6_X, holding
-  the lower 6 bits.
+  Basic signed relocations extended by BFD_RELOC_HEX_32_6_X,
+  holding the lower 6 bits.
 
 ENUM
   BFD_RELOC_HEX_32_PCREL
 ENUMDOC
   PC-relative relocation with 32-bit signed offset.
+
+ENUM
+  BFD_RELOC_HEX_6_PCREL_X
+ENUMDOC
+  PC-relative relocation extended by BFD_RELOC_HEX_B32_PCREL_X,
+  holding the lower 6 bits.
 
 ENUM
   BFD_RELOC_HEX_B22_PCREL
@@ -5313,7 +5319,7 @@ ENUMDOC
 ENUM
   BFD_RELOC_HEX_B32_PCREL_X
 ENUMDOC
-  PC-relative relocations with 32-bit signed offset shifted right by 6.
+  PC-relative relocation with 32-bit signed offset shifted right by 6.
 
 ENUM
   BFD_RELOC_HEX_B22_PCREL_X
@@ -5347,7 +5353,20 @@ ENUMX
   BFD_RELOC_HEX_GOTREL_32
 ENUMDOC
   GOT-relative relocations for the lower and the higher 16 bits and
-  all 32 bits of a 32-bit address.
+  all 32 bits of a 32-bit offset.
+
+ENUM
+  BFD_RELOC_HEX_GOTREL_32_6_X
+ENUMDOC
+  GOT-relative relocation with 32-bit signed offset shifted right by 6.
+
+ENUM
+  BFD_RELOC_HEX_GOTREL_16_X
+ENUMX
+  BFD_RELOC_HEX_GOTREL_11_X
+ENUMDOC
+  GOT-relative relocations extended by BFD_RELOC_HEX_GOTREL_32_6_X,
+  holding the lower 6 bits.
 
 ENUM
   BFD_RELOC_HEX_GOT_LO16
@@ -5360,6 +5379,19 @@ ENUMX
 ENUMDOC
   GOT-relative relocations for the lower and the higher 16 bits,
   all 32 bits and the signed lower 16 bits of a signed 32-bit offset.
+
+ENUM
+  BFD_RELOC_HEX_GOT_32_6_X
+ENUMDOC
+  GOT-relative relocation with 32-bit signed offset shifted right by 6.
+
+ENUM
+  BFD_RELOC_HEX_GOT_16_X
+ENUMX
+  BFD_RELOC_HEX_GOT_11_X
+ENUMDOC
+  GOT-relative relocations extended by BFD_RELOC_HEX_GOT_32_6_X,
+  holding the lower 6 bits.
 
 ENUM
   BFD_RELOC_HEX_GPREL16_0
@@ -5402,6 +5434,20 @@ ENUMDOC
   of a 32-bit signed offset from the base of the TLS area.
 
 ENUM
+  BFD_RELOC_HEX_DTPREL_32_6_X
+ENUMDOC
+  TLS relocation with 32-bit signed from the base of the TLS area
+  offset shifted right by 6.
+
+ENUM
+  BFD_RELOC_HEX_DTPREL_16_X
+ENUMX
+  BFD_RELOC_HEX_DTPREL_11_X
+ENUMDOC
+  TLS relocations extended by BFD_RELOC_HEX_DTPREL_32_6_X,
+  holding the lower 6 bits.
+
+ENUM
   BFD_RELOC_HEX_GD_PLT_B22_PCREL
 ENUMDOC
   PC-relative relocations with 24-bit signed offset
@@ -5423,6 +5469,21 @@ ENUMDOC
   of a 32-bit signed offset to a TLS_index structure in consecutive GOT entries.
 
 ENUM
+  BFD_RELOC_HEX_GD_GOT_32_6_X
+ENUMDOC
+  GOT-relative TLS global-dynamic relocation
+  with 32-bit signed offset to a TLS_index structure in consecutive GOT entries
+  shifted right by 6.
+
+ENUM
+  BFD_RELOC_HEX_GD_GOT_16_X
+ENUMX
+  BFD_RELOC_HEX_GD_GOT_11_X
+ENUMDOC
+  GOT-relative TLS global-dynamic relocations
+  extended by BFD_RELOC_HEX_GD_GOT_32_6_X, holding the lower 6 bits.
+
+ENUM
   BFD_RELOC_HEX_IE_LO16
 ENUMX
   BFD_RELOC_HEX_IE_HI16
@@ -5433,7 +5494,19 @@ ENUMX
 ENUMDOC
   TLS initial-executable relocations for
   the lower and the higher 16 bits, all 32 bits and the signed lower 16 bits
-  of a 32-bit signed offset.
+  of a 32-bit address.
+
+ENUM
+  BFD_RELOC_HEX_IE_32_6_X
+ENUMDOC
+  TLS initial-executable relocation
+  with 32-bit address shifted right by 6.
+
+ENUM
+  BFD_RELOC_HEX_IE_16_X
+ENUMDOC
+  TLS initial-executable relocation
+  extended by BFD_RELOC_HEX_IE_32_6_X, holding the lower 6 bits.
 
 ENUM
   BFD_RELOC_HEX_IE_GOT_LO16
@@ -5449,6 +5522,20 @@ ENUMDOC
   of a 32-bit signed offset.
 
 ENUM
+  BFD_RELOC_HEX_IE_GOT_32_6_X
+ENUMDOC
+  GOT-relative TLS initial-executable relocation
+  with 32-bit signed offset shifted right by 6.
+
+ENUM
+  BFD_RELOC_HEX_IE_GOT_16_X
+ENUMX
+  BFD_RELOC_HEX_IE_GOT_11_X
+ENUMDOC
+  GOT-relative TLS initial-executable relocations
+  extended by BFD_RELOC_HEX_IE_GOT_32_6_X, holding the lower 6 bits.
+
+ENUM
   BFD_RELOC_HEX_TPREL_LO16
 ENUMX
   BFD_RELOC_HEX_TPREL_HI16
@@ -5460,8 +5547,23 @@ ENUMDOC
   TLS relocations for the lower and the higher 16 bits and all 32 bits
   of a 32-bit signed offset from the base of the TLS template.
 
+ENUM
+  BFD_RELOC_HEX_TPREL_32_6_X
+ENUMDOC
+  TLS relocation with 32-bit signed from the base of the TLS template
+  offset shifted right by 6.
+
+ENUM
+  BFD_RELOC_HEX_TPREL_16_X
+ENUMX
+  BFD_RELOC_HEX_TPREL_11_X
+ENUMDOC
+  TLS relocations extended by BFD_RELOC_HEX_TPREL_32_6_X,
+  holding the lower 6 bits.
+
 ENDSENUM
   BFD_RELOC_UNUSED
+
 CODE_FRAGMENT
 .
 .typedef enum bfd_reloc_code_real bfd_reloc_code_real_type;
