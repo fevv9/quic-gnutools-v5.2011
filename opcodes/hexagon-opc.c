@@ -371,6 +371,10 @@ const hexagon_operand hexagon_operands [] =
     BFD_RELOC_NONE, BFD_RELOC_HEX_32_6_X, BFD_RELOC_HEX_6_X,
     HEXAGON_OPERAND_IS_IMMEDIATE,
     "#%u", NULL, NULL },
+  { "#u6pcrel",   6, 'i', 0,
+    BFD_RELOC_NONE, BFD_RELOC_HEX_B32_PCREL_X, BFD_RELOC_HEX_6_PCREL_X,
+    HEXAGON_OPERAND_IS_IMMEDIATE | HEXAGON_OPERAND_PC_RELATIVE,
+    "#%u", NULL, NULL },
   { "#u5:2",      5, 'i', 2,
     BFD_RELOC_NONE, BFD_RELOC_NONE, BFD_RELOC_NONE,
     HEXAGON_OPERAND_IS_IMMEDIATE,
@@ -3082,7 +3086,7 @@ hexagon_operand_find
   strcat (buf, suffix);
 
   for (i = 0; i < hexagon_operand_count; i++)
-    if (!strcmp (hexagon_operands [i].fmt, buf))
+    if (!strcasecmp (hexagon_operands [i].fmt, buf))
       return (hexagon_operands + i);
 
   return NULL;

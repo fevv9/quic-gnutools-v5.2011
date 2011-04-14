@@ -272,17 +272,37 @@ enum _hexagon_pairs_counters
 
 typedef enum _hexagon_suffix_type
   {
-    SUF_NONE = 0,
-    PIC_GOT,
+    SUF_NONE, SUF_1ST,
+    PIC_PCREL = 1,
     PIC_GOTREL,
+    PIC_GOT,
     PIC_PLT,
     TLS_GD_GOT,
     TLS_GD_PLT,
-    TLS_IE,
     TLS_IE_GOT,
+    TLS_IE,
     TLS_DTPREL,
     TLS_TPREL,
+    SUF_MAX
   } hexagon_suffix_type;
+
+struct _hexagon_suffix
+  {
+    const char *pri, *sec;
+  } hexagon_suffix [] =
+  {
+    {"",       NULL},
+    {"PCREL",  NULL},
+    {"GOTREL", "GOTOFF"},
+    {"GOT",    NULL},
+    {"PLT",    NULL},
+    {"GDGOT",  NULL},
+    {"GDPLT",  NULL},
+    {"IEGOT",  NULL},
+    {"IE",     NULL},
+    {"DTPREL", NULL},
+    {"TPREL",  NULL},
+  };
 
 extern int hexagon_get_mach (char *);
 extern void hexagon_code_symbol (expressionS *);
@@ -634,21 +654,20 @@ static int numOfBranchRelax, numOfBranchRelax2nd;
 static int numOfBranchMax1, numOfBranchStiff;
 static int numOfLoopMax1;
 
-struct hexagon_march
+typedef struct _hexagon_march
   {
 	char *march_name_fe, *march_alt_fe, *march_short_fe;
 	unsigned int march_name_be;
-  };
+  } hexagon_march;
 
-static struct hexagon_march hexagon_marchs [] =
+static hexagon_march hexagon_marchs [] =
   {
     {"hexagonv2", "qdsp6v2", "v2", bfd_mach_hexagon_v2},
     {"hexagonv3", "qdsp6v3", "v3", bfd_mach_hexagon_v3},
     {"hexagonv4", "qdsp6v4", "v4", bfd_mach_hexagon_v4},
   };
 
-static size_t hexagon_marchs_size =
-  sizeof (hexagon_marchs) / sizeof (*hexagon_marchs);
+static const size_t hexagon_marchs_size = ARRAY_SIZE (hexagon_marchs);
 
 /* Invocation line includes a switch not recognized by the base assembler.
    See if it's a processor-specific option.  */
@@ -1821,26 +1840,10 @@ hexagon_parse_immediate
   input_line_pointer = hold;
 
   operandx = NULL;
-
-  if (suffix_type == PIC_GOT)
-    operandx = hexagon_operand_find (operand, "got");
-  else if (suffix_type == PIC_GOTREL)
-    operandx = hexagon_operand_find (operand, "gotrel");
-  else if (suffix_type == PIC_PLT)
-    operandx = hexagon_operand_find (operand, "plt");
-  else if (suffix_type == TLS_GD_GOT)
-    operandx = hexagon_operand_find (operand, "gdgot");
-  else if (suffix_type == TLS_GD_PLT)
-    operandx = hexagon_operand_find (operand, "gdplt");
-  else if (suffix_type == TLS_IE)
-    operandx = hexagon_operand_find (operand, "ie");
-  else if (suffix_type == TLS_IE_GOT)
-    operandx = hexagon_operand_find (operand, "iegot");
-  else if (suffix_type == TLS_DTPREL)
-    operandx = hexagon_operand_find (operand, "dtprel");
-  else if (suffix_type == TLS_TPREL)
-    operandx = hexagon_operand_find (operand, "tprel");
-
+  if (suffix_type != SUF_NONE)
+    operandx = hexagon_operand_find (operand, hexagon_suffix [suffix_type].pri);
+  if (!operandx && hexagon_suffix [suffix_type].sec)
+    operandx = hexagon_operand_find (operand, hexagon_suffix [suffix_type].sec);
   if (operandx)
     /* Get new PIC/TLS operand. */
     operand = operandx;
@@ -1977,10 +1980,8 @@ hexagon_insn_write
       operand = xmalloc (sizeof (*operand));
       *operand = *op;
 
-      if (operand->flags & HEXAGON_OPERAND_IS_KXED)
-        reloc_type = operand->reloc_kxed;
-      else
-        reloc_type = operand->reloc_type;
+      reloc_type = (operand->flags & HEXAGON_OPERAND_IS_KXED)
+		   ? operand->reloc_kxed: operand->reloc_type;
 
       pc = frag_now->fr_address + frag_now_fix ();
 
@@ -2986,10 +2987,10 @@ hexagon_packet_form
                 /* Skip an insn alredy inserted into the packet. */
                 continue;
 
-              if (!hexagon_packet_cram (packet + k,
-                                      queue.insns + i, queue.prefixes + i,
-                                      queue.pairs + i,
-                                      FALSE))
+              if (!hexagon_packet_cram
+		     (packet + k,
+		      queue.insns + i, queue.prefixes + i, queue.pairs + i,
+		      FALSE))
                 {
                   hexagon_packet_init (packet + k);
                   ok = FALSE;
@@ -3021,10 +3022,10 @@ hexagon_packet_form
             /* Skip an insn alredy inserted into the packet. */
             continue;
 
-          if (!hexagon_packet_cram (apacket,
-                                  queue.insns + i, queue.prefixes + i,
-                                  queue.pairs + i,
-                                  FALSE))
+          if (!hexagon_packet_cram
+		 (apacket,
+		  queue.insns + i, queue.prefixes + i, queue.pairs + i,
+		  FALSE))
             {
               ok = FALSE;
               break;
@@ -3035,12 +3036,19 @@ hexagon_packet_form
         }
     }
 
+  /* Free up the insn source when not needed anymore. */
+  for (i = 0; i < apacket->size; i++)
+    if (!(apacket->insns [i].flags & HEXAGON_INSN_IS_PAIR)
+	&& apacket->insns [i].source)
+      {
+	free (apacket->insns [i].source);
+	apacket->insns [i].source = NULL;
+      }
+
   if (!ok)
-    {
-      as_bad_where (NULL, queue.insns [i].lineno,
-                    _("too many instructions in packet (maximum is %d)."),
-                    MAX_PACKET_INSNS);
-    }
+    as_bad_where (NULL, queue.insns [i].lineno,
+		  _("too many instructions in packet (maximum is %d)."),
+		  MAX_PACKET_INSNS);
 
   n_pairs [HEXAGON_PAIRS_TOTAL] += apacket->duplex;
 
@@ -3521,12 +3529,12 @@ md_assemble
           hexagon_queue_insert (&hexagon_aqueue, &insn, &prefix);
         }
 
-      if (!hexagon_in_packet)
-        if (hexagon_packet_form (&hexagon_apacket, &hexagon_aqueue))
-          {
-            hexagon_packet_end (&hexagon_apacket);
-            hexagon_packet_write (&hexagon_apacket);
-          }
+      if (!hexagon_in_packet
+	  && hexagon_packet_form (&hexagon_apacket, &hexagon_aqueue))
+	{
+	  hexagon_packet_end (&hexagon_apacket);
+	  hexagon_packet_write (&hexagon_apacket);
+	}
     }
 }
 
@@ -3563,7 +3571,7 @@ hexagon_assemble
 
   /* Keep looking until we find a match.  */
   start = str;
-  ainsn->source = NULL;
+  hexagon_insn_init (ainsn);
   for (opcode = hexagon_opcode_lookup_asm (str);
        opcode;
        opcode = HEXAGON_CODE_NEXT_ASM (opcode))
@@ -4295,26 +4303,6 @@ static char *
 hexagon_parse_suffix
 (hexagon_suffix_type *type, char **extra)
 {
-  static const struct
-    {
-      const char *str;
-      hexagon_suffix_type type;
-    }
-  pic [] =
-    {
-      { "GOTREL", PIC_GOTREL },
-      { "GOTOFF", PIC_GOTREL },
-      { "GOT",    PIC_GOT },
-      { "PLT",    PIC_PLT },
-      { "GDGOT",  TLS_GD_GOT },
-      { "GDPLT",  TLS_GD_PLT },
-      { "LDGOT",  TLS_GD_GOT },
-      { "LDPLT",  TLS_GD_PLT },
-      { "IEGOT",  TLS_IE_GOT }, /* This must precede "IE". */
-      { "IE",     TLS_IE },
-      { "DTPREL", TLS_DTPREL },
-      { "TPREL",  TLS_TPREL },
-    };
   char *cp;
   size_t j;
 
@@ -4324,42 +4312,46 @@ hexagon_parse_suffix
     if (is_end_of_line [(unsigned char) *cp])
       return NULL;
 
-  for (j = 0; j < ARRAY_SIZE (pic); j++)
+  for (j = SUF_1ST; j < SUF_MAX; j++)
     {
       size_t len;
 
-      len = strlen (pic [j].str);
-      if (!(strncasecmp (cp + 1, pic [j].str, len)))
+      /* FIXME: Assumes that the primary and secondary suffixes
+	 are the same length. */
+      len = strlen (hexagon_suffix [j].pri);
+      if (!(strncasecmp (cp + 1, hexagon_suffix [j].pri, len))
+	  || (hexagon_suffix [j].sec
+	      && !strncasecmp (cp + 1, hexagon_suffix [j].sec, len)))
 	{
-          ptrdiff_t before, after;
-          char *tmp, *past;
+	  ptrdiff_t before, after;
+	  char *tmp, *past;
 
-          /* The length of the before part of our input line.  */
-          before = cp - input_line_pointer;
+	  /* The length of the before part of our input line.  */
+	  before = cp - input_line_pointer;
 
-          /* The after part goes from after the relocation token until
-             (and including) an end_of_line char.  Don't use strlen
-             here as the end_of_line char may not be a NUL.  */
-          past = cp + 1 + len;
-          for (cp = past; !is_end_of_line [(unsigned char) *cp]; cp++)
-            ;
-          after = cp - past;
+	  /* The after part goes from after the relocation token until
+	      (and including) an end_of_line char.  Don't use strlen
+	      here as the end_of_line char may not be a NUL.  */
+	  past = cp + 1 + len;
+	  for (cp = past; !is_end_of_line [(unsigned char) *cp]; cp++)
+	    ;
+	  after = cp - past;
 
-          /* Allocate and form string.  */
-          tmp = xmalloc (before + after + 2);
+	  /* Allocate and form string.  */
+	  tmp = xmalloc (before + after + 2);
 
-          strncpy (tmp, input_line_pointer, before);
-          /* Replace the '@' with ' ', so that errors like "foo@GOTOFF1"
-             will be detected.  */
-          tmp [before] = ' ';
-          strncpy (tmp + before + 1, past, after);
-          tmp [before + after + 1] = '\0';
+	  strncpy (tmp, input_line_pointer, before);
+	  /* Replace the '@' with ' ', so that errors like "foo@GOTOFF1"
+	      will be detected.  */
+	  tmp [before] = ' ';
+	  strncpy (tmp + before + 1, past, after);
+	  tmp [before + after + 1] = '\0';
 
-          *type = pic [j].type;
-          if (extra)
-            *extra = past;
+	  *type = j;
+	  if (extra)
+	    *extra = past;
 
-          return (tmp);
+	  return (tmp);
 	}
     }
 
@@ -4394,13 +4386,7 @@ hexagon_cons_fix_new
             r_type = BFD_RELOC_32;
 
 	    save = input_line_pointer;
-	    if (!(strncmp (save, "@GOT", 4))
-	        || !(strncmp (save, "@GDGOT",  6))
-	        || !(strncmp (save, "@LDGOT",  6))
-	        || !(strncmp (save, "@IE",     3))
-	        || !(strncmp (save, "@IEGOT",  6))
-	        || !(strncmp (save, "@DTPREL", 7))
-	        || !(strncmp (save, "@TPREL",  6)))
+	    if (*save == '@')
               {
                 /* Handle GOT and PLT expressions. */
                 suffix_line = hexagon_parse_suffix (&suffix, NULL);
@@ -4410,20 +4396,44 @@ hexagon_cons_fix_new
                     expression (&tmp);
                     exp->X_add_number += tmp.X_add_number;
 
-                    if (suffix == PIC_GOTREL)
-                      r_type = BFD_RELOC_32_GOTOFF;
-                    else if (suffix == PIC_GOT)
-                      r_type = BFD_RELOC_HEX_GOT_32;
-                    else if (suffix == TLS_GD_GOT)
-                      r_type = BFD_RELOC_HEX_GD_GOT_32;
-                    else if (suffix == TLS_IE)
-                      r_type = BFD_RELOC_HEX_IE_32;
-                    else if (suffix == TLS_IE_GOT)
-                      r_type = BFD_RELOC_HEX_IE_GOT_32;
-                    else if (suffix == TLS_DTPREL)
-                      r_type = BFD_RELOC_HEX_DTPREL_32;
-                    else if (suffix == TLS_TPREL)
-                      r_type = BFD_RELOC_HEX_TPREL_32;
+		    switch (suffix)
+		      {
+		      case PIC_PCREL:
+			r_type = BFD_RELOC_32_PCREL;
+			break;
+
+		      case PIC_GOT:
+			r_type = BFD_RELOC_HEX_GOT_32;
+			break;
+
+		      case PIC_GOTREL:
+			r_type = BFD_RELOC_32_GOTOFF;
+			break;
+
+		      case TLS_GD_GOT:
+			r_type = BFD_RELOC_HEX_GD_GOT_32;
+			break;
+
+		      case TLS_IE:
+			r_type = BFD_RELOC_HEX_IE_32;
+			break;
+
+		      case TLS_IE_GOT:
+			r_type = BFD_RELOC_HEX_IE_GOT_32;
+			break;
+
+		      case TLS_DTPREL:
+			r_type = BFD_RELOC_HEX_DTPREL_32;
+			break;
+
+		      case TLS_TPREL:
+			r_type = BFD_RELOC_HEX_TPREL_32;
+			break;
+
+		      default:
+			as_bad (_("unsupported suffix `%s'"), save);
+			break;
+		      }
                   }
 
                 while (!is_end_of_line [(unsigned char) *save++])
@@ -4439,7 +4449,7 @@ hexagon_cons_fix_new
           break;
 
         default:
-          as_bad (_("unsupported BFD relocation size %u"), nbytes);
+          as_bad (_("unsupported BFD relocation size of %u bytes"), nbytes);
           r_type = BFD_RELOC_32;
           break;
       }
@@ -4548,24 +4558,26 @@ md_apply_fix
   if (operand)
     {
       /* Fetch the instruction, insert the fully resolved operand
-        value, and stuff the instruction back again.  */
+         value, and stuff the instruction back again.  */
       if (fixP->fx_done)
         {
-          bfd_reloc_code_real_type rtype = operand->reloc_type;
-          reloc_howto_type *howto = bfd_reloc_type_lookup (seg->owner, rtype);
+          reloc_howto_type *howto
+	    = bfd_reloc_type_lookup (seg->owner,
+				     (operand->flags & HEXAGON_OPERAND_IS_KXED)
+				     ? operand->reloc_kxed: operand->reloc_type);
 
           assert (howto);
-          value &= howto->src_mask;
 
+          value &= howto->src_mask;
           hexagon_insert_operand (fixP->fx_frag->fr_literal + fixP->fx_where,
-                                operand, (offsetT) value, fixP);
+				  operand, (offsetT) value, fixP);
         }
       else
         /* If any relocation is to be applied later, don't modify
           the section contents here; we will use the addend in
           the relocation to fix it up at link time... */
         hexagon_insert_operand (fixP->fx_frag->fr_literal + fixP->fx_where,
-                              operand, (offsetT) 0, fixP);
+				operand, 0, fixP);
     }
   else if (fixP->fx_done)
     {
