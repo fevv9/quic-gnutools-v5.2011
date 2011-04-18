@@ -69,6 +69,8 @@
 #define MAX_INSNS             (6)
 /* Per insn. */
 #define MAX_FIXUPS            (1)
+/* Per frag. */
+#define MAX_FRAG_INSNS        (2 * MAX_PACKET_INSNS - 1)
 
 #define HEXAGON_NOP         "nop"
 #define HEXAGON_NOP_LEN     (sizeof (HEXAGON_NOP) - 1)
@@ -158,7 +160,7 @@ typedef struct _hexagon_literal
 typedef struct
   {
     hexagon_insn insn;
-    size_t ndx;
+    unsigned ndx;
     const hexagon_opcode *opcode;
     const hexagon_operand *ioperand;
     unsigned conditional, predicate;
@@ -166,14 +168,13 @@ typedef struct
     int opair;
     unsigned lineno;
     unsigned flags;
-    char pad;
-    char used;
-    char is_inner, is_outer;
+    unsigned pad: 1, used: 1;
+    unsigned is_inner: 1, is_outer: 1;
+    unsigned relax;
     hexagon_operand operand;
     expressionS exp;
-    size_t fc;
+    unsigned fc;
     fixS *fix;
-    unsigned relax;
     char *source;
   } hexagon_packet_insn;
 
@@ -200,17 +201,17 @@ enum _hexagon_insn_flag
 /** Packet house keeping. */
 typedef struct
   {
-    size_t size; /* Number of insns. */
-    size_t prefix; /* Number of k-extenders. */
-    size_t duplex; /* Number of duplex insns. */
-    size_t relax; /* Number of reserved slots. */
-    size_t drlx, ddrlx; /* Deltas in extensions. */
-    size_t dpad, ddpad; /* Deltas in padding NOPs. */
-    size_t dpkt, ddpkt; /* Deltas in padding NOPs in packets. */
+    unsigned size; /* Number of insns. */
+    unsigned prefix; /* Number of k-extenders. */
+    unsigned duplex; /* Number of duplex insns. */
+    unsigned relax; /* Number of reserved slots. */
+    int drlx, ddrlx; /* Deltas in extensions. */
+    int dpad, ddpad; /* Deltas in padding NOPs. */
+    int dpkt, ddpkt; /* Deltas in padding NOPs in packets. */
     unsigned lineno; /* Line number at closing. */
-    char faligned; /* Packet should be fetch-aligned. */
-    char is_inner; /* Packet has :endloop0. */
-    char is_outer; /* Packet has :endloop1. */
+    unsigned faligned: 1; /* Packet should be fetch-aligned. */
+    unsigned is_inner: 1; /* Packet has :endloop0. */
+    unsigned is_outer: 1; /* Packet has :endloop1. */
     hexagon_packet_insn insns [MAX_PACKET_INSNS]; /* Insns. */
     hexagon_packet_insn prefixes [MAX_PACKET_INSNS]; /* k-extender insns. */
     hexagon_packet_pair pairs [MAX_PACKET_INSNS]; /* Original paired prefix+insn. */
@@ -220,13 +221,13 @@ typedef struct
 /** Instruction queue for packet formation. */
 typedef struct _hexagon_queue
   {
-    size_t size;
+    unsigned size;
     hexagon_packet_insn insns [MAX_INSNS]; /* Insns. */
     hexagon_packet_insn prefixes [MAX_INSNS]; /* k-extenders insns. */
     hexagon_packet_pair pairs [MAX_INSNS]; /* Original paired prefix+insn. */
-    char faligned; /* Fetch-align request. */
-    char is_inner; /* :endloop0 request. */
-    char is_outer; /* :endloop1 request. */
+    unsigned faligned: 1; /* Fetch-align request. */
+    unsigned is_inner: 1; /* :endloop0 request. */
+    unsigned is_outer: 1; /* :endloop1 request. */
   } hexagon_queue;
 
 typedef struct hexagon_frag_data
@@ -1348,7 +1349,6 @@ hexagon_estimate_size_before_relax
 (fragS *fragP, segT segment)
 {
   hexagon_packet *apacket;
-  size_t ddpad, ddpkt;
   int delta;
 
   /* Avoid the empty fragments that result from frag_more (). */
@@ -1360,17 +1360,12 @@ hexagon_estimate_size_before_relax
 
   apacket = &fragP->tc_frag_data->packet;
 
-  ddpad = apacket->dpad + apacket->ddpad <= SSIZE_MAX
-          ? apacket->ddpad: -apacket->dpad;
-  ddpkt = apacket->dpkt + apacket->ddpkt <= SSIZE_MAX
-          ? apacket->ddpkt: -apacket->dpkt;
-
-  apacket->dpad += ddpad;
-  apacket->dpkt += ddpkt;
-
-  apacket->ddpad = apacket->ddpkt = 0;
+  apacket->dpad += apacket->ddpad;
+  apacket->dpkt += apacket->ddpkt;
 
   delta = HEXAGON_INSN_LEN * (apacket->drlx + apacket->dpad + apacket->dpkt);
+
+  apacket->ddpad = apacket->ddpkt = 0;
 
   if (apacket->relax)
     {
@@ -1416,22 +1411,16 @@ long
 hexagon_relax_frag (segT segment, fragS *fragP, long stretch)
 {
   hexagon_packet *apacket;
-  size_t ddpad, ddpkt;
   long delta;
 
   apacket = &fragP->tc_frag_data->packet;
 
-  ddpad = apacket->dpad + apacket->ddpad <= SSIZE_MAX
-          ? apacket->ddpad: -apacket->dpad;
-  ddpkt = apacket->dpkt + apacket->ddpkt <= SSIZE_MAX
-          ? apacket->ddpkt: -apacket->dpkt;
+  apacket->dpad += apacket->ddpad;
+  apacket->dpkt += apacket->ddpkt;
 
-  apacket->dpad += ddpad;
-  apacket->dpkt += ddpkt;
+  delta = HEXAGON_INSN_LEN * (apacket->ddpad + apacket->ddpkt);
 
   apacket->ddpad = apacket->ddpkt = 0;
-
-  delta = HEXAGON_INSN_LEN * (ddpad + ddpkt);
 
   if (apacket->relax)
     delta += hexagon_relax_branch_try (fragP, segment, stretch);
@@ -2824,7 +2813,7 @@ hexagon_packet_write
 
   /* Make room for maximum packet size and possible padding. */
   previous = frag_now;
-  frag_grow (2 * MAX_PACKET_INSNS * HEXAGON_INSN_LEN);
+  frag_grow (MAX_FRAG_INSNS * HEXAGON_INSN_LEN);
   first = frag_more (req_insns * HEXAGON_INSN_LEN);
   hexagon_frag_init (frag_now, previous);
 
@@ -2879,7 +2868,7 @@ hexagon_packet_write
 
   previous = frag_now;
   frag_var (rs_machine_dependent,
-            (2 * MAX_PACKET_INSNS - req_insns) * HEXAGON_INSN_LEN,
+            (MAX_FRAG_INSNS - req_insns) * HEXAGON_INSN_LEN,
             0, 0, NULL, 0, first);
   hexagon_frag_init (frag_now, previous);
   hexagon_packet_init (&frag_now->tc_frag_data->packet);
