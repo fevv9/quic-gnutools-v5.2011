@@ -2373,10 +2373,8 @@ hexagon_elf_relocate_section
 		  && h
 		  && h->dynindx != -1
 		  && !h->non_got_ref
-		  && ((h->def_dynamic
-		       && !h->def_regular)
-		      || h->root.type == bfd_link_hash_undefweak
-		      || h->root.type == bfd_link_hash_undefined)))
+		  && h->def_dynamic
+		  && !h->def_regular))
 	    {
 	      /* When generating a DSO, these relocations are copied into
 	         the output file to be resolved at run-time.  */
@@ -3429,6 +3427,13 @@ hexagon_elf_gc_sweep_hook
 	      l_symndx = LGOT_IE (symtab_hdr, r_symndx);
 	      if (eh && eh->ie_got.refcount > 0)
 		eh->ie_got.refcount--;
+	      break;
+
+	    default:
+	      /* Make some versions of the compiler happy,
+		 but this code should never run. */
+	      l_symndx = r_symndx;
+	      BFD_ASSERT (FALSE);
 	      break;
 	    }
 
