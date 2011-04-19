@@ -297,7 +297,7 @@ struct _hexagon_suffix
     {"GOTREL", "GOTOFF"},
     {"GOT",    NULL},
     {"PLT",    NULL},
-    {"GDGOT",  NULL},
+    {"GDGOT",  "LDGOT"},
     {"GDPLT",  NULL},
     {"IEGOT",  NULL},
     {"IE",     NULL},
@@ -1830,9 +1830,17 @@ hexagon_parse_immediate
 
   operandx = NULL;
   if (suffix_type != SUF_NONE)
-    operandx = hexagon_operand_find (operand, hexagon_suffix [suffix_type].pri);
-  if (!operandx && hexagon_suffix [suffix_type].sec)
-    operandx = hexagon_operand_find (operand, hexagon_suffix [suffix_type].sec);
+    {
+      operandx = hexagon_operand_find (operand, hexagon_suffix [suffix_type].pri);
+      if (!operandx && hexagon_suffix [suffix_type].sec)
+	operandx = hexagon_operand_find (operand, hexagon_suffix [suffix_type].sec);
+      if (!operandx)
+	{
+	  if (errmsg)
+	    *errmsg = _("invalid operand suffix.");
+	  return NULL;
+	}
+    }
   if (operandx)
     /* Get new PIC/TLS operand. */
     operand = operandx;
