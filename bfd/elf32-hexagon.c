@@ -1509,12 +1509,7 @@ hexagon_elf_relax_section
       /* Look into relocation overflows at branches and add trampolines if needed. */
       r_type = ELF32_R_TYPE (irel->r_info);
       if (info->hexagon_trampolines
-          && (r_type == R_HEX_B32_PCREL_X
-              || r_type == R_HEX_B22_PCREL_X
-              || r_type == R_HEX_B15_PCREL_X
-              || r_type == R_HEX_B13_PCREL_X
-              || r_type == R_HEX_B9_PCREL_X
-              || r_type == R_HEX_B22_PCREL
+          && (r_type == R_HEX_B22_PCREL
               || r_type == R_HEX_B15_PCREL
               || r_type == R_HEX_B13_PCREL
               || r_type == R_HEX_B9_PCREL))
@@ -1617,14 +1612,8 @@ hexagon_elf_relax_section
 
           /* Check if the target is beyond reach. */
           offset = llabs ((to + to_base) - (from + at_base));
-          if ((is_def && (((r_type == R_HEX_B32_PCREL_X
-	                    || r_type == R_HEX_B22_PCREL_X
-	                    || r_type == R_HEX_B15_PCREL_X
-	                    || r_type == R_HEX_B13_PCREL_X
-	                    || r_type == R_HEX_B9_PCREL_X)
-                           && HEXAGON_TRAMPOLINE_NEEDED (offset, 32))
-                          || ((r_type == R_HEX_B22_PCREL)
-                              && HEXAGON_TRAMPOLINE_NEEDED (offset, 24))
+          if ((is_def && (((r_type == R_HEX_B22_PCREL)
+                           && HEXAGON_TRAMPOLINE_NEEDED (offset, 24))
                           || ((r_type == R_HEX_B15_PCREL)
                               && HEXAGON_TRAMPOLINE_NEEDED (offset, 17))
                           || ((r_type == R_HEX_B13_PCREL)
@@ -1676,14 +1665,8 @@ hexagon_elf_relax_section
                 {
                   t_at = isec_size;
 
-                  if (((r_type == R_HEX_B32_PCREL_X
-		        || r_type == R_HEX_B22_PCREL_X
-		        || r_type == R_HEX_B15_PCREL_X
-		        || r_type == R_HEX_B13_PCREL_X
-		        || r_type == R_HEX_B9_PCREL_X)
-                       && HEXAGON_TRAMPOLINE_NEEDED (t_at - from, 31))
-                      || ((r_type == R_HEX_B22_PCREL)
-                          && HEXAGON_TRAMPOLINE_NEEDED (t_at - from, 23))
+                  if (((r_type == R_HEX_B22_PCREL)
+                       && HEXAGON_TRAMPOLINE_NEEDED (t_at - from, 23))
                       || ((r_type == R_HEX_B15_PCREL)
                           && HEXAGON_TRAMPOLINE_NEEDED (t_at - from, 16))
                       || ((r_type == R_HEX_B13_PCREL)
@@ -2075,10 +2058,17 @@ hexagon_elf_relocate_section
               relocation = TRUE;
 	      switch (r_type)
 		{
-	        case R_HEX_B22_PCREL:
-	        case R_HEX_B15_PCREL:
-	        case R_HEX_B13_PCREL:
-	        case R_HEX_B7_PCREL:
+		case R_HEX_B32_PCREL_X:
+		case R_HEX_B22_PCREL:
+		case R_HEX_B22_PCREL_X:
+		case R_HEX_B15_PCREL:
+		case R_HEX_B15_PCREL_X:
+		case R_HEX_B13_PCREL:
+		case R_HEX_B13_PCREL_X:
+		case R_HEX_B9_PCREL:
+		case R_HEX_B9_PCREL_X:
+		case R_HEX_B7_PCREL:
+		case R_HEX_B7_PCREL_X:
                   /* TODO: In PPC the tests in all cases include visibility too. */
 	          if (info->shared
 	              && (!SYMBOLIC_BIND (info, h)
@@ -2097,17 +2087,28 @@ hexagon_elf_relocate_section
 		case R_HEX_GOT_HI16:
 		case R_HEX_GOT_32:
 		case R_HEX_GOT_16:
+		case R_HEX_GOT_32_6_X:
+		case R_HEX_GOT_16_X:
+		case R_HEX_GOT_11_X:
 		case R_HEX_GD_GOT_LO16:
 		case R_HEX_GD_GOT_HI16:
 		case R_HEX_GD_GOT_32:
 		case R_HEX_GD_GOT_16:
+		case R_HEX_GD_GOT_32_6_X:
+		case R_HEX_GD_GOT_16_X:
+		case R_HEX_GD_GOT_11_X:
 		case R_HEX_IE_LO16:
 		case R_HEX_IE_HI16:
 		case R_HEX_IE_32:
+		case R_HEX_IE_32_6_X:
+		case R_HEX_IE_16_X:
 		case R_HEX_IE_GOT_LO16:
 		case R_HEX_IE_GOT_HI16:
 		case R_HEX_IE_GOT_32:
 		case R_HEX_IE_GOT_16:
+		case R_HEX_IE_GOT_32_6_X:
+		case R_HEX_IE_GOT_16_X:
+		case R_HEX_IE_GOT_11_X:
 	          if (htab->elf.dynamic_sections_created
 	              && (!SYMBOLIC_BIND (info, h)
 			  || !h->def_regular))
@@ -2168,6 +2169,9 @@ hexagon_elf_relocate_section
 	case R_HEX_GOTREL_LO16:
 	case R_HEX_GOTREL_HI16:
 	case R_HEX_GOTREL_32:
+	case R_HEX_GOTREL_32_6_X:
+	case R_HEX_GOTREL_16_X:
+	case R_HEX_GOTREL_11_X:
 	  /* This can happen if we get a link error with the input ELF
 	     variant mismatching the output variant.  Emit an error so
 	     it's noticed if it happens elsewhere.  */
@@ -2185,6 +2189,7 @@ hexagon_elf_relocate_section
 
         case R_HEX_B15_PCREL:
         case R_HEX_B13_PCREL:
+        case R_HEX_B9_PCREL:
         case R_HEX_B7_PCREL:
 	  if (!h || ELF_ST_VISIBILITY (h->other) != STV_DEFAULT)
             /* If the symbol was local, we need no DSO-specific handling.  */
@@ -2217,6 +2222,9 @@ hexagon_elf_relocate_section
         case R_HEX_GOT_HI16:
         case R_HEX_GOT_32:
         case R_HEX_GOT_16:
+	case R_HEX_GOT_32_6_X:
+	case R_HEX_GOT_16_X:
+	case R_HEX_GOT_11_X:
           if (h)
             {
               /* Global symbol. */
@@ -2313,6 +2321,9 @@ hexagon_elf_relocate_section
 	case R_HEX_GOTREL_LO16:
 	case R_HEX_GOTREL_HI16:
 	case R_HEX_GOTREL_32:
+	case R_HEX_GOTREL_32_6_X:
+	case R_HEX_GOTREL_16_X:
+	case R_HEX_GOTREL_11_X:
 	  /* These relocations are like a PC-relative one, except the
 	     reference point is the location of _GLOBAL_OFFSET_TABLE_.  Note
 	     that sgot->output_offset is not involved in this calculation.
@@ -2324,10 +2335,17 @@ hexagon_elf_relocate_section
 	  break;
 
         case R_HEX_PLT_B22_PCREL:
-        case R_HEX_B22_PCREL:
-        case R_HEX_B15_PCREL:
-        case R_HEX_B13_PCREL:
-        case R_HEX_B7_PCREL:
+	case R_HEX_B32_PCREL_X:
+	case R_HEX_B22_PCREL:
+	case R_HEX_B22_PCREL_X:
+	case R_HEX_B15_PCREL:
+	case R_HEX_B15_PCREL_X:
+	case R_HEX_B13_PCREL:
+	case R_HEX_B13_PCREL_X:
+	case R_HEX_B9_PCREL:
+	case R_HEX_B9_PCREL_X:
+	case R_HEX_B7_PCREL:
+	case R_HEX_B7_PCREL_X:
 	  /* Relocation is to the entry for this symbol in the PLT. */
 	  if (!h || ELF_ST_VISIBILITY (h->other) != STV_DEFAULT)
             /* Resolve a PLT relocation against a local symbol directly,
@@ -2356,6 +2374,15 @@ hexagon_elf_relocate_section
         case R_HEX_32:
         case R_HEX_16:
         case R_HEX_8:
+	case R_HEX_32_6_X:
+	case R_HEX_16_X:
+	case R_HEX_12_X:
+	case R_HEX_11_X:
+	case R_HEX_10_X:
+	case R_HEX_9_X:
+	case R_HEX_8_X:
+	case R_HEX_7_X:
+	case R_HEX_6_X:
 	  /* r_symndx will be zero only for relocations against symbols from
 	     removed link-once sections or from sections discarded by the
 	     linker script. */
@@ -2491,6 +2518,9 @@ hexagon_elf_relocate_section
 	case R_HEX_GD_GOT_HI16:
 	case R_HEX_GD_GOT_32:
 	case R_HEX_GD_GOT_16:
+	case R_HEX_GD_GOT_32_6_X:
+	case R_HEX_GD_GOT_16_X:
+	case R_HEX_GD_GOT_11_X:
 	  if (h)
 	    {
 	      /* Global symbol. */
@@ -2551,10 +2581,15 @@ hexagon_elf_relocate_section
 	case R_HEX_IE_LO16:
 	case R_HEX_IE_HI16:
 	case R_HEX_IE_32:
+	case R_HEX_IE_32_6_X:
+	case R_HEX_IE_16_X:
 	case R_HEX_IE_GOT_LO16:
 	case R_HEX_IE_GOT_HI16:
 	case R_HEX_IE_GOT_32:
 	case R_HEX_IE_GOT_16:
+	case R_HEX_IE_GOT_32_6_X:
+	case R_HEX_IE_GOT_16_X:
+	case R_HEX_IE_GOT_11_X:
 	  {
 	    bfd_vma adjust = 0;
 	    int indx;
@@ -2624,6 +2659,8 @@ hexagon_elf_relocate_section
 	      case R_HEX_IE_LO16:
 	      case R_HEX_IE_HI16:
 	      case R_HEX_IE_32:
+	      case R_HEX_IE_32_6_X:
+	      case R_HEX_IE_16_X:
 		/* Resolves to the address of a GOT entry. */
 		relocation  = htab->elf.sgot->output_section->vma
 			      + htab->elf.sgot->output_offset
@@ -2634,6 +2671,9 @@ hexagon_elf_relocate_section
 	      case R_HEX_IE_GOT_HI16:
 	      case R_HEX_IE_GOT_32:
 	      case R_HEX_IE_GOT_16:
+	      case R_HEX_IE_GOT_32_6_X:
+	      case R_HEX_IE_GOT_16_X:
+	      case R_HEX_IE_GOT_11_X:
 		/* Resolves to the offset of a GOT entry. */
 		relocation  = htab->elf.sgot->output_section->vma
 			      + htab->elf.sgot->output_offset
@@ -2649,6 +2689,9 @@ hexagon_elf_relocate_section
 	case R_HEX_DTPREL_HI16:
 	case R_HEX_DTPREL_32:
 	case R_HEX_DTPREL_16:
+	case R_HEX_DTPREL_32_6_X:
+	case R_HEX_DTPREL_16_X:
+	case R_HEX_DTPREL_11_X:
 	  relocation = hexagon_elf_dtpoff (info, relocation);
 	  break;
 
@@ -2656,6 +2699,9 @@ hexagon_elf_relocate_section
 	case R_HEX_TPREL_HI16:
 	case R_HEX_TPREL_32:
 	case R_HEX_TPREL_16:
+	case R_HEX_TPREL_32_6_X:
+	case R_HEX_TPREL_16_X:
+	case R_HEX_TPREL_11_X:
 	  relocation = hexagon_elf_tpoff (info, relocation);
 	  break;
         }
@@ -2666,6 +2712,13 @@ hexagon_elf_relocate_section
 	  hexagon_insn insn;
 
         case R_HEX_32_6_X:
+	case R_HEX_GOTREL_32_6_X:
+	case R_HEX_GOT_32_6_X:
+	case R_HEX_GD_GOT_32_6_X:
+	case R_HEX_IE_32_6_X:
+	case R_HEX_IE_GOT_32_6_X:
+	case R_HEX_DTPREL_32_6_X:
+	case R_HEX_TPREL_32_6_X:
           rmask = howto->src_mask;
           /* Fall through. */
 
@@ -2677,6 +2730,19 @@ hexagon_elf_relocate_section
         case R_HEX_11_X:
         case R_HEX_12_X:
         case R_HEX_16_X:
+	case R_HEX_GOTREL_16_X:
+	case R_HEX_GOTREL_11_X:
+	case R_HEX_GOT_16_X:
+	case R_HEX_GOT_11_X:
+	case R_HEX_GD_GOT_16_X:
+	case R_HEX_GD_GOT_11_X:
+	case R_HEX_IE_16_X:
+	case R_HEX_IE_GOT_16_X:
+	case R_HEX_IE_GOT_11_X:
+	case R_HEX_DTPREL_16_X:
+	case R_HEX_DTPREL_11_X:
+	case R_HEX_TPREL_16_X:
+	case R_HEX_TPREL_11_X:
           lmask = ~(~(bfd_vma) 0 << howto->bitsize);
           /* Fall through. */
 
@@ -2799,6 +2865,7 @@ hexagon_elf_relocate_section
         case R_HEX_B15_PCREL_X:
         case R_HEX_B13_PCREL_X:
         case R_HEX_B9_PCREL_X:
+        case R_HEX_B7_PCREL_X:
           if (r_type == R_HEX_B32_PCREL_X)
             rmask = ~(bfd_vma) 0 << howto->rightshift;
           else
@@ -2972,17 +3039,28 @@ hexagon_elf_check_relocs
 	case R_HEX_GOT_HI16:
 	case R_HEX_GOT_32:
 	case R_HEX_GOT_16:
+	case R_HEX_GOT_32_6_X:
+	case R_HEX_GOT_16_X:
+	case R_HEX_GOT_11_X:
 	case R_HEX_GD_GOT_LO16:
 	case R_HEX_GD_GOT_HI16:
 	case R_HEX_GD_GOT_32:
 	case R_HEX_GD_GOT_16:
+	case R_HEX_GD_GOT_32_6_X:
+	case R_HEX_GD_GOT_16_X:
+	case R_HEX_GD_GOT_11_X:
 	case R_HEX_IE_LO16:
 	case R_HEX_IE_HI16:
 	case R_HEX_IE_32:
+	case R_HEX_IE_32_6_X:
+	case R_HEX_IE_16_X:
 	case R_HEX_IE_GOT_LO16:
 	case R_HEX_IE_GOT_HI16:
 	case R_HEX_IE_GOT_32:
 	case R_HEX_IE_GOT_16:
+	case R_HEX_IE_GOT_32_6_X:
+	case R_HEX_IE_GOT_16_X:
+	case R_HEX_IE_GOT_11_X:
           /* This symbol requires a GOT entry. */
           if (h)
 	    {
@@ -2995,6 +3073,9 @@ hexagon_elf_check_relocs
 		case R_HEX_GOT_HI16:
 		case R_HEX_GOT_32:
 		case R_HEX_GOT_16:
+		case R_HEX_GOT_32_6_X:
+		case R_HEX_GOT_16_X:
+		case R_HEX_GOT_11_X:
 		  h->ok_got.refcount++;
 		  break;
 
@@ -3002,16 +3083,24 @@ hexagon_elf_check_relocs
 		case R_HEX_GD_GOT_HI16:
 		case R_HEX_GD_GOT_32:
 		case R_HEX_GD_GOT_16:
+		case R_HEX_GD_GOT_32_6_X:
+		case R_HEX_GD_GOT_16_X:
+		case R_HEX_GD_GOT_11_X:
 		  h->gd_got.refcount++;
 		  break;
 
 		case R_HEX_IE_LO16:
 		case R_HEX_IE_HI16:
 		case R_HEX_IE_32:
+		case R_HEX_IE_32_6_X:
+		case R_HEX_IE_16_X:
 		case R_HEX_IE_GOT_LO16:
 		case R_HEX_IE_GOT_HI16:
 		case R_HEX_IE_GOT_32:
 		case R_HEX_IE_GOT_16:
+		case R_HEX_IE_GOT_32_6_X:
+		case R_HEX_IE_GOT_16_X:
+		case R_HEX_IE_GOT_11_X:
 		  h->ie_got.refcount++;
 		  break;
 		}
@@ -3043,6 +3132,9 @@ hexagon_elf_check_relocs
 		case R_HEX_GOT_HI16:
 		case R_HEX_GOT_32:
 		case R_HEX_GOT_16:
+		case R_HEX_GOT_32_6_X:
+		case R_HEX_GOT_16_X:
+		case R_HEX_GOT_11_X:
 		  local_got_refcounts [LGOT_OK (symtab_hdr, r_symndx)]++;
 		  break;
 
@@ -3050,16 +3142,24 @@ hexagon_elf_check_relocs
 		case R_HEX_GD_GOT_HI16:
 		case R_HEX_GD_GOT_32:
 		case R_HEX_GD_GOT_16:
+		case R_HEX_GD_GOT_32_6_X:
+		case R_HEX_GD_GOT_16_X:
+		case R_HEX_GD_GOT_11_X:
 		  local_got_refcounts [LGOT_GD (symtab_hdr, r_symndx)]++;
 		  break;
 
 		case R_HEX_IE_LO16:
 		case R_HEX_IE_HI16:
 		case R_HEX_IE_32:
+		case R_HEX_IE_32_6_X:
+		case R_HEX_IE_16_X:
 		case R_HEX_IE_GOT_LO16:
 		case R_HEX_IE_GOT_HI16:
 		case R_HEX_IE_GOT_32:
 		case R_HEX_IE_GOT_16:
+		case R_HEX_IE_GOT_32_6_X:
+		case R_HEX_IE_GOT_16_X:
+		case R_HEX_IE_GOT_11_X:
 		  local_got_refcounts [LGOT_IE (symtab_hdr, r_symndx)]++;
 		  break;
 		}
@@ -3069,6 +3169,9 @@ hexagon_elf_check_relocs
         case R_HEX_GOTREL_LO16:
         case R_HEX_GOTREL_HI16:
         case R_HEX_GOTREL_32:
+	case R_HEX_GOTREL_32_6_X:
+	case R_HEX_GOTREL_16_X:
+	case R_HEX_GOTREL_11_X:
           /* This symbol requires a GOT. */
 	  if (!htab->elf.sgotplt)
 	    {
@@ -3088,9 +3191,18 @@ hexagon_elf_check_relocs
         case R_HEX_LO16:
         case R_HEX_HI16:
         case R_HEX_HL16:
-	case R_HEX_32:
+        case R_HEX_32:
         case R_HEX_16:
         case R_HEX_8:
+	case R_HEX_32_6_X:
+	case R_HEX_16_X:
+	case R_HEX_12_X:
+	case R_HEX_11_X:
+	case R_HEX_10_X:
+	case R_HEX_9_X:
+	case R_HEX_8_X:
+	case R_HEX_7_X:
+	case R_HEX_6_X:
 	  if (h && info->executable)
 	    {
 	      /* If this relocation is in a read-only section, we might
@@ -3107,10 +3219,17 @@ hexagon_elf_check_relocs
 	    }
           break;
 
+	case R_HEX_B32_PCREL_X:
 	case R_HEX_B22_PCREL:
+	case R_HEX_B22_PCREL_X:
 	case R_HEX_B15_PCREL:
+	case R_HEX_B15_PCREL_X:
 	case R_HEX_B13_PCREL:
+	case R_HEX_B13_PCREL_X:
+	case R_HEX_B9_PCREL:
+	case R_HEX_B9_PCREL_X:
 	case R_HEX_B7_PCREL:
+	case R_HEX_B7_PCREL_X:
 	  if (h) /* && info->executable) */
 	    {
 	      /* A PLT entry may be needed if this relocation refers to
@@ -3144,15 +3263,31 @@ hexagon_elf_check_relocs
         case R_HEX_LO16:
         case R_HEX_HI16:
         case R_HEX_HL16:
-	case R_HEX_32:
+        case R_HEX_32:
         case R_HEX_16:
         case R_HEX_8:
+	case R_HEX_32_6_X:
+	case R_HEX_16_X:
+	case R_HEX_12_X:
+	case R_HEX_11_X:
+	case R_HEX_10_X:
+	case R_HEX_9_X:
+	case R_HEX_8_X:
+	case R_HEX_7_X:
+	case R_HEX_6_X:
 
         /* FIXME: How about R_HEX_32_PCREL? */
+	case R_HEX_B32_PCREL_X:
 	case R_HEX_B22_PCREL:
+	case R_HEX_B22_PCREL_X:
 	case R_HEX_B15_PCREL:
+	case R_HEX_B15_PCREL_X:
 	case R_HEX_B13_PCREL:
+	case R_HEX_B13_PCREL_X:
+	case R_HEX_B9_PCREL:
+	case R_HEX_B9_PCREL_X:
 	case R_HEX_B7_PCREL:
+	case R_HEX_B7_PCREL_X:
 	  /* If we are creating a shared library, and this is a relocation
 	     against a global symbol, or a non PC-relative relocation
 	     against a local symbol, then we need to copy the relocation
@@ -3258,17 +3393,33 @@ hexagon_elf_check_relocs
 	case R_HEX_IE_LO16:
 	case R_HEX_IE_HI16:
 	case R_HEX_IE_32:
+	case R_HEX_IE_32_6_X:
+	case R_HEX_IE_16_X:
+
 	case R_HEX_TPREL_LO16:
 	case R_HEX_TPREL_HI16:
 	case R_HEX_TPREL_32:
 	case R_HEX_TPREL_16:
+	case R_HEX_TPREL_32_6_X:
+	case R_HEX_TPREL_16_X:
+	case R_HEX_TPREL_11_X:
            /* These relocations cannot be used in shared libraries. */
 
         case R_HEX_LO16:
         case R_HEX_HI16:
         case R_HEX_HL16:
+        case R_HEX_32:
         case R_HEX_16:
         case R_HEX_8:
+	case R_HEX_32_6_X:
+	case R_HEX_16_X:
+	case R_HEX_12_X:
+	case R_HEX_11_X:
+	case R_HEX_10_X:
+	case R_HEX_9_X:
+	case R_HEX_8_X:
+	case R_HEX_7_X:
+	case R_HEX_6_X:
           /* These relocations cannot be used in shared libraries or for
              symbols in shared libraries. */
 
@@ -3292,20 +3443,21 @@ hexagon_elf_check_relocs
               return FALSE;
             }
           else if ((ELIMINATE_COPY_RELOCS || info->nocopyreloc)
-                    && info->executable
-                    && (sec->flags & SEC_ALLOC)
-                    && (sec->flags & SEC_READONLY)
-                    && h
-                    && (h->elf.root.type == bfd_link_hash_defined
-                        || h->elf.root.type == bfd_link_hash_defweak)
-                    && !h->elf.def_regular
-                    && !h->elf.non_got_ref)
+                   && info->executable
+                   && (sec->flags & SEC_ALLOC)
+                   && (sec->flags & SEC_READONLY)
+                   && h
+                   && (h->elf.root.type == bfd_link_hash_defined
+                       || h->elf.root.type == bfd_link_hash_defweak)
+                   && !h->elf.def_regular
+                   && !h->elf.non_got_ref)
             {
               (*_bfd_error_handler)
-                (_("%B: relocation %s for symbol `%s\' in section `%A\' " \
-                   "cannot be handled when it is defined by a shared library"),
-                abfd, sec,
-                hexagon_elf_howto_table [r_type].name, h->elf.root.root.string);
+		  (_("%B: relocation %s for symbol `%s\' in section `%A\' " \
+		     "cannot be handled when it is defined by a shared library"),
+		   abfd, sec,
+		   hexagon_elf_howto_table [r_type].name,
+		   h->elf.root.root.string);
               bfd_set_error (bfd_error_bad_value);
               return FALSE;
             }
@@ -3318,11 +3470,23 @@ hexagon_elf_check_relocs
 	case R_HEX_IE_LO16:
 	case R_HEX_IE_HI16:
 	case R_HEX_IE_32:
+	case R_HEX_IE_32_6_X:
+	case R_HEX_IE_16_X:
 	case R_HEX_IE_GOT_LO16:
 	case R_HEX_IE_GOT_HI16:
 	case R_HEX_IE_GOT_32:
 	case R_HEX_IE_GOT_16:
-	  /* These relocations require that a DSO is of type Initial Exec.
+	case R_HEX_IE_GOT_32_6_X:
+	case R_HEX_IE_GOT_16_X:
+	case R_HEX_IE_GOT_11_X:
+	case R_HEX_TPREL_LO16:
+	case R_HEX_TPREL_HI16:
+	case R_HEX_TPREL_32:
+	case R_HEX_TPREL_16:
+	case R_HEX_TPREL_32_6_X:
+	case R_HEX_TPREL_16_X:
+	case R_HEX_TPREL_11_X:
+	  /* These relocations require that a DSO is of type Initial Executable.
 	     Like in other targets, this flag is not reset even if they are
 	     garbage-collected. */
 	  if (info->shared)
@@ -3385,17 +3549,28 @@ hexagon_elf_gc_sweep_hook
 	case R_HEX_GOT_HI16:
 	case R_HEX_GOT_32:
 	case R_HEX_GOT_16:
+	case R_HEX_GOT_32_6_X:
+	case R_HEX_GOT_16_X:
+	case R_HEX_GOT_11_X:
 	case R_HEX_GD_GOT_LO16:
 	case R_HEX_GD_GOT_HI16:
 	case R_HEX_GD_GOT_32:
 	case R_HEX_GD_GOT_16:
+	case R_HEX_GD_GOT_32_6_X:
+	case R_HEX_GD_GOT_16_X:
+	case R_HEX_GD_GOT_11_X:
 	case R_HEX_IE_LO16:
 	case R_HEX_IE_HI16:
 	case R_HEX_IE_32:
+	case R_HEX_IE_32_6_X:
+	case R_HEX_IE_16_X:
 	case R_HEX_IE_GOT_LO16:
 	case R_HEX_IE_GOT_HI16:
 	case R_HEX_IE_GOT_32:
 	case R_HEX_IE_GOT_16:
+	case R_HEX_IE_GOT_32_6_X:
+	case R_HEX_IE_GOT_16_X:
+	case R_HEX_IE_GOT_11_X:
 
 	  switch (r_type)
 	    {
@@ -3403,6 +3578,9 @@ hexagon_elf_gc_sweep_hook
 	    case R_HEX_GOT_HI16:
 	    case R_HEX_GOT_32:
 	    case R_HEX_GOT_16:
+	    case R_HEX_GOT_32_6_X:
+	    case R_HEX_GOT_16_X:
+	    case R_HEX_GOT_11_X:
 	      l_symndx = LGOT_OK (symtab_hdr, r_symndx);
 	      if (eh && eh->ok_got.refcount > 0)
 		eh->ok_got.refcount--;
@@ -3412,6 +3590,9 @@ hexagon_elf_gc_sweep_hook
 	    case R_HEX_GD_GOT_HI16:
 	    case R_HEX_GD_GOT_32:
 	    case R_HEX_GD_GOT_16:
+	    case R_HEX_GD_GOT_32_6_X:
+	    case R_HEX_GD_GOT_16_X:
+	    case R_HEX_GD_GOT_11_X:
 	      l_symndx = LGOT_GD (symtab_hdr, r_symndx);
 	      if (eh && eh->gd_got.refcount > 0)
 		eh->gd_got.refcount--;
@@ -3420,10 +3601,15 @@ hexagon_elf_gc_sweep_hook
 	    case R_HEX_IE_LO16:
 	    case R_HEX_IE_HI16:
 	    case R_HEX_IE_32:
+	    case R_HEX_IE_32_6_X:
+	    case R_HEX_IE_16_X:
 	    case R_HEX_IE_GOT_LO16:
 	    case R_HEX_IE_GOT_HI16:
 	    case R_HEX_IE_GOT_32:
 	    case R_HEX_IE_GOT_16:
+	    case R_HEX_IE_GOT_32_6_X:
+	    case R_HEX_IE_GOT_16_X:
+	    case R_HEX_IE_GOT_11_X:
 	      l_symndx = LGOT_IE (symtab_hdr, r_symndx);
 	      if (eh && eh->ie_got.refcount > 0)
 		eh->ie_got.refcount--;
@@ -3452,29 +3638,38 @@ hexagon_elf_gc_sweep_hook
 	    }
 	  break;
 
-	case R_HEX_LO16:
-	case R_HEX_HI16:
-	case R_HEX_HL16:
-	case R_HEX_32:
-	case R_HEX_16:
-	case R_HEX_8:
-
-/*
-	case R_HEX_B22_PCREL:
-	case R_HEX_B15_PCREL:
-	case R_HEX_B13_PCREL:
-	case R_HEX_B7_PCREL:
-*/
+        case R_HEX_LO16:
+        case R_HEX_HI16:
+        case R_HEX_HL16:
+        case R_HEX_32:
+        case R_HEX_16:
+        case R_HEX_8:
+	case R_HEX_32_6_X:
+	case R_HEX_16_X:
+	case R_HEX_12_X:
+	case R_HEX_11_X:
+	case R_HEX_10_X:
+	case R_HEX_9_X:
+	case R_HEX_8_X:
+	case R_HEX_7_X:
+	case R_HEX_6_X:
 	  if (info->shared)
 	    break;
 
 	  /* Fall thru */
 
 	case R_HEX_PLT_B22_PCREL:
+	case R_HEX_B32_PCREL_X:
 	case R_HEX_B22_PCREL:
+	case R_HEX_B22_PCREL_X:
 	case R_HEX_B15_PCREL:
+	case R_HEX_B15_PCREL_X:
 	case R_HEX_B13_PCREL:
+	case R_HEX_B13_PCREL_X:
+	case R_HEX_B9_PCREL:
+	case R_HEX_B9_PCREL_X:
 	case R_HEX_B7_PCREL:
+	case R_HEX_B7_PCREL_X:
 	  /* FIXME: should symbol visibility matter? */
 	  if (h)
             /* Global symbol. */
