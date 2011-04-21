@@ -313,6 +313,9 @@ typedef struct _hexagon_operand
 /* Format that will appear in the hexagon_opcode syntax */
   char *fmt;
 
+/* Significant positions in the format.  If zero, all of the format is significant. */
+  unsigned char len;
+
 /* The number of bits in the operand (may be unused for a modifier).  */
   unsigned char bits;
 
@@ -320,7 +323,7 @@ typedef struct _hexagon_operand
   char enc_letter;
 
 /* For immediate arguments, the value should be shifted right by this amount */
-  unsigned int shift_count;
+  unsigned char shift_count;
 
 /* The relocation type and that of the extension and itself after extended. */
   bfd_reloc_code_real_type reloc_type, reloc_kxer, reloc_kxed;
