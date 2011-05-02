@@ -106,8 +106,6 @@ hexagon_regtype_t * globalRegSetInfo;
 static int hexagon_random_port(void)
 {
      int port;
-     srand( getpid() *
-            (unsigned)time(0));
      port     =  (int)((((float)rand()/RAND_MAX) * 10000) + 10000); 
      return port;
 }
@@ -164,6 +162,7 @@ hexagonsim_can_run(void)
  * to be sure that the selected port is going to work or some tests will timeout.
  */
 
+    srand( getpid() * (unsigned)time(0));
     scb.fd = 0;
     do
     {

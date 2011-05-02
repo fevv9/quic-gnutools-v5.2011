@@ -17,7 +17,10 @@
    Foundation, 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA.  */
 
 #include "defs.h"
+#include "gdbcore.h"
+#include "regcache.h"
 #include "osabi.h"
+#include <sys/procfs.h>
 
 #include "solib-svr4.h"
 #include "symtab.h"
@@ -25,9 +28,14 @@
 #include "glibc-tdep.h"
 #include "gdbarch.h"
 #include "frame.h"
+#include "frame-unwind.h"
 #include "target.h"
 #include "breakpoint.h"
 #include "hexagon-tdep.h"
+#include "gregset.h"
+#include "regset.h"
+#include <sys/user.h>
+#include <sys/signal.h>
 
 static int hexagon_linux_debug = 0;
 
@@ -36,24 +44,24 @@ static int hexagon_linux_debug = 0;
 
 /*******************************************************************
  *   Branch Infomation                                             *
- *******************************************************************/   
+ *******************************************************************/
 typedef enum BR_TYPE
 {
   NOT_BR = 0,
   PC_ABS = 1,
-  PC_REL = 2 
+  PC_REL = 2
 } branch_type;
 static const char *branch_type_name[3] = {"No branch", "Absolute", "Relative"};
 
 struct branch_info
 {
-  branch_type  brtype; 
+  branch_type  brtype;
   unsigned int opc;  /* opcode */
   unsigned int imm;  /* address destination */
   unsigned int reg;  /* register holding address destination */
   unsigned int pred; /* predicate selector */
-   
-} branch_insn[] = 
+
+} branch_insn[] =
 {{PC_ABS, 0x50a00000, 0x00000000, 0x001f0000, 0},    /* callr Rs32 */
  {PC_ABS, 0x51000000, 0x00000000, 0x001f0000, 0x300},/* if Pu4 callr */
  {PC_ABS, 0x51200000, 0x00000000, 0x001f0000, 0x300},/* if !Pu4 callr */
@@ -70,6 +78,20 @@ struct branch_info
  {PC_REL, 0x5c200000, 0x00df20fe, 0x00000000, 0x300},/* if !Pu4 jump # */
  {PC_REL, 0x5c200800, 0x00df20fe, 0x00000000, 0x300},/* if !Pu4.new jump:nt # */
  {PC_REL, 0x5c201800, 0x00df20fe, 0x00000000, 0x300},/* if !Pu4.new jump:t # */
+// V3
+ {PC_ABS, 0x53600800, 0x00000000, 0x001f0000, 0x300}, /* if ( ! Pu4 .new ) jumpr:nt Rs32 */
+ {PC_ABS, 0x53601800, 0x00000000, 0x001f0000, 0x300}, /* if ( ! Pu4 .new ) jumpr:t Rs32 */
+ {PC_ABS, 0x53400800, 0x00000000, 0x001f0000, 0x300}, /* if ( Pu4 .new ) jumpr:nt Rs32 */
+ {PC_ABS, 0x53401800, 0x00000000, 0x001f0000, 0x300}, /* if ( Pu4 .new ) jumpr:t Rs32 */
+ {PC_REL, 0x61000000, 0x00202ffe, 0x001f0000, 0}, /* if ( Rs32 != #0 ) jump:nt #r13:2 */
+ {PC_REL, 0x61001000, 0x00202ffe, 0x001f0000, 0}, /* if ( Rs32 != #0 ) jump:t #r13:2 */
+ {PC_REL, 0x61c00000, 0x00202ffe, 0x001f0000, 0}, /* if ( Rs32 <= #0 ) jump:nt #r13:2 */
+ {PC_REL, 0x61c01000, 0x00202ffe, 0x001f0000, 0}, /* if ( Rs32 <= #0 ) jump:t #r13:2 */
+ {PC_REL, 0x61800000, 0x00202ffe, 0x001f0000, 0}, /* if ( Rs32 == #0 ) jump:nt #r13:2 */
+ {PC_REL, 0x61801000, 0x00202ffe, 0x001f0000, 0}, /* if ( Rs32 == #0 ) jump:t #r13:2 */
+ {PC_REL, 0x61400000, 0x00202ffe, 0x001f0000, 0}, /* if ( Rs32 >= #0 ) jump:nt #r13:2 */
+ {PC_REL, 0x61401000, 0x00202ffe, 0x001f0000, 0}, /* if ( Rs32 >= #0 ) jump:t #r13:2 */
+// V3
  {0},
 };
 
@@ -79,8 +101,8 @@ struct loop_info
   unsigned int top; /* pc-rel top of loop */
   unsigned int cnt; /* loop cnt, immediat */
   unsigned int reg; /* register holding loop cnt */
-   
-} loop_insn[] = 
+
+} loop_insn[] =
 {{0x60000000, 0x00001f18, 0x00000000, 0x001f0000},/* loop0 (#, r) */
  {0x60200000, 0x00001f18, 0x00000000, 0x001f0000},/* loop1 (#, r) */
  {0x69000000, 0x00001f18, 0x001f00e3, 0x0},/* loop0 (#, #i) */
@@ -114,8 +136,8 @@ immed_r22 (unsigned int val)
 
 /* function: immed_r15
    description:
-	- jump with a 15bit immediate
-	- the immediate 15 bits are sprinkled around the insn.
+        - jump with a 15bit immediate
+        - the immediate 15 bits are sprinkled around the insn.
 */
 #define IM23_22 0x00c00000
 #define IM20_16 0x001f0000
@@ -142,22 +164,50 @@ immed_r15 (unsigned int val)
   return ret;
 }
 
+/* function: immed_r13
+   description:
+	- jump with a 13bit immediate
+	- the immediate 13 bits are sprinkled around the insn.
+*/
+#define IM21    0x00200000
+#define IM11_1  0x00000ffe
+#define M13   1U << (13 - 1)
+static inline CORE_ADDR
+immed_r13 (unsigned int val)
+{
+  CORE_ADDR ret;
+  unsigned int a, b, c, d;
+  a = (val & IM21) >> 9;
+  b = (val & IM13) >> 2;
+  c = (val & IM11_1) >> 1;
+
+  ret = (a | b | c) << 2;
+
+  if (ret & M13)
+    {
+      ret = (ret | ~0x1fff);
+    }
+
+  return ret;
+}
+
+
 /* function: is_loop
    description:
-	- Determine if the given instruction is a loop.
-	- Return the address of the top of the loop and the count.
-	- XXX_SM this function currently isn't called but keeping around
-	  just in case.
+        - Determine if the given instruction is a loop.
+        - Return the address of the top of the loop and the count.
+        - XXX_SM this function currently isn't called but keeping around
+          just in case.
  */
 static int
 is_loop (unsigned int insn, CORE_ADDR *top,
-	 unsigned int *immediate, int *regnum)
+         unsigned int *immediate, int *regnum)
 {
   unsigned int inopc;
   int i = 0;
 
   inopc = insn;
-  inopc &= ~PARSE_BITS;		/* Strip the parse bits if present */
+  inopc &= ~PARSE_BITS;                /* Strip the parse bits if present */
 
   *immediate = -1;
   *regnum    = -1;
@@ -165,27 +215,27 @@ is_loop (unsigned int insn, CORE_ADDR *top,
   while (loop_insn[i].opc)
     {
       unsigned int wopc = inopc & ~(loop_insn[i].top |
-				    loop_insn[i].cnt |
-				    loop_insn[i].reg);
+                                    loop_insn[i].cnt |
+                                    loop_insn[i].reg);
 
       if ((loop_insn[i].opc ^ wopc) == 0x0)
-	{
-	  if (inopc & 1<<27)  /* Immediate version */
-	    {
-		*immediate = (inopc & 0x3);
-		*immediate |= (inopc & 0xe0) >>3;
-		*immediate |= (inopc & 0x1f0000) >>16;
-	    }
-	  else /* Register version */
-	    {
-		*regnum = (inopc & 0x1f0000) >> 16;
-	    }
+        {
+          if (inopc & 1<<27)  /* Immediate version */
+            {
+                *immediate = (inopc & 0x3);
+                *immediate |= (inopc & 0xe0) >>3;
+                *immediate |= (inopc & 0x1f0000) >>16;
+            }
+          else /* Register version */
+            {
+                *regnum = (inopc & 0x1f0000) >> 16;
+            }
 
-	  *top = (inopc & 0x18) >> 3;
-	  *top |= (inopc & 0x1f00) >> 6;
+          *top = (inopc & 0x18) >> 3;
+          *top |= (inopc & 0x1f00) >> 6;
 
-	  return 1;
-	}
+          return 1;
+        }
       i++;
     }
 
@@ -195,15 +245,15 @@ is_loop (unsigned int insn, CORE_ADDR *top,
 
 /* function: is_end_loop
    description:
-	- return 0 if end of loop bit P=10b (bit #15 only) is not set
-	- read lc0/1 sa0/1 to determine the top of the loop.
-	- This code assumes the documented convention, that loop0 is always
-	  the inner loop and loop1 is always the output loop as documented
-	  in the Hexagon Programmers Handbook is followed.
+        - return 0 if end of loop bit P=10b (bit #15 only) is not set
+        - read lc0/1 sa0/1 to determine the top of the loop.
+        - This code assumes the documented convention, that loop0 is always
+          the inner loop and loop1 is always the output loop as documented
+          in the Hexagon Programmers Handbook is followed.
  */
 static int
 is_end_loop(struct gdbarch *gdbarch, struct frame_info *frame,
-	    unsigned int insn, CORE_ADDR *target)
+            unsigned int insn, CORE_ADDR *target)
 {
   int rc = 0;
 
@@ -225,29 +275,29 @@ is_end_loop(struct gdbarch *gdbarch, struct frame_info *frame,
       lc1 = extract_unsigned_integer (buf, 4, byte_order);
 
       if (hexagon_linux_debug)
-	{
-	  printf_filtered ("end loop: sa0=0x%x, lc0=0x%x\n", sa0, lc0);
-	  printf_filtered ("end loop: sa1=0x%x, lc1=0x%x\n", sa1, lc1);
-	}
+        {
+          printf_filtered ("end loop: sa0=0x%x, lc0=0x%x\n", sa0, lc0);
+          printf_filtered ("end loop: sa1=0x%x, lc1=0x%x\n", sa1, lc1);
+        }
 
       if (lc0 > 1)
-	{
-	  *target = sa0;
-	  rc = 1;
-	}
+        {
+          *target = sa0;
+          rc = 1;
+        }
 
       else if (lc1 > 1)
-	{
-	  *target = sa1;
-	  rc = 1;
-	}
+        {
+          *target = sa1;
+          rc = 1;
+        }
     }
   return rc;
 }
 
 /* function: is_branch
    description:
-	- Determine if the given instruction is a branch.
+        - Determine if the given instruction is a branch.
 */
 static branch_type
 is_branch (unsigned int insn, CORE_ADDR *offset, int *reg)
@@ -258,44 +308,46 @@ is_branch (unsigned int insn, CORE_ADDR *offset, int *reg)
   *reg = -1;
   inopc = insn;
 
-  inopc &= ~PARSE_BITS;		/* Strip the parse bits if present */
+  inopc &= ~PARSE_BITS;                /* Strip the parse bits if present */
   while (branch_insn[i].opc)
     {
       unsigned int wopc = inopc & ~(branch_insn[i].imm |
-				    branch_insn[i].reg |
-				    branch_insn[i].pred);
+                                    branch_insn[i].reg |
+                                    branch_insn[i].pred);
 
       if ((branch_insn[i].opc ^ wopc) == 0x0)
-	{
-	  if (branch_insn[i].reg == 0x0)
-	    {
-	      unsigned int immed = inopc & branch_insn[i].imm;
-	      *reg = -1;
+        {
+          if (branch_insn[i].reg == 0x0)
+            {
+              unsigned int immed = inopc & branch_insn[i].imm;
+              *reg = -1;
 
-	      if (branch_insn[i].imm & 0x01000000)
-		  *offset = immed_r22 (immed);
-	      else
-		  *offset = immed_r15 (immed);
+              if (branch_insn[i].imm & 0x01000000)
+                  *offset = immed_r22 (immed);
+              else if (branch_insn[i].imm & 0x00200000)
+                  *offset = immed_r13 (immed);
+              else
+                  *offset = immed_r15 (immed);
 
-	      if (hexagon_linux_debug)
-		{
-		  printf_filtered ("IMMED match 0x%x\n", branch_insn[i].opc);
-		  printf_filtered ("IMMEDIATE value 0x%x\n", immed);
-		  printf_filtered ("offset 0x%x\n", *offset);
-		}
-	    }
-	  else
-	    {
-	      int regnum = (inopc & 0x1f0000) >> 16;
-	      *reg = regnum;
-	      if (hexagon_linux_debug)
-		{
-		  printf_filtered ("REG match 0x%x, register = %d\n",
-			  branch_insn[i].opc, regnum);
-		}
-	    }
-	  return branch_insn[i].brtype;
-	}
+              if (hexagon_linux_debug)
+                {
+                  printf_filtered ("IMMED match 0x%x\n", branch_insn[i].opc);
+                  printf_filtered ("IMMEDIATE value 0x%x\n", immed);
+                  printf_filtered ("offset 0x%llx\n", *offset);
+                }
+            }
+          else
+            {
+              int regnum = (inopc & 0x1f0000) >> 16;
+              *reg = regnum;
+              if (hexagon_linux_debug)
+                {
+                  printf_filtered ("REG match 0x%x, register = %d\n",
+                          branch_insn[i].opc, regnum);
+                }
+            }
+          return branch_insn[i].brtype;
+        }
 
       i++;
     }
@@ -305,7 +357,7 @@ is_branch (unsigned int insn, CORE_ADDR *offset, int *reg)
 
 /* function: handle_branches
    description:
-	- Check for branches and return destinations for each branch
+        - Check for branches and return destinations for each branch
  */
 static void
 handle_branches(struct gdbarch *gdbarch,
@@ -327,49 +379,49 @@ handle_branches(struct gdbarch *gdbarch,
   for (i=0; i<packet->count; i++)
     {
       if (hexagon_linux_debug == 1)
-	printf_filtered ("packet[%d] = 0x%llx:0x%08x\n",
-			  i, packet->addr[i], packet->insn[i]);
+        printf_filtered ("packet[%d] = 0x%llx:0x%08x\n",
+                          i, packet->addr[i], packet->insn[i]);
 
         if ((brtype = is_branch (packet->insn[i], &offset, &reg)) != NOT_BR)
         {
 
-	  if (hexagon_linux_debug == 1)
-	    {
-	      printf_filtered ("Branch found: %s\n", branch_type_name[brtype]);
-	      if (brtype == PC_REL)
-	        printf_filtered ("Branch dest = 0x%llx\n",
-				  packet->addr[0]+offset);
-	      else
-	        printf_filtered ("Branch dest = 0x%llx\n", offset);
-	    }
-  
-	  if (reg == -1) /* immediate insn */
+          if (hexagon_linux_debug == 1)
+            {
+              printf_filtered ("Branch found: %s\n", branch_type_name[brtype]);
+              if (brtype == PC_REL)
+                printf_filtered ("Branch dest = 0x%llx\n",
+                                  packet->addr[0]+offset);
+              else
+                printf_filtered ("Branch dest = 0x%llx\n", offset);
+            }
+
+          if (reg == -1) /* immediate insn */
             target = offset;
-	  else
-	    {
+          else
+            {
               get_frame_register_bytes (frame, reg, 0, 4, buf);
               target = extract_unsigned_integer (buf, 4, byte_order) & -4;
-	    }
-  
-	  if (brtype == PC_REL)
+            }
+
+          if (brtype == PC_REL)
             target = (packet->addr[0] + target);
-  
+
           if (target != next_pc)
             insert_single_step_breakpoint (gdbarch, target);
         }
 
       else if (is_end_loop(gdbarch, frame, packet->insn[i], &target))
-	{
-	  if (hexagon_linux_debug == 1)
-	      printf_filtered ("End loop found: top of loop = 0x%x\n",
-				target);
+        {
+          if (hexagon_linux_debug == 1)
+              printf_filtered ("End loop found: top of loop = 0x%llx\n",
+                                target);
 
 /*
    This check keeps us from splitting up packets, if the address lc[0/1] is
    in the packet we are currently processing then we must avoid setting
    a bp because it would break up the packet.
  */
-	  if (target != packet->addr[0])
+          if (target != packet->addr[0])
             insert_single_step_breakpoint (gdbarch, target);
         }
 
@@ -379,13 +431,13 @@ handle_branches(struct gdbarch *gdbarch,
 
 /* function: hexagon_software_single_step
    description:
-	- Hexagon V2-3 do not support hardware single step this must be dealt
-   	  with here
+        - Hexagon V2-3 do not support hardware single step this must be dealt
+             with here
 */
 int
 hexagon_software_single_step (struct frame_info *frame)
 {
-  CORE_ADDR pc, next_pc, lim_pc; 
+  CORE_ADDR pc, next_pc, lim_pc;
   unsigned int insn;
   unsigned int offset, reg;
   gdb_byte buf[4];
@@ -405,12 +457,12 @@ hexagon_software_single_step (struct frame_info *frame)
   do
     {
       if (target_read_memory (pc, buf, 4))
-	{
-	  internal_warning (__FILE__, __LINE__,
-			    _("\nread_memory failed to read address: 0x%llx"),
+        {
+          internal_warning (__FILE__, __LINE__,
+                            _("\nread_memory failed to read address: 0x%llx"),
                             pc);
-	  return 0;
-	}
+          return 0;
+        }
 
       insn = extract_unsigned_integer (buf, 4, byte_order);
 
@@ -422,7 +474,7 @@ hexagon_software_single_step (struct frame_info *frame)
       pkt.count++;
 
       if ((insn & PARSE_BITS) != PARSE_BITS)
-	pc+=4;
+        pc+=4;
     }
   while (((insn & PARSE_BITS) != PARSE_BITS) && (pc < lim_pc));
 
@@ -437,22 +489,230 @@ hexagon_software_single_step (struct frame_info *frame)
   return 1;
 }
 
+/* function: hexagon_supply_regset
+   description:
+        - Supply gdb with the registers that are in a core file.
+        - Any change in the Linux kernel's format or order would require
+          an update here.
+ */
+static void
+hexagon_supply_regset (const struct regset *regset, struct regcache *regcache,
+                       int regnum, const void *regs, size_t len)
+{
+
+  int i;
+  struct user_regs *reg = (struct user_regs *)regs;
+  gdb_byte *regptr = (gdb_byte *)regs;
+/* Registers 0-31 occupy the first 32 entries, followed by special
+   purpose registers */
+  for (i=0; i<=31; i++)
+     regcache_raw_supply (regcache, i, regptr+i*4);
+
+  regcache_raw_supply (regcache, REG_GP, &reg->gp);
+  regcache_raw_supply (regcache, REG_UGP, &reg->ugp);
+  regcache_raw_supply (regcache, REG_SA0, &reg->sa0);
+  regcache_raw_supply (regcache, REG_LC0, &reg->lc0);
+  regcache_raw_supply (regcache, REG_SA1, &reg->sa1);
+  regcache_raw_supply (regcache, REG_LC1, &reg->lc1);
+  regcache_raw_supply (regcache, REG_M0, &reg->m0);
+  regcache_raw_supply (regcache, REG_M1, &reg->m1);
+  regcache_raw_supply (regcache, REG_P3_0, &reg->p3_0);
+  regcache_raw_supply (regcache, REG_PC, &reg->pc);
+  regcache_raw_supply (regcache, REG_BADVA, &reg->badva);
+}
+
+/* Recognizing signal handler frames.  */
+/* Try to re-use what I can from the i386-linux-tdep.c implementation */
+
+#define LINUX_SIGTRAMP_INSN0 0x7800d166 /* r6 = #139 */
+#define LINUX_SIGTRAMP_OFFSET0 0
+#define LINUX_SIGTRAMP_INSN1 0x5400c004 /* trap0 (#1) */
+#define LINUX_SIGTRAMP_OFFSET1 4
+
+static const unsigned int linux_sigtramp_code[] =
+{
+  LINUX_SIGTRAMP_INSN0, /* r6 = #139 */
+  LINUX_SIGTRAMP_INSN1, /* trap0 (#1) */
+};
+
+#define LINUX_SIGTRAMP_LEN (sizeof linux_sigtramp_code)
+
+/* This is what the signal frame looks like */
+struct rt_sigframe
+{
+    unsigned long tramp[2];
+    struct siginfo info;
+    struct ucontext uc;
+};
+
+static CORE_ADDR
+hexagon_linux_sigtramp_start (struct frame_info *this_frame)
+{
+  CORE_ADDR pc = get_frame_pc (this_frame);
+  unsigned int buf[LINUX_SIGTRAMP_LEN];
+
+  /* We only recognize a signal trampoline if PC is at the start of
+     one of the two instructions.  We optimize for finding the PC at
+     the start, as will be the case when the trampoline is not the
+     first frame on the stack.  We assume that in the case where the
+     PC is not at the start of the instruction sequence, there will be
+     a few trailing readable bytes on the stack.  */
+
+  if (!safe_frame_unwind_memory (this_frame, pc,
+                                 (gdb_byte *)buf, LINUX_SIGTRAMP_LEN))
+    return 0;
+
+  if (buf[0] != LINUX_SIGTRAMP_INSN0)
+    {
+      int adjust;
+
+      switch (buf[0])
+        {
+        case LINUX_SIGTRAMP_INSN1:
+          adjust = LINUX_SIGTRAMP_OFFSET1;
+          break;
+        default:
+          return 0;
+        }
+
+      pc -= adjust;
+
+      if (!safe_frame_unwind_memory (this_frame, pc,
+                                     (gdb_byte *)buf, LINUX_SIGTRAMP_LEN))
+        return 0;
+    }
+
+  if (memcmp (buf, linux_sigtramp_code, LINUX_SIGTRAMP_LEN) != 0)
+    return 0;
+
+  return pc;
+}
+
+/* Return whether THIS_FRAME corresponds to a GNU/Linux sigtramp
+   routine.  */
+
+static int
+hexagon_linux_sigtramp_p (struct frame_info *this_frame)
+{
+  CORE_ADDR pc = get_frame_pc (this_frame);
+  char *name;
+
+  find_pc_partial_function (pc, &name, NULL, NULL);
+
+  /* If we have NAME, we can optimize the search.  The trampolines are
+     named __restore and __restore_rt.  However, they aren't dynamically
+     exported from the shared C library, so the trampoline may appear to
+     be part of the preceding function.  This should always be sigaction,
+     __sigaction, or __libc_sigaction (all aliases to the same function).  */
+  if (name == NULL || strstr (name, "sigaction") != NULL)
+    return (hexagon_linux_sigtramp_start (this_frame) != 0);
+
+  return (strcmp ("__restore", name) == 0
+          || strcmp ("__restore_rt", name) == 0);
+}
+
+/* Return one if the PC of THIS_FRAME is in a signal trampoline which
+   may have DWARF-2 CFI.  */
+
+static int
+hexagon_linux_dwarf_signal_frame_p (struct gdbarch *gdbarch,
+                                 struct frame_info *this_frame)
+{
+  CORE_ADDR pc = get_frame_pc (this_frame);
+  char *name;
+
+  find_pc_partial_function (pc, &name, NULL, NULL);
+
+  /* If a vsyscall DSO is in use, the signal trampolines may have these
+     names.  */
+  if (name && (strcmp (name, "__kernel_sigreturn") == 0
+               || strcmp (name, "__kernel_rt_sigreturn") == 0))
+    return 1;
+
+  return 0;
+}
+
+
+/* function: hexagon_linux_sigcontext_addr
+   description:
+        - Assuming THIS_FRAME is a GNU/Linux sigtramp routine, return the
+          address of the associated sigcontext structure.
+ */
+static CORE_ADDR
+hexagon_linux_sigcontext_addr (struct frame_info *this_frame)
+{
+  struct gdbarch *gdbarch = get_frame_arch (this_frame);
+  enum bfd_endian byte_order = gdbarch_byte_order (gdbarch);
+  CORE_ADDR pc;
+  CORE_ADDR lr;
+  gdb_byte buf[4];
+  struct rt_sigframe *sigframe;
+
+  get_frame_register (this_frame, REG_LR, buf);
+  lr = extract_unsigned_integer (buf, 4, byte_order);
+
+  pc = hexagon_linux_sigtramp_start (this_frame);
+  if (pc)
+    {
+      /* The sigcontext structure is part of the user context.  A
+         pointer to the user context is passed as the third argument
+         to the signal handler.  */
+      sigframe = (struct rt_sigframe *) lr;
+      return (CORE_ADDR)(&(sigframe->uc));
+    }
+
+  error (_("Couldn't recognize signal trampoline."));
+  return 0;
+}
+
+
+/* Code to handle core dumps */
+
+static struct regset
+hexagon_gregset =
+{
+  NULL,
+  hexagon_supply_regset
+};
+
+/* function: hexagon_linux_regset_from_core_section
+   description:
+        - Return the appropriate register set for the core
+          section identified by SECT_NAME and SECT_SIZE.
+ */
+static const struct regset *
+hexagon_linux_regset_from_core_section (struct gdbarch *core_arch,
+                                        const char *sect_name,
+                                        size_t sect_size)
+{
+
+  if (strcmp (sect_name, ".reg") == 0
+      && sect_size >= sizeof(struct user_regs *))
+    return &hexagon_gregset;
+
+  return NULL;
+}
+
+
 /* function: hexagon_linux_init_abi
    description:
-	- Generic GNU/Linux ABI settings
+        - Generic GNU/Linux ABI settings
 */
 extern CORE_ADDR
 hexagon_push_dummy_call (struct gdbarch *gdbarch, struct value *function,
-                     struct regcache *regcache, CORE_ADDR bp_addr,
-                     int nargs, struct value **args, CORE_ADDR sp,
-		     int struct_return, CORE_ADDR struct_addr);
+                         struct regcache *regcache, CORE_ADDR bp_addr,
+                         int nargs, struct value **args, CORE_ADDR sp,
+                         int struct_return, CORE_ADDR struct_addr);
 static void
 hexagon_linux_init_abi (struct gdbarch_info info, struct gdbarch *gdbarch)
 {
+  struct gdbarch_tdep *tdep = gdbarch_tdep (gdbarch);
 
   set_gdbarch_software_single_step (gdbarch, hexagon_software_single_step);
   set_gdbarch_push_dummy_call (gdbarch, hexagon_push_dummy_call);
   set_gdbarch_decr_pc_after_break (gdbarch, 4);
+  set_gdbarch_regset_from_core_section (gdbarch,
+                                        hexagon_linux_regset_from_core_section);
 
   /* Linux uses SVR4-style shared libraries.  */
   set_gdbarch_skip_trampoline_code (gdbarch, find_solib_trampoline_target);
@@ -461,26 +721,32 @@ hexagon_linux_init_abi (struct gdbarch_info info, struct gdbarch *gdbarch)
 
   /* Linux uses the dynamic linker included in the GNU C Library.  */
   set_gdbarch_skip_solib_resolver (gdbarch, glibc_skip_solib_resolver);
+
+  /* Enable TLS support */
+  set_gdbarch_fetch_tls_load_module_address (gdbarch,
+                                             svr4_fetch_objfile_link_map);
+  tdep->sigtramp_p = hexagon_linux_sigtramp_p;
+  tdep->sigcontext_addr = hexagon_linux_sigcontext_addr;
 }
 
 /* function: hexagon_linux_init_abi_v2
    description:
-	- Hexagon V2 specific ABI settings
+        - Hexagon V2 specific ABI settings
 */
 static void
 hexagon_linux_init_abi_v2 (struct gdbarch_info info, struct gdbarch *gdbarch)
 {
-    hexagon_linux_init_abi(info, gdbarch); 
+    hexagon_linux_init_abi(info, gdbarch);
 }
 
 /* function: hexagon_linux_init_abi_v3
    description:
-	- Hexagon V3 specific ABI settings
+        - Hexagon V3 specific ABI settings
 */
 static void
 hexagon_linux_init_abi_v3 (struct gdbarch_info info, struct gdbarch *gdbarch)
 {
-    hexagon_linux_init_abi(info, gdbarch); 
+    hexagon_linux_init_abi(info, gdbarch);
 }
 
 
@@ -493,22 +759,22 @@ hexagon_linux_elf_osabi_sniffer (bfd *abfd)
 
 /* function: _initialize_hexagon_linux_tdep
    description:
-	Hexagon V2 and V3 (and beyond) have different ABI's.
-	    - V2    : Callee Saved r24-r27 and r29, r30, r31
-	    - V3/V4 : Callee Saved r16-r27 and r29, r30, r31
-	    - V4    : Support hardware single step, yay!
-	Registers 0-5 still are used for function arguments
+        Hexagon V2 and V3 (and beyond) have different ABI's.
+            - V2    : Callee Saved r24-r27 and r29, r30, r31
+            - V3/V4 : Callee Saved r16-r27 and r29, r30, r31
+            - V4    : Support hardware single step, yay!
+        Registers 0-5 still are used for function arguments
 */
 void
 _initialize_hexagon_linux_tdep (void)
 {
   gdbarch_register_osabi_sniffer (bfd_arch_hexagon,
-				  bfd_target_elf_flavour,
-				  hexagon_linux_elf_osabi_sniffer);
+                                  bfd_target_elf_flavour,
+                                  hexagon_linux_elf_osabi_sniffer);
 
   gdbarch_register_osabi (bfd_arch_hexagon, bfd_mach_hexagon_v2, GDB_OSABI_LINUX,
-			  hexagon_linux_init_abi_v2);
+                          hexagon_linux_init_abi_v2);
 
   gdbarch_register_osabi (bfd_arch_hexagon, bfd_mach_hexagon_v3, GDB_OSABI_LINUX,
-			  hexagon_linux_init_abi_v3);
+                          hexagon_linux_init_abi_v3);
 }

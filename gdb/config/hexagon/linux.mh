@@ -1,7 +1,7 @@
 # Host: Qualcomm Hexagon running GNU/Linux.
 
 NAT_FILE= config/nm-linux.h
-NATDEPFILES= hexagon-linux-tdep.o hexagon-linux-nat.o inf-ptrace.o fork-child.o proc-service.o linux-thread-db.o linux-nat.o linux-fork.o glibc-tdep.o solib.o solib-svr4.o
+NATDEPFILES= hexagon-linux-tdep.o hexagon-linux-nat.o inf-ptrace.o fork-child.o proc-service.o linux-thread-db.o linux-nat.o linux-fork.o glibc-tdep.o solib.o solib-svr4.o corelow.o
 
 #
 # Some configs of the compiler don't enable this by default

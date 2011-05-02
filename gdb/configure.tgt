@@ -389,6 +389,11 @@ powerpc*-*-*)
 	fi
 	;;
 
+hexagon*-*-sos*)
+	gdb_target_obs="hexagon-tdep.o hexagon-sim.o hexagon-sos-tdep.o \
+			glibc-tdep.o solib.o solib-svr4.o"
+	;;
+
 hexagon*-*-linux*)
 	gdb_target_obs="hexagon-tdep.o"
 	;;

@@ -211,6 +211,10 @@ if test "$ac_cv_env_target_alias_value" = "hexagon"; then
   AC_CHECK_LIB(dl, dlopen) 
   LIBS="$LIBS ../tcl/libtcl84.a"
 fi
+if test "$ac_cv_env_target_alias_value" = "hexagon-sos"; then
+  AC_DEFINE(DEFAULT_PROMPT, "(hexagon-gdb) ", [Define if hexagon is the target. ])
+  AC_DEFINE(HEXAGON, 1, [Define if hexagon is the target. ])
+fi
 
 # For other settings, only the main target counts.
 gdb_sim=

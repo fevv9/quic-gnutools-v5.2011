@@ -6802,6 +6802,14 @@ fi
 
   LIBS="$LIBS ../tcl/libtcl84.a"
 fi
+if test "$ac_cv_env_target_alias_value" = "hexagon-sos"; then
+
+$as_echo "#define DEFAULT_PROMPT \"(hexagon-gdb) \"" >>confdefs.h
+
+
+$as_echo "#define HEXAGON 1" >>confdefs.h
+
+fi
 
 # For other settings, only the main target counts.
 gdb_sim=

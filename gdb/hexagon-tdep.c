@@ -21,6 +21,7 @@
 #include "defs.h"
 #include "arch-utils.h"
 #include "gdbtypes.h"
+#include "osabi.h"
 #include "gdbcmd.h"
 #include "gdbcore.h"
 #include "gdb_string.h"
@@ -49,16 +50,20 @@
 #include "cli/cli-decode.h"
 #include "hexagon-sim.h"
 
+#if defined (GDB_OSABI_DEFAULT) && (GDB_OSABI_DEFAULT == GDB_OSABI_LINUX)
+#include <sys/ucontext.h>
+#endif
+
 
 
 /*******************************************************************
  *   Global Variables                                              *
- *******************************************************************/   
+ *******************************************************************/
 int hexagon_debug = 0;
 
 /*******************************************************************
  *   Extern Variables                                              *
- *******************************************************************/   
+ *******************************************************************/
 extern void _initialize_hexagon_tdep (void);
 extern char *current_hexagon_target;
 extern int frame_debug;
@@ -116,20 +121,20 @@ hexagon_regtype_t * globalRegSetInfo;
 struct hexagon_system_register_offsets *hexagonRegOffset = (struct hexagon_system_register_offsets *)0;
 
 
-enum 
+enum
 {
   first_gpr_regnum          = 0,
   last_gpr_regnum           = NUM_GEN_REGS -1,   // 31
-  hexagon_num_pseudo_regs     = 0,                 // Pseudo registers 
-  struct_return_regnum      = 0,                 // !!! DRP 
+  hexagon_num_pseudo_regs     = 0,                 // Pseudo registers
+  struct_return_regnum      = 0,                 // !!! DRP
   first_fpr_regnum          = 64,
   last_fpr_regnum           = 63,
 };
 
 
-typedef enum 
+typedef enum
 {
-  HEXAGON_INV_VER                   = 0, 
+  HEXAGON_INV_VER                   = 0,
   HEXAGON_V1                        = 1,
   HEXAGON_V2                        = 2,   // 31
   HEXAGON_V3                        = 3,   // 31
@@ -148,45 +153,14 @@ struct hexagon_unwind_cache		/* was struct frame_extra_info */
     /* The previous frame's inner-most stack address.  Used as this
        frame ID's stack_addr.  */
     CORE_ADDR prev_sp;
-    
+
     /* The frame's base, optionally used by the high-level debug info.  */
     CORE_ADDR base;
-    
+
     /* Table indicating the location of each and every register.  */
     struct trad_frame_saved_reg *saved_regs;
 };
 
-
-/* A structure describing the HEXAGON architecture.
-   We allocate and initialize one of these structures when we create
-   the gdbarch object for a variant.
-
-   The portable code of GDB knows that registers whose names are the 
-   empty string don't exist, so the  `register_names' array captures 
-   all the per-variant information we   need.
-
-   In the future, if we need to have per-variant maps for raw size,
-   virtual type, etc., we should replace register_names with an array
-   of structures, each of which gives all the necessary info for one
-   register.  Don't stick parallel arrays in here --- that's so
-   Fortran.  */
-struct gdbarch_tdep
-{
-  /* Total number of  general-purpose registers  */
-  int num_gprs;
-
-  /* Total number of  floating-point registers   */
-  int num_fprs;
-
-  /* Total number of hardware watchpoints supported  */
-  int num_hw_watchpoints;
-
-  /* Total number of hardware breakpoints supported  */
-  int num_hw_breakpoints;
-
-  /* Register names.  */
-  char **register_names;
-};
 
 /*
  * function: hexagon_index_max
@@ -199,7 +173,7 @@ struct gdbarch_tdep
  *		  layers use different index offsets.  In the ideal
  *	          world we would just use the indexes found in the
  *		  spec.
- *		  
+ *
  */
 static int
 hexagon_index_max (hexagon_regtype_t *rt)
@@ -221,8 +195,6 @@ hexagon_index_max (hexagon_regtype_t *rt)
 
 }
 
-
-
 /* Allocate a new variant structure, and set up default values for all
    the fields.  */
 static struct gdbarch_tdep *
@@ -236,7 +208,7 @@ new_variant (void)
 
   var = xmalloc (sizeof (*var));
   memset (var, 0, sizeof (*var));
-  
+
   var->num_gprs = NUM_GEN_REGS;
   var->num_fprs = 0;
   var->num_hw_watchpoints = 0;
@@ -248,7 +220,7 @@ new_variant (void)
 
   /* By default, don't supply any general-purpose or floating-point
      register names.  */
-  var->register_names 
+  var->register_names
     = (char **) xmalloc ((reg_count)* sizeof (char *));
 
   for (regnum = 0; regnum < reg_count; regnum++)
@@ -287,20 +259,20 @@ printf ("REG_CCR = %d\n", REG_CCR);
   {
       var->register_names[REG_SGP]     = "sgp";
       var->register_names[REG_BADVA]   = "badva";
-      var->register_names[REG_TID]     = "tid"; 
+      var->register_names[REG_TID]     = "tid";
   }
   else
   {
       var->register_names[REG_SGP0]     = "sgp0";
       var->register_names[REG_BADVA0]   = "badva0";
       var->register_names[REG_BADVA1]   = "badva1";
-      var->register_names[REG_STID]     = "stid"; 
-      var->register_names[REG_HTID]     = "htid"; 
-      var->register_names[REG_CCR]      = "ccr"; 
-      var->register_names[REG_G0]      = "g0"; 
-      var->register_names[REG_G1]      = "g1"; 
-      var->register_names[REG_G2]      = "g2"; 
-      var->register_names[REG_G3]      = "g3"; 
+      var->register_names[REG_STID]     = "stid";
+      var->register_names[REG_HTID]     = "htid";
+      var->register_names[REG_CCR]      = "ccr";
+      var->register_names[REG_G0]      = "g0";
+      var->register_names[REG_G1]      = "g1";
+      var->register_names[REG_G2]      = "g2";
+      var->register_names[REG_G3]      = "g3";
   }
 
   return var;
@@ -370,13 +342,13 @@ hexagon_breakpoint_from_pc (struct gdbarch *gdbarch, CORE_ADDR *pcptr, int *lenp
   static unsigned char breakpoint_insn[] = {0x0c, 0xdb, 0x00, 0x54};
   static unsigned char *breakpoint;
 
-  if ((hexagonVersion == HEXAGON_V4) || 
+  if ((hexagonVersion == HEXAGON_V4) ||
       (hexagonVersion == HEXAGON_V3) ||
       (hexagonVersion == HEXAGON_V2))
   {
     breakpoint=breakpoint_insn;
     *lenp = sizeof (breakpoint_insn);
-  } 
+  }
   else
   {
     printf_filtered ("%s, invalid setting for arch level %d\n",__func__, hexagonVersion);
@@ -396,7 +368,7 @@ static const int hexagon_instr_size = 4;
    constraint that a break instruction must not appear as any but the
    first instruction in the packet.  */
 static CORE_ADDR
-hexagon_gdbarch_adjust_breakpoint_address (struct gdbarch *gdbarch, 
+hexagon_gdbarch_adjust_breakpoint_address (struct gdbarch *gdbarch,
 					 CORE_ADDR bpaddr)
 {
 
@@ -410,7 +382,7 @@ hexagon_gdbarch_adjust_breakpoint_address (struct gdbarch *gdbarch,
     return bpaddr;
 
   /* Find the end of the previous packing sequence.
-     This will be indicated by finding an instruction word 
+     This will be indicated by finding an instruction word
      whose packing bits (bit 14 & 15) is set to one.\ or attempting to access
      invalid memory*/
   while (count-- > 0 && addr >= func_start)
@@ -419,19 +391,19 @@ hexagon_gdbarch_adjust_breakpoint_address (struct gdbarch *gdbarch,
       char instr[hexagon_instr_size];
       int status;
 
-      /* read the memory content at this address to get 
+      /* read the memory content at this address to get
 	 the instruction encoding */
-      status = target_read_memory (addr, instr, sizeof instr); 
+      status = target_read_memory (addr, instr, sizeof instr);
       /*status = read_memory_nobpt (addr, instr, sizeof instr);*/
       if (status != 0)
 	break;
 
       /* instruction encoding byte layout
-	 xxxxxxxx xxxxxxxx xxxxxxxx xxxxxxxx 
+	 xxxxxxxx xxxxxxxx xxxxxxxx xxxxxxxx
 	 byte 0   byte 1   byte 2   byte 3   */
       /* This is a little endian architecture, so byte 1 will have bits 14
 	 and  15. bit 14/15 set to 1 indicates 	 end of packet  */
-      if((instr[1] & 0x80) && (instr[1] & 0x40)) 
+      if((instr[1] & 0x80) && (instr[1] & 0x40))
 	break;
 
       addr -= hexagon_instr_size;
@@ -450,7 +422,7 @@ static int
 is_callee_saves_reg (int reg)
 {
   //printf("\n In s_callee_saves_reg ..................\n");
-  if(hexagonVersion == HEXAGON_V2) 
+  if(hexagonVersion == HEXAGON_V2)
       return (reg >= 24 && reg <= 27);
   else
       return (reg >= 16 && reg <= 27);
@@ -597,7 +569,7 @@ is_memX_r29 (unsigned int insn, CORE_ADDR pc,
 
   if (frame_debug && rc == 1)
     {
-      printf_filtered ("HEXAGON:%s: PC:0x%lx saving reg %x:%x, offset = %d\n",
+      printf_filtered ("HEXAGON:%s: PC:0x%llx saving reg %x:%x, offset = %d\n",
 		       __func__, pc, *reg1, *reg2, *stack_offset);
     }
 
@@ -688,7 +660,7 @@ get_packet (CORE_ADDR pc, gdb_byte * buffer, enum bfd_endian byte_order)
       if (target_read_memory (pc, &buffer[i], 4))
 	{
            internal_warning (__FILE__, __LINE__,
-                    _("\ntarget_read_memory failed to read address: 0x%lx"),
+                    _("\ntarget_read_memory failed to read address: 0x%llx"),
                     pc);
 	   return 0;
 	}
@@ -791,7 +763,7 @@ hexagon_analyze_prologue (struct gdbarch *gdbarch,
  *
  * A target_read_packet function that will advance the pc by the number of
  * insn's that are contained in the packet anywhere from 4 to 16 bytes in
- * 4 byte increments looking for the PP (parse bits) for execute 
+ * 4 byte increments looking for the PP (parse bits) for execute
  * 15:14 = 1:1 to signify the end of packet
  */
   pc = start_pc;
@@ -804,7 +776,7 @@ hexagon_analyze_prologue (struct gdbarch *gdbarch,
       int reg2;
       int packet_total;
       int pcnt;
- 
+
       if (!(packet_total = get_packet (pc, buf, byte_order)))
 	return 0;
 
@@ -826,7 +798,7 @@ hexagon_analyze_prologue (struct gdbarch *gdbarch,
 	      prolog_pc+=4;
 	      allocframe += operand;
 	    }
-    
+
           else if (is_memX_r29 (insn, pc, &offset, &reg1, &reg2))
             {
 	      prolog_pc+=4;
@@ -852,7 +824,7 @@ hexagon_analyze_prologue (struct gdbarch *gdbarch,
 		end_of_prologue = 1;
 	        break;
             }
-          else 
+          else
             {
 	      prolog_pc+=4;
             }
@@ -913,13 +885,13 @@ hexagon_analyze_prologue (struct gdbarch *gdbarch,
       if (hexagon_debug == 1)
       {
 	printf_filtered ("\t HEXAGON_DEB: allocframe = %d\n", allocframe);
-	printf_filtered ("\t HEXAGON_DEB: info.base = 0x%p\n", info->base);
-	printf_filtered ("\t HEXAGON_DEB: reg_sp = 0x%p\n", this_sp);
-	printf_filtered ("\t HEXAGON_DEB: this_lr = 0x%p\n", this_lr);
-	printf_filtered ("\t HEXAGON_DEB: info.REG_FP  = 0x%x\n", info->saved_regs[REG_FP].addr);
-	printf_filtered ("\t HEXAGON_DEB: info.REG_LR  = 0x%x\n", info->saved_regs[REG_LR].addr);
-	printf_filtered ("\t HEXAGON_DEB: info.REG_PC  = 0x%x\n", info->saved_regs[REG_PC].addr);
-	printf_filtered ("\t HEXAGON_DEB: info.prev_sp = 0x%x\n", info->saved_regs[REG_PC].addr);
+	printf_filtered ("\t HEXAGON_DEB: info.base = 0x%llx\n", info->base);
+	printf_filtered ("\t HEXAGON_DEB: reg_sp = 0x%llx\n", this_sp);
+	printf_filtered ("\t HEXAGON_DEB: this_lr = 0x%llx\n", this_lr);
+	printf_filtered ("\t HEXAGON_DEB: info.REG_FP  = 0x%llx\n", info->saved_regs[REG_FP].addr);
+	printf_filtered ("\t HEXAGON_DEB: info.REG_LR  = 0x%llx\n", info->saved_regs[REG_LR].addr);
+	printf_filtered ("\t HEXAGON_DEB: info.REG_PC  = 0x%llx\n", info->saved_regs[REG_PC].addr);
+	printf_filtered ("\t HEXAGON_DEB: info.prev_sp = 0x%llx\n", info->saved_regs[REG_PC].addr);
       }
 
 
@@ -943,7 +915,7 @@ hexagon_skip_prologue (struct gdbarch *gdbarch, CORE_ADDR pc)
   if (hexagon_debug == 1)
   {
       printf_filtered ("HEXAGON_DEB: %s\n",__func__);
-      printf_filtered ("\tHEXAGON_DEB: pc = 0x%lx\n", pc);
+      printf_filtered ("\tHEXAGON_DEB: pc = 0x%llx\n", pc);
   }
 
   if (find_pc_partial_function (pc, NULL, &func_addr, &func_end))
@@ -961,12 +933,12 @@ hexagon_skip_prologue (struct gdbarch *gdbarch, CORE_ADDR pc)
     }
 
   /* hexagon prologue is at least 4 bytes (allocframe) */
-  if (new_pc < pc + 4) 
+  if (new_pc < pc + 4)
     new_pc = hexagon_analyze_prologue (gdbarch, pc, pc, 0, 0);
 
   if (hexagon_debug == 1)
   {
-      printf_filtered ("\tHEXAGON_DEB: returns new_pc = 0x%lx\n", new_pc);
+      printf_filtered ("\tHEXAGON_DEB: returns new_pc = 0x%llx\n", new_pc);
   }
   return new_pc;
 }
@@ -999,16 +971,16 @@ hexagon_frame_unwind_cache (struct frame_info *this_frame,
   /* Prologue analysis does the rest...  */
   pc = get_frame_pc(this_frame);
   if (hexagon_debug == 1)
-      printf_filtered("\tpre ana: HEXAGON_DEB: pc = 0x%x\n",pc);
+      printf_filtered("\tpre ana: HEXAGON_DEB: pc = 0x%llx\n",pc);
   pc = hexagon_analyze_prologue (gdbarch,
 			get_frame_func (this_frame), get_frame_pc(this_frame),
 			this_frame, info);
 
   if (hexagon_debug == 1)
   {
-      printf_filtered("\tHEXAGON_DEB: pc = 0x%x\n", pc);
+      printf_filtered("\tHEXAGON_DEB: pc = 0x%llx\n", pc);
   }
-  
+
   return info;
 }
 
@@ -1068,7 +1040,7 @@ hexagon_return_value (struct gdbarch *gdbarch, struct type *func_type,
      goes on the stack.  */
   int struct_return = (((TYPE_CODE (valtype) == TYPE_CODE_STRUCT
        			 || TYPE_CODE (valtype) == TYPE_CODE_UNION)
-			 && TYPE_LENGTH (valtype) > 8) 
+			 && TYPE_LENGTH (valtype) > 8)
 			 || (TYPE_LENGTH (valtype) > 8));
 
    if (readbuf)
@@ -1127,7 +1099,7 @@ hexagon_push_dummy_call (struct gdbarch *gdbarch, struct value *function,
      ----------------------------------
      (0x10F0)                   Saved LR
      (0x10DC)                   Saved FP  (FP pointer points to this Address)
-     (0x10D8)                   Prodedure local- 
+     (0x10D8)                   Prodedure local-
      (0x10D4)                   data on stack.
 	...
      (0x1000)                   SP register points to this lowest address.
@@ -1169,7 +1141,7 @@ hexagon_push_dummy_call (struct gdbarch *gdbarch, struct value *function,
 */
   if (TYPE_VARARGS (func_type))  /* Variable Argument List function */
     typed_args = TYPE_NFIELDS(func_type);
-  else 
+  else
     typed_args = nargs;
 
   for (i = 0; i < typed_args; i++)
@@ -1292,7 +1264,7 @@ hexagon_push_dummy_call_deprecated (struct gdbarch *gdbarch,
   regcache_cooked_write (regcache, REG_LR, buf);
 
 
-  
+
 #if 0
   printf("\n In hexagon_push_dummy_call ........................\n");
   printf("Function Address = 0x%x\n", func_addr);
@@ -1302,7 +1274,7 @@ hexagon_push_dummy_call_deprecated (struct gdbarch *gdbarch,
 #endif
 
   regcache_cooked_write_unsigned (regcache, REG_FP, sp+8);
-  
+
   /* get the function symbol for this function address */
    pFuncSymbol = find_pc_function (func_addr);
 
@@ -1310,7 +1282,7 @@ hexagon_push_dummy_call_deprecated (struct gdbarch *gdbarch,
   {
     /* Get the type of the current symbol (function) being passed in */
     ftype = check_typedef (SYMBOL_TYPE (pFuncSymbol));
-    
+
     /* Get the number of fixed type args for the function symbol */
     numOfFixedTypeFunctionArgs = TYPE_NFIELDS(ftype);
   }
@@ -1322,10 +1294,10 @@ hexagon_push_dummy_call_deprecated (struct gdbarch *gdbarch,
     /*This check is for C++ tests alone. */
     if(msymbol)
       sDemangledFunctionName =  SYMBOL_DEMANGLED_NAME(msymbol);
-    
+
     numOfFixedTypeFunctionArgs = -1;
   }
- 
+
   for (argnum = 0; argnum < nargs; ++argnum)
     stack_space += align_up (TYPE_LENGTH (value_type (args[argnum])), 4);
 
@@ -1349,12 +1321,12 @@ hexagon_push_dummy_call_deprecated (struct gdbarch *gdbarch,
       arg_type = check_typedef (value_type (arg));
       len = TYPE_LENGTH (arg_type);
       typecode = TYPE_CODE (arg_type);
- 
-      if ((typecode == TYPE_CODE_STRUCT || 
+
+      if ((typecode == TYPE_CODE_STRUCT ||
 	   typecode == TYPE_CODE_UNION) &&
 	  (len > 8))
 	{
-	  store_unsigned_integer (valbuf, 4, 
+	  store_unsigned_integer (valbuf, 4,
 				  BFD_ENDIAN_LITTLE, value_address (arg));
 	  typecode = TYPE_CODE_PTR;
 	  val = valbuf;
@@ -1386,7 +1358,7 @@ hexagon_push_dummy_call_deprecated (struct gdbarch *gdbarch,
 #endif
 
 	      typecode = TYPE_CODE (arg_type);
- 
+
 	      /*Candidates larger than 32 bits are passed in even-odd reg pair.*/
 	      if((len > 4) && ((argreg%2) != 0))
 		  ++argreg;
@@ -1394,20 +1366,20 @@ hexagon_push_dummy_call_deprecated (struct gdbarch *gdbarch,
 	      regcache_cooked_write_unsigned (regcache, argreg, regval);
 	      ++argreg;
 	    }
-	  else if((argreg < hexagonArgRegMax) && 
+	  else if((argreg < hexagonArgRegMax) &&
                   (sDemangledFunctionName != NULL))
 	  {
-	    /* This code is a temp. hack for C++ gdb test virtfunc.cc 
-	       which does not return a valid symbol pointer for "thunk" 
+	    /* This code is a temp. hack for C++ gdb test virtfunc.cc
+	       which does not return a valid symbol pointer for "thunk"
 	       function which calls the actual virtual function implementation */
 	    regval = extract_unsigned_integer (val, partial_len,
 					       BFD_ENDIAN_LITTLE);
 	    typecode = TYPE_CODE (arg_type);
-	    
+
 	    /*Candidates larger than 32 bits are passed in even-odd reg pair.*/
 	    if((len > 4) && ((argreg%2) != 0))
 	      ++argreg;
-	    
+
 	    regcache_cooked_write_unsigned (regcache, argreg, regval);
 	    ++argreg;
 
@@ -1471,7 +1443,7 @@ hexagon_unwind_pc (struct gdbarch *gdbarch, struct frame_info *next_frame)
   pc = frame_unwind_register_unsigned (next_frame, REG_PC);
   if (hexagon_debug == 1)
   {
-      printf_filtered ("\tHEXAGON_DEB: pc = 0x%x\n",pc);
+      printf_filtered ("\tHEXAGON_DEB: pc = 0x%llx\n",pc);
   }
   return pc;
 }
@@ -1563,6 +1535,116 @@ hexagon_dummy_id (struct gdbarch *gdbarch, struct frame_info *this_frame)
   return frame_id_build (sp, pc);
 }
 
+/* Signal managment, Just for Linux */
+#if defined (GDB_OSABI_DEFAULT) && (GDB_OSABI_DEFAULT == GDB_OSABI_LINUX)
+
+/* Signal trampolines.  */
+
+static struct hexagon_unwind_cache *
+hexagon_sigtramp_frame_cache (struct frame_info *this_frame, void **this_cache)
+{
+  struct gdbarch *gdbarch = get_frame_arch (this_frame);
+  struct gdbarch_tdep *tdep = gdbarch_tdep (gdbarch);
+  enum bfd_endian byte_order = gdbarch_byte_order (gdbarch);
+  struct hexagon_unwind_cache *cache;
+  CORE_ADDR addr;
+  gdb_byte buf[4];
+  struct ucontext *uc;
+  gdb_byte *regptr;
+  unsigned int pc;
+  int i;
+
+  if (*this_cache)
+    return *this_cache;
+
+  cache = FRAME_OBSTACK_ZALLOC (struct hexagon_unwind_cache);
+  cache->saved_regs = trad_frame_alloc_saved_regs (this_frame);
+
+  get_frame_register (this_frame, REG_SP, buf);
+  cache->base = extract_unsigned_integer (buf, 4, byte_order) - 4;
+
+  uc = (struct ucontext *)tdep->sigcontext_addr (this_frame);
+  regptr = (gdb_byte *)&uc->uc_mcontext.sc_regs.r00;
+
+  for (i=0; i < NUM_GEN_REGS; i++)
+     cache->saved_regs[i].addr = (regptr + i*4);
+
+  target_read_memory (cache->saved_regs[REG_LR].addr, buf, 4);
+  pc = extract_unsigned_integer (buf, 4, byte_order);
+  trad_frame_set_value (cache->saved_regs, REG_PC, pc);
+
+  *this_cache = cache;
+  return cache;
+}
+
+static void
+hexagon_sigtramp_frame_this_id (struct frame_info *this_frame, void **this_cache,
+			     struct frame_id *this_id)
+{
+  struct hexagon_unwind_cache *cache =
+    hexagon_sigtramp_frame_cache (this_frame, this_cache);
+
+  (*this_id) = frame_id_build (cache->base + 8, get_frame_pc (this_frame));
+}
+
+static struct value *
+hexagon_sigtramp_frame_prev_register (struct frame_info *this_frame,
+				   void **this_cache, int regnum)
+{
+  /* Make sure we've initialized the cache.  */
+  hexagon_sigtramp_frame_cache (this_frame, this_cache);
+
+  return hexagon_frame_prev_register (this_frame, this_cache, regnum);
+}
+
+static int
+hexagon_sigtramp_frame_sniffer (const struct frame_unwind *self,
+			     struct frame_info *this_frame,
+			     void **this_prologue_cache)
+{
+  struct gdbarch_tdep *tdep = gdbarch_tdep (get_frame_arch (this_frame));
+
+  /* We shouldn't even bother if we don't have a sigcontext_addr
+     handler.  */
+  if (tdep->sigcontext_addr == NULL)
+    return 0;
+
+  if (tdep->sigtramp_p != NULL)
+    {
+      if (tdep->sigtramp_p (this_frame))
+	return 1;
+    }
+
+  return 0;
+}
+
+static const struct frame_unwind hexagon_sigtramp_frame_unwind =
+{
+  SIGTRAMP_FRAME,
+  hexagon_sigtramp_frame_this_id,
+  hexagon_sigtramp_frame_prev_register,
+  NULL,
+  hexagon_sigtramp_frame_sniffer
+};
+
+/* Assuming THIS_FRAME is for a SVR4 sigtramp routine, return the
+   address of the associated sigcontext (ucontext) structure.  */
+
+static CORE_ADDR
+hexagon_svr4_sigcontext_addr (struct frame_info *this_frame)
+{
+  struct gdbarch *gdbarch = get_frame_arch (this_frame);
+  enum bfd_endian byte_order = gdbarch_byte_order (gdbarch);
+  gdb_byte buf[4];
+  CORE_ADDR sp;
+
+  get_frame_register (this_frame, REG_SP, buf);
+  sp = extract_unsigned_integer (buf, 4, byte_order);
+
+  return read_memory_unsigned_integer (sp + 8, 4, byte_order);
+}
+#endif /* GDB_OSABI_DEFAULT == GDB_OSABI_LINUX */
+
 
 static struct gdbarch *
 hexagon_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
@@ -1588,7 +1670,7 @@ hexagon_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
       globalRegSetInfo = &globalRegSetInfo_v2[0];
       hexagonRegOffset = &hexagon_reg_offset;
     break;
-    
+
     case bfd_mach_hexagon_v3:
       hexagonVersion = HEXAGON_V3;
       threadRegSetInfo = &threadRegSetInfo_v3[0];
@@ -1602,7 +1684,7 @@ hexagon_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
       globalRegSetInfo = &globalRegSetInfo_v4[0];
       hexagonRegOffset = &hexagon_reg_offset_v4;
     break;
-    
+
     default:
       /* Never heard of this variant.  */
       return 0;
@@ -1611,7 +1693,7 @@ hexagon_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
 
   hexagonArgRegMax = 6;
   hexagon_reg_index_max = hexagon_index_max (threadRegSetInfo);
-  
+
   /* Select the right tdep structure for this variant (hexagon).  */
   var = new_variant ();
   switch (info.bfd_arch_info->mach)
@@ -1628,7 +1710,7 @@ hexagon_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
       /* Never heard of this variant.  */
       return 0;
     }
-  
+
   gdbarch = gdbarch_alloc (&info, var);
 
 
@@ -1666,6 +1748,9 @@ hexagon_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
   set_gdbarch_unwind_sp (gdbarch, hexagon_unwind_sp);
   set_gdbarch_frame_align (gdbarch, hexagon_frame_align);
 
+#if defined (GDB_OSABI_DEFAULT) && (GDB_OSABI_DEFAULT == GDB_OSABI_LINUX)
+  frame_unwind_append_unwinder (gdbarch, &hexagon_sigtramp_frame_unwind);
+#endif
   frame_unwind_append_unwinder (gdbarch, &hexagon_frame_unwind);
 
   frame_base_set_default (gdbarch, &hexagon_frame_base);
@@ -1680,7 +1765,7 @@ hexagon_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
   var->num_hw_watchpoints = 0;
   var->num_hw_breakpoints = 0;
 
-  
+
   /* set the disassembler */
   set_gdbarch_print_insn (gdbarch, hexagon_get_disassembler_from_mach
 		                  (info.bfd_arch_info->mach,

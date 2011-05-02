@@ -489,7 +489,13 @@ follow_exec (ptid_t pid, char *execd_pathname)
      that may write the bp's "shadow contents" (the instruction
      value that was overwritten witha TRAP instruction).  Since
      we now have a new a.out, those shadow contents aren't valid. */
-  update_breakpoints_after_exec ();
+#ifdef HEXAGON
+  extern const char target_name[];
+  if (strcmp(target_name, "hexagon-sos"))  /* We are following an exec from
+                                              the sos-kernel which is not
+                                              getting removed */
+    update_breakpoints_after_exec ();
+#endif
 
   /* If there was one, it's gone now.  We cannot truly step-to-next
      statement through an exec(). */

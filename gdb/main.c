@@ -98,7 +98,7 @@ static void print_gdb_help (struct ui_file *);
 
 extern char *external_editor_command;
 
-#ifdef HEXAGON
+#if defined (HEXAGON) && defined (HAVE_TCL)
 extern int HEXAGON_tcl_fe_state;
 #endif
 
@@ -415,7 +415,7 @@ captured_main (void *data)
       {"version", no_argument, &print_version, 1},
       {"x", required_argument, 0, 'x'},
       {"ex", required_argument, 0, 'X'},
-#ifdef HEXAGON
+#if defined (HEXAGON) && defined (HAVE_TCL)
       {"tclfe", no_argument, &HEXAGON_tcl_fe_state, 1},
 #endif
 #ifdef GDBTK
@@ -988,9 +988,13 @@ Options:\n\n\
   fputs_unfiltered (_("\
   --se=FILE          Use FILE as symbol file and executable file.\n\
   --symbols=SYMFILE  Read symbols from SYMFILE.\n\
-  --tclfe            QUALCOMM's Tcl Front End interpreter enabled.\n\
   --tty=TTY          Use TTY for input/output by the program being debugged.\n\
 "), stream);
+#if defined (HEXAGON) && defined (HAVE_TCL)
+  fputs_unfiltered (_("\
+  --tclfe            QUALCOMM's Tcl Front End interpreter enabled.\n\
+"), stream);
+#endif
 #if defined(TUI)
   fputs_unfiltered (_("\
   --tui              Use a terminal user interface.\n\

@@ -23,11 +23,51 @@
 
 
 /* Enable printing of register names */
-typedef struct 
+typedef struct
 {
   char* reg_name; /* reg name */
   int   index;    /* Offset in reg file */
 } hexagon_regtype_t;
+
+/* A structure describing the HEXAGON architecture.
+   We allocate and initialize one of these structures when we create
+   the gdbarch object for a variant.
+
+   The portable code of GDB knows that registers whose names are the
+   empty string don't exist, so the  `register_names' array captures
+   all the per-variant information we   need.
+
+   In the future, if we need to have per-variant maps for raw size,
+   virtual type, etc., we should replace register_names with an array
+   of structures, each of which gives all the necessary info for one
+   register.  Don't stick parallel arrays in here --- that's so
+   Fortran.  */
+struct gdbarch_tdep
+{
+  /* Total number of  general-purpose registers  */
+  int num_gprs;
+
+  /* Total number of  floating-point registers   */
+  int num_fprs;
+
+  /* Total number of hardware watchpoints supported  */
+  int num_hw_watchpoints;
+
+  /* Total number of hardware breakpoints supported  */
+  int num_hw_breakpoints;
+
+  /* Register names.  */
+  char **register_names;
+
+#if defined (GDB_OSABI_DEFAULT) && (GDB_OSABI_DEFAULT == GDB_OSABI_LINUX)
+  /* Detect sigtramp.  */
+  int (*sigtramp_p) (struct frame_info *);
+
+  /* Get address of sigcontext for sigtramp.  */
+  CORE_ADDR (*sigcontext_addr) (struct frame_info *);
+#endif
+};
+
 
 /*
    - data structure: hexagon_system_register_offsets
@@ -253,7 +293,7 @@ static struct hexagon_system_register_offsets hexagon_reg_offset =
     reg_ugp: REG_UGP,
     reg_usr: REG_USR,
 
-/* Reference to v4 offsets outside of v4 mode should trigger a 
+/* Reference to v4 offsets outside of v4 mode should trigger a
    fatal exception */
     reg_acc0: -1,
     reg_acc1: -1,
@@ -651,7 +691,6 @@ extern struct hexagon_system_register_offsets *hexagonRegOffset;
 #undef REG_TLBLO
 #define REG_TLBLO hexagonRegOffset?hexagonRegOffset->reg_tlblo:hexagonstopme(-1)
 
-
 /*
  * Then following register values taken from architecture register
  * definitions
@@ -680,10 +719,10 @@ extern struct hexagon_system_register_offsets *hexagonRegOffset;
 
     /* for ignoring immediate bits */
 #define   MORE_SP_UPDATE_OPCODE_MASK 0xF01FC01FUL
-    /* sp update opcode ignoring immediate bits 
+    /* sp update opcode ignoring immediate bits
       (uses Rd=add(Rs,#s16) where Rd and Rs r29 */
 #define   MORE_SP_UPDATE_OPCODE_BITS 0xB01DC01DUL
-    /* for ignoring immediate and Rt bits for 
+    /* for ignoring immediate and Rt bits for
         byte/half/single/double word */
 #define   CALLEE_SAVE_OPCODE_MASK 0xF1DFC000UL
     /* callee save opcode ignoring immediate and Rt
@@ -724,11 +763,11 @@ extern struct hexagon_system_register_offsets *hexagonRegOffset;
 #define MORE_SP_UPDATE_SIZE(opcode) \
         ((signed short) ((((unsigned short) ((op >> 21) & 0x7F)) << 9) | \
                           ((unsigned short) ((op >> 5) & 0x1FF))))
-// for byte accesses - check if it is a store byte insn 
+// for byte accesses - check if it is a store byte insn
 #define CALLEE_SAVE_MATCH_B(opcode) \
         (CALLEE_SAVE_OPCODE_BITS_B == (CALLEE_SAVE_OPCODE_MASK & (opcode)) && \
-             is_callee_saves_reg(CALLEE_SAVE_REG(opcode))) 
-// get if Rt if a calle saved register             
+             is_callee_saves_reg(CALLEE_SAVE_REG(opcode)))
+// get if Rt if a calle saved register
 #define CALLEE_SAVE_REG(opcode) (((opcode) >> 8) & 0x1F)
 
 
@@ -739,10 +778,10 @@ extern struct hexagon_system_register_offsets *hexagonRegOffset;
                          ((unsigned short) (( (opcode)        & 0xFF) <<  0))))
 
 
-// for half word  accesses - check if it is a store hword insn 
+// for half word  accesses - check if it is a store hword insn
 #define CALLEE_SAVE_MATCH_H(opcode) \
         (CALLEE_SAVE_OPCODE_BITS_H == (CALLEE_SAVE_OPCODE_MASK & (opcode)) && \
-             is_callee_saves_reg(CALLEE_SAVE_REG(opcode))) 
+             is_callee_saves_reg(CALLEE_SAVE_REG(opcode)))
 
 // for half wordaccesses  - skip ignore bits
 #define CALLEE_SAVE_OFFSET_H(opcode) \
@@ -754,7 +793,7 @@ extern struct hexagon_system_register_offsets *hexagonRegOffset;
 // for single word accesses
 #define CALLEE_SAVE_MATCH_W(opcode) \
         (CALLEE_SAVE_OPCODE_BITS_W == (CALLEE_SAVE_OPCODE_MASK & (opcode)) && \
-             is_callee_saves_reg(CALLEE_SAVE_REG(opcode))) 
+             is_callee_saves_reg(CALLEE_SAVE_REG(opcode)))
 
 // for single word accesses
 #define CALLEE_SAVE_OFFSET_W(opcode) \
@@ -768,7 +807,7 @@ extern struct hexagon_system_register_offsets *hexagonRegOffset;
 // for double word accesses
 #define CALLEE_SAVE_MATCH_D(opcode) \
         (CALLEE_SAVE_OPCODE_BITS_D == (CALLEE_SAVE_OPCODE_MASK & (opcode)) && \
-             is_callee_saves_reg(CALLEE_SAVE_REG(opcode))) 
+             is_callee_saves_reg(CALLEE_SAVE_REG(opcode)))
 
 
 // for double word accesses

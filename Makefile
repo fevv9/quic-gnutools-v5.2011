@@ -175,10 +175,11 @@ build_native_gdb:
 		--disable-nls \
 		--disable-werror \
 		--build=i686-linux \
-		--host=hexagon-linux-uclibc \
-		--target=hexagon-linux-uclibc \
+		--host=hexagon-linux-gnu \
+		--target=hexagon-linux-gnu \
 		--without-tcl \
 		--with-curses \
+		--disable-tui \
 		--disable-binutils \
 		--disable-gas \
 		--disable-gprof \
@@ -188,19 +189,20 @@ build_native_gdb:
 build_native_gdb_static:
 	mkdir -p $@
 	cd $@ &&  \
-	CC=qdsp6-gcc \
-	AS=qdsp6-as \
-	AR=qdsp6-ar \
-	LD=qdsp6-ld \
+	CC=hexagon-gcc \
+	AS=hexagon-as \
+	AR=hexagon-ar \
+	LD=hexagon-ld \
 	CFLAGS="$(BUILD_CFLAGS) -static -fno-short-enums" \
 	../configure \
 		--disable-nls \
 		--disable-werror \
 		--build=i686-linux \
-		--host=qdsp6-linux-uclibc \
-		--target=qdsp6-linux-uclibc \
+		--host=hexagon-linux-gnu \
+		--target=hexagon-linux-gnu \
 		--without-tcl \
 		--with-curses \
+		--disable-tui \
 		--disable-binutils \
 		--disable-gas \
 		--disable-gprof \
@@ -226,6 +228,27 @@ build_native_static:
 		--without-tcl && \
 	$(MAKE) -j $(JOBS) all
 
+.PHONY: build_sos
+build_sos:
+	mkdir -p $@
+	cd $@ && \
+	CFLAGS="$(BUILD_CFLAGS) -g -O0" \
+	HAVETCL=1 \
+	MAKEINFO=$(MAKEINFO) \
+	ISS_DIR=$(ISS_DIR) \
+	../configure \
+		    --target=hexagon-sos \
+		    --disable-nls \
+		    --enable-bfd-assembler \
+		    --disable-multilib \
+		    --with-python=no \
+		    --disable-tui \
+		    --disable-binutils \
+		    --disable-gas \
+		    --disable-gprof \
+		    --disable-ld \
+		    --prefix=$(PREFIX) && \
+	$(MAKE) -j $(JOBS) all
 
 .PHONY: install_lnx
 install_lnx: build_lnx

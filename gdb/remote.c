@@ -4467,6 +4467,16 @@ Packet: '%s'\n"),
 	    (((fromhex (buf[1])) << 4) + (fromhex (buf[2])));
 	}
       break;
+#ifdef HEXAGON
+    case 'L':		/* Loading a new executable, filename */
+        p = &buf[1];	/* after L */
+	event->ws.kind = TARGET_WAITKIND_EXECD;
+	if (event->ws.value.execd_pathname)
+          xfree (event->ws.value.execd_pathname);
+
+	event->ws.value.execd_pathname = xstrdup (p);
+#endif
+      break;
     case 'W':		/* Target exited.  */
     case 'X':
       {
@@ -4781,6 +4791,9 @@ remote_wait_as (ptid_t ptid, struct target_waitstatus *status, int options)
       remote_fileio_request (buf);
       break;
     case 'T': case 'S': case 'X': case 'W':
+#ifdef HEXAGON
+    case 'L':
+#endif
       {
 	struct stop_reply *stop_reply;
 	struct cleanup *old_chain;
