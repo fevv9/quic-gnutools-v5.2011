@@ -209,6 +209,22 @@ build_native_gdb_static:
 		--disable-ld && \
 	$(MAKE) -j $(JOBS) all
 
+build_gdb:
+	mkdir -p $@
+	cd $@ &&  \
+	CFLAGS="$(BUILD_CFLAGS) -fno-short-enums" \
+	../configure \
+		--disable-nls \
+		--disable-werror \
+		--without-tcl \
+		--with-curses \
+		--disable-tui \
+		--disable-binutils \
+		--disable-gas \
+		--disable-gprof \
+		--disable-ld && \
+	$(MAKE) -j $(JOBS) all
+
 build_native_static:
 	mkdir -p $@
 	cd $@ &&  \
