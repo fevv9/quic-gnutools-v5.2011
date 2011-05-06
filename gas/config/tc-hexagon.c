@@ -157,7 +157,7 @@ typedef struct _hexagon_literal
   } hexagon_literal;
 
 /** Packet instruction. */
-typedef struct
+typedef struct _hexagon_packet_insn
   {
     hexagon_insn insn;
     unsigned ndx;
@@ -175,17 +175,10 @@ typedef struct
     expressionS exp;
     unsigned fc;
     fixS *fix;
+    /* Extender and original pair components. */
+    struct _hexagon_packet_insn *prefix, *left, *right;
     char *source;
   } hexagon_packet_insn;
-
-/** Pair of instruction packets. */
-typedef struct
-  {
-    struct
-      {
-        hexagon_packet_insn insn, prefix;
-      } left, right;
-  } hexagon_packet_pair;
 
 /** Flags for packet instruction. */
 enum _hexagon_insn_flag
@@ -209,25 +202,21 @@ typedef struct
     int dpad, ddpad; /* Deltas in padding NOPs. */
     int dpkt, ddpkt; /* Deltas in padding NOPs in packets. */
     unsigned lineno; /* Line number at closing. */
+    unsigned stats; /* Packet statistics. */
     unsigned faligned: 1; /* Packet should be fetch-aligned. */
     unsigned is_inner: 1; /* Packet has :endloop0. */
     unsigned is_outer: 1; /* Packet has :endloop1. */
     hexagon_packet_insn insns [MAX_PACKET_INSNS]; /* Insns. */
-    hexagon_packet_insn prefixes [MAX_PACKET_INSNS]; /* k-extender insns. */
-    hexagon_packet_pair pairs [MAX_PACKET_INSNS]; /* Original paired prefix+insn. */
-    int stats; /* Packet statistics. */
   } hexagon_packet;
 
 /** Instruction queue for packet formation. */
 typedef struct _hexagon_queue
   {
     unsigned size;
-    hexagon_packet_insn insns [MAX_INSNS]; /* Insns. */
-    hexagon_packet_insn prefixes [MAX_INSNS]; /* k-extenders insns. */
-    hexagon_packet_pair pairs [MAX_INSNS]; /* Original paired prefix+insn. */
     unsigned faligned: 1; /* Fetch-align request. */
     unsigned is_inner: 1; /* :endloop0 request. */
     unsigned is_outer: 1; /* :endloop1 request. */
+    hexagon_packet_insn insns [MAX_INSNS]; /* Insns. */
   } hexagon_queue;
 
 typedef struct hexagon_frag_data
@@ -308,9 +297,8 @@ struct _hexagon_suffix
 extern int hexagon_get_mach (char *);
 extern void hexagon_code_symbol (expressionS *);
 
-int hexagon_assemble (hexagon_packet_insn *, hexagon_packet_insn *, char *str, int);
-int hexagon_assemble_pair
-  (hexagon_packet_pair *, hexagon_packet_insn *, hexagon_packet_insn *);
+int hexagon_assemble (hexagon_packet_insn *, char *, int);
+int hexagon_assemble_pair (hexagon_packet_insn *);
 int hexagon_parse_name (char *, expressionS *, char *);
 void hexagon_insert_operand (char *, const hexagon_operand *, offsetT, fixS*);
 void hexagon_common (int);
@@ -346,20 +334,15 @@ size_t hexagon_packet_length (const hexagon_packet *);
 size_t hexagon_packet_count (const hexagon_packet *);
 size_t hexagon_packet_size (const hexagon_packet *);
 size_t hexagon_packet_insns (const hexagon_packet *);
-int hexagon_packet_insert
-  (hexagon_packet *, const hexagon_packet_insn *, const hexagon_packet_insn *,
-   const hexagon_packet_pair *, int);
-int hexagon_packet_cram
-  (hexagon_packet *, hexagon_packet_insn *, const hexagon_packet_insn *,
-   const hexagon_packet_pair *, int);
+int hexagon_packet_insert (hexagon_packet *, const hexagon_packet_insn *, int);
+int hexagon_packet_cram (hexagon_packet *, hexagon_packet_insn *, int);
 size_t hexagon_insert_nops (size_t);
 int hexagon_packet_form (hexagon_packet *, hexagon_queue *);
 void hexagon_queue_init (hexagon_queue *);
-int hexagon_queue_insert (hexagon_queue *, hexagon_packet_insn *, hexagon_packet_insn *);
-int hexagon_prefix_kext (hexagon_packet_insn *, long);
+int hexagon_queue_insert (hexagon_queue *, hexagon_packet_insn *);
+int hexagon_prefix_kext (hexagon_packet_insn **, long);
 char *hexagon_parse_immediate
-  (hexagon_packet_insn *, hexagon_packet_insn *, const hexagon_operand *,
-   char *, long *, char **);
+  (hexagon_packet_insn *, const hexagon_operand *, char *, long *, char **);
 static char *hexagon_parse_suffix (hexagon_suffix_type *, char **);
 int hexagon_gp_const_lookup (char *str, char *);
 segT hexagon_create_sbss_section (const char *, flagword, unsigned int);
@@ -1130,7 +1113,7 @@ hexagon_relax_falign
       /* Pad the packet. */
       while (packet.dpad)
         {
-          if (!(hexagon_packet_insert (&packet, &hexagon_nop_insn, NULL, NULL, FALSE)))
+          if (!(hexagon_packet_insert (&packet, &hexagon_nop_insn, FALSE)))
             packet.dpkt++;
           packet.dpad--;
         }
@@ -1560,25 +1543,50 @@ hexagon_fix_adjustable (fixS *fixP)
     case BFD_RELOC_HEX_GOTREL_LO16:
     case BFD_RELOC_HEX_GOTREL_HI16:
     case BFD_RELOC_32_GOTOFF:
+    case BFD_RELOC_HEX_GOTREL_32_6_X:
+    case BFD_RELOC_HEX_GOTREL_16_X:
+    case BFD_RELOC_HEX_GOTREL_11_X:
     case BFD_RELOC_HEX_GOT_LO16:
     case BFD_RELOC_HEX_GOT_HI16:
     case BFD_RELOC_HEX_GOT_32:
     case BFD_RELOC_HEX_GOT_16:
+    case BFD_RELOC_HEX_GOT_32_6_X:
+    case BFD_RELOC_HEX_GOT_16_X:
+    case BFD_RELOC_HEX_GOT_11_X:
     /* TLS */
+    case BFD_RELOC_HEX_DTPREL_LO16:
+    case BFD_RELOC_HEX_DTPREL_HI16:
+    case BFD_RELOC_HEX_DTPREL_32:
+    case BFD_RELOC_HEX_DTPREL_16:
+    case BFD_RELOC_HEX_DTPREL_32_6_X:
+    case BFD_RELOC_HEX_DTPREL_16_X:
+    case BFD_RELOC_HEX_DTPREL_11_X:
+    case BFD_RELOC_HEX_GD_PLT_B22_PCREL:
     case BFD_RELOC_HEX_GD_GOT_LO16:
     case BFD_RELOC_HEX_GD_GOT_HI16:
     case BFD_RELOC_HEX_GD_GOT_32:
     case BFD_RELOC_HEX_GD_GOT_16:
+    case BFD_RELOC_HEX_GD_GOT_32_6_X:
+    case BFD_RELOC_HEX_GD_GOT_16_X:
+    case BFD_RELOC_HEX_GD_GOT_11_X:
     case BFD_RELOC_HEX_IE_LO16:
     case BFD_RELOC_HEX_IE_HI16:
     case BFD_RELOC_HEX_IE_32:
+    case BFD_RELOC_HEX_IE_32_6_X:
+    case BFD_RELOC_HEX_IE_16_X:
     case BFD_RELOC_HEX_IE_GOT_LO16:
     case BFD_RELOC_HEX_IE_GOT_HI16:
     case BFD_RELOC_HEX_IE_GOT_32:
     case BFD_RELOC_HEX_IE_GOT_16:
+    case BFD_RELOC_HEX_IE_GOT_32_6_X:
+    case BFD_RELOC_HEX_IE_GOT_16_X:
+    case BFD_RELOC_HEX_IE_GOT_11_X:
     case BFD_RELOC_HEX_TPREL_LO16:
     case BFD_RELOC_HEX_TPREL_HI16:
     case BFD_RELOC_HEX_TPREL_32:
+    case BFD_RELOC_HEX_TPREL_32_6_X:
+    case BFD_RELOC_HEX_TPREL_16_X:
+    case BFD_RELOC_HEX_TPREL_11_X:
       return FALSE;
 
     default:
@@ -1695,18 +1703,18 @@ hexagon_insert_operand
 */
 int
 hexagon_prefix_kext
-(hexagon_packet_insn *kext, long xvalue)
+(hexagon_packet_insn **kext, long xvalue)
 {
   const hexagon_operand *operand;
   char *syntax;
   long mask;
 
-  if (!kext)
-    return FALSE;
+  if (!*kext)
+    *kext = xmalloc (sizeof (**kext));
 
-  *kext = hexagon_kext_insn;
+  **kext = hexagon_kext_insn;
 
-  for (syntax = kext->opcode->syntax;
+  for (syntax = (*kext)->opcode->syntax;
        *syntax;
        syntax++)
     if (ISSPACE (*syntax))
@@ -1728,9 +1736,9 @@ hexagon_prefix_kext
   mask = ~(~0L << (operand->bits + operand->shift_count));
   xvalue &= mask? mask: ~0L;
   if (hexagon_encode_operand
-        (operand, &kext->insn, kext->opcode, xvalue, NULL, FALSE, FALSE, NULL))
+        (operand, &(*kext)->insn, (*kext)->opcode, xvalue, NULL, FALSE, FALSE, NULL))
     {
-      kext->used = TRUE;
+      (*kext)->used = TRUE;
       return TRUE;
     }
 
@@ -1739,7 +1747,7 @@ hexagon_prefix_kext
 
 char *
 hexagon_parse_immediate
-(hexagon_packet_insn *insn, hexagon_packet_insn *prefix, const hexagon_operand *operand,
+(hexagon_packet_insn *ainsn, const hexagon_operand *operand,
  char *str, long *val, char **errmsg)
 {
   char *hold;
@@ -1753,9 +1761,9 @@ hexagon_parse_immediate
   char *suffix_line;
   hexagon_suffix_type suffix_type;
 
-  is_may_x = (((insn->opcode->attributes & EXTENDABLE_LOWER_CASE_IMMEDIATE)
+  is_may_x = (((ainsn->opcode->attributes & EXTENDABLE_LOWER_CASE_IMMEDIATE)
                && ISLOWER (operand->enc_letter))
-              || ((insn->opcode->attributes & EXTENDABLE_UPPER_CASE_IMMEDIATE)
+              || ((ainsn->opcode->attributes & EXTENDABLE_UPPER_CASE_IMMEDIATE)
                   && ISUPPER (operand->enc_letter)));
 
   /* We only have the mandatory '#' for immediates that are NOT PC-relative */
@@ -1770,7 +1778,7 @@ hexagon_parse_immediate
         }
       else
         {
-          is_x = (hexagon_extender) && (insn->opcode->attributes & MUST_EXTEND);
+          is_x = (hexagon_extender) && (ainsn->opcode->attributes & MUST_EXTEND);
         }
       is_hash = is_hash && !is_x;
     }
@@ -1780,7 +1788,7 @@ hexagon_parse_immediate
   is_relax = is_may_x && !is_x && !is_hash
              && ENCODE_RELAX (operand->reloc_type);
 
-  if (is_x && !insn->opcode->map)
+  if (is_x && !ainsn->opcode->map)
     {
       /* Check if the operand can truly be extended. */
       if (!is_may_x)
@@ -1885,33 +1893,35 @@ hexagon_parse_immediate
       value = (int32_t) exp.X_add_number;
 
       if (!hexagon_encode_operand
-             (operand, &insn->insn, insn->opcode,
+             (operand, &ainsn->insn, ainsn->opcode,
               value, is_x? &xvalue: NULL, is_x, FALSE, errmsg))
           return NULL;
 
       if (is_x || xvalue)
         {
           /* Emit prefix only if requested or needed. */
-          if (hexagon_prefix_kext (prefix, xvalue))
-            insn->flags |= HEXAGON_INSN_IS_KXED;
+          if (hexagon_prefix_kext (&ainsn->prefix, xvalue))
+            ainsn->flags |= HEXAGON_INSN_IS_KXED;
           else
             return NULL;
         }
     }
   else
     {
-      if (prefix && is_x)
+      if (is_x)
         {
-          assert ((is_x = hexagon_prefix_kext (prefix, 0)));
+	  is_x = hexagon_prefix_kext (&ainsn->prefix, 0);
+          assert (is_x);
 
-          operandx = hexagon_lookup_reloc (operand->reloc_kxer, 0, prefix->opcode);
+          operandx = hexagon_lookup_reloc
+		       (operand->reloc_kxer, 0, ainsn->prefix->opcode);
           if (operandx)
             {
-              prefix->exp                = exp;
-              prefix->operand            = *operandx;
-              prefix->operand.reloc_kxer = operand->reloc_type;
+              ainsn->prefix->exp                = exp;
+              ainsn->prefix->operand            = *operandx;
+              ainsn->prefix->operand.reloc_kxer = operand->reloc_type;
 
-              prefix->fc++;
+              ainsn->prefix->fc++;
             }
           else
             {
@@ -1930,17 +1940,17 @@ hexagon_parse_immediate
 
       /* This expression involves one or more symbols.
          Record a fixup to process later */
-      if (insn->fc >= MAX_FIXUPS)
+      if (ainsn->fc >= MAX_FIXUPS)
         if (errmsg)
           *errmsg = _("expression too complex.");
 
-      insn->flags         |= (is_x? HEXAGON_INSN_IS_KXED: 0)
-                             | (is_relax? HEXAGON_INSN_IS_RELAX: 0);
-      insn->exp            = exp;
-      insn->operand        = *operand;
-      insn->operand.flags |= (is_x? HEXAGON_OPERAND_IS_KXED: 0)
-                             | (is_relax? HEXAGON_OPERAND_IS_RELAX: 0);
-      insn->fc++;
+      ainsn->flags         |= (is_x? HEXAGON_INSN_IS_KXED: 0)
+                              | (is_relax? HEXAGON_INSN_IS_RELAX: 0);
+      ainsn->exp            = exp;
+      ainsn->operand        = *operand;
+      ainsn->operand.flags |= (is_x? HEXAGON_OPERAND_IS_KXED: 0)
+                              | (is_relax? HEXAGON_OPERAND_IS_RELAX: 0);
+      ainsn->fc++;
     }
 
   /* Return the value before extension, if any, so that aliased insns
@@ -2390,55 +2400,44 @@ hexagon_is_nop_keep
 */
 int
 hexagon_packet_insert
-(hexagon_packet *packet,
- const hexagon_packet_insn *insn, const hexagon_packet_insn *prefix,
- const hexagon_packet_pair *pair, int pad)
+(hexagon_packet *apacket, const hexagon_packet_insn *ainsn, int pad)
 {
-  int prefixed = !pad && (insn->flags & HEXAGON_INSN_IS_KXED)
-                 && prefix && (prefix->opcode->attributes & A_IT_EXTENDER)
+  int prefixed = !pad
+		 && (ainsn->flags & HEXAGON_INSN_IS_KXED)
+                 && ainsn->prefix
+                 && (ainsn->prefix->opcode->attributes & A_IT_EXTENDER)
                  ? 1: 0;
-  int duplex   = (insn->opcode->flags & HEXAGON_CODE_IS_DUPLEX)? 1: 0;
-  int relax    = (insn->flags & HEXAGON_INSN_IS_RELAX)? 1: 0;
-  int size     = pad? hexagon_packet_count (packet): hexagon_packet_slots (packet);
-  int length   = pad? hexagon_packet_count (packet): hexagon_packet_length (packet);
+  int duplex   = (ainsn->opcode->flags & HEXAGON_CODE_IS_DUPLEX)? 1: 0;
+  int relax    = (ainsn->flags & HEXAGON_INSN_IS_RELAX)? 1: 0;
+  int size     = pad? hexagon_packet_count (apacket): hexagon_packet_slots (apacket);
+  int length   = pad? hexagon_packet_count (apacket): hexagon_packet_length (apacket);
 
-  if (duplex && packet->duplex)
+  if (duplex && apacket->duplex)
     /* Limit duplex insns to one per packet. */
     return FALSE;
 
   if ((size + duplex + relax < MAX_PACKET_INSNS)
       && (length + prefixed + relax < MAX_PACKET_INSNS))
     {
-      packet->insns [hexagon_packet_count (packet)] = *insn;
-      packet->insns [hexagon_packet_count (packet)].pad = pad;
+      apacket->insns [hexagon_packet_count (apacket)] = *ainsn;
+      apacket->insns [hexagon_packet_count (apacket)].pad = pad;
 
       if (prefixed)
         {
-          packet->insns [hexagon_packet_count (packet)].flags |= HEXAGON_INSN_IS_KXED;
+          apacket->insns [hexagon_packet_count (apacket)].prefix->pad    = pad;
+          apacket->insns [hexagon_packet_count (apacket)].prefix->lineno = ainsn->lineno;
 
-          packet->prefixes [hexagon_packet_count (packet)] = *prefix;
-          packet->prefixes [hexagon_packet_count (packet)].pad = pad;
-          packet->prefixes [hexagon_packet_count (packet)].lineno
-            = packet->insns [hexagon_packet_count (packet)].lineno;
-
-          packet->prefix++;
+          apacket->prefix++;
         }
 
-      if (pair)
-        {
-          packet->pairs [hexagon_packet_count (packet)].left  = pair->left;
-          packet->pairs [hexagon_packet_count (packet)].right = pair->right;
-        }
+      apacket->lineno = MAX (ainsn->lineno, apacket->lineno);
 
-      packet->lineno = insn->lineno > packet->lineno
-                       ? insn->lineno: packet->lineno;
+      apacket->is_inner |= ainsn->is_inner;
+      apacket->is_outer |= ainsn->is_outer;
 
-      packet->is_inner |= insn->is_inner;
-      packet->is_outer |= insn->is_outer;
-
-      packet->duplex += duplex;
-      packet->relax  += relax;
-      packet->size++;
+      apacket->duplex += duplex;
+      apacket->relax  += relax;
+      apacket->size++;
       return TRUE;
     }
 
@@ -2455,16 +2454,14 @@ hexagon_packet_insert
 */
 int
 hexagon_packet_cram
-(hexagon_packet *apacket,
- hexagon_packet_insn *ainsn, const hexagon_packet_insn *aprefix,
- const hexagon_packet_pair *pair, int pad)
+(hexagon_packet *apacket, hexagon_packet_insn *ainsn, int pad)
 {
   hexagon_packet packet;
   hexagon_packet_insn insn;
   size_t i;
 
   /* Try to insert insn. */
-  if (hexagon_packet_insert (apacket, ainsn, aprefix, pair, pad))
+  if (hexagon_packet_insert (apacket, ainsn, pad))
     return TRUE;
   else
     {
@@ -2479,7 +2476,7 @@ hexagon_packet_cram
           insn.operand.flags &= ~HEXAGON_OPERAND_IS_RELAX;
 
           /* Try again. */
-          if (hexagon_packet_insert (apacket, &insn, aprefix, pair, pad))
+          if (hexagon_packet_insert (apacket, &insn, pad))
             {
               *ainsn = insn;
               return TRUE;
@@ -2495,19 +2492,19 @@ hexagon_packet_cram
             if (!(packet.insns [i - 1].flags & HEXAGON_INSN_IS_PAIR)
                 && packet.insns [i - 1].flags & HEXAGON_INSN_IS_RELAX)
               {
-                    packet.insns [i - 1].relax          = HEXAGON_RELAX_NONE;
-                    packet.insns [i - 1].flags         &= ~HEXAGON_INSN_IS_RELAX;
-                    packet.insns [i - 1].operand.flags &= ~HEXAGON_OPERAND_IS_RELAX;
+		packet.insns [i - 1].relax          = HEXAGON_RELAX_NONE;
+		packet.insns [i - 1].flags         &= ~HEXAGON_INSN_IS_RELAX;
+		packet.insns [i - 1].operand.flags &= ~HEXAGON_OPERAND_IS_RELAX;
 
-                    packet.relax--;
+		packet.relax--;
 
-                    /* Try again. */
-                    if (hexagon_packet_insert (&packet, &insn, aprefix, pair, pad))
-                      {
-                        *apacket = packet;
-                        return TRUE;
-                      }
-                  }
+		/* Try again. */
+		if (hexagon_packet_insert (&packet, &insn, pad))
+		  {
+		    *apacket = packet;
+		    return TRUE;
+		  }
+	      }
           }
 
       /* Remove branch relaxation. */
@@ -2516,7 +2513,7 @@ hexagon_packet_cram
       insn.operand.flags &= ~HEXAGON_OPERAND_IS_RELAX;
 
       /* Try again. */
-      if (hexagon_packet_insert (apacket, &insn, aprefix, pair, pad))
+      if (hexagon_packet_insert (apacket, &insn, pad))
         {
           *ainsn = insn;
           return TRUE;
@@ -2536,7 +2533,7 @@ hexagon_packet_cram
                 packet.relax--;
 
                 /* Try again. */
-              if (hexagon_packet_insert (&packet, &insn, aprefix, pair, pad))
+              if (hexagon_packet_insert (&packet, &insn, pad))
                 {
                   *apacket = packet;
                   return TRUE;
@@ -2561,14 +2558,7 @@ hexagon_packet_init
   memset (apacket, 0, sizeof (*apacket));
 
   for (i = 0; i < MAX_PACKET_INSNS; i++)
-    {
-      hexagon_insn_init (&apacket->insns [i]);
-      hexagon_insn_init (&apacket->prefixes [i]);
-      hexagon_insn_init (&apacket->pairs [i].left.insn);
-      hexagon_insn_init (&apacket->pairs [i].left.prefix);
-      hexagon_insn_init (&apacket->pairs [i].right.insn);
-      hexagon_insn_init (&apacket->pairs [i].right.prefix);
-    }
+    hexagon_insn_init (&apacket->insns [i]);
 }
 
 /** Move prefixes to the side-lines.
@@ -2601,8 +2591,8 @@ hexagon_packet_unfold
       if (apacket->insns [i].opcode->attributes & A_IT_EXTENDER)
         {
           if (apacket->insns [i].fc && apacket->insns [i].fix)
-            apacket->insns [i].fix->fx_offset -= apacket->insns [i].fix->fx_pcrel
-                                                 ? i * HEXAGON_INSN_LEN: 0;
+            apacket->insns [i].fix->fx_offset
+	      -= apacket->insns [i].fix->fx_pcrel? i * HEXAGON_INSN_LEN: 0;
 
           prefix = apacket->insns [i];
           continue;
@@ -2618,16 +2608,19 @@ hexagon_packet_unfold
             }
 
           /* Insert the prefix. */
-          packet.prefixes [packet.size] = prefix;
+          apacket->insns [i].prefix
+            = xmalloc (sizeof (*packet.insns [packet.size].prefix));
+	  *apacket->insns [i].prefix = prefix;
+
           packet.prefix++;
         }
 
       if (apacket->insns [i].fc && apacket->insns [i].fix)
         {
           apacket->insns [i].fix->fx_where   = packet.size * HEXAGON_INSN_LEN;
-          apacket->insns [i].fix->fx_offset += apacket->insns [i].fix->fx_pcrel
-                                               ? (packet.size - i) * HEXAGON_INSN_LEN
-                                               : 0;
+          apacket->insns [i].fix->fx_offset
+	    += apacket->insns [i].fix->fx_pcrel
+	       ? (packet.size - i) * HEXAGON_INSN_LEN: 0;
         }
 
       /* Insert the insn. */
@@ -2639,7 +2632,6 @@ hexagon_packet_unfold
 
   /* Copy new insn array and new prefix array. */
   memcpy (apacket->insns,    packet.insns,    sizeof (apacket->insns));
-  memcpy (apacket->prefixes, packet.prefixes, sizeof (apacket->prefixes));
 
   /* Update housekeeping. */
   apacket->size   = packet.size;
@@ -2679,17 +2671,17 @@ hexagon_packet_fold
 
       if (apacket->insns [i].flags & HEXAGON_INSN_IS_KXED)
         {
-          if (apacket->prefixes [i].fc && apacket->prefixes [i].fix)
+          if (apacket->insns [i].prefix->fc && apacket->insns [i].prefix->fix)
             {
-              apacket->prefixes [i].fix->fx_where
+              apacket->insns [i].prefix->fix->fx_where
                 = packet.size * HEXAGON_INSN_LEN;
-              apacket->prefixes [i].fix->fx_offset
-                += apacket->prefixes [i].fix->fx_pcrel
+              apacket->insns [i].prefix->fix->fx_offset
+                += apacket->insns [i].prefix->fix->fx_pcrel
                    ? (packet.size - i) * HEXAGON_INSN_LEN: 0;
             }
 
           /* Insert the prefix. */
-          packet.insns [packet.size++] = apacket->prefixes [i];
+          packet.insns [packet.size++] = *apacket->insns [i].prefix;
           /* Sanity check. */
           assert (packet.size < MAX_PACKET_INSNS);
           packet.prefix++;
@@ -2697,10 +2689,11 @@ hexagon_packet_fold
 
       if (apacket->insns [i].fc && apacket->insns [i].fix)
         {
-          apacket->insns [i].fix->fx_where   = packet.size * HEXAGON_INSN_LEN;
-          apacket->insns [i].fix->fx_offset += apacket->insns [i].fix->fx_pcrel
-                                               ? (packet.size - i) * HEXAGON_INSN_LEN
-                                               : 0;
+          apacket->insns [i].fix->fx_where
+	    = packet.size * HEXAGON_INSN_LEN;
+          apacket->insns [i].fix->fx_offset
+	    += apacket->insns [i].fix->fx_pcrel
+	       ? (packet.size - i) * HEXAGON_INSN_LEN: 0;
         }
 
       /* Insert the insn. */
@@ -2711,7 +2704,6 @@ hexagon_packet_fold
 
   /* Copy new insn array and clear the prefix array. */
   memcpy (apacket->insns,    packet.insns,    sizeof (apacket->insns));
-  memcpy (apacket->prefixes, packet.prefixes, sizeof (apacket->prefixes));
 
   /* Update housekeeping. */
   apacket->size   = packet.size;
@@ -2746,10 +2738,11 @@ hexagon_packet_unpad
 
       if (apacket->insns [i].fc && apacket->insns [i].fix)
         {
-          apacket->insns [i].fix->fx_where   = packet.size * HEXAGON_INSN_LEN;
-          apacket->insns [i].fix->fx_offset += apacket->insns [i].fix->fx_pcrel
-                                               ? (packet.size - i) * HEXAGON_INSN_LEN
-                                               : 0;
+          apacket->insns [i].fix->fx_where
+	    = packet.size * HEXAGON_INSN_LEN;
+          apacket->insns [i].fix->fx_offset
+	    += apacket->insns [i].fix->fx_pcrel
+	       ? (packet.size - i) * HEXAGON_INSN_LEN: 0;
         }
 
       /* Insert the insn. */
@@ -2758,8 +2751,8 @@ hexagon_packet_unpad
       assert (packet.size <= MAX_PACKET_INSNS);
     }
 
-  /* Copy new insn array and clear the prefix array. */
-  memcpy (apacket->insns,    packet.insns,    sizeof (apacket->insns));
+  /* Copy new insn array. */
+  memcpy (apacket->insns, packet.insns, sizeof (apacket->insns));
 
   /* Update housekeeping. */
   apacket->size = packet.size;
@@ -2891,8 +2884,7 @@ int
 hexagon_packet_form
 (hexagon_packet *apacket, hexagon_queue *aqueue)
 {
-  hexagon_packet_insn insn, prefix;
-  hexagon_packet_pair both;
+  hexagon_packet_insn insn, left, right;
   hexagon_packet packet [2]; /* As many packets as restrictions. */
   hexagon_queue queue;
   size_t i, j, k;
@@ -2921,8 +2913,7 @@ hexagon_packet_form
                 /* Skip an already used insn. */
                 continue;
 
-              both.left.insn   = queue.insns [j];
-              both.left.prefix = queue.prefixes [j];
+              left = queue.insns [j];
 
               for (i = j + 1; i < queue.size; i++)
                 {
@@ -2934,12 +2925,21 @@ hexagon_packet_form
                       || (queue.insns [i].opcode->flags & restrictions [k].in))
                     continue;
 
-                  both.right.insn   = queue.insns [i];
-                  both.right.prefix = queue.prefixes [i];
+                  right = queue.insns [i];
 
-                  if (hexagon_assemble_pair (&both, &insn, &prefix)
+		  hexagon_insn_init (&insn);
+		  insn.left  = &left;
+		  insn.right = &right;
+                  if (hexagon_assemble_pair (&insn)
                       && !(insn.opcode->flags & restrictions [k].out))
                     {
+		      /* Create actual copies of the original pair of insns. */
+		      insn.left  = xmalloc (sizeof (*insn.left));
+		      insn.right = xmalloc (sizeof (*insn.right));
+
+		      *insn.left  = left;
+		      *insn.right = right;
+
                       /* Keep source order of certain insns. */
                       if ((queue.insns [i].opcode->flags & HEXAGON_CODE_IS_BRANCH)
                           || (queue.insns [i].opcode->flags & HEXAGON_CODE_IS_STORE))
@@ -2957,10 +2957,7 @@ hexagon_packet_form
                           insn.pad  = FALSE;
 
                           /* Replace insn with pair. */
-                          queue.insns [m]    = insn;
-                          queue.prefixes [m] = prefix;
-                          queue.pairs [m]    = both;
-
+                          queue.insns [m] = insn;
                           break;
                         }
                       else
@@ -2984,10 +2981,7 @@ hexagon_packet_form
                 /* Skip an insn alredy inserted into the packet. */
                 continue;
 
-              if (!hexagon_packet_cram
-		     (packet + k,
-		      queue.insns + i, queue.prefixes + i, queue.pairs + i,
-		      FALSE))
+              if (!hexagon_packet_cram (packet + k, queue.insns + i, FALSE))
                 {
                   hexagon_packet_init (packet + k);
                   ok = FALSE;
@@ -3019,10 +3013,7 @@ hexagon_packet_form
             /* Skip an insn alredy inserted into the packet. */
             continue;
 
-          if (!hexagon_packet_cram
-		 (apacket,
-		  queue.insns + i, queue.prefixes + i, queue.pairs + i,
-		  FALSE))
+          if (!hexagon_packet_cram (apacket, queue.insns + i, FALSE))
             {
               ok = FALSE;
               break;
@@ -3066,13 +3057,12 @@ hexagon_queue_init
 */
 int
 hexagon_queue_insert
-(hexagon_queue *aqueue, hexagon_packet_insn *ainsn, hexagon_packet_insn *aprefix)
+(hexagon_queue *aqueue, hexagon_packet_insn *ainsn)
 {
   if (aqueue->size < MAX_INSNS
       && !ainsn->pad)
     {
-      aqueue->insns    [aqueue->size] = *ainsn;
-      aqueue->prefixes [aqueue->size] = *aprefix;
+      aqueue->insns [aqueue->size] = *ainsn;
 
       aqueue->faligned  = hexagon_faligning;
       aqueue->is_inner |= ainsn->is_inner;
@@ -3508,9 +3498,11 @@ md_assemble
   hexagon_insn_init (&insn);
   hexagon_insn_init (&prefix);
 
-  if (hexagon_assemble (&insn, &prefix, str, FALSE))
+  insn.prefix = &prefix;
+
+  if (hexagon_assemble (&insn, str, FALSE))
     {
-      if (!hexagon_queue_insert (&hexagon_aqueue, &insn, &prefix))
+      if (!hexagon_queue_insert (&hexagon_aqueue, &insn))
         {
           int in_packet = hexagon_in_packet;
 
@@ -3523,7 +3515,7 @@ md_assemble
             as_bad (_("too many instructions in packet."));
 
           hexagon_in_packet = in_packet;
-          hexagon_queue_insert (&hexagon_aqueue, &insn, &prefix);
+          hexagon_queue_insert (&hexagon_aqueue, &insn);
         }
 
       if (!hexagon_in_packet
@@ -3539,7 +3531,7 @@ md_assemble
 */
 int
 hexagon_assemble
-(hexagon_packet_insn *ainsn, hexagon_packet_insn *aprefix, char *str, int pair)
+(hexagon_packet_insn *ainsn, char *str, int pair)
 {
   const hexagon_opcode *opcode;
   char *start, *syn;
@@ -3560,8 +3552,9 @@ hexagon_assemble
     str++;
 
   /* Special handling of GP-related syntax:
-     - Rd32 = CONST32(#imm) or Rd32 = CONST32(label)
-     - Rdd32 = CONST64(#imm) or Rdd32 = CONST64(label) */
+     - Rd32 = CONST32 (#imm) or Rd32 = CONST32 (label)
+     - Rdd32 = CONST64 (#imm) or Rdd32 = CONST64 (label)
+       or Rdd32 = CONST64 (#imm, #imm) */
   mapped = alloca (strlen (str) + HEXAGON_MAPPED_LEN);
   if (hexagon_gp_const_lookup (str, mapped))
     str = mapped;
@@ -3573,21 +3566,17 @@ hexagon_assemble
        opcode;
        opcode = HEXAGON_CODE_NEXT_ASM (opcode))
     {
-      if (ainsn->source)
-        {
-          free (ainsn->source);
-          ainsn->source = NULL;
-        }
+      free (ainsn->source);
+      ainsn->source = NULL;
 
       /* Is this opcode supported by the selected cpu?  */
       if (!hexagon_opcode_supported (opcode))
 	continue;
 
       /* Initialize the tentative insn. */
-      hexagon_insn_init (aprefix);
       hexagon_insn_init (ainsn);
       ainsn->opcode = opcode;
-      ainsn->source = strdup (start);
+      ainsn->source = xstrdup (start);
       /* Yank the packet termination out. */
       if ((str = strchr (ainsn->source, PACKET_END)))
         *str = 0;
@@ -3617,7 +3606,7 @@ hexagon_assemble
 		  else if (operand->flags & HEXAGON_OPERAND_IS_IMMEDIATE)
 		    {
 		      str = hexagon_parse_immediate
-			      (ainsn, aprefix, operand, op_str, &op_val,
+			      (ainsn, operand, op_str, &op_val,
                                !pair? &errmsg: NULL);
 		      if (!str)
 			goto NEXT_OPCODE;
@@ -3730,7 +3719,7 @@ hexagon_assemble
               /* Concatenate the rest of the original insn
                  before assembling the remapped insn. */
               strncat (mapped, str, l - strlen (mapped) - 1);
-              return (hexagon_assemble (ainsn, aprefix, mapped, pair));
+              return (hexagon_assemble (ainsn, mapped, pair));
             }
 
           as_where (&file, &lineno);
@@ -3828,69 +3817,82 @@ hexagon_assemble
 
 int
 hexagon_assemble_pair
-(hexagon_packet_pair *apair, hexagon_packet_insn *ainsn, hexagon_packet_insn *aprefix)
+(hexagon_packet_insn *ainsn)
 {
-  char *pair, *unpair;
-  int is_duplex, are_stores;
+  hexagon_packet_insn insn;
+  char *ltor, *rtol;
+  int are_stores;
   size_t l;
 
-  /* Do nothing if pairing disabled. */
+  /* Do nothing if pairing is disabled. */
   if (!hexagon_pairing)
     return FALSE;
 
   /* Skip certain insns. */
   if (/* Packed or duplex insns. */
-      ((apair->left.insn.opcode->attributes & PACKED)
-        || (apair->left.insn.opcode->flags & HEXAGON_CODE_IS_DUPLEX)
-        || (apair->right.insn.opcode->attributes & PACKED)
-        || (apair->right.insn.opcode->flags & HEXAGON_CODE_IS_DUPLEX))
+      ((ainsn->left->opcode->attributes & PACKED)
+        || (ainsn->left->opcode->flags & HEXAGON_CODE_IS_DUPLEX)
+        || (ainsn->right->opcode->attributes & PACKED)
+        || (ainsn->right->opcode->flags & HEXAGON_CODE_IS_DUPLEX))
       /* Prefix insns. */
-      || ((apair->left.insn.opcode->flags & HEXAGON_CODE_IS_PREFIX)
-          || (apair->right.insn.opcode->flags & HEXAGON_CODE_IS_PREFIX))
+      || ((ainsn->left->opcode->flags & HEXAGON_CODE_IS_PREFIX)
+          || (ainsn->right->opcode->flags & HEXAGON_CODE_IS_PREFIX))
       /* Both extended insns. */
-      || ((apair->left.insn.flags & HEXAGON_INSN_IS_KXED)
-          && (apair->right.insn.flags & HEXAGON_INSN_IS_KXED))
+      || ((ainsn->left->flags & HEXAGON_INSN_IS_KXED)
+          && (ainsn->right->flags & HEXAGON_INSN_IS_KXED))
       /* Both insns have symbolic references. */
-      || (apair->left.insn.fc && apair->right.insn.fc)
+      || (ainsn->left->fc && ainsn->right->fc)
       /* Selectively, direct branch insns. */
       || (!hexagon_pairing_branch
-          && ((apair->left.insn.opcode->flags & HEXAGON_CODE_IS_BRANCH)
-              || (apair->right.insn.opcode->flags & HEXAGON_CODE_IS_BRANCH)))
+          && ((ainsn->left->opcode->flags & HEXAGON_CODE_IS_BRANCH)
+              || (ainsn->right->opcode->flags & HEXAGON_CODE_IS_BRANCH)))
       /* Selectively, multiple memory operations. */
       || (hexagon_no_dual_memory
-          && (apair->left.insn.opcode->flags & HEXAGON_CODE_IS_MEMORY)
-          && (apair->right.insn.opcode->flags & HEXAGON_CODE_IS_MEMORY)))
+          && (ainsn->left->opcode->flags & HEXAGON_CODE_IS_MEMORY)
+          && (ainsn->right->opcode->flags & HEXAGON_CODE_IS_MEMORY)))
     return FALSE;
 
   /* Memory operations must be paired in source order. */
-  are_stores = (apair->left.insn.opcode->flags & HEXAGON_CODE_IS_STORE)
-                && (apair->right.insn.opcode->flags & HEXAGON_CODE_IS_STORE);
+  are_stores = (ainsn->left->opcode->flags & HEXAGON_CODE_IS_STORE)
+                && (ainsn->right->opcode->flags & HEXAGON_CODE_IS_STORE);
 
   /* Create a pair and its mirror. */
-  l = strlen (apair->left.insn.source) + strlen (apair->right.insn.source)
+  l = strlen (ainsn->left->source) + strlen (ainsn->right->source)
       + sizeof (PACKET_PAIR) + 1;
-  pair = alloca (l);
-  unpair = alloca (l);
+  ltor = alloca (l);
+  rtol = alloca (l);
 
-  snprintf (pair, l, "%s%c%s",
-            apair->left.insn.source, PACKET_PAIR, apair->right.insn.source);
-  snprintf (unpair, l, "%s%c%s",
-            apair->right.insn.source, PACKET_PAIR, apair->left.insn.source);
+  snprintf (ltor, l, "%s%c%s",
+            ainsn->left->source, PACKET_PAIR, ainsn->right->source);
+  snprintf (rtol, l, "%s%c%s",
+            ainsn->right->source, PACKET_PAIR, ainsn->left->source);
 
-  if (hexagon_assemble (ainsn, aprefix, pair, TRUE)
-      || (!are_stores && hexagon_assemble (ainsn, aprefix, unpair, TRUE)))
+  hexagon_insn_init (&insn);
+  if (hexagon_assemble (&insn, ltor, TRUE)
+      || (!are_stores && hexagon_assemble (&insn, rtol, TRUE)))
     {
-      is_duplex = (ainsn->opcode->flags & HEXAGON_CODE_IS_DUPLEX)? 1: 0;
-
       /* Abandon if the result is an unwanted duplex. */
-      if (!hexagon_pairing_duplex && is_duplex)
+      if (!hexagon_pairing_duplex
+	  && (insn.opcode->flags & HEXAGON_CODE_IS_DUPLEX))
         return FALSE;
 
-      ainsn->used   = FALSE;
-      ainsn->pad    = FALSE;
-      ainsn->lineno = apair->left.insn.lineno;
-      ainsn->flags |= HEXAGON_INSN_IS_PAIR;
+      insn.used   = FALSE;
+      insn.pad    = FALSE;
+      insn.lineno = MAX (ainsn->left->lineno, ainsn->right->lineno);
+      insn.flags |= HEXAGON_INSN_IS_PAIR;
 
+      if (!strcmp (insn.source, ltor))
+	{
+	  insn.left  = ainsn->left;
+	  insn.right = ainsn->right;
+	}
+      else
+	{
+	  insn.left  = ainsn->right;
+	  insn.right = ainsn->left;
+	}
+
+      *ainsn = insn;
       return TRUE;
     }
 
@@ -4215,7 +4217,7 @@ md_operand
 
 symbolS *
 md_undefined_symbol
-(char *name ATTRIBUTE_UNUSED)
+(char *name)
 {
   if (name [0] == GLOBAL_OFFSET_TABLE_NAME [0]
       && name [1] == GLOBAL_OFFSET_TABLE_NAME [1]
@@ -4276,7 +4278,8 @@ static enum bfd_reloc_code_real got_reloc = NO_RELOC;
 
 bfd_reloc_code_real_type
 hexagon_got_frag
-(fragS *frag ATTRIBUTE_UNUSED, int where ATTRIBUTE_UNUSED, int nbytes, expressionS *exp)
+(fragS *frag ATTRIBUTE_UNUSED, int where ATTRIBUTE_UNUSED,
+ int nbytes, expressionS *exp)
 {
   bfd_reloc_code_real_type r_type = NO_RELOC;
 
@@ -4728,7 +4731,7 @@ void
 hexagon_shuffle_packet
 (hexagon_packet *packet, size_t *fromto)
 {
-  hexagon_packet_insn insns [MAX_PACKET_INSNS], prefixes [MAX_PACKET_INSNS];
+  hexagon_packet_insn insns [MAX_PACKET_INSNS];
   size_t from, ndx;
   size_t i;
 
@@ -4740,22 +4743,21 @@ hexagon_shuffle_packet
 
       /* Shuffle insns, prefixes, fix-ups... */
       insns [i]    = packet->insns    [from];
-      prefixes [i] = packet->prefixes [from];
 
       /* Fix up fix ups. */
       if (insns [i].fc && insns [i].fix)
         {
           insns [i].fix->fx_where   = i * HEXAGON_INSN_LEN;
           insns [i].fix->fx_offset += insns [i].fix->fx_pcrel
-                                      ? (i - from) * HEXAGON_INSN_LEN
-                                      : 0;
+                                      ? (i - from) * HEXAGON_INSN_LEN: 0;
         }
-      if (prefixes [i].fc && prefixes [i].fix)
+
+      if (insns [i].prefix && insns [i].prefix->fc && insns [i].prefix->fix)
         {
-          prefixes [i].fix->fx_where   = i * HEXAGON_INSN_LEN;
-          prefixes [i].fix->fx_offset += prefixes [i].fix->fx_pcrel
-                                         ? (i - from) * HEXAGON_INSN_LEN
-                                         : 0;
+          insns [i].prefix->fix->fx_where
+	    = i * HEXAGON_INSN_LEN;
+          insns [i].prefix->fix->fx_offset
+	    += insns [i].prefix->fix->fx_pcrel? (i - from) * HEXAGON_INSN_LEN: 0;
         }
 
       insns [i].ndx = ndx;
@@ -4763,7 +4765,6 @@ hexagon_shuffle_packet
     }
 
   memcpy (packet->insns,    insns,    sizeof (packet->insns));
-  memcpy (packet->prefixes, prefixes, sizeof (packet->prefixes));
 }
 
 /** Shuffle a packet according to architectural restrictions.
@@ -4900,7 +4901,7 @@ hexagon_shuffle_prepare
     fromto [i] = MAX_PACKET_INSNS;
 
   /* Pad packet with NOPs. */
-  while (hexagon_packet_insert (apacket, &hexagon_nop_insn, NULL, NULL, TRUE))
+  while (hexagon_packet_insert (apacket, &hexagon_nop_insn, TRUE))
     ;
 
   /* Reorder the instructions in the packet so that they start with
@@ -5368,8 +5369,8 @@ hexagon_packet_check
       if ((ainsn->opcode->attributes & A_RESTRICT_NOSRMOVE))
         numOfOvf = TRUE;
 
-      if ((ainsn->opcode->flags & HEXAGON_CODE_IS_DUPLEX))
-        binsn = &apacket->pairs [i].left.insn;
+      if ((ainsn->flags & HEXAGON_INSN_IS_PAIR))
+        binsn = apacket->insns [i].left;
       else
         binsn = ainsn;
 
@@ -5555,9 +5556,9 @@ hexagon_packet_check
             }
 
           /* If a pair, move to the righthand insn. */
-          if ((ainsn->opcode->flags & HEXAGON_CODE_IS_DUPLEX)
-              && binsn != &apacket->pairs [i].right.insn)
-            binsn = &apacket->pairs [i].right.insn;
+          if ((ainsn->flags & HEXAGON_INSN_IS_PAIR)
+              && binsn != apacket->insns [i].right)
+            binsn = apacket->insns [i].right;
           else
             break;
         }
