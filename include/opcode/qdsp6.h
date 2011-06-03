@@ -233,6 +233,8 @@ typedef struct _qdsp6_opcode
 #define A_RESTRICT_NOSLOT1_STORE        0x08000000
 #define MUST_EXTEND                     0x10000000
 #define A_MUST_EXTEND                   MUST_EXTEND
+#define A_IT_HWLOOP			0x20000000
+#define A_RESTRICT_NOLOOPSETUP		0x40000000
   /* Yet unused */
 #define A_GUEST                         0x00000000
 #define A_NOTE_GUEST                    0x00000000
@@ -302,6 +304,11 @@ typedef struct _qdsp6_opcode
 #define A_EXCEPTION_SWI                 0x00000000
 #define A_NOTE_NEWVAL_SLOT0             0x00000000
 #define A_DOTNEWVALUE                   0x00000000
+#define A_RESTRICT_SLOT1_AOK            0x00000000
+#define A_NOTE_SLOT1_AOK                0x00000000
+#define A_NOTE_DEALLOCRET		0x00000000
+#define A_NOTE_NVSLOT0			0x00000000
+#define A_NOTE_DEPRECATED		0x00000000
 
   /* If this opcode is mapped, then the function that performs the mapping */
   void *map;

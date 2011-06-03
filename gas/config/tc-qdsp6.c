@@ -611,7 +611,8 @@ static int numOfOvf; /* SR:OVR */
 static int numOfBranchAddr, numOfBranchAddrMax1, numOfBranchAddrRelax;
 static int numOfBranchRelax, numOfBranchRelax2nd;
 static int numOfBranchMax1, numOfBranchStiff;
-static int numOfLoopMax1;
+static int numOfIBranchDotNew;
+static int numOfLoop, numOfNoLoop;
 
 struct qdsp6_march
   {
@@ -4926,7 +4927,9 @@ qdsp6_packet_check
     numOfBranchMax1  = numOfBranchStiff    = 0;
     numOfBranchRelax = numOfBranchRelax2nd = numOfBranchAddrRelax = 0;
 
-    numOfLoopMax1 = 0;
+    numOfIBranchDotNew = 0;
+
+    numOfLoop = numOfNoLoop = 0;
 
     memset (gArray,     0, sizeof (gArray));
     memset (cArray,     0, sizeof (cArray));
@@ -4984,8 +4987,11 @@ qdsp6_packet_check
                || (ainsn->opcode->attributes & A_RELAX_COF_2ND)))
         numOfBranchAddrRelax++;
 
-      if ((ainsn->opcode->attributes & A_RESTRICT_LOOP_LA))
-        numOfLoopMax1++;
+      if ((ainsn->opcode->attributes & A_IT_HWLOOP))
+        numOfLoop++;
+
+      if ((ainsn->opcode->attributes & A_RESTRICT_NOLOOPSETUP))
+        numOfNoLoop++;
 
       if ((ainsn->opcode->attributes & A_RESTRICT_NOSRMOVE))
         numOfOvf = TRUE;
@@ -5299,6 +5305,13 @@ qdsp6_packet_end
     {
       as_bad_where (NULL, apacket->lineno,
                     _("loop setup and direct branch instructions cannot be in same packet."));
+      return;
+    }
+
+  if (numOfLoop && numOfNoLoop)
+    {
+      as_bad_where (NULL, apacket->lineno,
+                    _("loop setup and some indirect branch instructions cannot be in same packet."));
       return;
     }
 

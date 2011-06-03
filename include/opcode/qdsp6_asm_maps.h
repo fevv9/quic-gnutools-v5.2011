@@ -353,6 +353,17 @@ MAP_FUNCTION(C2_pxfer_map)
 }
 
 /*
+ * Source Tag: L2_loadalignb_zomap
+ * Source Syntax: Ryy32=memb_fifo(Rs32)
+ * Dest Syntax: Ryy32=memb_fifo(Rs32+#0)
+ *
+ */
+MAP_FUNCTION(L2_loadalignb_zomap)
+{
+    sprintf(DEST,"R%d:%d=memb_fifo(R%d+#0)",GET_OP_VAL(0)+1,GET_OP_VAL(0),GET_OP_VAL(1));
+}
+
+/*
  * Source Tag: L2_loadalignh_zomap
  * Source Syntax: Ryy32=memh_fifo(Rs32)
  * Dest Syntax: Ryy32=memh_fifo(Rs32+#0)
