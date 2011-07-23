@@ -205,6 +205,7 @@ typedef struct _qdsp6_opcode
 #define A_RESTRICT_NOCOF                0x00000040
 #define A_COF                           0x00000080
 #define A_RESTRICT_BRANCHADDER_MAX1     0x00000100
+#define A_NOTE_BRANCHADDER_MAX1		A_RESTRICT_BRANCHADDER_MAX1
 #define A_BRANCHADDER                   0x00000200
 #define A_RESTRICT_SINGLE_MEM_FIRST     0x00000400
 #define CONDITIONAL_EXEC                0x00000800
