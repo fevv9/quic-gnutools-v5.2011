@@ -115,14 +115,14 @@
 #define QDSP6_INSN_TYPE_X13  (0xd0000000) /** X-type. */
 #define QDSP6_INSN_TYPE_X14  (0xe0000000) /** X-type. */
 #define QDSP6_INSN_TYPE_A15  (0xf0000000) /** A-type. */
-#define QDSP6_INSN_TYPE_MASK(i) ((i) & 0xf0000000) /** Insn type mask. */
-#define QDSP6_INSN_TYPE_A(i) ((QDSP6_INSN_TYPE_MASK (i) == QDSP6_INSN_TYPE_A7) \
-                              || (QDSP6_INSN_TYPE_MASK (i) == QDSP6_INSN_TYPE_A11) \
-                              || (QDSP6_INSN_TYPE_MASK (i) == QDSP6_INSN_TYPE_A15))
-#define QDSP6_INSN_TYPE_X(i) ((QDSP6_INSN_TYPE_MASK (i) == QDSP6_INSN_TYPE_X8) \
-                              || (QDSP6_INSN_TYPE_MASK (i) == QDSP6_INSN_TYPE_X12) \
-                              || (QDSP6_INSN_TYPE_MASK (i) == QDSP6_INSN_TYPE_X13) \
-                              || (QDSP6_INSN_TYPE_MASK (i) == QDSP6_INSN_TYPE_X14))
+#define QDSP6_INSN_TYPE_MASK(I) ((I) & 0xf0000000) /** Insn type mask. */
+#define QDSP6_INSN_TYPE_A(I) ((QDSP6_INSN_TYPE_MASK (I) == QDSP6_INSN_TYPE_A7) \
+                              || (QDSP6_INSN_TYPE_MASK (I) == QDSP6_INSN_TYPE_A11) \
+                              || (QDSP6_INSN_TYPE_MASK (I) == QDSP6_INSN_TYPE_A15))
+#define QDSP6_INSN_TYPE_X(I) ((QDSP6_INSN_TYPE_MASK (I) == QDSP6_INSN_TYPE_X8) \
+                              || (QDSP6_INSN_TYPE_MASK (I) == QDSP6_INSN_TYPE_X12) \
+                              || (QDSP6_INSN_TYPE_MASK (I) == QDSP6_INSN_TYPE_X13) \
+                              || (QDSP6_INSN_TYPE_MASK (I) == QDSP6_INSN_TYPE_X14))
 
 /* Type to denote an QDSP6 instruction (at least a 32 bit unsigned int).  */
 typedef unsigned int qdsp6_insn;
@@ -236,6 +236,8 @@ typedef struct _qdsp6_opcode
 #define A_MUST_EXTEND                   MUST_EXTEND
 #define A_IT_HWLOOP			0x20000000
 #define A_RESTRICT_NOLOOPSETUP		0x40000000
+#define A_RESTRICT_SLOT1_AOK            0x80000000
+#define A_NOTE_SLOT1_AOK                A_RESTRICT_SLOT1_AOK
   /* Yet unused */
 #define A_GUEST                         0x00000000
 #define A_NOTE_GUEST                    0x00000000
@@ -305,8 +307,6 @@ typedef struct _qdsp6_opcode
 #define A_EXCEPTION_SWI                 0x00000000
 #define A_NOTE_NEWVAL_SLOT0             0x00000000
 #define A_DOTNEWVALUE                   0x00000000
-#define A_RESTRICT_SLOT1_AOK            0x00000000
-#define A_NOTE_SLOT1_AOK                0x00000000
 #define A_NOTE_DEALLOCRET		0x00000000
 #define A_NOTE_NVSLOT0			0x00000000
 #define A_NOTE_DEPRECATED		0x00000000

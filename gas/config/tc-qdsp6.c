@@ -346,6 +346,7 @@ int qdsp6_has_rnew (const qdsp6_packet *, qdsp6_packet_insn **);
 int qdsp6_has_mem (const qdsp6_packet *);
 int qdsp6_has_store (const qdsp6_packet *);
 int qdsp6_has_store_not (const qdsp6_packet *);
+int qdsp6_has_a_not (const qdsp6_packet *);
 int qdsp6_has_but_ax (const qdsp6_packet *);
 int qdsp6_has_solo (const qdsp6_packet *);
 addressT qdsp6_frag_fix_addr (void);
@@ -2215,6 +2216,26 @@ qdsp6_has_store_not
   for (i = count = 0; i < apacket->size; i++)
     if (apacket->insns [i].opcode->attributes & A_RESTRICT_NOSLOT1_STORE)
       count++;
+
+  return (count);
+}
+
+/** Check if packet has an A-type insn restriction.
+
+@param packet Packet to examine.
+@return True if so.
+*/
+int
+qdsp6_has_a_not
+(const qdsp6_packet *apacket)
+{
+  size_t i;
+  int count;
+
+  /* Count number of A-type restrictions in this packet. */
+  for (count = i = 0; i < apacket->size; i++)
+    if (apacket->insns [i].opcode->attributes & A_RESTRICT_SLOT1_AOK)
+	count++;
 
   return (count);
 }
@@ -4395,7 +4416,7 @@ qdsp6_shuffle_helper
   size_t ndx, slots, temp_mask, store_mask;
   size_t *fromto, aux [MAX_PACKET_INSNS];
   qdsp6_packet_insn *inew = NULL;
-  int single, prefix, rnew, store, nostore;
+  int single, prefix, rnew, store, nostore, noa;
   int changed;
   size_t i;
 
@@ -4409,6 +4430,7 @@ qdsp6_shuffle_helper
   single  = qdsp6_has_single (packet);
   store   = qdsp6_has_store (packet);
   nostore = qdsp6_has_store_not (packet);
+  noa     = qdsp6_has_a_not (packet);
 
   rnew = qdsp6_has_rnew (packet, &inew);
 
@@ -4446,6 +4468,11 @@ qdsp6_shuffle_helper
           && !(packet->insns [i].opcode->attributes & A_RESTRICT_NOSLOT1_STORE)
           && (packet->insns [i].opcode->attributes & A_STORE))
         temp_mask &= ~QDSP6_SLOTS_STORES;
+
+      /* If there is an A-type restriction, make sure that only it makes into slot #1. */
+      if (noa
+          && !(QDSP6_INSN_TYPE_A (packet->insns [i].insn)))
+        temp_mask &= ~QDSP6_SLOTS_1;
 
       /* Make sure that several stores follow source order. */
       if ((packet->insns [i].opcode->attributes & A_STORE))
