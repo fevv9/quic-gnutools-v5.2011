@@ -221,6 +221,7 @@ typedef struct
 typedef struct _qdsp6_queue
   {
     size_t size;
+    unsigned lineno; /* Line number at closing. */
     qdsp6_packet_insn insns [MAX_INSNS]; /* Insns. */
     qdsp6_packet_insn prefixes [MAX_INSNS]; /* k-extenders insns. */
     qdsp6_packet_pair pairs [MAX_INSNS]; /* Original paired prefix+insn. */
@@ -1370,9 +1371,10 @@ qdsp6_estimate_size_before_relax
                     apacket->drlx++;
                     apacket->insns [i].relax
                       = qdsp6_relax_table [apacket->insns [i].relax].rlx_more;
-                  }
 
-                delta += qdsp6_relax_table [apacket->insns [i].relax].rlx_length;
+		    delta
+		      += qdsp6_relax_table [apacket->insns [i].relax].rlx_length;
+                  }
               }
         }
     }
@@ -2297,14 +2299,14 @@ qdsp6_packet_insert
                  ? 1: 0;
   int duplex   = (insn->opcode->flags & QDSP6_CODE_IS_DUPLEX)? 1: 0;
   int relax    = (insn->flags & QDSP6_INSN_IS_RELAX)? 1: 0;
-  int size     = pad? packet->size: qdsp6_packet_slots (packet);
+  int slots    = pad? packet->size: qdsp6_packet_slots (packet);
   int length   = pad? packet->size: qdsp6_packet_length (packet);
 
   if (duplex && packet->duplex)
     /* Limit duplex insns to one per packet. */
     return FALSE;
 
-  if ((size + duplex + relax < MAX_PACKET_INSNS)
+  if ((slots + duplex < MAX_PACKET_INSNS)
       && (length + prefixed + relax < MAX_PACKET_INSNS))
     {
       packet->insns [packet->size] = *insn;
@@ -2369,7 +2371,8 @@ qdsp6_packet_cram
     {
       insn = *ainsn;
 
-      if (!(insn.flags & QDSP6_INSN_IS_PAIR))
+      if (!(insn.flags & QDSP6_INSN_IS_PAIR)
+	  && (insn.flags & QDSP6_INSN_IS_RELAX))
         {
           /* Remove branch relaxation if range has not been reduced
              by pairing. */
@@ -2377,12 +2380,9 @@ qdsp6_packet_cram
           insn.flags         &= ~QDSP6_INSN_IS_RELAX;
           insn.operand.flags &= ~QDSP6_OPERAND_IS_RELAX;
 
-              /* Try again. */
+	  /* Try again. */
           if (qdsp6_packet_insert (apacket, &insn, aprefix, pair, pad))
-            {
-              *ainsn = insn;
-              return TRUE;
-            }
+	    return TRUE;
         }
 
       if (apacket->relax)
@@ -2416,10 +2416,7 @@ qdsp6_packet_cram
 
       /* Try again. */
       if (qdsp6_packet_insert (apacket, &insn, aprefix, pair, pad))
-        {
-          *ainsn = insn;
-          return TRUE;
-        }
+	return TRUE;
 
       if (apacket->relax)
         {
@@ -2765,20 +2762,22 @@ qdsp6_packet_form
   size_t i, j, k;
   int ok;
 
+  qdsp6_packet_init (apacket);
+
   if (qdsp6_pairing)
     {
       static const struct
         {
           unsigned in, out;
         }
-      restrictions [] =
+      restrictions [ARRAY_SIZE (packet)] =
         {
           { 0, QDSP6_CODE_IS_DUPLEX },
           { 0, 0 },
         }; /* As many restrictions as packets. */
 
       /* Form tentative packets according to restrictions. */
-      for (k = 0; k < 2; k++)
+      for (k = 0; k < ARRAY_SIZE (packet); k++)
         {
           queue = *aqueue;
 
@@ -2845,7 +2844,7 @@ qdsp6_packet_form
           packet [k].is_inner = queue.is_inner;
           packet [k].is_outer = queue.is_outer;
 
-          for (ok = TRUE, i = 0; i < queue.size; i++)
+          for (i = 0; i < queue.size; i++)
             {
               if ((queue.insns [i].pad))
                 /* Skip an insn alredy inserted into the packet. */
@@ -2856,7 +2855,6 @@ qdsp6_packet_form
 		      queue.pairs + i, FALSE))
                 {
                   qdsp6_packet_init (packet + k);
-                  ok = FALSE;
                   break;
                 }
               else
@@ -2865,7 +2863,7 @@ qdsp6_packet_form
             }
         }
 
-      for (k = 0; k < 2; k++)
+      for (k = 0; k < ARRAY_SIZE (packet); k++)
         if (!apacket->size
             || (packet [k].size && packet [k].size < apacket->size))
           /* Pick a valid, smaller packet. */
@@ -2879,7 +2877,7 @@ qdsp6_packet_form
       apacket->is_inner = queue.is_inner;
       apacket->is_outer = queue.is_outer;
 
-      for (ok = TRUE, i = 0; i < queue.size; i++)
+      for (i = 0; i < queue.size; i++)
         {
           if ((queue.insns [i].pad))
             /* Skip an insn alredy inserted into the packet. */
@@ -2889,7 +2887,7 @@ qdsp6_packet_form
 	         (apacket, queue.insns + i, queue.prefixes + i,
 		  queue.pairs + i, FALSE))
             {
-              ok = FALSE;
+              qdsp6_packet_init (apacket);
               break;
             }
           else
@@ -2898,12 +2896,12 @@ qdsp6_packet_form
         }
     }
 
+  ok = (!aqueue->size
+        || apacket->size || apacket->is_inner || apacket->is_outer);
   if (!ok)
-    {
-      as_bad_where (NULL, queue.insns [i].lineno,
-                    _("too many instructions in packet (maximum is %d)."),
-                    MAX_PACKET_INSNS);
-    }
+    as_bad_where
+      (NULL, aqueue->lineno,
+       _("too many instructions in packet (maximum is %d)."), MAX_PACKET_INSNS);
 
   n_pairs [QDSP6_PAIRS_TOTAL] += apacket->duplex;
 
@@ -2931,6 +2929,8 @@ qdsp6_queue_insert
     {
       aqueue->insns    [aqueue->size] = *ainsn;
       aqueue->prefixes [aqueue->size] = *aprefix;
+
+      aqueue->lineno = ainsn->lineno;
 
       aqueue->faligned  = qdsp6_faligning;
       aqueue->is_inner |= ainsn->is_inner;
