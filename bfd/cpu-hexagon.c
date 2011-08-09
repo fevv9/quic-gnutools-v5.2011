@@ -48,7 +48,7 @@ static const bfd_arch_info_type hexagon_arch_info [] =
   HEXAGON_ARCH_INFO (bfd_mach_hexagon_v2, "hexagon", "hexagonv2", FALSE, hexagon_arch_info + 1),
   HEXAGON_ARCH_INFO (bfd_mach_hexagon_v3, "hexagon", "hexagonv3", FALSE, hexagon_arch_info + 2),
   HEXAGON_ARCH_INFO (bfd_mach_hexagon_v4, "hexagon", "hexagonv4", FALSE, hexagon_arch_info + 3),
-  HEXAGON_ARCH_INFO (bfd_mach_hexagon_v5, "hexagon", "hexagonv5", FALSE, hexagon_arch_info + 4),
+  HEXAGON_ARCH_INFO (bfd_mach_hexagon_v5, "hexagon", "hexagonv5", FALSE, NULL),
 };
 
 /* This is the default ISA. */
