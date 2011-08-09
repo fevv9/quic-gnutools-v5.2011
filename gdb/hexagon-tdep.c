@@ -108,6 +108,19 @@ static hexagon_regtype_t globalRegSetInfo_v4[]={
   {"", END_OFFSET}
 };
 
+// TODO: there are no v5 registers in the tree 
+// To automatically get all thread registers from arch
+static hexagon_regtype_t threadRegSetInfo_v5[]={
+#include "v4/thread_regs.h"
+  {"", END_OFFSET}
+};
+
+// To automatically get all thread registers from arch
+static hexagon_regtype_t globalRegSetInfo_v5[]={
+#include "v4/global_regs.h"
+  {"", END_OFFSET}
+};
+
 /* pointer to the architecture's thread registers */
 hexagon_regtype_t * threadRegSetInfo;
 /* pointer to the architecture's thread registers */
@@ -134,6 +147,7 @@ typedef enum
   HEXAGON_V2                        = 2,   // 31
   HEXAGON_V3                        = 3,   // 31
   HEXAGON_V4                        = 4,   // 31
+  HEXAGON_V5                        = 5,   // 31
 }Hexagon_Version;
 
 int hexagonVersion = 0;
@@ -370,7 +384,8 @@ hexagon_breakpoint_from_pc (struct gdbarch *gdbarch, CORE_ADDR *pcptr, int *lenp
   static unsigned char breakpoint_insn[] = {0x0c, 0xdb, 0x00, 0x54};
   static unsigned char *breakpoint;
 
-  if ((hexagonVersion == HEXAGON_V4) || 
+  if ((hexagonVersion == HEXAGON_V5) || 
+      (hexagonVersion == HEXAGON_V4) ||
       (hexagonVersion == HEXAGON_V3) ||
       (hexagonVersion == HEXAGON_V2))
   {
@@ -503,7 +518,7 @@ is_allocframe (unsigned int insn, CORE_ADDR pc, unsigned int *immediate)
       *immediate = ALLOCFRAME_SIZE (insn);
       return 1;
     }
-  else if (hexagonVersion == HEXAGON_V4)
+  else if (hexagonVersion > HEXAGON_V3)
     {
       if ((insn & mask) == memd_allocframe)
 	{
@@ -1602,6 +1617,13 @@ hexagon_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
       globalRegSetInfo = &globalRegSetInfo_v4[0];
       hexagonRegOffset = &hexagon_reg_offset_v4;
     break;
+
+    case bfd_mach_hexagon_v5:
+      hexagonVersion = HEXAGON_V5;
+      threadRegSetInfo = &threadRegSetInfo_v4[0];
+      globalRegSetInfo = &globalRegSetInfo_v4[0];
+      hexagonRegOffset = &hexagon_reg_offset_v4;
+    break;
     
     default:
       /* Never heard of this variant.  */
@@ -1620,6 +1642,7 @@ hexagon_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
     case bfd_mach_hexagon_v2:
     case bfd_mach_hexagon_v3:
     case bfd_mach_hexagon_v4:
+    case bfd_mach_hexagon_v5:
       set_variant_num_gprs (var, 32);
       set_variant_num_fprs (var, 0);
       break;
